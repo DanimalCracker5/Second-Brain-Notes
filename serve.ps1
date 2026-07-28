@@ -14,13 +14,13 @@ try {
   $listener.Start()
 } catch {
   Write-Host "Second Brain may already be running at $baseUrl"
-  if (-not $NoBrowser) { Start-Process ($baseUrl + "v3.html") }
+  if (-not $NoBrowser) { Start-Process $baseUrl }
   exit 0
 }
 
 Write-Host "Second Brain is running at $baseUrl"
 Write-Host "Keep this window open. Press Ctrl+C to stop."
-if (-not $NoBrowser) { Start-Process ($baseUrl + "v3.html") }
+if (-not $NoBrowser) { Start-Process $baseUrl }
 
 $mimeTypes = @{
   ".html" = "text/html; charset=utf-8"
@@ -37,7 +37,7 @@ try {
     $context = $listener.GetContext()
     try {
       $relativePath = [Uri]::UnescapeDataString($context.Request.Url.AbsolutePath.TrimStart("/"))
-      if ([string]::IsNullOrWhiteSpace($relativePath)) { $relativePath = "v3.html" }
+      if ([string]::IsNullOrWhiteSpace($relativePath)) { $relativePath = "index.html" }
       $filePath = [IO.Path]::GetFullPath((Join-Path $root $relativePath))
       $insideRoot = $filePath.StartsWith($root + [IO.Path]::DirectorySeparatorChar, [StringComparison]::OrdinalIgnoreCase)
 
