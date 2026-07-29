@@ -13,9 +13,10 @@
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=DM+Sans:opsz,wght@9..40,400;9..40,500;9..40,600;9..40,700&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet">
 
-<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
-<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-auth-compat.js"></script>
-<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-auth-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-storage-compat.js"></script>
 
 <style>
   :root{
@@ -95,6 +96,18 @@
 
   .note-body{ width:100%; background:none; border:none; outline:none; resize:none; display:block; color:var(--ink); font-size:1.08rem; line-height:1.72; padding:2px 0; min-height:46vh; overflow:hidden; }
   .note-body::placeholder{ color:var(--ink-faint); }
+  .attachments{ margin-top:24px; padding-top:18px; border-top:1px solid var(--line-soft); }
+  .attachments-head{ display:flex; align-items:center; justify-content:space-between; gap:12px; margin-bottom:10px; }
+  .attachments-head b{ font-size:.86rem; } .attachments-head small{ color:var(--ink-faint); font:400 .68rem "DM Mono",monospace; }
+  .attachment-add{ flex:none; border:1px solid var(--accent-line); border-radius:9px; padding:7px 10px; color:var(--accent); background:var(--accent-soft); cursor:pointer; font:600 .76rem "DM Sans",sans-serif; }
+  .attachment-add:hover{ filter:brightness(1.15); }
+  .attachment-list{ display:grid; gap:7px; }
+  .attachment-empty{ padding:11px 12px; border:1px dashed var(--line); border-radius:10px; color:var(--ink-faint); font-size:.78rem; }
+  .attachment-row{ display:flex; align-items:center; gap:10px; min-width:0; padding:9px 10px; border:1px solid var(--line); border-radius:10px; background:rgba(255,255,255,.025); }
+  .attachment-icon{ width:28px; height:28px; flex:none; display:grid; place-items:center; border-radius:8px; color:var(--accent); background:var(--accent-soft); font-size:.82rem; font-weight:700; }
+  .attachment-info{ min-width:0; flex:1; display:grid; gap:2px; } .attachment-info b{ overflow:hidden; text-overflow:ellipsis; white-space:nowrap; font-size:.8rem; } .attachment-info small{ color:var(--ink-faint); font:400 .66rem "DM Mono",monospace; }
+  .attachment-open,.attachment-remove{ flex:none; border:0; border-radius:7px; padding:6px 8px; cursor:pointer; font:600 .72rem "DM Sans",sans-serif; }
+  .attachment-open{ color:var(--accent); background:var(--accent-soft); } .attachment-remove{ color:var(--ink-faint); background:rgba(255,255,255,.05); } .attachment-remove:hover{ color:#f87171; background:rgba(248,113,113,.12); }
 
   .ch{ padding:4px 0 22px; border-bottom:1px solid var(--line-soft); margin-bottom:22px; }
   .ch:last-of-type{ border-bottom:none; }
@@ -343,9 +356,7 @@
 
   <aside class="drawer">
     <div class="d-head"><h2>Second Brain Notes</h2><small>by Astral Studios LLC</small></div>
-    <button class="d-new" id="newBtn">＋  New
-      <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M6 9l6 6 6-6"/></svg>
-    </button>
+    <button class="d-new" id="newBtn">＋  New</button>
     <div class="d-scroll">
       <div class="sec-h"><span>Folders</span><button id="addFolderBtn" title="New folder">＋</button></div>
       <div id="folders"></div>
@@ -412,6 +423,7 @@
 
   /* =================== storage =================== */
   var KEY="astral-notes-v5", OLDS=["astral-notes-v4","astral-notes-v3"], CFGKEY="astral-fb-config", BACKUP_KEY="second-brain-auto-backups-v1", mem=null;
+  var deviceBackups=[], attachmentDbPromise=null;
   var DEFAULT_ELEVENLABS_VOICE="21m00Tcm4TlvDq8ikWAM", CUSTOM_VOICE_OPTION="__elevenlabs_voice_id__";
   var runtimeApiKeys={openai:"",elevenlabs:"",elevenlabsVoice:DEFAULT_ELEVENLABS_VOICE,savedVoices:[],audio:null,audioUrl:null,ttsControl:null,ttsRequestId:0};
   var canPersist=(function(){ try{ localStorage.setItem("__t","1"); localStorage.removeItem("__t"); return true; }catch(e){ return false; } })();
@@ -426,13 +438,14 @@
   function loadLocal(){ var v=readKey(KEY); if(v&&v.items) return v; if(!canPersist&&mem) return mem; return migrate(); }
   function setSaveState(label,kind){ var el=$("saveState"); if(!el) return; el.textContent=label; el.className="save-state"+(kind?" "+kind:""); }
   function backupPayload(){ return { app:"second-brain", version:7, items:state.items, folders:state.folders, tags:state.tags, preferences:{theme:state.theme,motion:state.motion,darkness:state.darkness,enabledTypes:state.enabledTypes}, created:Date.now() }; }
-  function autoBackups(){ return readKey(BACKUP_KEY)||[]; }
-  function captureAutoBackup(force){
-    if(!canPersist) return;
-    var list=autoBackups(), today=new Date().toISOString().slice(0,10);
-    if(!force && list.length && list[0].day===today) return;
-    list.unshift({day:today, created:Date.now(), data:backupPayload()});
-    try{ localStorage.setItem(BACKUP_KEY,JSON.stringify(list.slice(0,14))); }catch(e){}
+  function autoBackups(){ return deviceBackups; }
+  function captureAutoBackup(force,kind){
+    var today=new Date().toISOString().slice(0,10);
+    if(!force && deviceBackups.length && deviceBackups[0].day===today) return true;
+    deviceBackups.unshift({day:today, kind:kind||"automatic", created:Date.now(), data:backupPayload()});
+    deviceBackups=deviceBackups.slice(0,14);
+    if(!canPersist) return false;
+    try{ localStorage.setItem(BACKUP_KEY,JSON.stringify(deviceBackups)); return true; }catch(e){ console.warn("Device backup could not be saved:",e); return false; }
   }
   function persist(){ captureAutoBackup(false); state.lastLocalChange=Date.now(); if(currentUser) state.pendingCloudSync=true; var d=JSON.stringify(state); if(canPersist){ try{ localStorage.setItem(KEY,d); }catch(e){ mem=JSON.parse(d); } } else mem=JSON.parse(d); setSaveState(currentUser?"Saving to cloud":"Sign in to sync"); saveCloud(); }
 
@@ -460,7 +473,9 @@
   state.filterFolder=state.filterFolder||null; state.filterTag=state.filterTag||null;
   state.listSort=state.listSort||"updated";
   if(typeof state.pendingCloudSync!=="boolean") state.pendingCloudSync=false;
+  deviceBackups=readKey(BACKUP_KEY)||[];
   state.items.forEach(function(it){
+    if(it.type==="note"&&!Array.isArray(it.attachments)) it.attachments=[];
     if(it.type==="script") (it.sections||[]).forEach(function(section){ if(!section.kind) section.kind="chapter"; });
     if(it.type==="todo"){
       if(!Array.isArray(it.todos)) it.todos=[];
@@ -705,11 +720,136 @@
       var body=document.createElement("textarea"); body.className="note-body"; body.value=it.body||""; body.placeholder="Start writing…";
       body.oninput=function(){ it.body=body.value; it.updated=Date.now(); grow(body); updateMeta(); save(); refreshListMeta(); };
       sheet.appendChild(body);
+      sheet.appendChild(buildAttachments(it));
     }
     canvas.appendChild(sheet);
     var tas=canvas.querySelectorAll(".title,.ch-body,.note-body,.todo-description");
     for(var i=0;i<tas.length;i++) grow(tas[i]);
     updateMeta();
+  }
+  var MAX_ATTACHMENT_BYTES=25*1024*1024;
+  function attachmentStoreKey(noteId,attachmentId){ return noteId+":"+attachmentId; }
+  function getAttachmentDb(){
+    if(attachmentDbPromise) return attachmentDbPromise;
+    if(!window.indexedDB) return Promise.reject(new Error("This browser does not support file storage"));
+    attachmentDbPromise=new Promise(function(resolve,reject){
+      var request=indexedDB.open("second-brain-attachments-v1",1);
+      request.onupgradeneeded=function(){ if(!request.result.objectStoreNames.contains("files")) request.result.createObjectStore("files"); };
+      request.onsuccess=function(){ resolve(request.result); };
+      request.onerror=function(){ reject(request.error||new Error("Could not open file storage")); };
+    });
+    return attachmentDbPromise;
+  }
+  function storeAttachmentFile(noteId,attachmentId,file){
+    return getAttachmentDb().then(function(database){ return new Promise(function(resolve,reject){
+      var tx=database.transaction("files","readwrite"); tx.objectStore("files").put(file,attachmentStoreKey(noteId,attachmentId));
+      tx.oncomplete=function(){ resolve(); }; tx.onerror=function(){ reject(tx.error||new Error("Could not save attachment")); }; tx.onabort=function(){ reject(tx.error||new Error("Could not save attachment")); };
+    }); });
+  }
+  function readAttachmentFile(noteId,attachmentId){
+    return getAttachmentDb().then(function(database){ return new Promise(function(resolve,reject){
+      var request=database.transaction("files","readonly").objectStore("files").get(attachmentStoreKey(noteId,attachmentId));
+      request.onsuccess=function(){ resolve(request.result||null); }; request.onerror=function(){ reject(request.error||new Error("Could not read attachment")); };
+    }); });
+  }
+  function removeAttachmentFile(noteId,attachmentId){
+    return getAttachmentDb().then(function(database){ return new Promise(function(resolve,reject){
+      var tx=database.transaction("files","readwrite"); tx.objectStore("files").delete(attachmentStoreKey(noteId,attachmentId));
+      tx.oncomplete=function(){ resolve(); }; tx.onerror=function(){ reject(tx.error||new Error("Could not remove attachment")); };
+    }); }).catch(function(){ return null; });
+  }
+  function fileSize(bytes){
+    if(!bytes) return "0 B";
+    var units=["B","KB","MB","GB"], index=Math.min(Math.floor(Math.log(bytes)/Math.log(1024)),units.length-1);
+    return (bytes/Math.pow(1024,index)).toFixed(index?1:0)+" "+units[index];
+  }
+  function attachmentLabel(attachment){
+    if(attachment.syncState==="uploading") return "Saving to cloud…";
+    if(attachment.storagePath) return "Synced to your account";
+    return "On this device";
+  }
+  function refreshAttachments(note){
+    var old=canvas.querySelector('.attachments[data-note-id="'+note.id+'"]');
+    if(old&&current()&&current().id===note.id) old.parentNode.replaceChild(buildAttachments(note),old);
+  }
+  function cloudAttachmentPath(note,attachment){ return "users/"+currentUser.uid+"/notes/"+note.id+"/attachments/"+attachment.id; }
+  function uploadAttachment(note,attachment,file){
+    if(!currentUser||!storage) return Promise.resolve(false);
+    attachment.syncState="uploading"; refreshAttachments(note);
+    var path=cloudAttachmentPath(note,attachment);
+    return storage.ref(path).put(file,{contentType:attachment.type||file.type||"application/octet-stream"}).then(function(){
+      attachment.storagePath=path; attachment.syncState="cloud"; note.updated=Date.now(); persist(); refreshAttachments(note); return true;
+    }).catch(function(error){ attachment.syncState="device"; refreshAttachments(note); throw error; });
+  }
+  function addNoteAttachments(note,files){
+    var selected=Array.prototype.slice.call(files||[]), accepted=[];
+    selected.forEach(function(file){
+      if(file.size>MAX_ATTACHMENT_BYTES){ showToast(file.name+" is over the 25 MB attachment limit",true); return; }
+      accepted.push(file);
+    });
+    if(!accepted.length) return;
+    note.attachments=note.attachments||[];
+    accepted.forEach(function(file){
+      var attachment={id:uid(),name:file.name||"Untitled file",type:file.type||"",size:file.size||0,added:Date.now(),syncState:"saving"};
+      note.attachments.push(attachment);
+      storeAttachmentFile(note.id,attachment.id,file).then(function(){
+        attachment.syncState="device"; note.updated=Date.now(); persist(); refreshAttachments(note);
+        return uploadAttachment(note,attachment,file);
+      }).then(function(uploaded){
+        if(uploaded) showToast("Attachment added and synced");
+        else showToast("Attachment added to this device");
+      }).catch(function(error){
+        console.warn("Attachment could not be synced:",error);
+        if(attachment.syncState==="saving"){
+          note.attachments=note.attachments.filter(function(item){ return item.id!==attachment.id; });
+          persist(); refreshAttachments(note); showToast("Couldn’t save that attachment",true);
+        } else {
+          attachment.syncState="device"; persist(); refreshAttachments(note); showToast("Attachment saved on this device; cloud sync is unavailable");
+        }
+      });
+    });
+    note.updated=Date.now(); persist(); refreshAttachments(note);
+  }
+  function openAttachment(note,attachment){
+    function clickLink(url,local){
+      var link=document.createElement("a"); link.href=url; link.target="_blank"; link.rel="noopener"; link.download=attachment.name||"attachment";
+      document.body.appendChild(link); link.click(); document.body.removeChild(link);
+      if(local) setTimeout(function(){ URL.revokeObjectURL(url); },60000);
+    }
+    readAttachmentFile(note.id,attachment.id).then(function(file){
+      if(file){ clickLink(URL.createObjectURL(file),true); return; }
+      if(storage&&attachment.storagePath) return storage.ref(attachment.storagePath).getDownloadURL().then(function(url){ clickLink(url,false); });
+      throw new Error("Attachment file is unavailable");
+    }).catch(function(error){ console.warn("Attachment could not be opened:",error); showToast("That attachment is not available on this device",true); });
+  }
+  function deleteAttachment(note,attachment){
+    if(!confirm('Remove "'+(attachment.name||"this attachment")+'"?')) return;
+    note.attachments=(note.attachments||[]).filter(function(item){ return item.id!==attachment.id; });
+    note.updated=Date.now(); persist(); refreshAttachments(note); removeAttachmentFile(note.id,attachment.id);
+    if(storage&&attachment.storagePath) storage.ref(attachment.storagePath).delete().catch(function(error){ console.warn("Cloud attachment cleanup skipped:",error); });
+  }
+  function buildAttachments(note){
+    var wrap=document.createElement("section"); wrap.className="attachments"; wrap.setAttribute("data-note-id",note.id);
+    var head=document.createElement("div"); head.className="attachments-head";
+    var copy=document.createElement("div"); copy.innerHTML="<b>Attachments</b><small>Stored separately from your note text</small>";
+    var add=document.createElement("button"); add.type="button"; add.className="attachment-add"; add.textContent="＋ Add files";
+    var picker=document.createElement("input"); picker.type="file"; picker.multiple=true; picker.hidden=true;
+    add.onclick=function(){ picker.click(); };
+    picker.onchange=function(){ addNoteAttachments(note,picker.files); picker.value=""; };
+    head.appendChild(copy); head.appendChild(add); head.appendChild(picker); wrap.appendChild(head);
+    var list=document.createElement("div"); list.className="attachment-list";
+    var attachments=note.attachments||[];
+    if(!attachments.length){ var empty=document.createElement("div"); empty.className="attachment-empty"; empty.textContent="Add files, images, PDFs, or other reference material (up to 25 MB each)."; list.appendChild(empty); }
+    attachments.forEach(function(attachment){
+      var row=document.createElement("div"); row.className="attachment-row";
+      var extension=(attachment.name||"").split(".").pop().toUpperCase(); if(!extension||extension===attachment.name) extension="FILE";
+      var icon=document.createElement("span"); icon.className="attachment-icon"; icon.textContent=extension.slice(0,4);
+      var info=document.createElement("div"); info.className="attachment-info"; var name=document.createElement("b"); name.textContent=attachment.name||"Untitled file"; var details=document.createElement("small"); details.textContent=fileSize(attachment.size)+" · "+attachmentLabel(attachment); info.appendChild(name); info.appendChild(details);
+      var open=document.createElement("button"); open.type="button"; open.className="attachment-open"; open.textContent="Open"; open.onclick=function(){ openAttachment(note,attachment); };
+      var remove=document.createElement("button"); remove.type="button"; remove.className="attachment-remove"; remove.textContent="Remove"; remove.onclick=function(){ deleteAttachment(note,attachment); };
+      row.appendChild(icon); row.appendChild(info); row.appendChild(open); row.appendChild(remove); list.appendChild(row);
+    });
+    wrap.appendChild(list); return wrap;
   }
   function buildTodo(it){
     var wrap=document.createElement("div"), list=document.createElement("div"); list.className="todo-list";
@@ -1021,13 +1161,13 @@
   });
 
   /* =================== export / import =================== */
-  function doExport(){
+  function doExport(message){
     var payload=backupPayload();
     var blob=new Blob([JSON.stringify(payload,null,2)],{type:"application/json"});
     var url=URL.createObjectURL(blob), a=document.createElement("a");
     a.href=url; a.download="second-brain-"+new Date().toISOString().slice(0,10)+".json";
     document.body.appendChild(a); a.click(); document.body.removeChild(a); URL.revokeObjectURL(url);
-    showToast("Backup downloaded");
+    showToast(message||"Backup downloaded");
   }
   function doImport(file){
     var r=new FileReader();
@@ -1053,7 +1193,7 @@
   }
 
   /* =================== Firebase (configured in astral.config.js) =================== */
-  var auth=null, db=null, currentUser=null, cloudTimer=null, fbReady=false, apiSettingsUnsubscribe=null;
+  var auth=null, db=null, storage=null, currentUser=null, cloudTimer=null, fbReady=false, apiSettingsUnsubscribe=null;
   var PROMPT_KEY="second-brain-login-prompt-dismissed";
   function hideLoginPrompt(){ var p=$("loginPrompt"); if(p) p.classList.remove("show"); }
   function showLoginPrompt(){
@@ -1144,7 +1284,7 @@
     if(!cfg||typeof firebase==="undefined"){ renderFoot(); return; }
     try{
       if(!firebase.apps || !firebase.apps.length) firebase.initializeApp(cfg);
-      auth=firebase.auth(); db=firebase.firestore(); fbReady=true;
+      auth=firebase.auth(); db=firebase.firestore(); storage=typeof firebase.storage==="function"?firebase.storage():null; fbReady=true;
       auth.onAuthStateChanged(function(u){
         currentUser=u;
         renderFoot();
@@ -1227,9 +1367,9 @@
     return add.length;
   }
   function loadCloud(){
-    if(!currentUser||!db) return;
+    if(!currentUser||!db) return Promise.resolve();
     setSaveState("Loading from cloud","saving");
-    db.collection("users").doc(currentUser.uid).get().then(function(doc){
+    return db.collection("users").doc(currentUser.uid).get().then(function(doc){
       var cloud=doc.exists?doc.data():null;
       var cloudHas=cloud&&cloud.items&&hasContent(cloud.items);
       var localHas=hasContent(state.items);
@@ -1245,7 +1385,7 @@
         }
         markCloudLinked(); saveCloudNow(); showToast("Cloud sync is ready");
       }
-    }).catch(function(e){ console.warn(e); showToast("Couldn’t read cloud data — check Firestore rules",true); });
+    }).then(function(){ syncStoredAttachments(); }).catch(function(e){ console.warn(e); showToast("Couldn’t read cloud data — check Firestore rules",true); });
   }
   function saveCloud(){ if(!currentUser||!db) return; clearTimeout(cloudTimer); cloudTimer=setTimeout(saveCloudNow,1500); }
   function cloudBackupRef(id){ return db.collection("users").doc(currentUser.uid).collection("backups").doc(id); }
@@ -1259,13 +1399,28 @@
   function writeCloudBackup(kind){
     if(!currentUser||!db) return Promise.reject(new Error("Sign in required"));
     var created=Date.now(), id=kind==="automatic"?"auto-"+new Date(created).toISOString().slice(0,10):"manual-"+created;
-    return cloudBackupRef(id).set({kind:kind,created:created,itemCount:state.items.length,data:backupPayload()}).then(function(){ trimCloudBackups(); return id; });
+    var payload;
+    try{ payload=JSON.parse(JSON.stringify(backupPayload())); }catch(e){ return Promise.reject(e); }
+    return cloudBackupRef(id).set({kind:kind,created:created,itemCount:state.items.length,data:payload}).then(function(){ trimCloudBackups(); return id; });
   }
   function maybeCloudBackup(){
     if(!currentUser||!db) return;
     var day=new Date().toISOString().slice(0,10), marker="second-brain-cloud-backup-"+currentUser.uid;
     try{ if(localStorage.getItem(marker)===day) return; }catch(e){}
     writeCloudBackup("automatic").then(function(){ try{ localStorage.setItem(marker,day); }catch(e){} }).catch(function(e){ console.warn("Daily backup failed:",e); });
+  }
+  function syncStoredAttachments(){
+    if(!currentUser||!storage) return;
+    state.items.forEach(function(note){
+      if(note.type!=="note") return;
+      (note.attachments||[]).forEach(function(attachment){
+        if(attachment.storagePath||attachment.syncState==="uploading") return;
+        readAttachmentFile(note.id,attachment.id).then(function(file){
+          if(!file||attachment.storagePath||attachment.syncState==="uploading") return;
+          return uploadAttachment(note,attachment,file);
+        }).catch(function(error){ console.warn("Attachment upload skipped:",error); });
+      });
+    });
   }
   function getCloudBackups(){
     if(!currentUser||!db) return Promise.resolve([]);
@@ -1336,7 +1491,7 @@
     } else if(settingsPage==="themes"){
       content=settingsHeading("Themes",true)+'<p class="hint">Themes are separate from the rest of Settings so you can browse them without burying the backup and sync controls.</p><div class="themes" id="themeGrid"></div>';
     } else if(settingsPage==="backups"){
-      content=settingsHeading("Backups",true)+'<p class="hint">Automatic cloud backups are created daily while signed in and kept for four weeks. Restoring a point first saves your current notes as a fresh recovery point.</p><div class="btnrow"><button class="b2 primary" id="backupNowBtn">Back up now</button><button class="b2" id="expBtn">Export file</button><button class="b2" id="impBtn">Import file</button><input type="file" id="impFile" accept="application/json" hidden></div><div class="grp"><h4>Restore points</h4><div class="backup-list" id="backupList"></div></div>';
+      content=settingsHeading("Backups",true)+'<p class="hint">Every backup creates a recovery point on this device. When you are signed in, it also attempts a cloud copy and automatic cloud backups are kept for four weeks.</p><div class="btnrow"><button class="b2 primary" id="backupNowBtn">Back up now</button><button class="b2" id="expBtn">Export file</button><button class="b2" id="impBtn">Import file</button><input type="file" id="impFile" accept="application/json" hidden></div><div class="grp"><h4>Restore points</h4><div class="backup-list" id="backupList"></div></div>';
     } else if(settingsPage==="account"){
       content=settingsHeading("Account &amp; sync",true)+'<div id="acctInner"></div>';
     } else if(settingsPage==="keys"){
@@ -1548,7 +1703,8 @@
   function renderBackupList(){
     var el=$("backupList"); if(!el) return;
     el.innerHTML='<p class="hint">Loading restore points…</p>';
-    var load=currentUser&&db?getCloudBackups():Promise.resolve(autoBackups().map(function(entry,index){ return {id:"device-"+index,kind:"automatic",created:entry.created,itemCount:(entry.data.items||[]).length,data:entry.data}; }));
+    var deviceEntries=autoBackups().map(function(entry,index){ return {id:"device-"+index,kind:entry.kind||"automatic",created:entry.created,itemCount:(entry.data.items||[]).length,data:entry.data}; });
+    var load=currentUser&&db?getCloudBackups().then(function(entries){ return entries.concat(deviceEntries).sort(function(a,b){ return b.created-a.created; }); },function(error){ console.warn("Cloud restore points unavailable:",error); return deviceEntries; }):Promise.resolve(deviceEntries);
     load.then(function(entries){
       if(!el||!el.isConnected) return;
       if(!entries.length){ el.innerHTML='<p class="hint">No backups yet. Create one now, then automatic backups will appear here over time.</p>'; return; }
@@ -1565,9 +1721,15 @@
   }
   function setupBackupSettings(){
     $("backupNowBtn").onclick=function(){
-      captureAutoBackup(true);
-      if(!currentUser||!db){ showToast("Sign in to create a cloud backup",true); renderBackupList(); return; }
-      writeCloudBackup("manual").then(function(){ showToast("Cloud backup created"); renderBackupList(); }).catch(function(e){ console.warn(e); showToast("Cloud backup failed",true); });
+      var button=this, savedOnDevice=captureAutoBackup(true,"manual");
+      if(!savedOnDevice) doExport("Backup downloaded as a recovery copy");
+      renderBackupList();
+      if(!currentUser||!db){ if(savedOnDevice) showToast("Backup saved on this device"); return; }
+      button.disabled=true;
+      writeCloudBackup("manual").then(function(){ showToast(savedOnDevice?"Backup saved on this device and to cloud":"Cloud backup created"); renderBackupList(); }).catch(function(e){
+        console.warn("Cloud backup unavailable:",e);
+        showToast(savedOnDevice?"Backup saved on this device; cloud copy is unavailable":"Cloud copy unavailable — recovery file downloaded",!savedOnDevice);
+      }).then(function(){ button.disabled=false; });
     };
     $("expBtn").onclick=doExport;
     $("impBtn").onclick=function(){ $("impFile").click(); };

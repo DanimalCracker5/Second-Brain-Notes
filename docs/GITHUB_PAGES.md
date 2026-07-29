@@ -21,3 +21,15 @@ Pages source set to root.
 
 The Firebase web config in `astral.config.js` is expected to be public for
 a browser app. Do not upload service-account keys or other private secrets.
+
+## Firebase rules
+
+Deploy the checked-in Firebase rules whenever you first enable cloud sync or
+after pulling changes that touch `firestore.rules` or `storage.rules`:
+
+```powershell
+firebase deploy --project second-brain-4077e --only firestore:rules,storage
+```
+
+The Storage rules let signed-in users sync note attachments only within their
+own account path. Device-only attachments still work without signing in.
