@@ -102,9 +102,12 @@
   .ch-idx{ font-family:"DM Mono",monospace; font-size:.72rem; color:var(--accent); opacity:.7; flex:none; }
   .ch-name{ flex:1; min-width:0; background:none; border:none; outline:none; color:var(--ink); font-weight:600; font-size:1.02rem; letter-spacing:-.01em; padding:2px 0; }
   .ch-name::placeholder{ color:var(--ink-faint); }
-  .ch-copy{ flex:none; font-weight:600; font-size:.8rem; color:var(--accent); background:var(--accent-soft); cursor:pointer; border:1px solid var(--accent-line); border-radius:8px; padding:6px 13px; transition:.15s; }
+  .ch-actions{ display:flex; align-items:center; gap:8px; margin-left:auto; }
+  .ch-copy,.ch-listen{ flex:none; display:inline-flex; align-items:center; justify-content:center; gap:5px; font-weight:600; font-size:.8rem; color:var(--accent); background:var(--accent-soft); cursor:pointer; border:1px solid var(--accent-line); border-radius:8px; padding:6px 13px; transition:.15s; }
+  .ch-listen svg{ width:13px; height:13px; }
   .ch-copy:hover{ filter:brightness(1.15); } .ch-copy:active{ transform:scale(.95); }
-  .ch-copy.done{ color:#6ee7b7; border-color:rgba(110,231,183,.4); background:rgba(52,211,153,.16); }
+  .ch-listen:hover{ filter:brightness(1.15); } .ch-listen:active{ transform:scale(.95); }
+  .ch-copy.done,.ch-listen.done{ color:#6ee7b7; border-color:rgba(110,231,183,.4); background:rgba(52,211,153,.16); }
   .ch-body{ width:100%; background:none; border:none; outline:none; resize:none; display:block; color:var(--ink); font-size:1.06rem; line-height:1.7; padding:4px 0 0; min-height:56px; overflow:hidden; }
   .ch-body::placeholder{ color:var(--ink-faint); }
   .ch.cue{ padding:10px 0 16px; text-align:center; }
@@ -299,6 +302,19 @@
   .voice-orb{ width:118px; height:118px; border-radius:50%; background:radial-gradient(circle at 34% 28%,#fff 0, var(--accent) 12%, rgba(120,90,255,.44) 45%,transparent 70%); box-shadow:0 0 48px var(--accent-soft); }
   .agent-edit{ display:grid; gap:14px; } .agent-edit label{ display:grid; gap:6px; color:var(--ink-dim); font-size:.78rem; } .agent-edit input,.agent-edit select{ padding:10px; border:1px solid var(--line); border-radius:10px; color:var(--ink); background:rgba(255,255,255,.04); font:400 .82rem "DM Mono",monospace; } .agent-edit select{ cursor:pointer; }
   .agent-edit textarea{ min-height:110px; }
+  .voice-picker{ width:100%; display:flex; align-items:center; justify-content:space-between; gap:12px; padding:11px 12px; color:var(--ink); text-align:left; cursor:pointer; border:1px solid var(--line); border-radius:12px; background:linear-gradient(135deg,rgba(255,255,255,.075),rgba(255,255,255,.03)); transition:border-color .15s,background .15s; }
+  .voice-picker:hover,.voice-picker.open{ border-color:var(--accent-line); background:var(--accent-soft); }
+  .voice-picker-copy{ min-width:0; display:grid; gap:2px; } .voice-picker-copy b{ overflow:hidden; text-overflow:ellipsis; white-space:nowrap; font-size:.9rem; } .voice-picker-copy small{ overflow:hidden; text-overflow:ellipsis; white-space:nowrap; color:var(--ink-faint); font:400 .7rem "DM Mono",monospace; }
+  .voice-picker svg{ width:17px; flex:none; color:var(--accent); transition:transform .16s; } .voice-picker.open svg{ transform:rotate(180deg); }
+  .voice-picker-menu{ display:grid; gap:9px; padding:9px; border:1px solid var(--accent-line); border-radius:14px; background:#111115; box-shadow:0 20px 45px rgba(0,0,0,.46); }
+  .voice-picker-menu[hidden]{ display:none; }
+  .voice-search{ width:100%; padding:10px 11px; border:1px solid var(--line); border-radius:9px; outline:none; color:var(--ink); background:rgba(255,255,255,.05); font:400 .8rem "DM Sans",sans-serif; } .voice-search:focus{ border-color:var(--accent-line); }
+  .voice-options{ display:grid; gap:4px; max-height:min(330px,44vh); overflow-y:auto; padding-right:2px; }
+  .voice-choice{ width:100%; display:flex; align-items:center; justify-content:space-between; gap:12px; padding:10px 11px; color:var(--ink); text-align:left; cursor:pointer; border:1px solid transparent; border-radius:10px; background:transparent; }
+  .voice-choice:hover{ border-color:var(--line); background:rgba(255,255,255,.055); } .voice-choice.selected{ border-color:var(--accent-line); background:var(--accent-soft); }
+  .voice-choice-copy{ min-width:0; display:grid; gap:2px; } .voice-choice-copy b{ overflow:hidden; text-overflow:ellipsis; white-space:nowrap; font-size:.84rem; } .voice-choice-copy small{ overflow:hidden; text-overflow:ellipsis; white-space:nowrap; color:var(--ink-faint); font:400 .68rem "DM Mono",monospace; }
+  .voice-choice-mark{ flex:none; color:var(--accent); font-size:.68rem; font-weight:700; } .voice-choice.custom .voice-choice-mark{ color:var(--ink-dim); font-size:1rem; }
+  .voice-empty{ padding:18px 10px; color:var(--ink-faint); text-align:center; font-size:.78rem; }
 
   @media (max-width: 900px){
     .app{ grid-template-columns:1fr; }
@@ -397,7 +413,7 @@
   /* =================== storage =================== */
   var KEY="astral-notes-v5", OLDS=["astral-notes-v4","astral-notes-v3"], CFGKEY="astral-fb-config", BACKUP_KEY="second-brain-auto-backups-v1", mem=null;
   var DEFAULT_ELEVENLABS_VOICE="21m00Tcm4TlvDq8ikWAM", CUSTOM_VOICE_OPTION="__elevenlabs_voice_id__";
-  var runtimeApiKeys={openai:"",elevenlabs:"",elevenlabsVoice:DEFAULT_ELEVENLABS_VOICE,savedVoices:[],audio:null,audioUrl:null};
+  var runtimeApiKeys={openai:"",elevenlabs:"",elevenlabsVoice:DEFAULT_ELEVENLABS_VOICE,savedVoices:[],audio:null,audioUrl:null,ttsControl:null,ttsRequestId:0};
   var canPersist=(function(){ try{ localStorage.setItem("__t","1"); localStorage.removeItem("__t"); return true; }catch(e){ return false; } })();
   function readKey(k){ if(canPersist){ try{ return JSON.parse(localStorage.getItem(k)); }catch(e){} } return null; }
   function migrate(){
@@ -853,7 +869,7 @@
     var top=document.createElement("div"); top.className="ch-top";
     if(isCue){ top.innerHTML='<span class="ch-idx">CUE</span>'; }
     else {
-      top.innerHTML='<span class="ch-idx">'+String(i+1).padStart(2,"0")+'</span><input class="ch-name" type="text" placeholder="Chapter name"><button class="ch-copy">Copy</button>';
+      top.innerHTML='<span class="ch-idx">'+String(i+1).padStart(2,"0")+'</span><input class="ch-name" type="text" placeholder="Chapter name"><div class="ch-actions"><button class="ch-listen" type="button" aria-label="Listen to chapter"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M11 5 6 9H3v6h3l5 4z"/><path d="M15.5 8.5a5 5 0 0 1 0 7M18.5 5.5a9 9 0 0 1 0 13"/></svg><span>Listen</span></button><button class="ch-copy" type="button">Copy</button></div>';
       var name=top.querySelector(".ch-name"); name.value=section.title||"";
       name.oninput=function(){ section.title=name.value; it.updated=Date.now(); save(); };
       top.querySelector(".ch-copy").onclick=function(){ var b=this; copy(section.body||"",function(){ b.classList.add("done"); b.textContent="Copied"; showToast("Copied “"+(section.title||"chapter")+"”"); setTimeout(function(){ b.classList.remove("done"); b.textContent="Copy"; },1200); }); };
@@ -866,7 +882,12 @@
     var cc=foot.querySelector(".cc");
     function count(){ cc.textContent=(section.body||"").length ? (section.body.length.toLocaleString()+" ch") : ""; }
     count();
-    body.oninput=function(){ section.body=body.value; it.updated=Date.now(); grow(body); count(); updateMeta(); save(); refreshListMeta(); };
+    if(!isCue){
+      var listen=top.querySelector(".ch-listen");
+      updateChapterTtsButton(listen,section);
+      listen.onclick=function(){ playTts(ttsTextForSection(section).trim(),listen,listen.querySelector("span")); };
+    }
+    body.oninput=function(){ section.body=body.value; it.updated=Date.now(); grow(body); count(); if(!isCue) updateChapterTtsButton(top.querySelector(".ch-listen"),section); updateMeta(); save(); refreshListMeta(); };
 
     var up=foot.querySelector(".up"), down=foot.querySelector(".down");
     if(i===0) up.disabled=true;
@@ -902,29 +923,50 @@
     if(it.type==="todo") return (it.todos||[]).filter(function(task){ return !task.done; }).map(function(task){ return [task.text,task.description].filter(Boolean).join(". "); }).filter(Boolean).join("\n");
     return it.body||"";
   }
+  function ttsTextForSection(section){ return [section.title,section.body].filter(Boolean).join(". "); }
   function updateTtsButton(it){
     var button=$("ttsBtn"); if(!button) return;
     var visible=!!(runtimeApiKeys.elevenlabs&&it&&it.type!=="agent"&&ttsTextForItem(it).trim());
     button.style.display=visible?"inline-flex":"none";
   }
+  function updateChapterTtsButton(button,section){
+    if(!button) return;
+    button.style.display=runtimeApiKeys.elevenlabs&&ttsTextForSection(section).trim()?"inline-flex":"none";
+  }
+  function resetTtsControl(control){
+    if(!control) return;
+    control.label.textContent="Listen";
+    control.button.disabled=false;
+    control.button.classList.remove("done");
+  }
   function stopTts(){
+    runtimeApiKeys.ttsRequestId++;
     if(runtimeApiKeys.audio){ runtimeApiKeys.audio.pause(); runtimeApiKeys.audio=null; }
     if(runtimeApiKeys.audioUrl){ URL.revokeObjectURL(runtimeApiKeys.audioUrl); runtimeApiKeys.audioUrl=null; }
-    var label=$("ttsLabel"), button=$("ttsBtn"); if(label) label.textContent="Listen"; if(button){ button.disabled=false; button.classList.remove("done"); }
+    resetTtsControl(runtimeApiKeys.ttsControl);
+    runtimeApiKeys.ttsControl=null;
   }
-  $("ttsBtn").onclick=function(){
-    var item=current(), button=this, label=$("ttsLabel"), text=ttsTextForItem(item).trim();
-    if(runtimeApiKeys.audio){ stopTts(); return; }
+  function playTts(text,button,label){
+    if(runtimeApiKeys.ttsControl&&runtimeApiKeys.ttsControl.button===button){ stopTts(); return; }
+    stopTts();
     if(!runtimeApiKeys.elevenlabs||!text){ showToast("Add your ElevenLabs key in Settings first",true); return; }
+    var requestId=runtimeApiKeys.ttsRequestId, control={button:button,label:label};
+    runtimeApiKeys.ttsControl=control;
     button.disabled=true; label.textContent="Preparing…";
     fetch("https://api.elevenlabs.io/v1/text-to-speech/"+encodeURIComponent(runtimeApiKeys.elevenlabsVoice||DEFAULT_ELEVENLABS_VOICE),{method:"POST",headers:{"Content-Type":"application/json","xi-api-key":runtimeApiKeys.elevenlabs,"Accept":"audio/mpeg"},body:JSON.stringify({text:text,model_id:"eleven_multilingual_v2"})}).then(function(response){
       if(!response.ok) return response.text().then(function(message){ throw new Error(message||"ElevenLabs request failed"); });
       return response.blob();
     }).then(function(blob){
+      if(requestId!==runtimeApiKeys.ttsRequestId) return;
       runtimeApiKeys.audioUrl=URL.createObjectURL(blob); runtimeApiKeys.audio=new Audio(runtimeApiKeys.audioUrl);
-      runtimeApiKeys.audio.onended=stopTts; runtimeApiKeys.audio.onerror=function(){ showToast("Audio playback failed",true); stopTts(); };
+      runtimeApiKeys.audio.onended=function(){ if(requestId===runtimeApiKeys.ttsRequestId) stopTts(); };
+      runtimeApiKeys.audio.onerror=function(){ if(requestId===runtimeApiKeys.ttsRequestId){ showToast("Audio playback failed",true); stopTts(); } };
       label.textContent="Stop"; button.disabled=false; button.classList.add("done"); return runtimeApiKeys.audio.play();
-    }).catch(function(error){ console.warn("ElevenLabs playback failed:",error); showToast("ElevenLabs could not create audio",true); stopTts(); });
+    }).catch(function(error){ if(requestId!==runtimeApiKeys.ttsRequestId) return; console.warn("ElevenLabs playback failed:",error); showToast("ElevenLabs could not create audio",true); stopTts(); });
+  }
+  $("ttsBtn").onclick=function(){
+    var item=current();
+    playTts(ttsTextForItem(item).trim(),this,$("ttsLabel"));
   };
 
   /* =================== actions =================== */
@@ -1300,7 +1342,7 @@
     } else if(settingsPage==="keys"){
       content=settingsHeading("API keys",true)+'<p class="hint">Keys sync automatically to your signed-in account, so they are ready on your other signed-in devices. There is no separate vault passphrase to create or remember.</p><div class="agent-edit"><label>OpenAI (ChatGPT) API key<input id="openaiKey" type="password" autocomplete="off" placeholder="sk-…" disabled></label><label>ElevenLabs API key<input id="elevenlabsKey" type="password" autocomplete="off" placeholder="Your ElevenLabs key" disabled></label><p class="hint" id="apiKeyStatus">Sign in to add API keys.</p></div>';
     } else if(settingsPage==="voices"){
-      content=settingsHeading("Voice",true)+'<p class="hint">Your saved, favorited, and added ElevenLabs voices appear here. Choose one to use it everywhere you listen in Second Brain.</p><div class="agent-edit"><label>Voice<select id="elevenlabsVoiceSelect" disabled><option value="">Loading voices…</option></select></label><div id="customVoiceEntry" hidden><label>ElevenLabs Voice ID<input id="customElevenlabsVoiceId" type="text" autocomplete="off" placeholder="Paste a voice ID"></label><div class="btnrow"><button class="b2 primary" id="saveCustomVoiceBtn">Save to list &amp; select</button></div></div><p class="hint" id="voiceStatus">Loading your available voices…</p></div>';
+      content=settingsHeading("Voice",true)+'<p class="hint">Your saved, favorited, and added ElevenLabs voices appear here. Search by name or style, then choose one to use everywhere you listen in Second Brain.</p><div class="agent-edit"><label>Voice<button class="voice-picker" id="elevenlabsVoicePicker" type="button" aria-expanded="false" disabled><span class="voice-picker-copy"><b>Loading voices…</b><small>Your saved ElevenLabs voices</small></span><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="m6 9 6 6 6-6"/></svg></button></label><div class="voice-picker-menu" id="elevenlabsVoiceMenu" hidden><input class="voice-search" id="elevenlabsVoiceSearch" type="search" autocomplete="off" placeholder="Search voices or styles"><div class="voice-options" id="elevenlabsVoiceOptions"></div></div><div id="customVoiceEntry" hidden><label>ElevenLabs Voice ID<input id="customElevenlabsVoiceId" type="text" autocomplete="off" placeholder="Paste a voice ID"></label><div class="btnrow"><button class="b2 primary" id="saveCustomVoiceBtn">Save to list &amp; select</button></div></div><p class="hint" id="voiceStatus">Loading your available voices…</p></div>';
     } else if(settingsPage==="manage"){
       content=settingsHeading("Manage",true)+'<p class="hint">Choose what appears under New. Existing items are never removed when an option is turned off.</p><div class="grp"><div class="srow"><div class="sl">YouTube Script<small>Create chapter and cue-based scripts</small></div><button class="toggle" id="typeScript"><b></b></button></div><div class="srow"><div class="sl">Notes<small>Create standard notes</small></div><button class="toggle" id="typeNote"><b></b></button></div><div class="srow"><div class="sl">Todos<small>Create tasks with descriptions and subtasks</small></div><button class="toggle" id="typeTodo"><b></b></button></div></div><div class="grp"><h4>Prototype</h4><div class="srow"><div class="sl">Agent<small>Enable the chat, voice, and JSON-memory agent prototype</small></div><button class="toggle" id="typeAgent"><b></b></button></div></div>';
     } else { settingsPage="home"; renderSettingsPage(); return; }
@@ -1357,23 +1399,49 @@
     openai.oninput=queueSave;
     eleven.oninput=queueSave;
   }
-  function addVoiceOption(select,value,label){ var option=document.createElement("option"); option.value=value; option.textContent=label; select.appendChild(option); }
-  function renderVoiceOptions(select,voices,selectedId){
-    var all={}, ordered=[];
+  function voiceChoice(voice){
+    var id=cleanText(voice&&voice.id||voice&&voice.voice_id||voice), labels=voice&&voice.labels&&typeof voice.labels==="object"?voice.labels:{}, details=[];
+    if(voice&&voice.description) details.push(cleanText(voice.description));
+    Object.keys(labels).forEach(function(key){ var value=cleanText(labels[key]); if(value&&details.indexOf(value)<0) details.push(value); });
+    return {id:id,name:cleanText(voice&&voice.name)||id,detail:details.slice(0,3).join(" · ")||cleanText(voice&&voice.category)||"Saved ElevenLabs voice"};
+  }
+  function getVoiceChoices(voices,selectedId){
+    var all={}, choices=[];
     function include(voice){
-      var id=cleanText(voice&&voice.id||voice&&voice.voice_id||voice);
-      if(!id||all[id]) return;
-      all[id]={id:id,name:cleanText(voice&&voice.name)||id};
-      ordered.push(all[id]);
+      var choice=voiceChoice(voice);
+      if(!choice.id||all[choice.id]) return;
+      all[choice.id]=choice;
+      choices.push(choice);
     }
-    include({id:DEFAULT_ELEVENLABS_VOICE,name:"Default voice (Rachel)"});
+    include({id:DEFAULT_ELEVENLABS_VOICE,name:"Default voice",description:"Rachel · ElevenLabs default"});
     cleanSavedVoices(runtimeApiKeys.savedVoices).forEach(include);
     (voices||[]).forEach(include);
-    if(selectedId&&selectedId!==DEFAULT_ELEVENLABS_VOICE) include({id:selectedId,name:"Saved voice ("+selectedId+")"});
-    select.innerHTML="";
-    addVoiceOption(select,CUSTOM_VOICE_OPTION,"ElevenLabs Voice ID");
-    ordered.sort(function(a,b){ return a.name.localeCompare(b.name); }).forEach(function(voice){ addVoiceOption(select,voice.id,voice.name+" — "+voice.id); });
-    select.value=all[selectedId]?selectedId:(selectedId===DEFAULT_ELEVENLABS_VOICE?selectedId:CUSTOM_VOICE_OPTION);
+    if(selectedId&&!all[selectedId]) include({id:selectedId,name:"Saved voice",description:"Added with ElevenLabs Voice ID"});
+    choices.sort(function(a,b){ if(a.id===DEFAULT_ELEVENLABS_VOICE) return -1; if(b.id===DEFAULT_ELEVENLABS_VOICE) return 1; return a.name.localeCompare(b.name); });
+    return {all:all,choices:choices};
+  }
+  function addVoiceChoice(list,choice,selected){
+    var button=document.createElement("button"), copy=document.createElement("span"), name=document.createElement("b"), detail=document.createElement("small"), mark=document.createElement("span");
+    button.type="button"; button.className="voice-choice"+(selected?" selected":""); button.setAttribute("data-voice-id",choice.id);
+    copy.className="voice-choice-copy"; name.textContent=choice.name; detail.textContent=choice.detail; copy.appendChild(name); copy.appendChild(detail);
+    mark.className="voice-choice-mark"; mark.textContent=selected?"Selected":"";
+    button.appendChild(copy); button.appendChild(mark); list.appendChild(button);
+  }
+  function renderVoicePicker(picker,list,voices,selectedId,query){
+    var built=getVoiceChoices(voices,selectedId), selected=built.all[selectedId], pickerName=picker.querySelector("b"), pickerDetail=picker.querySelector("small"), filter=cleanText(query).toLowerCase();
+    pickerName.textContent=selected?selected.name:"ElevenLabs Voice ID";
+    pickerDetail.textContent=selected?selected.detail:"Paste a voice ID to add it to your list";
+    list.innerHTML="";
+    var custom=document.createElement("button"), copy=document.createElement("span"), name=document.createElement("b"), detail=document.createElement("small"), mark=document.createElement("span");
+    custom.type="button"; custom.className="voice-choice custom"; custom.setAttribute("data-voice-id",CUSTOM_VOICE_OPTION);
+    copy.className="voice-choice-copy"; name.textContent="ElevenLabs Voice ID"; detail.textContent="Paste a voice ID and save it to your list"; copy.appendChild(name); copy.appendChild(detail);
+    mark.className="voice-choice-mark"; mark.textContent="＋"; custom.appendChild(copy); custom.appendChild(mark); list.appendChild(custom);
+    var shown=0;
+    built.choices.forEach(function(choice){
+      if(filter&&((choice.name+" "+choice.detail+" "+choice.id).toLowerCase().indexOf(filter)<0)) return;
+      addVoiceChoice(list,choice,choice.id===selectedId); shown++;
+    });
+    if(!shown){ var empty=document.createElement("div"); empty.className="voice-empty"; empty.textContent="No saved voices match that search."; list.appendChild(empty); }
   }
   function getElevenLabsSavedVoices(apiKey){
     var voices=[];
@@ -1400,49 +1468,59 @@
     return savePrivateSettings({voiceSettings:{version:1,selectedVoiceId:selectedVoiceId,savedVoices:cleanSavedVoices(savedVoices),updated:Date.now()}});
   }
   function setupVoiceSettings(){
-    var select=$("elevenlabsVoiceSelect"), custom=$("customVoiceEntry"), input=$("customElevenlabsVoiceId"), save=$("saveCustomVoiceBtn"), status=$("voiceStatus"), userId=currentUser&&currentUser.uid, fetched=[];
-    function showCustom(show){ custom.hidden=!show; }
+    var picker=$("elevenlabsVoicePicker"), menu=$("elevenlabsVoiceMenu"), search=$("elevenlabsVoiceSearch"), list=$("elevenlabsVoiceOptions"), custom=$("customVoiceEntry"), input=$("customElevenlabsVoiceId"), save=$("saveCustomVoiceBtn"), status=$("voiceStatus"), userId=currentUser&&currentUser.uid, fetched=[];
+    function currentVoiceId(){ return runtimeApiKeys.elevenlabsVoice||DEFAULT_ELEVENLABS_VOICE; }
+    function render(selectedId){ renderVoicePicker(picker,list,fetched,selectedId||currentVoiceId(),search.value); }
+    function setMenu(open){ menu.hidden=!open; picker.classList.toggle("open",open); picker.setAttribute("aria-expanded",open?"true":"false"); if(open) search.focus(); }
+    function showCustom(show){ custom.hidden=!show; if(show) input.focus(); }
     function selectVoice(id,saved){
+      var previous=currentVoiceId();
+      setMenu(false);
       status.textContent="Saving your voice choice…";
       saveVoiceSettings(id,saved).then(function(){
         runtimeApiKeys.elevenlabsVoice=id;
         runtimeApiKeys.savedVoices=cleanSavedVoices(saved);
         updateTtsButton(current());
+        render(id);
         if(status.isConnected) status.textContent="Voice selected and synced to your signed-in devices.";
-      }).catch(function(error){ console.warn(error); if(status.isConnected) status.textContent="Could not save your voice choice. Check your cloud connection."; });
+      }).catch(function(error){ console.warn(error); render(previous); if(status.isConnected) status.textContent="Could not save your voice choice. Check your cloud connection."; });
     }
-    if(!userId||!db){ status.textContent="Sign in and add an ElevenLabs API key to choose a voice."; return; }
+    if(!userId||!db){
+      render(currentVoiceId());
+      status.textContent="Sign in and add an ElevenLabs API key to choose a voice.";
+      return;
+    }
     getPrivateSettings().then(function(settings){
-      if(!select.isConnected||!currentUser||currentUser.uid!==userId) return;
+      if(!picker.isConnected||!currentUser||currentUser.uid!==userId) return;
       applyApiSettings(settings);
-      var selectedId=runtimeApiKeys.elevenlabsVoice;
+      var selectedId=currentVoiceId();
+      render(selectedId);
       if(!runtimeApiKeys.elevenlabs){
-        renderVoiceOptions(select,[],selectedId);
-        select.disabled=false;
-        showCustom(select.value===CUSTOM_VOICE_OPTION);
         status.textContent="Add an ElevenLabs API key in API keys to load your saved voices.";
         return;
       }
       status.textContent="Loading your saved ElevenLabs voices…";
       getElevenLabsSavedVoices(runtimeApiKeys.elevenlabs).then(function(voices){
-        if(!select.isConnected) return;
+        if(!picker.isConnected) return;
         fetched=voices;
-        renderVoiceOptions(select,fetched,selectedId);
-        select.disabled=false;
-        showCustom(select.value===CUSTOM_VOICE_OPTION);
+        render(selectedId);
+        picker.disabled=false;
         status.textContent=voices.length?"Loaded "+voices.length+" saved ElevenLabs voice"+(voices.length===1?".":"s."):"No saved ElevenLabs voices were found yet.";
       }).catch(function(error){
         console.warn("ElevenLabs voice list failed:",error);
-        renderVoiceOptions(select,[],selectedId);
-        select.disabled=false;
-        showCustom(select.value===CUSTOM_VOICE_OPTION);
+        render(selectedId);
+        picker.disabled=false;
         status.textContent="Could not load saved voices. Check your ElevenLabs API key.";
       });
     }).catch(function(error){ console.warn(error); status.textContent="Could not load voice settings. Check your cloud connection."; });
-    select.onchange=function(){
-      var id=select.value;
-      showCustom(id===CUSTOM_VOICE_OPTION);
-      if(id===CUSTOM_VOICE_OPTION) return;
+    picker.onclick=function(){ if(picker.disabled) return; if(menu.hidden){ render(currentVoiceId()); setMenu(true); } else setMenu(false); };
+    search.oninput=function(){ render(currentVoiceId()); };
+    list.onclick=function(event){
+      var button=event.target.closest("[data-voice-id]");
+      if(!button||!list.contains(button)) return;
+      var id=button.getAttribute("data-voice-id");
+      if(id===CUSTOM_VOICE_OPTION){ setMenu(false); renderVoicePicker(picker,list,fetched,"",search.value); showCustom(true); return; }
+      showCustom(false);
       selectVoice(id,runtimeApiKeys.savedVoices);
     };
     save.onclick=function(){
@@ -1459,8 +1537,9 @@
         runtimeApiKeys.elevenlabsVoice=id;
         runtimeApiKeys.savedVoices=result.saved;
         updateTtsButton(current());
-        renderVoiceOptions(select,fetched,id);
+        input.value="";
         showCustom(false);
+        render(id);
         status.textContent="Saved "+(cleanText(result.voice.name)||"voice")+" to your list and selected it.";
       }).catch(function(error){ console.warn("ElevenLabs voice ID failed:",error); status.textContent="That voice ID is not available to this ElevenLabs API key."; }).then(function(){ save.disabled=false; });
     };
