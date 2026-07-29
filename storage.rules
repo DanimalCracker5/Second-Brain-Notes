@@ -2,7 +2,10 @@ rules_version = '2';
 
 service firebase.storage {
   match /b/{bucket}/o {
-    match /users/{userId}/notes/{noteId}/attachments/{attachmentId} {
+    // The account meter enumerates this prefix to report actual Cloud Storage
+    // usage, so signed-in users need list access for their own files as well
+    // as the existing get/upload/delete access.
+    match /users/{userId}/{allPaths=**} {
       allow read, write: if request.auth != null
                          && request.auth.uid == userId;
     }

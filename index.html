@@ -60,7 +60,7 @@
   .icon:hover{ color:var(--ink); background:rgba(255,255,255,.05); } .icon svg{ width:20px; height:20px; }
   .icon.hide-wide{ display:grid; }
   .spacer{ flex:1; }
-  .copy-all{ display:inline-flex; align-items:center; gap:8px; font-weight:600; font-size:.9rem; color:#08080a; background:var(--accent); cursor:pointer; border:none; border-radius:999px; padding:9px 16px; transition:transform .06s, filter .15s; }
+  .copy-all{ display:inline-flex; align-items:center; gap:8px; flex:none; white-space:nowrap; font-weight:600; font-size:.9rem; color:#08080a; background:var(--accent); cursor:pointer; border:none; border-radius:999px; padding:9px 16px; transition:transform .06s, filter .15s; }
   .copy-all:hover{ filter:brightness(1.08); } .copy-all:active{ transform:scale(.97); } .copy-all svg{ width:16px; height:16px; }
   .copy-all.done{ background:#34d399; color:#04120c; }
   .save-state{ margin-right:8px; font-family:"DM Mono",monospace; font-size:.68rem; color:var(--ink-faint); white-space:nowrap; transition:color .16s; }
@@ -182,15 +182,24 @@
   .add{ width:100%; margin-top:6px; padding:14px; display:flex; align-items:center; justify-content:center; gap:8px; font-weight:500; font-size:.9rem; color:var(--ink-dim); background:none; border:1px solid var(--line); border-radius:14px; cursor:pointer; transition:.15s; }
   .add:hover{ color:var(--ink); border-color:var(--accent-line); background:var(--accent-soft); }
   .todo-list{ display:flex; flex-direction:column; gap:8px; margin-top:6px; }
-  .todo-row{ display:grid; grid-template-columns:25px minmax(0,1fr); gap:8px 10px; min-height:48px; padding:10px; border:1px solid var(--line); border-radius:12px; background:rgba(255,255,255,.025); }
+  .todo-row{ display:grid; grid-template-columns:25px minmax(0,1fr); align-items:start; gap:8px 10px; min-height:48px; padding:10px; border:1px solid var(--line); border-radius:12px; background:rgba(255,255,255,.025); }
   .todo-check{ width:25px; height:25px; flex:none; border:1px solid var(--accent-line); border-radius:8px; background:var(--accent-soft); color:var(--accent); cursor:pointer; font-weight:800; }
   .todo-text{ min-width:0; border:0; outline:0; background:transparent; color:var(--ink); font:500 .98rem "DM Sans",sans-serif; }
   .todo-text::placeholder{ color:var(--ink-faint); }
   .todo-row.done .todo-text{ color:var(--ink-faint); text-decoration:line-through; }
   .todo-row.done .todo-check{ color:#07110c; background:#6ee7b7; border-color:#6ee7b7; }
-  .todo-details{ grid-column:2; display:grid; gap:8px; padding-top:1px; }
-  .todo-description{ width:100%; min-height:28px; resize:none; border:0; outline:0; background:transparent; color:var(--ink-dim); font:400 .84rem/1.45 "DM Sans",sans-serif; }
-  .todo-description::placeholder{ color:var(--ink-faint); }
+  .todo-details{ grid-column:2; min-width:0; margin-top:1px; border-top:1px solid transparent; }
+  .todo-details[open]{ border-color:var(--line-soft); padding-top:9px; }
+  .todo-details summary{ display:flex; align-items:center; gap:6px; width:max-content; color:var(--ink-faint); cursor:pointer; list-style:none; font:500 .7rem "DM Mono",monospace; letter-spacing:.06em; text-transform:uppercase; }
+  .todo-details summary::-webkit-details-marker{ display:none; }
+  .todo-details summary::before{ content:"›"; color:var(--accent); font-size:1rem; line-height:1; transition:transform .16s; }
+  .todo-details[open] summary::before{ transform:rotate(90deg); }
+  .todo-details-body{ min-width:0; padding-top:6px; }
+  .todo-details .note-editor{ padding-bottom:3px; }
+  .todo-details .note-editor-tools{ margin:0 0 5px; }
+  .todo-details .note-paragraph{ min-height:72px; font-size:.96rem; }
+  .todo-details .note-heading{ margin-top:12px; }
+  .todo-details .note-prompt{ margin:8px 0; }
   .subtasks{ display:grid; gap:5px; }
   .subtask-row{ display:flex; align-items:center; gap:7px; color:var(--ink-dim); }
   .subtask-row input[type="checkbox"]{ accent-color:var(--accent); margin:0; }
@@ -215,6 +224,9 @@
   .sec-h span{ font-family:"DM Mono",monospace; font-size:.58rem; letter-spacing:.22em; text-transform:uppercase; color:var(--ink-faint); }
   .sec-h button{ width:22px; height:22px; display:grid; place-items:center; border:none; background:none; color:var(--ink-faint); cursor:pointer; border-radius:6px; font-size:1rem; }
   .sec-h button:hover{ color:var(--ink); background:rgba(255,255,255,.06); }
+  .sec-h .section-toggle{ width:auto; min-width:0; padding:0; display:flex; align-items:center; gap:5px; }
+  .sec-h .section-toggle svg{ width:13px; height:13px; transition:transform .16s ease; }
+  .sec-h .section-toggle[aria-expanded="false"] svg{ transform:rotate(-90deg); }
   .list-tools{ display:flex; align-items:center; gap:4px; }
   .list-tools button{ width:auto; min-width:22px; padding:0 5px; font-size:.72rem; }
 
@@ -222,8 +234,13 @@
   .folder-row:hover{ background:rgba(255,255,255,.05); } .folder-row.active{ background:var(--accent-soft); }
   .folder-row svg{ width:15px; height:15px; color:var(--ink-dim); flex:none; }
   .folder-row .fn{ flex:1; min-width:0; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
-  .folder-row .fx{ opacity:0; border:none; background:none; color:var(--ink-faint); cursor:pointer; font-size:.9rem; padding:0 4px; }
-  .folder-row:hover .fx{ opacity:1; } .folder-row .fx:hover{ color:#f87171; }
+  .folder-row .fx{ width:24px; height:24px; display:grid; place-items:center; flex:none; opacity:0; border:none; border-radius:6px; background:none; color:var(--ink-faint); cursor:pointer; padding:0; }
+  .folder-row .fx svg{ width:14px; height:14px; color:currentColor; }
+  .folder-row:hover .fx,.folder-row:focus-within .fx{ opacity:1; }
+  .folder-row .fx.rename:hover{ color:var(--accent); background:var(--accent-soft); }
+  .folder-row .fx.delete:hover{ color:#f87171; background:rgba(248,113,113,.12); }
+
+  #tags.is-collapsed{ display:none; }
 
   .tagcloud{ display:flex; flex-wrap:wrap; gap:5px; padding:2px 16px 8px; }
   .tg{ display:inline-flex; align-items:center; gap:6px; font-weight:500; font-size:.78rem; padding:5px 10px 5px 8px; border-radius:8px; color:var(--ink-dim); background:rgba(255,255,255,.035); border:1px solid transparent; cursor:pointer; transition:.13s; }
@@ -260,17 +277,27 @@
   .d-foot .sbtn{ flex:1; display:flex; align-items:center; justify-content:center; gap:7px; padding:9px; font-size:.8rem; font-weight:500; color:var(--ink-dim); background:rgba(255,255,255,.04); border:1px solid var(--line); border-radius:10px; cursor:pointer; }
   .d-foot .sbtn:hover{ color:var(--ink); background:rgba(255,255,255,.08); }
   .d-foot .sbtn svg{ width:15px; height:15px; }
-  .d-foot .account-summary{ display:grid; gap:6px; flex:1; min-width:0; }
+  .d-foot .account-summary{ display:grid; gap:8px; flex:1; min-width:0; }
   .d-foot .who{ display:flex; align-items:center; gap:8px; min-width:0; }
   .d-foot .who img{ width:26px; height:26px; border-radius:50%; flex:none; }
   .d-foot .who b{ font-size:.8rem; font-weight:600; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
-  .storage-usage{ position:relative; display:grid; grid-template-columns:14px minmax(0,1fr) auto; align-items:center; gap:7px; width:calc(100% - 34px); min-height:32px; margin-left:34px; padding:7px 9px; border:1px solid var(--line); border-radius:9px; color:var(--ink-dim); background:rgba(255,255,255,.025); line-height:1; cursor:default; outline:none; }
-  .storage-usage:hover,.storage-usage:focus{ border-color:var(--accent-line); background:rgba(255,255,255,.045); }
-  .storage-usage svg{ width:14px; height:14px; color:var(--accent); }
-  .storage-usage > span{ min-width:0; color:var(--ink-faint); font:500 .59rem "DM Mono",monospace; letter-spacing:.11em; text-transform:uppercase; }
-  .storage-usage > b{ color:var(--ink); font:600 .76rem "DM Sans",sans-serif; }
+  .d-foot.has-account{ display:grid; grid-template-columns:minmax(0,1fr) 42px; align-items:center; gap:12px; padding:12px 14px; }
+  .d-foot.has-account .account-summary{ display:contents; }
+  .d-foot.has-account .who{ grid-column:1; grid-row:1; min-height:42px; }
+  .d-foot.has-account > .sbtn{ grid-column:2; grid-row:1; width:42px; height:42px; padding:0; }
+  .storage-usage{ position:relative; display:grid; grid-template-columns:16px minmax(0,1fr) max-content; align-items:center; gap:8px; width:100%; min-height:38px; padding:9px 10px; border:1px solid var(--line); border-radius:10px; color:var(--ink-dim); background:linear-gradient(135deg,rgba(255,255,255,.045),rgba(255,255,255,.018)); line-height:1; cursor:default; outline:none; transition:border-color .14s,background .14s; }
+  .d-foot.has-account .storage-usage{ grid-column:1 / -1; grid-row:2; grid-template-columns:18px minmax(0,1fr) max-content; gap:10px; min-height:44px; padding:6px 12px; border-radius:12px; }
+  .storage-usage:hover,.storage-usage:focus{ border-color:var(--accent-line); background:linear-gradient(135deg,var(--accent-soft),rgba(255,255,255,.035)); }
+  .storage-usage:focus-visible{ box-shadow:0 0 0 3px var(--accent-soft); }
+  .storage-usage svg{ width:16px; height:16px; color:var(--accent); }
+  .d-foot.has-account .storage-usage svg{ width:18px; height:18px; }
+  .storage-label{ display:grid; gap:2px; min-width:0; }
+  .storage-label strong{ color:var(--ink-dim); font:500 .63rem "DM Mono",monospace; letter-spacing:.1em; text-transform:uppercase; }
+  .storage-label small{ overflow:hidden; color:var(--ink-faint); font:400 .68rem "DM Sans",sans-serif; text-overflow:ellipsis; white-space:nowrap; }
+  .storage-usage > b{ color:var(--ink); font:600 .8rem "DM Sans",sans-serif; white-space:nowrap; }
+  .d-foot.has-account .storage-usage > b{ font-size:.86rem; }
   .storage-usage.calculating b,.storage-usage.unavailable b{ color:var(--ink-dim); font-weight:500; }
-  .storage-breakdown{ position:absolute; z-index:120; left:0; bottom:calc(100% + 9px); width:248px; display:grid; gap:7px; padding:11px 12px; border:1px solid var(--accent-line); border-radius:11px; color:var(--ink); background:rgba(14,14,19,.97); box-shadow:0 15px 38px rgba(0,0,0,.58); backdrop-filter:blur(16px); opacity:0; visibility:hidden; pointer-events:none; transform:translateY(4px); transition:opacity .14s,transform .14s,visibility .14s; }
+  .storage-breakdown{ position:absolute; z-index:120; left:0; bottom:calc(100% + 9px); width:min(248px,calc(100vw - 32px)); display:grid; gap:7px; padding:11px 12px; border:1px solid var(--accent-line); border-radius:11px; color:var(--ink); background:rgba(14,14,19,.97); box-shadow:0 15px 38px rgba(0,0,0,.58); backdrop-filter:blur(16px); opacity:0; visibility:hidden; pointer-events:none; transform:translateY(4px); transition:opacity .14s,transform .14s,visibility .14s; }
   .storage-usage:hover .storage-breakdown,.storage-usage:focus .storage-breakdown{ opacity:1; visibility:visible; transform:translateY(0); }
   .storage-breakdown h4{ margin:0; font:600 .72rem "DM Sans",sans-serif; }
   .storage-breakdown p{ margin:0; color:var(--ink-faint); font:400 .61rem/1.35 "DM Mono",monospace; }
@@ -359,6 +386,11 @@
   .modal-opt{ width:100%; text-align:left; padding:13px 15px; margin-bottom:9px; cursor:pointer; background:rgba(255,255,255,.04); border:1px solid var(--line); border-radius:12px; transition:.14s; }
   .modal-opt:hover{ background:var(--accent-soft); border-color:var(--accent-line); }
   .modal-opt b{ display:block; font-weight:600; font-size:.92rem; color:var(--ink); } .modal-opt small{ font-size:.74rem; color:var(--ink-faint); }
+  .conflict-count{ margin:-4px 0 14px; color:var(--accent); font-size:.76rem; font-weight:700; letter-spacing:.04em; text-transform:uppercase; }
+  .conflict-item{ padding:13px 14px; margin:0 0 16px; border:1px solid var(--line); border-radius:12px; background:rgba(255,255,255,.035); }
+  .conflict-item b{ display:block; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+  .conflict-item small{ display:block; margin-top:4px; color:var(--ink-faint); line-height:1.45; }
+  .conflict-separator{ height:1px; margin:14px 0; background:var(--line); }
   .backup-list{ display:grid; gap:8px; }
   .backup-entry{ display:flex; align-items:center; gap:12px; padding:11px 12px; border:1px solid var(--line); border-radius:12px; background:rgba(255,255,255,.025); }
   .backup-entry .bi{ flex:1; min-width:0; } .backup-entry b{ display:block; font-size:.84rem; } .backup-entry small{ display:block; margin-top:2px; color:var(--ink-faint); font:400 .67rem "DM Mono",monospace; }
@@ -404,6 +436,9 @@
     .g3{ width:78vw; height:42vh; top:38vh; left:12vw; }
   }
   @media (max-width: 560px){
+    .bar{ min-height:calc(var(--safe-t) + 64px); padding-left:14px; padding-right:14px; }
+    .bar .save-state{ position:absolute; width:1px; height:1px; margin:-1px; padding:0; overflow:hidden; clip:rect(0 0 0 0); clip-path:inset(50%); white-space:nowrap; }
+    .bar .copy-all{ gap:6px; padding-left:12px; padding-right:12px; }
     .modal-box{ padding:20px; }
     .themes{ grid-template-columns:1fr; }
   }
@@ -422,7 +457,7 @@
     <div class="d-scroll">
       <div class="sec-h"><span>Folders</span><button id="addFolderBtn" title="New folder">＋</button></div>
       <div id="folders"></div>
-      <div class="sec-h"><span>Tags</span><button id="addTagBtn" title="New tag">＋</button></div>
+      <div class="sec-h"><button class="section-toggle" id="tagsToggleBtn" type="button" aria-controls="tags" aria-expanded="true" title="Collapse tags"><span>Tags</span><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m6 9 6 6 6-6"/></svg></button><button id="addTagBtn" title="New tag">＋</button></div>
       <div id="tags"></div>
       <div class="sec-h"><span id="listLabel">All notes</span><div class="list-tools"><button id="listToolsBtn" title="Filter and sort" aria-label="Filter and sort notes">⇅</button></div></div>
       <div class="d-list" id="list"></div>
@@ -450,6 +485,7 @@
 </div>
 <div class="toast" id="toast"></div>
 <div class="modal" id="settingsModal"><div class="modal-box" id="settingsBox"></div></div>
+<div class="modal" id="syncConflictModal" role="dialog" aria-modal="true" aria-labelledby="syncConflictTitle"><div class="modal-box" id="syncConflictBox"></div></div>
 
 <script>
 (function(){
@@ -484,7 +520,7 @@
   var TAG_HUES=[265,320,15,42,158,205,95,340,180,55];
 
   /* =================== storage =================== */
-  var KEY="astral-notes-v5", OLDS=["astral-notes-v4","astral-notes-v3"], CFGKEY="astral-fb-config", BACKUP_KEY="second-brain-auto-backups-v1", mem=null;
+  var KEY="astral-notes-v5", OLDS=["astral-notes-v4","astral-notes-v3"], CFGKEY="astral-fb-config", BACKUP_KEY="second-brain-auto-backups-v1", BACKUP_LIMIT=10, AUTO_BACKUP_COOLDOWN=60*60*1000, mem=null;
   var deviceBackups=[], attachmentDbPromise=null, activeNoteTextBlock=null, draggedNoteBlock=null, activeAttachmentUploads={};
   var DEFAULT_ELEVENLABS_VOICE="21m00Tcm4TlvDq8ikWAM", CUSTOM_VOICE_OPTION="__elevenlabs_voice_id__";
   var runtimeApiKeys={openai:"",elevenlabs:"",elevenlabsVoice:DEFAULT_ELEVENLABS_VOICE,savedVoices:[],audio:null,audioUrl:null,ttsControl:null,ttsRequestId:0};
@@ -499,17 +535,17 @@
   }
   function loadLocal(){ var v=readKey(KEY); if(v&&v.items) return v; if(!canPersist&&mem) return mem; return migrate(); }
   function setSaveState(label,kind){ var el=$("saveState"); if(!el) return; el.textContent=label; el.className="save-state"+(kind?" "+kind:""); }
-  function backupPayload(){ return { app:"second-brain", version:9, items:state.items, folders:state.folders, tags:state.tags, preferences:{theme:state.theme,motion:state.motion,darkness:state.darkness,enabledTypes:state.enabledTypes,noteInsertOptions:state.noteInsertOptions}, created:Date.now() }; }
+  function backupPayload(){ return { app:"second-brain", version:10, items:state.items, folders:state.folders, tags:state.tags, preferences:{theme:state.theme,motion:state.motion,darkness:state.darkness,enabledTypes:state.enabledTypes,noteInsertOptions:state.noteInsertOptions,tagsCollapsed:state.tagsCollapsed,allNotesName:state.allNotesName}, created:Date.now() }; }
   function autoBackups(){ return deviceBackups; }
   function captureAutoBackup(force,kind){
-    var today=new Date().toISOString().slice(0,10);
-    if(!force && deviceBackups.length && deviceBackups[0].day===today) return true;
-    deviceBackups.unshift({day:today, kind:kind||"automatic", created:Date.now(), data:backupPayload()});
-    deviceBackups=deviceBackups.slice(0,14);
+    var created=Date.now(), backupKind=kind||"automatic";
+    if(backupKind==="automatic"&&deviceBackups.length&&created-(deviceBackups[0].created||0)<AUTO_BACKUP_COOLDOWN) return true;
+    if(deviceBackups.length>=BACKUP_LIMIT) deviceBackups.pop();
+    deviceBackups.unshift({day:new Date(created).toISOString().slice(0,10), kind:backupKind, created:created, data:backupPayload()});
     if(!canPersist) return false;
     try{ localStorage.setItem(BACKUP_KEY,JSON.stringify(deviceBackups)); return true; }catch(e){ console.warn("Device backup could not be saved:",e); return false; }
   }
-  function persist(){ captureAutoBackup(false); state.lastLocalChange=Date.now(); if(currentUser) state.pendingCloudSync=true; var d=JSON.stringify(state); if(canPersist){ try{ localStorage.setItem(KEY,d); }catch(e){ mem=JSON.parse(d); } } else mem=JSON.parse(d); setSaveState(currentUser?"Saving to cloud":"Sign in to sync"); saveCloud(); }
+  function persist(){ captureAutoBackup(false); state.lastLocalChange=Date.now(); if(currentUser) state.pendingCloudSync=true; var d=JSON.stringify(state); if(canPersist){ try{ localStorage.setItem(KEY,d); }catch(e){ mem=JSON.parse(d); } } else mem=JSON.parse(d); setSaveState(currentUser?"Saving to cloud":"Sign in to sync"); if(!cloudSyncPaused&&!cloudSyncLoading) saveCloud(); }
 
   function uid(){ return Date.now().toString(36)+Math.random().toString(36).slice(2,7); }
   function sec(t,b,kind){ return {id:uid(),title:t||"",body:b||"",kind:kind||"chapter"}; }
@@ -517,7 +553,7 @@
   function newScriptItem(){ var it=baseItem(); it.type="script"; it.sections=[sec("Intro",""),sec("Main",""),sec("Outro","")]; return it; }
   function newNoteItem(){ var it=baseItem(); it.type="note"; it.body=""; it.attachments=[]; it.blocks=[{id:uid(),type:"text",text:""}]; return it; }
   function newTodoItem(){ var it=baseItem(); it.type="todo"; it.todos=[]; it.done=false; it.completed=null; return it; }
-  function newTask(){ return {id:uid(),text:"",description:"",subtasks:[],done:false,completed:null}; }
+  function newTask(){ return {id:uid(),text:"",description:"",body:"",attachments:[],blocks:[textBlock("")],subtasks:[],done:false,completed:null,detailsCollapsed:true}; }
   function newAgentItem(){ var it=baseItem(); it.type="agent"; it.title="New Agent"; it.agent={tab:"chat",model:"",voice:"Default",longTermMemory:"{}",shortTermMemory:"{}",instructions:"{\n  \"role\": \"helpful assistant\"\n}"}; return it; }
   var NOTE_INSERT_DEFAULTS={file:true,paragraph:true,comment:true,prompt:true,heading:true,group:true};
   function textBlock(text){ return {id:uid(),type:"text",text:text||"",html:escapeHtml(text||"").replace(/\n/g,"<br>")}; }
@@ -538,9 +574,9 @@
     if(block.type==="group") return [block.title,block.text].filter(Boolean).join("\n");
     return "";
   }
-  function syncNoteBody(note){ note.body=(note.blocks||[]).map(blockPlainText).filter(Boolean).join("\n"); }
+  function syncNoteBody(note){ note.body=(note.blocks||[]).map(blockPlainText).filter(Boolean).join("\n"); if(Object.prototype.hasOwnProperty.call(note,"description")) note.description=note.body; }
   function ensureNoteBlocks(note){
-    if(note.type!=="note") return;
+    if(!note||typeof note!=="object") return;
     note.attachments=Array.isArray(note.attachments)?note.attachments:[];
     note.attachments.forEach(function(attachment){ if(!attachment.id) attachment.id=uid(); });
     if(!Array.isArray(note.blocks)||!note.blocks.length){
@@ -561,6 +597,40 @@
     }
     syncNoteBody(note);
   }
+  function ensureTodoTaskDetails(task){
+    if(!task.id) task.id=uid();
+    if(typeof task.text!=="string") task.text=task.title||"";
+    if(typeof task.description!=="string") task.description="";
+    if(!Array.isArray(task.subtasks)) task.subtasks=[];
+    if(!Array.isArray(task.blocks)||!task.blocks.length){ task.body=task.body||task.description||""; }
+    ensureNoteBlocks(task);
+    if(typeof task.detailsCollapsed!=="boolean") task.detailsCollapsed=!(task.body||task.attachments.length);
+  }
+  function normalizeItem(it){
+    if(!it||typeof it!=="object") return;
+    if(it.type==="note") ensureNoteBlocks(it);
+    if(it.type==="script") (it.sections||[]).forEach(function(section){ if(!section.kind) section.kind="chapter"; });
+    if(it.type==="todo"){
+      if(!Array.isArray(it.todos)) it.todos=[];
+      if(typeof it.done!=="boolean") it.done=false;
+      if(!it.completed) it.completed=null;
+      it.todos.forEach(ensureTodoTaskDetails);
+    }
+    if(it.type==="agent"&&!it.agent) it.agent={tab:"chat",model:"",voice:"Default",longTermMemory:"{}",shortTermMemory:"{}",instructions:"{}"};
+  }
+  function forEachItemContentDocument(item,handler){
+    if(!item) return;
+    if(item.type==="note") handler(item,item);
+    if(item.type==="todo") (item.todos||[]).forEach(function(task){ handler(task,item); });
+  }
+  function forEachContentDocument(handler){ (state.items||[]).forEach(function(item){ forEachItemContentDocument(item,handler); }); }
+  function contentOwner(note){ var owner=null; forEachContentDocument(function(document,item){ if(document===note) owner=item; }); return owner; }
+  function touchContent(note){
+    var now=Date.now(), owner=contentOwner(note);
+    note.updated=now;
+    if(owner&&owner!==note) owner.updated=now;
+  }
+  function itemHasAttachments(item){ var has=false; forEachItemContentDocument(item,function(document){ if((document.attachments||[]).length) has=true; }); return has; }
 
   var state=loadLocal();
   if(!state||!state.items){ state={ items:[], folders:[], tags:[], currentId:null, motion:true, theme:"nebula", filterFolder:null, filterTag:null }; state.items.push(newScriptItem()); state.currentId=state.items[0].id; }
@@ -576,28 +646,50 @@
   if(typeof state.enabledTypes.agent!=="boolean") state.enabledTypes.agent=false;
   state.noteInsertOptions=state.noteInsertOptions||{};
   Object.keys(NOTE_INSERT_DEFAULTS).forEach(function(type){ if(typeof state.noteInsertOptions[type]!=="boolean") state.noteInsertOptions[type]=NOTE_INSERT_DEFAULTS[type]; });
+  if(typeof state.tagsCollapsed!=="boolean") state.tagsCollapsed=false;
+  state.allNotesName=typeof state.allNotesName==="string"&&state.allNotesName.trim()?state.allNotesName.trim():"All notes";
   state.filterFolder=state.filterFolder||null; state.filterTag=state.filterTag||null;
   state.listSort=state.listSort||"updated";
   if(typeof state.pendingCloudSync!=="boolean") state.pendingCloudSync=false;
-  deviceBackups=readKey(BACKUP_KEY)||[];
-  state.items.forEach(function(it){
-    if(it.type==="note") ensureNoteBlocks(it);
-    if(it.type==="script") (it.sections||[]).forEach(function(section){ if(!section.kind) section.kind="chapter"; });
-    if(it.type==="todo"){
-      if(!Array.isArray(it.todos)) it.todos=[];
-      if(typeof it.done!=="boolean") it.done=false;
-      if(!it.completed) it.completed=null;
-      it.todos.forEach(function(task){ if(typeof task.text!=="string") task.text=task.title||""; if(typeof task.description!=="string") task.description=""; if(!Array.isArray(task.subtasks)) task.subtasks=[]; });
-    }
-    if(it.type==="agent"&&!it.agent) it.agent={tab:"chat",model:"",voice:"Default",longTermMemory:"{}",shortTermMemory:"{}",instructions:"{}"};
-  });
+  deviceBackups=(readKey(BACKUP_KEY)||[]).sort(function(a,b){ return (b.created||0)-(a.created||0); }).slice(0,BACKUP_LIMIT);
+  if(canPersist){ try{ localStorage.setItem(BACKUP_KEY,JSON.stringify(deviceBackups)); }catch(e){} }
+  state.items.forEach(normalizeItem);
   if(!state.items.length) state.items.push(newScriptItem());
   if(!state.currentId || !state.items.some(function(i){return i.id===state.currentId;})) state.currentId=state.items[0].id;
+
+  function blankDeviceState(){
+    return {items:[],folders:[],tags:[],currentId:null,motion:true,theme:"nebula",darkness:82,enabledTypes:{script:true,note:true,todo:true,agent:false},noteInsertOptions:{file:true,paragraph:true,comment:true,prompt:true,heading:true,group:true},tagsCollapsed:false,allNotesName:"All notes",filterFolder:null,filterTag:null,listSort:"updated",pendingCloudSync:false,syncBaseline:null};
+  }
+  function clearAttachmentStore(){
+    if(!window.indexedDB) return;
+    var close=attachmentDbPromise?attachmentDbPromise.then(function(database){ try{ database.close(); }catch(e){} }).catch(function(){}):Promise.resolve();
+    attachmentDbPromise=null;
+    close.then(function(){ return new Promise(function(resolve){
+      var request=indexedDB.deleteDatabase("second-brain-attachments-v1");
+      request.onsuccess=request.onerror=request.onblocked=function(){ resolve(); };
+    }); });
+  }
+  function wipeDeviceNotes(){
+    clearTimeout(cloudTimer);
+    cloudTimer=null; mem=null; deviceBackups=[]; activeAttachmentUploads={}; activeNoteTextBlock=null; draggedNoteBlock=null;
+    if(canPersist){
+      try{
+        [KEY,BACKUP_KEY].concat(OLDS).forEach(function(key){ localStorage.removeItem(key); });
+        for(var i=localStorage.length-1;i>=0;i--){ var name=localStorage.key(i); if(name&&/^second-brain-(cloud-linked|cloud-backup)-/.test(name)) localStorage.removeItem(name); }
+      }catch(e){}
+    }
+    state=blankDeviceState();
+    state.items.push(newScriptItem());
+    state.currentId=state.items[0].id;
+    clearAttachmentStore();
+    if(window.__astral) window.__astral.state=state;
+  }
 
   function current(){ return state.items.find(function(s){return s.id===state.currentId;})||state.items[0]; }
   function themeDef(){ return THEMES.find(function(t){return t.id===state.theme;})||THEMES[0]; }
   function folderById(id){ return state.folders.find(function(f){return f.id===id;}); }
   function tagById(id){ return state.tags.find(function(t){return t.id===id;}); }
+  function allNotesTitle(){ return state.allNotesName||"All notes"; }
   function firstTagName(it){ var names=(it.tagIds||[]).map(function(id){ var t=tagById(id); return t?t.name.toLowerCase():""; }).filter(Boolean).sort(); return names[0]||"\uffff"; }
   function visibleItems(){
     var items=state.items.filter(function(it){ if(state.filterFolder && it.folderId!==state.filterFolder) return false; if(state.filterTag && (it.tagIds||[]).indexOf(state.filterTag)<0) return false; return true; });
@@ -637,7 +729,14 @@
   /* =================== helpers =================== */
   function words(s){ var t=(s||"").trim(); return t?t.split(/\s+/).length:0; }
   function dur(w){ var s=Math.round(w/150*60), m=Math.floor(s/60), r=s%60; return m+":"+(r<10?"0":"")+r; }
-  function itemText(it){ if(it.type==="script") return (it.sections||[]).map(function(x){return x.body;}).join(" "); if(it.type==="todo") return (it.todos||[]).map(function(x){return (x.text||"")+" "+(x.description||"");}).join(" "); if(it.type==="agent") return [it.title,(it.agent||{}).longTermMemory,(it.agent||{}).shortTermMemory,(it.agent||{}).instructions].join(" "); if(it.type==="note"&&Array.isArray(it.blocks)) return it.blocks.map(blockPlainText).filter(Boolean).join("\n"); return it.body||""; }
+  function taskDetailsText(task){ return (task.blocks||[]).map(blockPlainText).filter(Boolean).join("\n"); }
+  function taskCopyText(task){
+    var lines=[(task.done?"[x] ":"[ ] ")+(task.text||"")], details=taskDetailsText(task);
+    if(details) lines.push(details);
+    (task.subtasks||[]).forEach(function(subtask){ if(subtask.text) lines.push("  ["+(subtask.done?"x":" ")+"] "+subtask.text); });
+    return lines.join("\n");
+  }
+  function itemText(it){ if(it.type==="script") return (it.sections||[]).map(function(x){return x.body;}).join(" "); if(it.type==="todo") return (it.todos||[]).map(function(task){ return [task.text,taskDetailsText(task),(task.subtasks||[]).map(function(subtask){ return subtask.text||""; }).join(" ")].filter(Boolean).join(" "); }).join(" "); if(it.type==="agent") return [it.title,(it.agent||{}).longTermMemory,(it.agent||{}).shortTermMemory,(it.agent||{}).instructions].join(" "); if(it.type==="note"&&Array.isArray(it.blocks)) return it.blocks.map(blockPlainText).filter(Boolean).join("\n"); return it.body||""; }
   function itemWords(it){ return words(itemText(it)); }
   function itemLabel(it){ return it.type==="script"?"YouTube Script":(it.type==="todo"?"Todo":(it.type==="agent"?"Agent":"Note")); }
   function setTodoDone(it,done){
@@ -658,6 +757,7 @@
   var ICON_SCRIPT='<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><rect x="4" y="4" width="16" height="5" rx="1.5"/><rect x="4" y="12" width="16" height="8" rx="1.5"/></svg>';
   var ICON_NOTE='<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M5 3h9l5 5v13a1 1 0 0 1-1 1H5a1 1 0 0 1-1-1V4a1 1 0 0 1 1-1z"/><path d="M14 3v5h5"/></svg>';
   var ICON_EDIT='<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 20h9"/><path d="M16.5 3.5a2.12 2.12 0 0 1 3 3L7 19l-4 1 1-4Z"/></svg>';
+  var ICON_DOWNLOAD='<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 3v12"/><path d="m7 10 5 5 5-5"/><path d="M5 21h14"/></svg>';
   var ICON_DUPLICATE='<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="9" y="9" width="11" height="11" rx="2"/><path d="M5 15V5a2 2 0 0 1 2-2h10"/></svg>';
   var ICON_UP='<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m6 15 6-6 6 6"/></svg>';
   var ICON_DOWN='<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m6 9 6 6 6-6"/></svg>';
@@ -688,23 +788,47 @@
   function sep(){ var s=document.createElement("div"); s.className="sep"; return s; }
 
   /* =================== sidebar =================== */
+  function openRenameFolder(anchor,folder){
+    var isAll=folder===null, previous=isAll?allNotesTitle():folder.name;
+    openMenu(anchor,function(m){
+      var title=document.createElement("div"); title.className="mtitle"; title.textContent=isAll?"Rename All notes":"Rename folder"; m.appendChild(title);
+      var row=document.createElement("div"); row.className="mrow";
+      var input=document.createElement("input"); input.value=previous; input.placeholder="Folder name…";
+      input.onkeydown=function(e){
+        if(e.key!=="Enter") return;
+        var name=input.value.trim();
+        if(!name){ showToast("Folder names can’t be empty",true); return; }
+        if(isAll) state.allNotesName=name; else folder.name=name;
+        closeMenu(); persist(); renderAll(); showToast(isAll?"All notes renamed":"Folder renamed");
+      };
+      row.appendChild(input); m.appendChild(row);
+      setTimeout(function(){ input.select(); },0);
+    });
+  }
   function renderFolders(){
     foldersEl.innerHTML="";
     var all=document.createElement("div"); all.className="folder-row"+(state.filterFolder===null?" active":"");
-    all.innerHTML='<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><path d="M4 6h16M4 12h16M4 18h16"/></svg><span class="fn">All notes</span>';
-    all.onclick=function(){ state.filterFolder=null; persist(); renderAll(); };
+    all.innerHTML='<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><path d="M4 6h16M4 12h16M4 18h16"/></svg><span class="fn"></span><button class="fx rename" type="button" title="Rename All notes" aria-label="Rename All notes">'+ICON_EDIT+'</button>';
+    all.querySelector(".fn").textContent=allNotesTitle();
+    all.onclick=function(e){ if(e.target.closest(".fx")) return; state.filterFolder=null; persist(); renderAll(); };
+    all.querySelector(".rename").onclick=function(e){ e.stopPropagation(); openRenameFolder(e.currentTarget,null); };
     foldersEl.appendChild(all);
     state.folders.forEach(function(f){
       var row=document.createElement("div"); row.className="folder-row"+(state.filterFolder===f.id?" active":"");
-      row.innerHTML=ICON_FOLDER+'<span class="fn"></span><button class="fx" title="Delete folder">✕</button>';
+      row.innerHTML=ICON_FOLDER+'<span class="fn"></span><button class="fx rename" type="button" title="Rename folder" aria-label="Rename folder">'+ICON_EDIT+'</button><button class="fx delete" type="button" title="Delete folder" aria-label="Delete folder">'+ICON_DELETE+'</button>';
       row.querySelector(".fn").textContent=f.name;
-      row.onclick=function(e){ if(e.target.classList.contains("fx")) return; state.filterFolder=f.id; app.classList.remove("open"); persist(); renderAll(); };
-      row.querySelector(".fx").onclick=function(e){ e.stopPropagation(); if(!confirm('Delete folder "'+f.name+'"? Notes inside are kept and moved to All notes.')) return; state.items.forEach(function(it){ if(it.folderId===f.id) it.folderId=null; }); state.folders=state.folders.filter(function(x){ return x.id!==f.id; }); if(state.filterFolder===f.id) state.filterFolder=null; persist(); renderAll(); };
+      row.onclick=function(e){ if(e.target.closest(".fx")) return; state.filterFolder=f.id; app.classList.remove("open"); persist(); renderAll(); };
+      row.querySelector(".rename").onclick=function(e){ e.stopPropagation(); openRenameFolder(e.currentTarget,f); };
+      row.querySelector(".delete").onclick=function(e){ e.stopPropagation(); if(!confirm('Delete folder "'+f.name+'"? Notes inside are kept and moved to '+allNotesTitle()+'.')) return; state.items.forEach(function(it){ if(it.folderId===f.id) it.folderId=null; }); state.folders=state.folders.filter(function(x){ return x.id!==f.id; }); if(state.filterFolder===f.id) state.filterFolder=null; persist(); renderAll(); };
       foldersEl.appendChild(row);
     });
   }
   function renderTags(){
     tagsEl.innerHTML="";
+    tagsEl.classList.toggle("is-collapsed",state.tagsCollapsed);
+    var toggle=$("tagsToggleBtn");
+    if(toggle){ toggle.setAttribute("aria-expanded",state.tagsCollapsed?"false":"true"); toggle.title=state.tagsCollapsed?"Expand tags":"Collapse tags"; }
+    if(state.tagsCollapsed) return;
     if(!state.tags.length){ var e=document.createElement("div"); e.className="tag-empty"; e.textContent="No tags yet — tap ＋"; tagsEl.appendChild(e); return; }
     var cloud=document.createElement("div"); cloud.className="tagcloud";
     state.tags.forEach(function(t){
@@ -759,8 +883,15 @@
     var copy=JSON.parse(JSON.stringify(it));
     copy.id=uid(); copy.locked=false; copy.updated=Date.now();
     copy.title=it.title?it.title+" copy":"Untitled "+itemLabel(it).toLowerCase()+" copy";
+    var taskCopies=[];
     if(copy.type==="script") (copy.sections||[]).forEach(function(section){ section.id=uid(); });
-    if(copy.type==="todo") (copy.todos||[]).forEach(function(task){ task.id=uid(); (task.subtasks||[]).forEach(function(subtask){ subtask.id=uid(); }); });
+    if(copy.type==="todo") (copy.todos||[]).forEach(function(task,index){
+      var sourceTask=(it.todos||[])[index], sourceId=sourceTask&&sourceTask.id, attachmentIds={};
+      task.id=uid(); (task.subtasks||[]).forEach(function(subtask){ subtask.id=uid(); });
+      (task.attachments||[]).forEach(function(attachment){ var oldId=attachment.id; attachment.id=uid(); attachmentIds[oldId]=attachment.id; attachment.sourceNoteId=sourceId; attachment.sourceAttachmentId=oldId; });
+      (task.blocks||[]).forEach(function(block){ block.id=uid(); if(block.type==="attachment") block.attachmentId=attachmentIds[block.attachmentId]||block.attachmentId; });
+      if(sourceId) taskCopies.push({sourceId:sourceId,targetId:task.id,attachmentIds:attachmentIds});
+    });
     if(copy.type==="note"){
       var attachmentIds={};
       (copy.attachments||[]).forEach(function(attachment){ var oldId=attachment.id; attachment.id=uid(); attachmentIds[oldId]=attachment.id; attachment.sourceNoteId=it.id; attachment.sourceAttachmentId=oldId; });
@@ -770,6 +901,7 @@
     copy.manualOrder=next?(it.manualOrder+next.manualOrder)/2:it.manualOrder+5;
     state.items.push(copy); state.currentId=copy.id;
     if(copy.type==="note") Object.keys(attachmentIds).forEach(function(sourceId){ readAttachmentFile(it.id,sourceId).then(function(file){ if(file) return storeAttachmentFile(copy.id,attachmentIds[sourceId],file); }).catch(function(){}); });
+    taskCopies.forEach(function(taskCopy){ Object.keys(taskCopy.attachmentIds).forEach(function(sourceAttachmentId){ readAttachmentFile(taskCopy.sourceId,sourceAttachmentId).then(function(file){ if(file) return storeAttachmentFile(taskCopy.targetId,taskCopy.attachmentIds[sourceAttachmentId],file); }).catch(function(){}); }); });
     persist(); renderAll(); showToast("Duplicate created");
   }
   function toggleItemLock(it){
@@ -781,6 +913,7 @@
     openMenu(anchor,function(m){
       var title=document.createElement("div"); title.className="mtitle"; title.textContent=itemLabel(it)+" actions"; m.appendChild(title);
       m.appendChild(mkItem(ICON_DUPLICATE,"Duplicate",false,function(){ closeMenu(); duplicateItem(it); }));
+      if(runtimeApiKeys.elevenlabs&&it.type!=="agent"&&ttsTextForItem(it).trim()) m.appendChild(mkItem(ICON_DOWNLOAD,"Download as audio",false,function(){ closeMenu(); downloadTts(it); }));
       m.appendChild(mkItem(ICON_UP,"Move up",false,function(){ closeMenu(); moveItem(it,-1); }));
       m.appendChild(mkItem(ICON_DOWN,"Move down",false,function(){ closeMenu(); moveItem(it,1); }));
       m.appendChild(mkItem(ICON_FOLDER,"Move to another folder",false,function(){ openFolderPick(anchor,it); }));
@@ -791,7 +924,7 @@
   }
   function renderList(){
     var items=visibleItems();
-    var lbl = state.filterTag ? ((tagById(state.filterTag)||{}).name||"Tag") : state.filterFolder ? ((folderById(state.filterFolder)||{}).name||"Folder") : "All notes";
+    var lbl = state.filterTag ? ((tagById(state.filterTag)||{}).name||"Tag") : state.filterFolder ? ((folderById(state.filterFolder)||{}).name||"Folder") : allNotesTitle();
     listLabel.textContent=lbl+"  ·  "+items.length;
     listEl.innerHTML="";
     if(!items.length){ var e=document.createElement("div"); e.className="tag-empty"; e.style.padding="10px 12px"; e.textContent="Nothing here yet."; listEl.appendChild(e); return; }
@@ -830,9 +963,10 @@
     var item=state.items.find(function(s){ return s.id===id; });
     if(item&&item.locked){ showToast("Unlock this item before deleting it",true); return; }
     if(!confirm(message||"Delete this? This can't be undone.")) return;
-    captureAutoBackup(true);
+    captureAutoBackup(true,"recovery");
     var i=state.items.findIndex(function(s){ return s.id===id; });
     if(i<0) return;
+    forEachItemContentDocument(item,cleanupContentAttachments);
     state.items.splice(i,1);
     if(!state.items.length) state.items.push(newScriptItem());
     if(state.currentId===id){ var vis=visibleItems(); state.currentId=(vis[0]||state.items[0]).id; }
@@ -885,6 +1019,7 @@
       sheet.appendChild(buildTodo(it));
       var addTodo=document.createElement("button"); addTodo.className="add"; addTodo.textContent="＋  Add subtask";
       addTodo.onclick=function(){ it.todos=it.todos||[]; it.todos.push(newTask()); it.updated=Date.now(); persist(); renderMain(); renderList(); var inputs=canvas.querySelectorAll(".todo-text"); if(inputs.length) inputs[inputs.length-1].focus(); };
+      addTodo.textContent="+  Add task";
       sheet.appendChild(addTodo);
     } else {
       sheet.appendChild(buildNoteEditor(it));
@@ -943,7 +1078,7 @@
   }
   function refreshNoteEditor(note){
     var old=canvas.querySelector('.note-editor[data-note-id="'+note.id+'"]');
-    if(old&&current()&&current().id===note.id) old.parentNode.replaceChild(buildNoteEditor(note),old);
+    if(old) old.parentNode.replaceChild(buildNoteEditor(note),old);
   }
   function cloudAttachmentPath(note,attachment){ return "users/"+currentUser.uid+"/notes/"+note.id+"/attachments/"+attachment.id; }
   function attachmentById(note,id){ return (note.attachments||[]).find(function(attachment){ return attachment.id===id; })||null; }
@@ -966,7 +1101,7 @@
     if(!currentUser||!storage) return Promise.resolve(false);
     var key=attachmentUploadKey(note,attachment);
     if(activeAttachmentUploads[key]) return activeAttachmentUploads[key];
-    attachment.syncState="uploading"; delete attachment.cloudError; note.updated=Date.now(); persist(); refreshNoteEditor(note);
+    attachment.syncState="uploading"; delete attachment.cloudError; touchContent(note); persist(); refreshNoteEditor(note);
     var path=cloudAttachmentPath(note,attachment), task, timeout, settled=false;
     var upload=new Promise(function(resolve,reject){
       function finish(error,value){
@@ -984,9 +1119,9 @@
         },ATTACHMENT_UPLOAD_TIMEOUT);
       }catch(error){ finish(error); }
     }).then(function(){
-      attachment.storagePath=path; delete attachment.inlineData; delete attachment.cloudError; attachment.syncState="cloud"; note.updated=Date.now(); persist(); refreshNoteEditor(note); return true;
+      attachment.storagePath=path; delete attachment.inlineData; delete attachment.cloudError; attachment.syncState="cloud"; touchContent(note); persist(); refreshNoteEditor(note); return true;
     }).catch(function(error){
-      attachment.syncState="device"; attachment.cloudError=true; note.updated=Date.now(); persist(); refreshNoteEditor(note); throw error;
+      attachment.syncState="device"; attachment.cloudError=true; touchContent(note); persist(); refreshNoteEditor(note); throw error;
     });
     activeAttachmentUploads[key]=upload;
     function clearUpload(){ delete activeAttachmentUploads[key]; }
@@ -1034,9 +1169,9 @@
     accepted.forEach(function(file){
       var attachment={id:uid(),name:file.name||"Untitled file",type:file.type||"",size:file.size||0,added:Date.now(),syncState:"saving"};
       note.attachments.push(attachment); newAttachments.push(attachment);
-      readInlineImage(file).then(function(data){ if(data&&!attachment.storagePath&&note.attachments.indexOf(attachment)>=0){ attachment.inlineData=data; note.updated=Date.now(); persist(); refreshNoteEditor(note); } });
+      readInlineImage(file).then(function(data){ if(data&&!attachment.storagePath&&note.attachments.indexOf(attachment)>=0){ attachment.inlineData=data; touchContent(note); persist(); refreshNoteEditor(note); } });
       storeAttachmentFile(note.id,attachment.id,file).then(function(){
-        attachment.syncState="device"; note.updated=Date.now(); persist(); refreshNoteEditor(note);
+        attachment.syncState="device"; touchContent(note); persist(); refreshNoteEditor(note);
         return uploadAttachment(note,attachment,file);
       }).then(function(uploaded){
         if(uploaded) showToast("Attachment added and synced");
@@ -1045,14 +1180,14 @@
         console.warn("Attachment could not be synced:",error);
         if(attachment.syncState==="saving"){
           note.attachments=note.attachments.filter(function(item){ return item.id!==attachment.id; });
-          note.blocks=note.blocks.filter(function(block){ return block.attachmentId!==attachment.id; }); syncNoteBody(note);
+          note.blocks=note.blocks.filter(function(block){ return block.attachmentId!==attachment.id; }); syncNoteBody(note); touchContent(note);
           persist(); refreshNoteEditor(note); showToast("Couldn’t save that attachment",true);
         } else {
-          attachment.syncState="device"; persist(); refreshNoteEditor(note); showToast("Attachment saved on this device; cloud sync is unavailable");
+          attachment.syncState="device"; touchContent(note); persist(); refreshNoteEditor(note); showToast("Attachment saved on this device; cloud sync is unavailable");
         }
       });
     });
-    insertAttachmentBlocks(note,newAttachments); note.updated=Date.now(); persist(); refreshNoteEditor(note);
+    insertAttachmentBlocks(note,newAttachments); touchContent(note); persist(); refreshNoteEditor(note);
   }
   function openAttachment(note,attachment){
     function clickLink(url,local){
@@ -1068,20 +1203,30 @@
     if(!note.blocks.some(function(item){ return item.type==="text"; })) note.blocks.push(textBlock(""));
     var deleteFile=attachment&&!note.blocks.some(function(item){ return item.type==="attachment"&&item.attachmentId===attachment.id; });
     if(deleteFile) note.attachments=note.attachments.filter(function(item){ return item.id!==attachment.id; });
-    syncNoteBody(note); note.updated=Date.now(); persist(); refreshNoteEditor(note);
+    syncNoteBody(note); touchContent(note); persist(); refreshNoteEditor(note);
     if(!deleteFile) return;
     removeAttachmentFile(note.id,attachment.id);
-    var sharedInAnotherItem=attachment.storagePath&&state.items.some(function(item){ return item.id!==note.id&&(item.attachments||[]).some(function(other){ return other.storagePath===attachment.storagePath; }); });
+    var sharedInAnotherItem=false;
+    if(attachment.storagePath) forEachContentDocument(function(document){ if(document!==note&&(document.attachments||[]).some(function(other){ return other.storagePath===attachment.storagePath; })) sharedInAnotherItem=true; });
     if(storage&&attachment.storagePath&&!sharedInAnotherItem) storage.ref(attachment.storagePath).delete().catch(function(error){ console.warn("Cloud attachment cleanup skipped:",error); }).then(function(){ scheduleAccountUsageRefresh(0); });
     showToast("Attachment removed");
+  }
+  function cleanupContentAttachments(note){
+    (note.attachments||[]).forEach(function(attachment){
+      removeAttachmentFile(note.id,attachment.id);
+      var shared=false;
+      if(attachment.storagePath) forEachContentDocument(function(document){ if(document!==note&&(document.attachments||[]).some(function(other){ return other.storagePath===attachment.storagePath; })) shared=true; });
+      if(storage&&attachment.storagePath&&!shared) storage.ref(attachment.storagePath).delete().catch(function(error){ console.warn("Cloud attachment cleanup skipped:",error); });
+    });
+    scheduleAccountUsageRefresh(0);
   }
   function moveAttachmentBlock(note,blockId,targetIndex){
     var from=note.blocks.findIndex(function(block){ return block.id===blockId; });
     if(from<0) return;
     var block=note.blocks.splice(from,1)[0]; if(from<targetIndex) targetIndex--;
-    note.blocks.splice(Math.max(0,Math.min(targetIndex,note.blocks.length)),0,block); note.updated=Date.now(); persist(); refreshNoteEditor(note);
+    note.blocks.splice(Math.max(0,Math.min(targetIndex,note.blocks.length)),0,block); touchContent(note); persist(); refreshNoteEditor(note);
   }
-  function refreshNoteBlocks(note){ syncNoteBody(note); note.updated=Date.now(); updateMeta(); refreshListMeta(); persist(); refreshNoteEditor(note); }
+  function refreshNoteBlocks(note){ syncNoteBody(note); touchContent(note); updateMeta(); refreshListMeta(); persist(); refreshNoteEditor(note); }
   function moveNoteBlock(note,block,direction){
     var from=note.blocks.findIndex(function(item){ return item.id===block.id; }), target=from+direction;
     if(from<0||target<0||target>=note.blocks.length) return;
@@ -1112,7 +1257,7 @@
     event.preventDefault(); event.stopPropagation();
     var editor=card.closest(".note-editor"), rect=editor.getBoundingClientRect(), startX=event.clientX, startWidth=card.getBoundingClientRect().width;
     function move(moveEvent){ var next=Math.max(180,Math.min(rect.width,startWidth+(moveEvent.clientX-startX))); block.width=Math.round(next/rect.width*100); card.style.setProperty("--attachment-width",block.width+"%"); }
-    function finish(){ document.removeEventListener("pointermove",move); document.removeEventListener("pointerup",finish); note.updated=Date.now(); persist(); }
+    function finish(){ document.removeEventListener("pointermove",move); document.removeEventListener("pointerup",finish); touchContent(note); persist(); }
     document.addEventListener("pointermove",move); document.addEventListener("pointerup",finish);
   }
   function buildNoteAttachmentBlock(note,block){
@@ -1153,10 +1298,10 @@
   }
   function insertNoteBlock(note,type){
     var block=createNoteBlock(type); if(!block) return;
-    var index=noteInsertIndex(note); note.blocks.splice(index,0,block); activeNoteTextBlock=null; syncNoteBody(note); note.updated=Date.now(); persist(); refreshNoteEditor(note); focusNoteBlock(block);
+    var index=noteInsertIndex(note); note.blocks.splice(index,0,block); activeNoteTextBlock=null; syncNoteBody(note); touchContent(note); persist(); refreshNoteEditor(note); focusNoteBlock(block);
   }
   function saveNoteBlockChange(note,block,immediate){
-    syncNoteBody(note); note.updated=Date.now(); updateMeta(); refreshListMeta(); if(immediate) persist(); else save();
+    syncNoteBody(note); touchContent(note); updateMeta(); refreshListMeta(); if(immediate) persist(); else save();
   }
   function buildNoteParagraph(note,block){
     var wrap=document.createElement("div"); wrap.className="note-paragraph-wrap";
@@ -1192,7 +1337,7 @@
     var size=document.createElement("button"); size.type="button"; size.className="heading-size"; size.innerHTML=ICON_EDIT; size.title="Change heading size"; size.setAttribute("aria-label","Change heading size");
     size.onclick=function(){ openMenu(size,function(menu){
       var title=document.createElement("div"); title.className="mtitle"; title.textContent="Heading size"; menu.appendChild(title);
-      [[1,"Large"],[2,"Medium"],[3,"Small"]].forEach(function(option){ menu.appendChild(mkItem("<span style=\"font-weight:700\">H"+option[0]+"</span>",option[1],block.level===option[0],function(){ block.level=option[0]; note.updated=Date.now(); closeMenu(); persist(); refreshNoteEditor(note); focusNoteBlock(block); })); });
+      [[1,"Large"],[2,"Medium"],[3,"Small"]].forEach(function(option){ menu.appendChild(mkItem("<span style=\"font-weight:700\">H"+option[0]+"</span>",option[1],block.level===option[0],function(){ block.level=option[0]; touchContent(note); closeMenu(); persist(); refreshNoteEditor(note); focusNoteBlock(block); })); });
     }); };
     wrap.appendChild(input); wrap.appendChild(buildNoteBlockActions(note,block,"note-heading-actions")); wrap.appendChild(size); return wrap;
   }
@@ -1208,7 +1353,7 @@
     var details=document.createElement("details"); details.className="note-group"; details.open=!block.collapsed;
     var summary=document.createElement("summary"), title=document.createElement("input"); title.type="text"; title.value=block.title||"Untitled group"; title.setAttribute("data-note-block",block.id); title.onclick=function(event){ event.stopPropagation(); }; title.oninput=function(){ block.title=title.value; saveNoteBlockChange(note,block,false); }; summary.appendChild(title);
     var body=document.createElement("div"); body.className="note-group-body"; body.contentEditable="true"; body.setAttribute("role","textbox"); body.setAttribute("aria-multiline","true"); body.textContent=block.text||""; body.oninput=function(){ block.text=body.innerText||body.textContent||""; saveNoteBlockChange(note,block,false); };
-    details.ontoggle=function(){ block.collapsed=!details.open; note.updated=Date.now(); persist(); }; details.appendChild(summary); details.appendChild(body); return details;
+    details.ontoggle=function(){ block.collapsed=!details.open; touchContent(note); persist(); }; details.appendChild(summary); details.appendChild(body); return details;
   }
   function buildNoteBlock(note,block){
     if(block.type==="text") return buildNoteParagraph(note,block);
@@ -1245,19 +1390,22 @@
     var wrap=document.createElement("div"), list=document.createElement("div"); list.className="todo-list";
     var todos=it.todos||[];
     todos.forEach(function(task){
+      ensureTodoTaskDetails(task);
       var row=document.createElement("div"); row.className="todo-row"+(task.done?" done":"");
-      row.innerHTML='<button class="todo-check" aria-label="'+(task.done?"Mark incomplete":"Mark complete")+'">'+(task.done?"✓":"")+'</button><input class="todo-text" type="text" placeholder="What needs doing?"><div class="todo-details"><textarea class="todo-description" rows="1" placeholder="Add a description (optional)"></textarea><div class="subtasks"></div></div><div class="todo-actions"><button class="todo-link add-subtask">＋ Add nested subtask</button><button class="todo-delete">Delete?</button></div>';
+      row.innerHTML='<button class="todo-check" aria-label="'+(task.done?"Mark incomplete":"Mark complete")+'">'+(task.done?"&#10003;":"")+'</button><input class="todo-text" type="text" placeholder="What needs doing?">';
       var input=row.querySelector(".todo-text"); input.value=task.text||"";
       input.oninput=function(){ task.text=input.value; it.updated=Date.now(); save(); refreshListMeta(); };
       row.querySelector(".todo-check").onclick=function(){ task.done=!task.done; task.completed=task.done?Date.now():null; it.updated=Date.now(); persist(); renderMain(); renderList(); };
-      var description=row.querySelector(".todo-description"); description.value=task.description||"";
-      description.oninput=function(){ task.description=description.value; it.updated=Date.now(); grow(description); save(); };
-      var subtasks=row.querySelector(".subtasks");
+
+      var details=document.createElement("details"); details.className="todo-details"; details.open=!task.detailsCollapsed;
+      var detailSummary=document.createElement("summary"); detailSummary.textContent="Details"; details.appendChild(detailSummary);
+      var detailBody=document.createElement("div"); detailBody.className="todo-details-body"; detailBody.appendChild(buildNoteEditor(task));
+      var subtasks=document.createElement("div"); subtasks.className="subtasks";
       function drawSubtasks(){
         subtasks.innerHTML="";
         (task.subtasks||[]).forEach(function(subtask){
           var sub=document.createElement("label"); sub.className="subtask-row"+(subtask.done?" done":"");
-          sub.innerHTML='<input type="checkbox"><input type="text" placeholder="Subtask"><button class="todo-link" aria-label="Remove subtask">×</button>';
+          sub.innerHTML='<input type="checkbox"><input type="text" placeholder="Subtask"><button class="todo-link" aria-label="Remove subtask">&times;</button>';
           var check=sub.querySelector('input[type="checkbox"]'), textInput=sub.querySelector('input[type="text"]');
           check.checked=!!subtask.done; textInput.value=subtask.text||"";
           check.onchange=function(){ subtask.done=check.checked; it.updated=Date.now(); persist(); drawSubtasks(); };
@@ -1267,16 +1415,22 @@
         });
       }
       drawSubtasks();
-      row.querySelector(".add-subtask").onclick=function(){ task.subtasks=task.subtasks||[]; task.subtasks.push({id:uid(),text:"",done:false}); it.updated=Date.now(); persist(); drawSubtasks(); var fields=subtasks.querySelectorAll('input[type="text"]'); if(fields.length) fields[fields.length-1].focus(); };
-      row.querySelector(".todo-delete").onclick=function(){
+      var actions=document.createElement("div"); actions.className="todo-actions";
+      var addSubtask=document.createElement("button"); addSubtask.type="button"; addSubtask.className="todo-link add-subtask"; addSubtask.textContent="+ Add nested subtask";
+      addSubtask.onclick=function(){ task.subtasks=task.subtasks||[]; task.subtasks.push({id:uid(),text:"",done:false}); it.updated=Date.now(); persist(); drawSubtasks(); var fields=subtasks.querySelectorAll('input[type="text"]'); if(fields.length) fields[fields.length-1].focus(); };
+      var removeTask=document.createElement("button"); removeTask.type="button"; removeTask.className="todo-delete"; removeTask.textContent="Delete?";
+      removeTask.onclick=function(){
         if(!task.done) return;
         if(!confirm('Permanently delete "'+(task.text||"this completed task")+'"?')) return;
-        captureAutoBackup(true);
-        it.todos=it.todos.filter(function(x){return x.id!==task.id;}); it.updated=Date.now(); persist(); renderMain(); renderList();
+        captureAutoBackup(true,"recovery");
+        it.todos=it.todos.filter(function(x){return x.id!==task.id;}); cleanupContentAttachments(task); it.updated=Date.now(); persist(); renderMain(); renderList();
       };
-      list.appendChild(row);
+      actions.appendChild(addSubtask); actions.appendChild(removeTask);
+      detailBody.appendChild(subtasks); detailBody.appendChild(actions); details.appendChild(detailBody);
+      details.ontoggle=function(){ task.detailsCollapsed=!details.open; it.updated=Date.now(); persist(); };
+      row.appendChild(details); list.appendChild(row);
     });
-    if(!todos.length){ var empty=document.createElement("div"); empty.className="tag-empty"; empty.textContent="No subtasks yet. Add one below."; list.appendChild(empty); }
+    if(!todos.length){ var empty=document.createElement("div"); empty.className="tag-empty"; empty.textContent="No tasks yet. Add one below."; list.appendChild(empty); }
     var summary=document.createElement("div"); summary.className="todo-summary";
     summary.innerHTML="<span>"+todos.filter(function(x){return !x.done;}).length+" remaining</span><span>"+todos.filter(function(x){return x.done;}).length+" completed</span>";
     wrap.appendChild(summary); wrap.appendChild(list); return wrap;
@@ -1450,7 +1604,7 @@
 
   function ttsTextForItem(it){
     if(it.type==="script") return (it.sections||[]).filter(function(section){ return section.kind!=="cue"; }).map(function(section){ return [section.title,section.body].filter(Boolean).join(". "); }).filter(Boolean).join("\n\n");
-    if(it.type==="todo") return (it.todos||[]).filter(function(task){ return !task.done; }).map(function(task){ return [task.text,task.description].filter(Boolean).join(". "); }).filter(Boolean).join("\n");
+    if(it.type==="todo") return (it.todos||[]).filter(function(task){ return !task.done; }).map(function(task){ return [task.text,taskDetailsText(task),(task.subtasks||[]).map(function(subtask){ return subtask.text||""; }).filter(Boolean).join(". ")].filter(Boolean).join(". "); }).filter(Boolean).join("\n");
     return it.body||"";
   }
   function ttsTextForSection(section){ return [section.title,section.body].filter(Boolean).join(". "); }
@@ -1476,6 +1630,27 @@
     resetTtsControl(runtimeApiKeys.ttsControl);
     runtimeApiKeys.ttsControl=null;
   }
+  function requestTtsAudio(text){
+    return fetch("https://api.elevenlabs.io/v1/text-to-speech/"+encodeURIComponent(runtimeApiKeys.elevenlabsVoice||DEFAULT_ELEVENLABS_VOICE),{method:"POST",headers:{"Content-Type":"application/json","xi-api-key":runtimeApiKeys.elevenlabs,"Accept":"audio/mpeg"},body:JSON.stringify({text:text,model_id:"eleven_multilingual_v2"})}).then(function(response){
+      if(!response.ok) return response.text().then(function(message){ throw new Error(message||"ElevenLabs request failed"); });
+      return response.blob();
+    });
+  }
+  function audioFilenameForItem(it){
+    var name=(it.title||itemLabel(it)||"second-brain-audio").replace(/[\\/:*?"<>|\u0000-\u001f]/g,"").replace(/\s+/g," ").trim().slice(0,80);
+    return (name||"second-brain-audio")+".mp3";
+  }
+  function downloadTts(it){
+    var text=ttsTextForItem(it).trim();
+    if(!runtimeApiKeys.elevenlabs||!text){ showToast("Add your ElevenLabs key in Settings first",true); return; }
+    showToast("Preparing audio download...");
+    requestTtsAudio(text).then(function(blob){
+      var url=URL.createObjectURL(blob), link=document.createElement("a");
+      link.href=url; link.download=audioFilenameForItem(it); document.body.appendChild(link); link.click(); document.body.removeChild(link);
+      setTimeout(function(){ URL.revokeObjectURL(url); },1000);
+      showToast("MP3 download started");
+    }).catch(function(error){ console.warn("ElevenLabs audio download failed:",error); showToast("ElevenLabs could not create audio",true); });
+  }
   function playTts(text,button,label){
     if(runtimeApiKeys.ttsControl&&runtimeApiKeys.ttsControl.button===button){ stopTts(); return; }
     stopTts();
@@ -1483,10 +1658,7 @@
     var requestId=runtimeApiKeys.ttsRequestId, control={button:button,label:label};
     runtimeApiKeys.ttsControl=control;
     button.disabled=true; label.textContent="Preparing…";
-    fetch("https://api.elevenlabs.io/v1/text-to-speech/"+encodeURIComponent(runtimeApiKeys.elevenlabsVoice||DEFAULT_ELEVENLABS_VOICE),{method:"POST",headers:{"Content-Type":"application/json","xi-api-key":runtimeApiKeys.elevenlabs,"Accept":"audio/mpeg"},body:JSON.stringify({text:text,model_id:"eleven_multilingual_v2"})}).then(function(response){
-      if(!response.ok) return response.text().then(function(message){ throw new Error(message||"ElevenLabs request failed"); });
-      return response.blob();
-    }).then(function(blob){
+    requestTtsAudio(text).then(function(blob){
       if(requestId!==runtimeApiKeys.ttsRequestId) return;
       runtimeApiKeys.audioUrl=URL.createObjectURL(blob); runtimeApiKeys.audio=new Audio(runtimeApiKeys.audioUrl);
       runtimeApiKeys.audio.onended=function(){ if(requestId===runtimeApiKeys.ttsRequestId) stopTts(); };
@@ -1502,7 +1674,8 @@
   /* =================== actions =================== */
   $("copyAll").onclick=function(){
     var it=current(); if(!it) return;
-    var text = it.type==="script" ? (it.sections||[]).map(function(x){ return (x.body||"").trim(); }).filter(Boolean).join("\n\n") : (it.type==="todo"?(it.todos||[]).map(function(x){return (x.done?"[x] ":"[ ] ")+(x.text||"");}).join("\n"):itemText(it));
+    var text = it.type==="script" ? (it.sections||[]).map(function(x){ return (x.body||"").trim(); }).filter(Boolean).join("\n\n") : (it.type==="todo"?(it.todos||[]).map(function(task){ return (task.done?"[x] ":"[ ] ")+(task.text||"")+([taskDetailsText(task),(task.subtasks||[]).map(function(subtask){ return subtask.text?"  ["+(subtask.done?"x":" ")+"] "+subtask.text:""; }).filter(Boolean).join("\n")].filter(Boolean).length?"\n"+[taskDetailsText(task),(task.subtasks||[]).map(function(subtask){ return subtask.text?"  ["+(subtask.done?"x":" ")+"] "+subtask.text:""; }).filter(Boolean).join("\n")].filter(Boolean).join("\n"):""); }).join("\n"):itemText(it));
+    if(it.type==="todo") text=(it.todos||[]).map(taskCopyText).join("\n");
     var b=this, lbl=$("copyAllLabel"), old=lbl.textContent;
     copy(text,function(){ b.classList.add("done"); lbl.textContent="Copied"; showToast(it.type==="script"?"Full script copied":"Note copied"); setTimeout(function(){ b.classList.remove("done"); lbl.textContent=old; },1300); });
   };
@@ -1539,6 +1712,7 @@
       row.appendChild(inp); m.appendChild(row);
     });
   };
+  $("tagsToggleBtn").onclick=function(){ state.tagsCollapsed=!state.tagsCollapsed; persist(); renderTags(); };
   listToolsBtn.onclick=function(){ if(openMenuEl){ closeMenu(); return; } openListTools(this); };
   menuBtn.onclick=function(){
     if(window.matchMedia&&window.matchMedia("(max-width: 900px)").matches){ app.classList.remove("sidebar-collapsed"); app.classList.toggle("open"); }
@@ -1565,7 +1739,7 @@
       try{
         var d=JSON.parse(r.result), inc=d.items||d.scripts||d;
         if(!Array.isArray(inc)) throw new Error("bad");
-        inc.forEach(function(s){ s.id=uid(); if(!s.type) s.type=s.sections?"script":"note"; s.tagIds=[]; s.folderId=null; if(s.type==="script"&&!Array.isArray(s.sections)) s.sections=[sec("",s.body||"")]; if(s.type==="todo"&&!Array.isArray(s.todos)) s.todos=[]; if(s.type==="note") ensureNoteBlocks(s); });
+        inc.forEach(function(s){ s.id=uid(); if(!s.type) s.type=s.sections?"script":"note"; s.tagIds=[]; s.folderId=null; if(s.type==="script"&&!Array.isArray(s.sections)) s.sections=[sec("",s.body||"")]; if(s.type==="todo"&&!Array.isArray(s.todos)) s.todos=[]; normalizeItem(s); });
         state.items=inc.concat(state.items);
         if(d.folders) state.folders=state.folders.concat(d.folders.map(function(f){ return {id:uid(),name:f.name}; }));
         if(d.tags) state.tags=state.tags.concat(d.tags.map(function(t){ return {id:uid(),name:t.name,hue:t.hue||265}; }));
@@ -1578,12 +1752,12 @@
     var list=autoBackups();
     if(!list.length){ showToast("No automatic backup yet",true); return; }
     if(!confirm("Restore the latest automatic backup? Your current data will be saved as a restore point first.")) return;
-    captureAutoBackup(true); useData(list[0].data); persist(); showToast("Automatic backup restored");
+    captureAutoBackup(true,"recovery"); useData(list[0].data); persist(); showToast("Automatic backup restored");
     $("settingsModal").classList.remove("open");
   }
 
   /* =================== Firebase (configured in astral.config.js) =================== */
-  var auth=null, db=null, storage=null, currentUser=null, cloudTimer=null, fbReady=false, apiSettingsUnsubscribe=null;
+  var auth=null, db=null, storage=null, currentUser=null, cloudTimer=null, cloudAutoBackupInFlight=false, cloudSyncPaused=false, cloudSyncLoading=false, fbReady=false, apiSettingsUnsubscribe=null;
   var accountUsage={status:"idle",totalBytes:0,fileBytes:0,accountBytes:0,backupBytes:0}, accountUsageTimer=null, accountUsageRequest=0, accountUsageUnsubscribers=[];
   var PROMPT_KEY="second-brain-login-prompt-dismissed";
   function utf8Bytes(value){
@@ -1614,41 +1788,35 @@
     var nameBytes=(path||[]).reduce(function(total,segment){ return total+firestoreStringBytes(segment); },16);
     return nameBytes+firestoreMapBytes(data||{})+32;
   }
-  function collectLinkedCloudFiles(data,userId){
-    var seen={}, paths=[], prefix="users/"+userId+"/";
-    (data&&data.items||[]).forEach(function(note){
-      (note&&note.attachments||[]).forEach(function(attachment){
-        var path=attachment&&attachment.storagePath;
-        if(path&&path.indexOf(prefix)===0&&!seen[path]){ seen[path]=true; paths.push(path); }
+  function forEachStoredContentDocument(data,handler){
+    (data&&data.items||[]).forEach(function(item){
+      if(item&&item.type==="note") handler(item,item);
+      if(item&&item.type==="todo") (item.todos||[]).forEach(function(task){ handler(task,item); });
+    });
+  }
+  function listCloudStorageFiles(ref){
+    /* The current note document can be restored, replaced, or temporarily
+       out of date. Enumerate the account's Storage prefix instead, so this
+       total includes every object that is actually saved (including an orphan
+       that still consumes billable storage). */
+    return ref.listAll().then(function(result){
+      var files=result.items||[], folders=result.prefixes||[];
+      return Promise.all(folders.map(listCloudStorageFiles)).then(function(nested){
+        nested.forEach(function(entries){ files=files.concat(entries); });
+        return files;
       });
     });
-    return Promise.all(paths.map(function(path){
-      return storage.ref(path).getMetadata().then(function(metadata){ return Number(metadata.size)||0; }).catch(function(error){
-        if(error&&error.code==="storage/object-not-found") return 0;
-        /* The attachment record preserves the original uploaded byte count.
-           Use it if metadata is briefly unavailable instead of losing the whole meter. */
-        var note=(data&&data.items||[]).find(function(item){ return (item.attachments||[]).some(function(attachment){ return attachment.storagePath===path; }); });
-        var attachment=note&&(note.attachments||[]).find(function(item){ return item.storagePath===path; });
-        console.warn("Attachment metadata unavailable; using its saved size:",error);
-        return Number(attachment&&attachment.size)||0;
-      });
-    })).then(function(sizes){ return sizes.reduce(function(total,size){ return total+size; },0); });
+  }
+  function collectCloudStorageBytes(userId){
+    return listCloudStorageFiles(storage.ref("users/"+userId)).then(function(files){
+      return Promise.all(files.map(function(file){
+        return file.getMetadata().then(function(metadata){ return Number(metadata.size)||0; });
+      }));
+    }).then(function(sizes){ return sizes.reduce(function(total,size){ return total+size; },0); });
   }
   function accountUsageTitle(usage){
-    if(usage.status!=="ready") return usage.status==="error"?"Storage could not be calculated right now.":"Calculating storage across notes, backups, and files.";
-    var source=usage.source==="device"?"Storage currently saved on this device. Cloud totals will replace it automatically when reconnected.":"Account storage across everything saved in Second Brain.";
-    return source+"\nNote attachments: "+fileSize(usage.fileBytes)+"\nNotes and account data: "+fileSize(usage.accountBytes)+"\nBackups: "+fileSize(usage.backupBytes);
-  }
-  function localUsageFallback(userId){
-    var data={items:state.items||[],folders:state.folders||[],tags:state.tags||[],preferences:{theme:state.theme,motion:state.motion,darkness:state.darkness,enabledTypes:state.enabledTypes,noteInsertOptions:state.noteInsertOptions},theme:state.theme,motion:state.motion,updated:state.lastLocalChange||Date.now()};
-    var seen={}, fileBytes=0;
-    data.items.forEach(function(note){ (note.attachments||[]).forEach(function(attachment){
-      var key=attachment.storagePath||note.id+":"+attachment.id;
-      if(!seen[key]){ seen[key]=true; fileBytes+=Number(attachment.size)||0; }
-    }); });
-    var accountBytes=firestoreDocumentBytes(["users",userId],data);
-    var backupBytes=(deviceBackups||[]).reduce(function(total,entry,index){ return total+firestoreDocumentBytes(["users",userId,"device-backups",(entry.day||"backup")+"-"+index],entry.data||{}); },0);
-    return {status:"ready",source:"device",totalBytes:fileBytes+accountBytes+backupBytes,fileBytes:fileBytes,accountBytes:accountBytes,backupBytes:backupBytes};
+    if(usage.status!=="ready") return usage.status==="error"?"Cloud storage could not be calculated right now. Local device data is not included.":"Calculating cloud storage across notes, backups, and files.";
+    return "Account storage across everything saved in Second Brain."+"\nNote attachments: "+fileSize(usage.fileBytes)+"\nNotes and account data: "+fileSize(usage.accountBytes)+"\nBackups: "+fileSize(usage.backupBytes);
   }
   function setAccountUsage(next){ accountUsage=next; if(currentUser) renderFoot(); }
   function stopAccountUsageTracking(){
@@ -1665,7 +1833,7 @@
     Promise.all([userRef.get(),backupRef.get()]).then(function(results){
       if(request!==accountUsageRequest||!currentUser||currentUser.uid!==userId) return;
       var userDoc=results[0], backupDocs=results[1].docs||[], userData=userDoc.exists?userDoc.data():{};
-      return collectLinkedCloudFiles(userData,userId).then(function(fileBytes){
+      return collectCloudStorageBytes(userId).then(function(fileBytes){
         if(request!==accountUsageRequest||!currentUser||currentUser.uid!==userId) return;
         var accountBytes=userDoc.exists?firestoreDocumentBytes(["users",userId],userData):0;
         var backupBytes=backupDocs.reduce(function(total,doc){ return total+firestoreDocumentBytes(["users",userId,"backups",doc.id],doc.data()); },0);
@@ -1673,8 +1841,11 @@
       });
     }).catch(function(error){
       if(request!==accountUsageRequest||!currentUser||currentUser.uid!==userId) return;
-      console.warn("Cloud storage usage could not be read; using this device's stored total:",error);
-      setAccountUsage(localUsageFallback(userId));
+      /* Never substitute the local cache: it can include device-only backups
+         and can change after a restore, neither of which belongs in a cloud
+         quota or billing calculation. */
+      console.warn("Cloud storage usage could not be read:",error);
+      setAccountUsage({status:"error",source:"cloud",totalBytes:0,fileBytes:0,accountBytes:0,backupBytes:0});
       scheduleAccountUsageRefresh(4000);
     });
   }
@@ -1783,9 +1954,13 @@
       auth=firebase.auth(); db=firebase.firestore(); storage=typeof firebase.storage==="function"?firebase.storage():null; fbReady=true;
       auth.onAuthStateChanged(function(u){
         currentUser=u;
-        renderFoot();
-        if(u){ hideLoginPrompt(); startApiSettingsSync(); startAccountUsageTracking(); loadCloud(); }
-        else { stopAccountUsageTracking(); stopApiSettingsSync(); resetApiSettings(); showLoginPrompt(); }
+        if(u){
+          cloudSyncPaused=false;
+          hideLoginPrompt(); startApiSettingsSync(); startAccountUsageTracking(); renderFoot(); loadCloud();
+        } else {
+          cloudSyncPaused=true; cloudSyncLoading=false;
+          stopAccountUsageTracking(); stopApiSettingsSync(); resetApiSettings(); wipeDeviceNotes(); renderAll(); renderFoot(); showLoginPrompt();
+        }
       });
     }catch(e){ console.warn("Firebase init failed:",e); fbReady=false; showToast("Firebase config could not be loaded",true); }
     renderFoot();
@@ -1814,15 +1989,98 @@
     hideLoginPrompt();
     try{ sessionStorage.setItem(PROMPT_KEY,"1"); }catch(e){}
   };
-  function hasContent(items){ return items && items.some(function(s){ return (s.title&&s.title.trim())||itemText(s).trim()||(s.type==="note"&&(s.attachments||[]).length); }); }
-  function sig(s){ return (s.title||"")+"|"+itemText(s)+"|"+(s.type==="note"?(s.attachments||[]).map(function(attachment){ return (attachment.name||"")+":"+(attachment.size||0); }).join(","):""); }
+  function hasContent(items){ return items && items.some(function(s){ return (s.title&&s.title.trim())||itemText(s).trim()||itemHasAttachments(s); }); }
+  function cloneData(value){ return JSON.parse(JSON.stringify(value||{})); }
+  function stableStringify(value){
+    if(value===null||typeof value!=="object") return JSON.stringify(value);
+    if(Array.isArray(value)) return "["+value.map(stableStringify).join(",")+"]";
+    return "{"+Object.keys(value).sort().map(function(key){ return JSON.stringify(key)+":"+stableStringify(value[key]); }).join(",")+"}";
+  }
+  function itemSyncSignature(item){
+    var copy=cloneData(item);
+    delete copy.updated;
+    /* Persist a compact fingerprint instead of duplicating every note body in
+       localStorage as part of the sync baseline. Two independent 32-bit
+       hashes make an accidental content collision exceptionally unlikely. */
+    var text=stableStringify(copy), first=2166136261, second=2246822519;
+    for(var i=0;i<text.length;i++){
+      var code=text.charCodeAt(i);
+      first=Math.imul(first^code,16777619);
+      second=Math.imul(second^code,3266489917);
+    }
+    return (first>>>0).toString(36)+"-"+(second>>>0).toString(36)+"-"+text.length;
+  }
+  function buildSyncBaseline(data,updated){
+    var items={};
+    (data&&data.items||[]).forEach(function(item){ if(item&&item.id) items[item.id]=itemSyncSignature(item); });
+    return {userId:currentUser&&currentUser.uid||"",updated:Number(updated)||0,items:items};
+  }
+  function hasUsableSyncBaseline(){
+    return !!(currentUser&&state.syncBaseline&&state.syncBaseline.userId===currentUser.uid&&state.syncBaseline.items&&typeof state.syncBaseline.items==="object");
+  }
+  function recordSyncBaseline(data,updated){ state.syncBaseline=buildSyncBaseline(data,updated); }
+  function itemChangesSinceBaseline(items,baseline){
+    var changes={}, byId={};
+    (items||[]).forEach(function(item){ if(item&&item.id) byId[item.id]=item; });
+    Object.keys(baseline.items||{}).forEach(function(id){
+      var item=byId[id];
+      if(!item) changes[id]={kind:"delete",id:id};
+      else if(itemSyncSignature(item)!==baseline.items[id]) changes[id]={kind:"upsert",id:id,item:cloneData(item),signature:itemSyncSignature(item)};
+    });
+    Object.keys(byId).forEach(function(id){ if(!Object.prototype.hasOwnProperty.call(baseline.items,id)) changes[id]={kind:"upsert",id:id,item:cloneData(byId[id]),signature:itemSyncSignature(byId[id])}; });
+    return changes;
+  }
+  function sameChange(left,right){ return !!(left&&right&&left.kind===right.kind&&(left.kind==="delete"||left.signature===right.signature)); }
+  function includeLocalReferences(data,item){
+    if(!item) return;
+    var folders={}, tags={};
+    (data.folders||[]).forEach(function(folder){ if(folder&&folder.id) folders[folder.id]=true; });
+    (data.tags||[]).forEach(function(tag){ if(tag&&tag.id) tags[tag.id]=true; });
+    if(item.folderId&&!folders[item.folderId]){
+      var folder=(state.folders||[]).find(function(entry){ return entry.id===item.folderId; });
+      if(folder){ data.folders=data.folders||[]; data.folders.push(cloneData(folder)); folders[folder.id]=true; }
+    }
+    (item.tagIds||[]).forEach(function(tagId){
+      if(tags[tagId]) return;
+      var tag=(state.tags||[]).find(function(entry){ return entry.id===tagId; });
+      if(tag){ data.tags=data.tags||[]; data.tags.push(cloneData(tag)); tags[tag.id]=true; }
+    });
+  }
+  function applyItemChange(data,change){
+    var items=data.items=Array.isArray(data.items)?data.items:[];
+    var index=items.findIndex(function(item){ return item&&item.id===change.id; });
+    if(change.kind==="delete"){
+      if(index>=0) items.splice(index,1);
+      return;
+    }
+    var copy=cloneData(change.item);
+    if(index>=0) items[index]=copy; else items.push(copy);
+    includeLocalReferences(data,copy);
+  }
+  function reconcileWithCloud(cloud){
+    var result={cloud:cloneData(cloud),data:cloneData(cloud),conflicts:[],needsCloudWrite:false};
+    if(!hasUsableSyncBaseline()) return result;
+    var localChanges=itemChangesSinceBaseline(state.items,state.syncBaseline);
+    var cloudChanges=itemChangesSinceBaseline(cloud.items,state.syncBaseline);
+    Object.keys(localChanges).forEach(function(id){
+      var local=localChanges[id], remote=cloudChanges[id];
+      if(remote){
+        if(!sameChange(local,remote)) result.conflicts.push({id:id,local:local,cloud:remote});
+        return;
+      }
+      applyItemChange(result.data,local);
+      result.needsCloudWrite=true;
+    });
+    return result;
+  }
   function useData(d){
     state.items=(d.items&&d.items.length)?d.items:[newScriptItem()];
-    state.items.forEach(ensureNoteBlocks);
+    state.items.forEach(normalizeItem);
     state.folders=d.folders||[]; state.tags=d.tags||[];
     state.currentId=state.items[0].id; state.filterFolder=null; state.filterTag=null;
     state.pendingCloudSync=false; state.lastCloudSync=d.updated||Date.now();
     applyAccountPreferences(d);
+    recordSyncBaseline({items:state.items},state.lastCloudSync);
     if(canPersist){ try{ localStorage.setItem(KEY,JSON.stringify(state)); }catch(e){} }
     renderAll();
   }
@@ -1842,82 +2100,155 @@
       ["script","note","todo","agent"].forEach(function(type){ if(typeof prefs.enabledTypes[type]==="boolean") state.enabledTypes[type]=prefs.enabledTypes[type]; });
     }
     if(prefs.noteInsertOptions&&typeof prefs.noteInsertOptions==="object") Object.keys(NOTE_INSERT_DEFAULTS).forEach(function(type){ if(typeof prefs.noteInsertOptions[type]==="boolean") state.noteInsertOptions[type]=prefs.noteInsertOptions[type]; });
+    if(typeof prefs.tagsCollapsed==="boolean") state.tagsCollapsed=prefs.tagsCollapsed;
+    if(typeof prefs.allNotesName==="string"&&prefs.allNotesName.trim()) state.allNotesName=prefs.allNotesName.trim();
     applyTheme(0); syncMotion(); buildThemeGrid();
     return true;
   }
-  function unionBy(a,b,keyfn){ var seen={}; a.forEach(function(x){ seen[keyfn(x)]=1; }); return a.concat((b||[]).filter(function(x){ return !seen[keyfn(x)]; })); }
-  function syncMarker(){ return currentUser?"second-brain-cloud-linked-"+currentUser.uid:""; }
-  function wasCloudLinked(){ try{ return !!(syncMarker()&&localStorage.getItem(syncMarker())); }catch(e){ return false; } }
-  function markCloudLinked(){ try{ if(syncMarker()) localStorage.setItem(syncMarker(),"1"); }catch(e){} }
-  function mergeWithCloud(cloud){
-    var seen={}, byId={}; state.items.forEach(function(s,index){ seen[sig(s)]=1; byId[s.id]=index; });
-    var add=[];
-    (cloud.items||[]).forEach(function(s){
-      if(Object.prototype.hasOwnProperty.call(byId,s.id)){
-        var local=state.items[byId[s.id]];
-        if((s.updated||0)>(local.updated||0)) state.items[byId[s.id]]=JSON.parse(JSON.stringify(s));
-      } else if(!seen[sig(s)]){ var copy=JSON.parse(JSON.stringify(s)); copy.id=copy.id||uid(); add.push(copy); seen[sig(copy)]=1; }
-    });
-    state.items=state.items.concat(add);
-    state.items.forEach(ensureNoteBlocks);
-    state.folders=unionBy(state.folders,cloud.folders,function(f){ return f.name; });
-    state.tags=unionBy(state.tags,cloud.tags,function(t){ return t.name; });
-    applyAccountPreferences(cloud);
-    return add.length;
+  var conflictResolution=null;
+  function conflictItemTitle(conflict){
+    var item=conflict.local.item||conflict.cloud.item||{};
+    return (item.title||item.text||"Untitled note").trim()||"Untitled note";
+  }
+  function conflictDescription(conflict){
+    if(conflict.local.kind==="delete") return "This device deleted the note while the cloud version changed. Keeping the cloud version is the default.";
+    if(conflict.cloud.kind==="delete") return "This device changed the note after it was deleted in the cloud. Keeping the cloud deletion is the default.";
+    return "This device and the cloud both changed this note. Keeping the cloud version is the default.";
+  }
+  function finishConflictResolution(){
+    var result=conflictResolution;
+    conflictResolution=null;
+    $("syncConflictModal").classList.remove("open");
+    useData(result.data);
+    if(result.needsCloudWrite){
+      /* Keep the last confirmed cloud baseline until this write succeeds, so a
+         failed sync is still recognized as an unsynced local change. */
+      recordSyncBaseline(result.cloud,result.cloud.updated||Date.now());
+      state.pendingCloudSync=true; state.lastLocalChange=Date.now(); captureAutoBackup(false);
+      if(canPersist){ try{ localStorage.setItem(KEY,JSON.stringify(state)); }catch(e){} }
+      cloudSyncLoading=false;
+      saveCloudNow();
+      showToast("Your sync choices were saved to the cloud");
+    } else {
+      cloudSyncLoading=false;
+      setSaveState("Saved to cloud","cloud");
+      showToast("Kept the cloud version");
+    }
+    syncStoredAttachments();
+  }
+  function resolveConflict(action){
+    if(!conflictResolution) return;
+    var queue=conflictResolution, index=queue.index, end=action==="sync-all"||action==="cloud-all"?queue.conflicts.length:index+1;
+    for(var i=index;i<end;i++){
+      if(action==="sync"||action==="sync-all"){
+        applyItemChange(queue.data,queue.conflicts[i].local);
+        queue.needsCloudWrite=true;
+      }
+    }
+    queue.index=end;
+    if(queue.index>=queue.conflicts.length) finishConflictResolution(); else renderConflictResolution();
+  }
+  function renderConflictResolution(){
+    var queue=conflictResolution, conflict=queue.conflicts[queue.index], box=$("syncConflictBox");
+    box.innerHTML="";
+    var heading=document.createElement("div"); heading.className="mh";
+    var title=document.createElement("h3"); title.id="syncConflictTitle"; title.textContent="Sync conflict"; heading.appendChild(title); box.appendChild(heading);
+    var count=document.createElement("p"); count.className="conflict-count"; count.textContent="Conflict "+(queue.index+1)+" of "+queue.conflicts.length; box.appendChild(count);
+    var hint=document.createElement("p"); hint.className="hint"; hint.textContent="The cloud version is selected by default. Choose Sync only when this device's change should replace it."; box.appendChild(hint);
+    var item=document.createElement("div"); item.className="conflict-item";
+    var name=document.createElement("b"); name.textContent=conflictItemTitle(conflict); item.appendChild(name);
+    var detail=document.createElement("small"); detail.textContent=conflictDescription(conflict); item.appendChild(detail); box.appendChild(item);
+    function option(label,description,action){ var button=document.createElement("button"); button.type="button"; button.className="modal-opt"; var bold=document.createElement("b"); bold.textContent=label; var small=document.createElement("small"); small.textContent=description; button.appendChild(bold); button.appendChild(small); button.onclick=function(){ resolveConflict(action); }; box.appendChild(button); return button; }
+    var first=option("Keep cloud version","Discard this device's conflicting change.","cloud");
+    option("Sync this device version","Replace the cloud version with this device's change.","sync");
+    if(queue.conflicts.length-queue.index>1){
+      var divider=document.createElement("div"); divider.className="conflict-separator"; box.appendChild(divider);
+      option("Keep cloud for all remaining","Discard every remaining device conflict.","cloud-all");
+      option("Sync all remaining device changes","Replace all remaining cloud conflicts with this device's versions.","sync-all");
+    }
+    setTimeout(function(){ first.focus(); },0);
+  }
+  function showConflictResolution(result){
+    conflictResolution=result;
+    conflictResolution.index=0;
+    $("settingsModal").classList.remove("open");
+    renderConflictResolution();
+    $("syncConflictModal").classList.add("open");
+  }
+  function finishCloudLoad(result,message){
+    useData(result.data);
+    if(result.needsCloudWrite){
+      recordSyncBaseline(result.cloud,result.cloud.updated||Date.now());
+      state.pendingCloudSync=true; state.lastLocalChange=Date.now(); captureAutoBackup(false);
+      if(canPersist){ try{ localStorage.setItem(KEY,JSON.stringify(state)); }catch(e){} }
+      cloudSyncLoading=false;
+      saveCloudNow();
+    } else {
+      cloudSyncLoading=false;
+      setSaveState("Saved to cloud","cloud");
+    }
+    syncStoredAttachments();
+    showToast(message);
   }
   function loadCloud(){
     if(!currentUser||!db) return Promise.resolve();
+    cloudSyncLoading=true;
     setSaveState("Loading from cloud","saving");
     return db.collection("users").doc(currentUser.uid).get().then(function(doc){
       var cloud=doc.exists?doc.data():null;
-      var cloudHas=cloud&&cloud.items&&hasContent(cloud.items);
-      var localHas=hasContent(state.items);
-      if(cloudHas&&localHas&&!wasCloudLinked()){
-        var added=mergeWithCloud(cloud); markCloudLinked(); persist(); renderAll(); saveCloudNow(); showToast(added?"Safely merged your existing notes":"Connected to your cloud notes");
-      } else if(cloudHas&&state.pendingCloudSync){
-        var recovered=mergeWithCloud(cloud); markCloudLinked(); persist(); renderAll(); saveCloudNow(); showToast(recovered?"Recovered unsynced changes":"Synced your offline changes");
-      } else if(cloudHas){ useData(cloud); markCloudLinked(); setSaveState("Saved to cloud","cloud"); showToast("Synced from your account"); }
+      var cloudHas=cloud&&Array.isArray(cloud.items);
+      if(cloudHas){
+        var result=reconcileWithCloud(cloud);
+        if(result.conflicts.length) showConflictResolution(result);
+        else finishCloudLoad(result,result.needsCloudWrite?"Synced offline changes":"Synced from your account");
+      }
       else {
         if(applyAccountPreferences(cloud)){
           if(canPersist){ try{ localStorage.setItem(KEY,JSON.stringify(state)); }catch(e){} }
           renderAll();
         }
-        markCloudLinked(); saveCloudNow(); showToast("Cloud sync is ready");
+        cloudSyncLoading=false; saveCloudNow(); showToast("Cloud sync is ready");
       }
-    }).then(function(){ syncStoredAttachments(); }).catch(function(e){ console.warn(e); showToast("Couldn’t read cloud data — check Firestore rules",true); });
+    }).then(function(){ trimCloudBackups(); }).catch(function(e){ cloudSyncLoading=false; console.warn(e); showToast("Couldn’t read cloud data — check Firestore rules",true); });
   }
-  function saveCloud(){ if(!currentUser||!db) return; clearTimeout(cloudTimer); cloudTimer=setTimeout(saveCloudNow,1500); }
+  function saveCloud(){ if(!currentUser||!db||cloudSyncPaused||cloudSyncLoading) return; clearTimeout(cloudTimer); cloudTimer=setTimeout(saveCloudNow,1500); }
   function cloudBackupRef(id){ return db.collection("users").doc(currentUser.uid).collection("backups").doc(id); }
-  function trimCloudBackups(){
-    if(!currentUser||!db) return;
-    db.collection("users").doc(currentUser.uid).collection("backups").orderBy("created","desc").limit(50).get().then(function(snap){
+  function trimCloudBackups(maximum){
+    if(!currentUser||!db) return Promise.resolve();
+    maximum=typeof maximum==="number"?maximum:BACKUP_LIMIT;
+    return db.collection("users").doc(currentUser.uid).collection("backups").orderBy("created","desc").limit(50).get().then(function(snap){
       var docs=snap.docs||[];
-      docs.slice(28).forEach(function(doc){ doc.ref.delete(); });
+      return Promise.all(docs.slice(maximum).map(function(doc){ return doc.ref.delete(); }));
     }).catch(function(e){ console.warn("Backup cleanup skipped:",e); });
   }
   function writeCloudBackup(kind){
     if(!currentUser||!db) return Promise.reject(new Error("Sign in required"));
-    var created=Date.now(), id=kind==="automatic"?"auto-"+new Date(created).toISOString().slice(0,10):"manual-"+created;
+    var created=Date.now(), id=(kind==="automatic"?"auto-":"manual-")+created;
     var payload;
     try{ payload=JSON.parse(JSON.stringify(backupPayload())); }catch(e){ return Promise.reject(e); }
-    return cloudBackupRef(id).set({kind:kind,created:created,itemCount:state.items.length,data:payload}).then(function(){ trimCloudBackups(); return id; });
+    return trimCloudBackups(BACKUP_LIMIT-1).then(function(){ return cloudBackupRef(id).set({kind:kind,created:created,itemCount:state.items.length,data:payload}); }).then(function(){ return id; });
   }
   function maybeCloudBackup(){
-    if(!currentUser||!db) return;
-    var day=new Date().toISOString().slice(0,10), marker="second-brain-cloud-backup-"+currentUser.uid;
-    try{ if(localStorage.getItem(marker)===day) return; }catch(e){}
-    writeCloudBackup("automatic").then(function(){ try{ localStorage.setItem(marker,day); }catch(e){} }).catch(function(e){ console.warn("Daily backup failed:",e); });
+    if(!currentUser||!db||cloudAutoBackupInFlight) return;
+    var now=Date.now(), marker="second-brain-cloud-backup-"+currentUser.uid, lastCreated=0;
+    try{ lastCreated=Number(localStorage.getItem(marker))||0; }catch(e){}
+    if(now-lastCreated<AUTO_BACKUP_COOLDOWN) return;
+    cloudAutoBackupInFlight=true;
+    db.collection("users").doc(currentUser.uid).collection("backups").orderBy("created","desc").limit(1).get().then(function(snap){
+      var latest=snap.docs&&snap.docs[0], created=latest&&latest.data().created||0;
+      if(now-created<AUTO_BACKUP_COOLDOWN) return created;
+      return writeCloudBackup("automatic").then(function(){ return now; });
+    }).then(function(created){ if(created){ try{ localStorage.setItem(marker,String(created)); }catch(e){} } }).catch(function(e){ console.warn("Automatic backup failed:",e); }).then(function(){ cloudAutoBackupInFlight=false; });
   }
   function syncStoredAttachments(){
     if(!currentUser||!storage) return;
-    state.items.forEach(function(note){
-      if(note.type!=="note") return;
+    forEachContentDocument(function(note){
       (note.attachments||[]).forEach(function(attachment){
         if(attachment.storagePath||isAttachmentUploading(note,attachment)) return;
         if(attachment.syncState==="uploading") attachment.syncState="device";
         readAttachmentFile(note.id,attachment.id).then(function(file){
           if(!file||attachment.storagePath||isAttachmentUploading(note,attachment)) return;
-          return readInlineImage(file).then(function(data){ if(data&&!attachment.inlineData){ attachment.inlineData=data; note.updated=Date.now(); persist(); } return uploadAttachment(note,attachment,file); });
+          return readInlineImage(file).then(function(data){ if(data&&!attachment.inlineData){ attachment.inlineData=data; touchContent(note); persist(); } return uploadAttachment(note,attachment,file); });
         }).catch(function(error){ console.warn("Attachment upload skipped:",error); });
       });
     });
@@ -1925,7 +2256,7 @@
   function getCloudBackups(){
     if(!currentUser||!db) return Promise.resolve([]);
     var user=db.collection("users").doc(currentUser.uid);
-    return Promise.all([user.collection("backups").orderBy("created","desc").limit(28).get(),user.get()]).then(function(results){
+    return Promise.all([user.collection("backups").orderBy("created","desc").limit(BACKUP_LIMIT).get(),user.get()]).then(function(results){
       var entries=results[0].docs.map(function(doc){ var v=doc.data(); return {id:doc.id,kind:v.kind||"automatic",created:v.created||0,itemCount:v.itemCount,data:v.data||v}; });
       var legacy=results[1].exists?(results[1].data().backupSlots||{}):{};
       Object.keys(legacy).forEach(function(id){ var v=legacy[id]; entries.push({id:"legacy-"+id,kind:"automatic",created:v.created||0,itemCount:(v.items||[]).length,data:v}); });
@@ -1935,17 +2266,17 @@
   function restoreBackup(entry){
     if(!entry||!entry.data) return;
     if(!confirm("Restore this backup? Your current notes will be backed up first.")) return;
-    captureAutoBackup(true);
+    captureAutoBackup(true,"recovery");
     var before=currentUser&&db?writeCloudBackup("manual"):Promise.resolve();
     before.catch(function(){}).then(function(){ useData(entry.data); persist(); showToast("Backup restored"); if($("backupList")) renderBackupList(); });
   }
   function restoreLatestCloudBackup(){ getCloudBackups().then(function(list){ if(!list.length){ showToast("No cloud backup yet",true); return; } restoreBackup(list[0]); }).catch(function(e){ console.warn(e); showToast("Cloud backups could not be loaded",true); }); }
   function saveCloudNow(){
-    if(!currentUser||!db) return;
+    if(!currentUser||!db||cloudSyncPaused||cloudSyncLoading) return;
     var sentAt=Date.now();
-    db.collection("users").doc(currentUser.uid).set({ items:state.items, folders:state.folders, tags:state.tags, preferences:{theme:state.theme,motion:state.motion,darkness:state.darkness,enabledTypes:state.enabledTypes,noteInsertOptions:state.noteInsertOptions}, theme:state.theme, motion:state.motion, updated:sentAt },{merge:true}).then(function(){
+    db.collection("users").doc(currentUser.uid).set({ items:state.items, folders:state.folders, tags:state.tags, preferences:{theme:state.theme,motion:state.motion,darkness:state.darkness,enabledTypes:state.enabledTypes,noteInsertOptions:state.noteInsertOptions,tagsCollapsed:state.tagsCollapsed,allNotesName:state.allNotesName}, theme:state.theme, motion:state.motion, updated:sentAt },{merge:true}).then(function(){
       state.lastCloudSync=sentAt;
-      if((state.lastLocalChange||0)<=sentAt){ state.pendingCloudSync=false; if(canPersist){ try{ localStorage.setItem(KEY,JSON.stringify(state)); }catch(e){} } }
+      if((state.lastLocalChange||0)<=sentAt){ state.pendingCloudSync=false; recordSyncBaseline({items:state.items},sentAt); if(canPersist){ try{ localStorage.setItem(KEY,JSON.stringify(state)); }catch(e){} } }
       setSaveState("Saved to cloud","cloud"); maybeCloudBackup(); scheduleAccountUsageRefresh(0);
     }).catch(function(e){ console.warn(e); setSaveState("Cloud sync failed — recovery copy kept","bad"); });
   }
@@ -1954,6 +2285,7 @@
   /* =================== sidebar footer =================== */
   function renderFoot(){
     dfoot.innerHTML="";
+    dfoot.classList.toggle("has-account",!!currentUser);
     if(currentUser){
       var summary=document.createElement("div"); summary.className="account-summary";
       var who=document.createElement("div"); who.className="who";
@@ -1962,11 +2294,14 @@
       summary.appendChild(who);
       var usage=document.createElement("div"); usage.className="storage-usage "+(accountUsage.status==="ready"?"":accountUsage.status==="error"?"unavailable":"calculating"); usage.setAttribute("aria-label",accountUsageTitle(accountUsage)); usage.setAttribute("aria-live","polite"); usage.tabIndex=0;
       usage.innerHTML='<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><ellipse cx="12" cy="5" rx="7" ry="3"/><path d="M5 5v7c0 1.7 3.1 3 7 3s7-1.3 7-3V5"/><path d="M5 12v7c0 1.7 3.1 3 7 3s7-1.3 7-3v-7"/></svg>';
-      var label=document.createElement("span"); label.textContent="Storage";
+      var label=document.createElement("span"); label.className="storage-label";
+      var labelTitle=document.createElement("strong"); labelTitle.textContent="Storage";
+      var labelCaption=document.createElement("small"); labelCaption.textContent=accountUsage.status==="error"?"Cloud total unavailable":"Saved to your account";
+      label.appendChild(labelTitle); label.appendChild(labelCaption);
       var value=document.createElement("b"); value.textContent=accountUsage.status==="ready"?fileSize(accountUsage.totalBytes):accountUsage.status==="error"?"Couldn’t calculate yet":"Calculating your total…";
       var detail=document.createElement("div"); detail.className="storage-breakdown"; detail.id="storageBreakdown"; detail.setAttribute("role","tooltip");
-      var heading=document.createElement("h4"); heading.textContent=accountUsage.source==="device"?"Storage on this device":"Cloud storage";
-      var detailText=document.createElement("p"); detailText.textContent=accountUsage.source==="device"?"Cloud total updates automatically when reconnected.":"Everything saved in your Second Brain account.";
+      var heading=document.createElement("h4"); heading.textContent="Cloud storage";
+      var detailText=document.createElement("p"); detailText.textContent=accountUsage.status==="error"?"Couldn’t read your cloud total. Local notes and backups are not included.":"Everything saved in your Second Brain account.";
       var breakdown=document.createElement("dl"); [["Attachments",accountUsage.fileBytes],["Notes & account data",accountUsage.accountBytes],["Backups",accountUsage.backupBytes]].forEach(function(row){ var item=document.createElement("div"), term=document.createElement("dt"), amount=document.createElement("dd"); term.textContent=row[0]; amount.textContent=fileSize(row[1]); item.appendChild(term); item.appendChild(amount); breakdown.appendChild(item); });
       detail.appendChild(heading); detail.appendChild(detailText); detail.appendChild(breakdown); usage.setAttribute("aria-describedby",detail.id); usage.appendChild(label); usage.appendChild(value); usage.appendChild(detail); summary.appendChild(usage); dfoot.appendChild(summary);
     } else {
@@ -1988,7 +2323,7 @@
   function renderSettingsPage(){
     var box=$("settingsBox"), content="";
     if(settingsPage==="home"){
-      content=settingsHeading("Settings",false)+'<p class="hint">Your notes sync to your account when you are signed in. This device keeps a recovery cache and backup copies so a failed connection never means lost work.</p><div class="settings-nav">'+
+      content=settingsHeading("Settings",false)+'<p class="hint">Your cloud account is the source of truth. This device keeps a recovery cache while you are signed in; signing out removes its local notes and files, while cloud backups stay in your account.</p><div class="settings-nav">'+
         '<button data-settings="appearance"><span><b>Appearance</b><small>Background movement and darkness</small></span><span class="arrow">›</span></button>'+
         '<button data-settings="themes"><span><b>Themes</b><small>Choose your color palette</small></span><span class="arrow">›</span></button>'+
         '<button data-settings="backups"><span><b>Backups</b><small>Browse, restore, or create backups</small></span><span class="arrow">›</span></button>'+
@@ -2001,7 +2336,7 @@
     } else if(settingsPage==="themes"){
       content=settingsHeading("Themes",true)+'<p class="hint">Themes are separate from the rest of Settings so you can browse them without burying the backup and sync controls.</p><div class="themes" id="themeGrid"></div>';
     } else if(settingsPage==="backups"){
-      content=settingsHeading("Backups",true)+'<p class="hint">Every backup creates a recovery point on this device. When you are signed in, it also attempts a cloud copy and automatic cloud backups are kept for four weeks.</p><div class="btnrow"><button class="b2 primary" id="backupNowBtn">Back up now</button><button class="b2" id="expBtn">Export file</button><button class="b2" id="impBtn">Import file</button><input type="file" id="impFile" accept="application/json" hidden></div><div class="grp"><h4>Restore points</h4><div class="backup-list" id="backupList"></div></div>';
+      content=settingsHeading("Backups",true)+'<p class="hint">Every backup creates a recovery point on this device. Automatic backups wait at least one hour after the latest backup, and only the 10 newest backups are kept.</p><div class="btnrow"><button class="b2 primary" id="backupNowBtn">Back up now</button><button class="b2" id="expBtn">Export file</button><button class="b2" id="impBtn">Import file</button><input type="file" id="impFile" accept="application/json" hidden></div><div class="grp"><h4>Restore points</h4><div class="backup-list" id="backupList"></div></div>';
     } else if(settingsPage==="account"){
       content=settingsHeading("Account &amp; sync",true)+'<div id="acctInner"></div>';
     } else if(settingsPage==="keys"){
@@ -2015,6 +2350,11 @@
     $("closeSettings").onclick=function(){ $("settingsModal").classList.remove("open"); };
     if($("settingsBack")) $("settingsBack").onclick=function(){ settingsPage="home"; renderSettingsPage(); };
     var nav=box.querySelectorAll("[data-settings]"); for(var i=0;i<nav.length;i++){ nav[i].onclick=function(){ settingsPage=this.getAttribute("data-settings"); renderSettingsPage(); }; }
+    if(settingsPage==="manage"){
+      var manageHint=box.querySelector(".hint"), insertHeading=box.querySelector(".grp h4");
+      if(manageHint) manageHint.textContent="Choose what appears under New and in every note or task Details Insert menu. Existing content is never removed when an option is turned off.";
+      if(insertHeading) insertHeading.textContent="Shared insert menu";
+    }
     if(settingsPage==="appearance") setupAppearanceSettings();
     if(settingsPage==="themes") buildThemeGrid();
     if(settingsPage==="backups") setupBackupSettings();
@@ -2223,7 +2563,7 @@
       entries.forEach(function(entry){
         var row=document.createElement("div"); row.className="backup-entry";
         row.innerHTML='<div class="bi"><b></b><small></small></div><button class="b2">Restore</button>';
-        row.querySelector("b").textContent=entry.kind==="manual"?"Manual backup":"Automatic backup";
+        row.querySelector("b").textContent=entry.kind==="manual"?"Manual backup":entry.kind==="recovery"?"Recovery point":"Automatic backup";
         row.querySelector("small").textContent=backupDate(entry.created)+" · "+(entry.itemCount||((entry.data.items||[]).length))+" items";
         row.querySelector("button").onclick=function(){ restoreBackup(entry); };
         el.appendChild(row);
@@ -2264,9 +2604,12 @@
     var el=$("acctInner"); if(!el) return;
     var cfg=getCfg();
     if(currentUser){
-      el.innerHTML='<div class="acctbox">'+(currentUser.photoURL?'<img src="'+currentUser.photoURL+'" alt="">':'')+'<div class="ai"><b></b><small>Notes sync automatically</small></div></div><div class="btnrow"><button class="b2" id="soBtn">Sign out</button></div>';
+      el.innerHTML='<div class="acctbox">'+(currentUser.photoURL?'<img src="'+currentUser.photoURL+'" alt="">':'')+'<div class="ai"><b></b><small>Notes sync automatically</small></div></div><div class="btnrow"><button class="b2" id="soBtn">Sign out &amp; wipe this device</button></div>';
       el.querySelector(".ai b").textContent=currentUser.displayName||currentUser.email||"Signed in";
-      $("soBtn").onclick=function(){ resetApiSettings(); auth.signOut(); showToast("Signed out"); setTimeout(renderAcct,300); };
+      $("soBtn").onclick=function(){
+        cloudSyncPaused=true; clearTimeout(cloudTimer);
+        auth.signOut().then(function(){ showToast("Signed out and removed local notes"); setTimeout(renderAcct,300); }).catch(function(error){ cloudSyncPaused=false; console.warn(error); showToast("Couldn’t sign out. Your local notes were kept.",true); });
+      };
       return;
     }
     if(cfg&&fbReady){

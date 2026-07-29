@@ -25,11 +25,18 @@ a browser app. Do not upload service-account keys or other private secrets.
 ## Firebase rules
 
 Deploy the checked-in Firebase rules whenever you first enable cloud sync or
-after pulling changes that touch `firestore.rules` or `storage.rules`:
+after pulling changes that touch `firestore.rules` or `storage.rules`. Deploy
+only the service whose rules changed:
 
 ```powershell
+# For the cloud-storage meter change:
+firebase deploy --project second-brain-4077e --only storage
+
+# Only when both rule files changed:
 firebase deploy --project second-brain-4077e --only firestore:rules,storage
 ```
 
-The Storage rules let signed-in users sync note attachments only within their
-own account path. Device-only attachments still work without signing in.
+The Storage rules let signed-in users sync and enumerate attachments only
+within their own account path. Enumeration lets the in-app storage meter count
+the files actually retained in Cloud Storage, including any orphaned files that
+still consume storage. Device-only attachments still work without signing in.
