@@ -94,20 +94,32 @@
   .meta{ font-family:"DM Mono",monospace; font-size:.72rem; color:var(--ink-faint); margin:0 0 26px; }
   .meta b{ color:var(--ink-dim); font-weight:500; }
 
-  .note-body{ width:100%; background:none; border:none; outline:none; resize:none; display:block; color:var(--ink); font-size:1.08rem; line-height:1.72; padding:2px 0; min-height:46vh; overflow:hidden; }
-  .note-body::placeholder{ color:var(--ink-faint); }
-  .attachments{ margin-top:24px; padding-top:18px; border-top:1px solid var(--line-soft); }
-  .attachments-head{ display:flex; align-items:center; justify-content:space-between; gap:12px; margin-bottom:10px; }
-  .attachments-head b{ font-size:.86rem; } .attachments-head small{ color:var(--ink-faint); font:400 .68rem "DM Mono",monospace; }
-  .attachment-add{ flex:none; border:1px solid var(--accent-line); border-radius:9px; padding:7px 10px; color:var(--accent); background:var(--accent-soft); cursor:pointer; font:600 .76rem "DM Sans",sans-serif; }
-  .attachment-add:hover{ filter:brightness(1.15); }
-  .attachment-list{ display:grid; gap:7px; }
-  .attachment-empty{ padding:11px 12px; border:1px dashed var(--line); border-radius:10px; color:var(--ink-faint); font-size:.78rem; }
-  .attachment-row{ display:flex; align-items:center; gap:10px; min-width:0; padding:9px 10px; border:1px solid var(--line); border-radius:10px; background:rgba(255,255,255,.025); }
-  .attachment-icon{ width:28px; height:28px; flex:none; display:grid; place-items:center; border-radius:8px; color:var(--accent); background:var(--accent-soft); font-size:.82rem; font-weight:700; }
-  .attachment-info{ min-width:0; flex:1; display:grid; gap:2px; } .attachment-info b{ overflow:hidden; text-overflow:ellipsis; white-space:nowrap; font-size:.8rem; } .attachment-info small{ color:var(--ink-faint); font:400 .66rem "DM Mono",monospace; }
-  .attachment-open,.attachment-remove{ flex:none; border:0; border-radius:7px; padding:6px 8px; cursor:pointer; font:600 .72rem "DM Sans",sans-serif; }
-  .attachment-open{ color:var(--accent); background:var(--accent-soft); } .attachment-remove{ color:var(--ink-faint); background:rgba(255,255,255,.05); } .attachment-remove:hover{ color:#f87171; background:rgba(248,113,113,.12); }
+  .note-editor{ display:grid; gap:4px; padding-bottom:24px; }
+  .note-editor-tools{ display:flex; justify-content:flex-end; margin:-7px 0 6px; }
+  .attachment-add{ flex:none; border:1px solid var(--line); border-radius:999px; padding:7px 11px; color:var(--ink-dim); background:rgba(255,255,255,.035); cursor:pointer; font:600 .75rem "DM Sans",sans-serif; transition:.15s; }
+  .attachment-add:hover{ color:var(--accent); border-color:var(--accent-line); background:var(--accent-soft); }
+  .note-text-block{ width:100%; min-height:88px; background:none; border:none; outline:none; resize:none; display:block; color:var(--ink); font-size:1.08rem; line-height:1.72; padding:2px 0; overflow:hidden; }
+  .note-text-block::placeholder{ color:var(--ink-faint); }
+  .note-drop{ height:10px; margin:0; border-radius:7px; transition:height .14s,background .14s,border-color .14s; }
+  .note-editor.dragging .note-drop{ height:30px; border:1px dashed rgba(255,255,255,.14); }
+  .note-editor.dragging .note-drop::after{ content:"Drop attachment here"; display:block; color:var(--ink-faint); font:500 .64rem "DM Mono",monospace; text-align:center; line-height:28px; opacity:0; transition:opacity .14s; }
+  .note-editor.dragging .note-drop.over{ border-color:var(--accent-line); background:var(--accent-soft); }
+  .note-editor.dragging .note-drop.over::after{ opacity:1; color:var(--accent); }
+  .note-attachment{ width:min(100%,var(--attachment-width,100%)); position:relative; margin:10px 0 14px; border:1px solid var(--line); border-radius:14px; overflow:hidden; background:rgba(255,255,255,.035); box-shadow:0 12px 38px rgba(0,0,0,.16); cursor:grab; }
+  .note-attachment.dragging{ opacity:.42; } .note-attachment:active{ cursor:grabbing; }
+  .attachment-grip{ position:absolute; z-index:2; top:9px; left:9px; padding:4px 6px; border-radius:7px; color:rgba(255,255,255,.68); background:rgba(10,10,14,.58); font:700 .72rem "DM Mono",monospace; letter-spacing:-.18em; pointer-events:none; }
+  .note-attachment-image{ display:block; width:100%; max-height:70vh; min-height:112px; object-fit:contain; background:rgba(0,0,0,.28); }
+  .note-attachment-file{ display:flex; align-items:center; gap:10px; min-height:78px; padding:14px 64px 14px 14px; }
+  .attachment-icon{ width:34px; height:34px; flex:none; display:grid; place-items:center; border-radius:9px; color:var(--accent); background:var(--accent-soft); font-size:.76rem; font-weight:700; }
+  .attachment-info{ min-width:0; flex:1; display:grid; gap:3px; } .attachment-info b{ overflow:hidden; text-overflow:ellipsis; white-space:nowrap; font-size:.84rem; } .attachment-info small{ color:var(--ink-faint); font:400 .66rem "DM Mono",monospace; }
+  .note-attachment-actions{ position:absolute; z-index:2; top:9px; right:9px; display:flex; gap:5px; opacity:0; transition:opacity .14s; }
+  .note-attachment:hover .note-attachment-actions,.note-attachment:focus-within .note-attachment-actions{ opacity:1; }
+  .attachment-open,.attachment-remove{ border:1px solid rgba(255,255,255,.12); border-radius:8px; padding:6px 8px; cursor:pointer; font:600 .7rem "DM Sans",sans-serif; backdrop-filter:blur(8px); }
+  .attachment-open{ color:var(--ink); background:rgba(10,10,14,.76); } .attachment-remove{ color:#fca5a5; background:rgba(68,12,18,.82); }
+  .attachment-resize{ position:absolute; z-index:3; right:0; bottom:0; width:25px; height:25px; border:0; border-radius:10px 0 0; color:#08080a; background:var(--accent); cursor:se-resize; opacity:0; transition:opacity .14s; }
+  .attachment-resize::before{ content:"↘"; font-size:.8rem; font-weight:800; } .note-attachment:hover .attachment-resize,.note-attachment:focus-within .attachment-resize{ opacity:1; }
+  .attachment-status{ position:absolute; left:10px; bottom:8px; max-width:calc(100% - 42px); overflow:hidden; text-overflow:ellipsis; white-space:nowrap; padding:4px 7px; border-radius:6px; color:rgba(255,255,255,.72); background:rgba(0,0,0,.52); font:500 .62rem "DM Mono",monospace; }
+  @media (max-width:560px){ .note-attachment{ width:100% !important; } .note-attachment-actions,.attachment-resize{ opacity:1; } }
 
   .ch{ padding:4px 0 22px; border-bottom:1px solid var(--line-soft); margin-bottom:22px; }
   .ch:last-of-type{ border-bottom:none; }
@@ -423,7 +435,7 @@
 
   /* =================== storage =================== */
   var KEY="astral-notes-v5", OLDS=["astral-notes-v4","astral-notes-v3"], CFGKEY="astral-fb-config", BACKUP_KEY="second-brain-auto-backups-v1", mem=null;
-  var deviceBackups=[], attachmentDbPromise=null;
+  var deviceBackups=[], attachmentDbPromise=null, activeNoteTextBlock=null, draggedNoteBlock=null;
   var DEFAULT_ELEVENLABS_VOICE="21m00Tcm4TlvDq8ikWAM", CUSTOM_VOICE_OPTION="__elevenlabs_voice_id__";
   var runtimeApiKeys={openai:"",elevenlabs:"",elevenlabsVoice:DEFAULT_ELEVENLABS_VOICE,savedVoices:[],audio:null,audioUrl:null,ttsControl:null,ttsRequestId:0};
   var canPersist=(function(){ try{ localStorage.setItem("__t","1"); localStorage.removeItem("__t"); return true; }catch(e){ return false; } })();
@@ -437,7 +449,7 @@
   }
   function loadLocal(){ var v=readKey(KEY); if(v&&v.items) return v; if(!canPersist&&mem) return mem; return migrate(); }
   function setSaveState(label,kind){ var el=$("saveState"); if(!el) return; el.textContent=label; el.className="save-state"+(kind?" "+kind:""); }
-  function backupPayload(){ return { app:"second-brain", version:7, items:state.items, folders:state.folders, tags:state.tags, preferences:{theme:state.theme,motion:state.motion,darkness:state.darkness,enabledTypes:state.enabledTypes}, created:Date.now() }; }
+  function backupPayload(){ return { app:"second-brain", version:8, items:state.items, folders:state.folders, tags:state.tags, preferences:{theme:state.theme,motion:state.motion,darkness:state.darkness,enabledTypes:state.enabledTypes}, created:Date.now() }; }
   function autoBackups(){ return deviceBackups; }
   function captureAutoBackup(force,kind){
     var today=new Date().toISOString().slice(0,10);
@@ -453,10 +465,26 @@
   function sec(t,b,kind){ return {id:uid(),title:t||"",body:b||"",kind:kind||"chapter"}; }
   function baseItem(){ return { id:uid(), title:"", folderId:(state&&state.filterFolder)||null, tagIds:(state&&state.filterTag)?[state.filterTag]:[], updated:Date.now() }; }
   function newScriptItem(){ var it=baseItem(); it.type="script"; it.sections=[sec("Intro",""),sec("Main",""),sec("Outro","")]; return it; }
-  function newNoteItem(){ var it=baseItem(); it.type="note"; it.body=""; return it; }
+  function newNoteItem(){ var it=baseItem(); it.type="note"; it.body=""; it.attachments=[]; it.blocks=[{id:uid(),type:"text",text:""}]; return it; }
   function newTodoItem(){ var it=baseItem(); it.type="todo"; it.todos=[]; it.done=false; it.completed=null; return it; }
   function newTask(){ return {id:uid(),text:"",description:"",subtasks:[],done:false,completed:null}; }
   function newAgentItem(){ var it=baseItem(); it.type="agent"; it.title="New Agent"; it.agent={tab:"chat",model:"",voice:"Default",longTermMemory:"{}",shortTermMemory:"{}",instructions:"{\n  \"role\": \"helpful assistant\"\n}"}; return it; }
+  function syncNoteBody(note){ note.body=(note.blocks||[]).filter(function(block){ return block.type==="text"; }).map(function(block){ return block.text||""; }).join("\n"); }
+  function ensureNoteBlocks(note){
+    if(note.type!=="note") return;
+    note.attachments=Array.isArray(note.attachments)?note.attachments:[];
+    note.attachments.forEach(function(attachment){ if(!attachment.id) attachment.id=uid(); });
+    if(!Array.isArray(note.blocks)||!note.blocks.length){
+      note.blocks=[{id:uid(),type:"text",text:note.body||""}];
+      note.attachments.forEach(function(attachment){ note.blocks.push({id:uid(),type:"attachment",attachmentId:attachment.id,width:100}); });
+    } else {
+      note.blocks=note.blocks.filter(function(block){ return block&&block.type&&(block.type!=="attachment"||block.attachmentId); });
+      note.blocks.forEach(function(block){ if(!block.id) block.id=uid(); if(block.type==="text"&&typeof block.text!=="string") block.text=""; if(block.type==="attachment"&&typeof block.width!=="number") block.width=100; });
+      note.attachments.forEach(function(attachment){ if(!note.blocks.some(function(block){ return block.type==="attachment"&&block.attachmentId===attachment.id; })) note.blocks.push({id:uid(),type:"attachment",attachmentId:attachment.id,width:100}); });
+      if(!note.blocks.some(function(block){ return block.type==="text"; })) note.blocks.unshift({id:uid(),type:"text",text:""});
+    }
+    syncNoteBody(note);
+  }
 
   var state=loadLocal();
   if(!state||!state.items){ state={ items:[], folders:[], tags:[], currentId:null, motion:true, theme:"nebula", filterFolder:null, filterTag:null }; state.items.push(newScriptItem()); state.currentId=state.items[0].id; }
@@ -475,7 +503,7 @@
   if(typeof state.pendingCloudSync!=="boolean") state.pendingCloudSync=false;
   deviceBackups=readKey(BACKUP_KEY)||[];
   state.items.forEach(function(it){
-    if(it.type==="note"&&!Array.isArray(it.attachments)) it.attachments=[];
+    if(it.type==="note") ensureNoteBlocks(it);
     if(it.type==="script") (it.sections||[]).forEach(function(section){ if(!section.kind) section.kind="chapter"; });
     if(it.type==="todo"){
       if(!Array.isArray(it.todos)) it.todos=[];
@@ -530,7 +558,7 @@
   /* =================== helpers =================== */
   function words(s){ var t=(s||"").trim(); return t?t.split(/\s+/).length:0; }
   function dur(w){ var s=Math.round(w/150*60), m=Math.floor(s/60), r=s%60; return m+":"+(r<10?"0":"")+r; }
-  function itemText(it){ if(it.type==="script") return (it.sections||[]).map(function(x){return x.body;}).join(" "); if(it.type==="todo") return (it.todos||[]).map(function(x){return (x.text||"")+" "+(x.description||"");}).join(" "); if(it.type==="agent") return [it.title,(it.agent||{}).longTermMemory,(it.agent||{}).shortTermMemory,(it.agent||{}).instructions].join(" "); return it.body||""; }
+  function itemText(it){ if(it.type==="script") return (it.sections||[]).map(function(x){return x.body;}).join(" "); if(it.type==="todo") return (it.todos||[]).map(function(x){return (x.text||"")+" "+(x.description||"");}).join(" "); if(it.type==="agent") return [it.title,(it.agent||{}).longTermMemory,(it.agent||{}).shortTermMemory,(it.agent||{}).instructions].join(" "); if(it.type==="note"&&Array.isArray(it.blocks)) return it.blocks.filter(function(block){ return block.type==="text"; }).map(function(block){ return block.text||""; }).join("\n"); return it.body||""; }
   function itemWords(it){ return words(itemText(it)); }
   function itemLabel(it){ return it.type==="script"?"YouTube Script":(it.type==="todo"?"Todo":(it.type==="agent"?"Agent":"Note")); }
   function setTodoDone(it,done){
@@ -717,13 +745,10 @@
       addTodo.onclick=function(){ it.todos=it.todos||[]; it.todos.push(newTask()); it.updated=Date.now(); persist(); renderMain(); renderList(); var inputs=canvas.querySelectorAll(".todo-text"); if(inputs.length) inputs[inputs.length-1].focus(); };
       sheet.appendChild(addTodo);
     } else {
-      var body=document.createElement("textarea"); body.className="note-body"; body.value=it.body||""; body.placeholder="Start writing…";
-      body.oninput=function(){ it.body=body.value; it.updated=Date.now(); grow(body); updateMeta(); save(); refreshListMeta(); };
-      sheet.appendChild(body);
-      sheet.appendChild(buildAttachments(it));
+      sheet.appendChild(buildNoteEditor(it));
     }
     canvas.appendChild(sheet);
-    var tas=canvas.querySelectorAll(".title,.ch-body,.note-body,.todo-description");
+    var tas=canvas.querySelectorAll(".title,.ch-body,.note-text-block,.todo-description");
     for(var i=0;i<tas.length;i++) grow(tas[i]);
     updateMeta();
   }
@@ -768,18 +793,44 @@
     if(attachment.storagePath) return "Synced to your account";
     return "On this device";
   }
-  function refreshAttachments(note){
-    var old=canvas.querySelector('.attachments[data-note-id="'+note.id+'"]');
-    if(old&&current()&&current().id===note.id) old.parentNode.replaceChild(buildAttachments(note),old);
+  function refreshNoteEditor(note){
+    var old=canvas.querySelector('.note-editor[data-note-id="'+note.id+'"]');
+    if(old&&current()&&current().id===note.id) old.parentNode.replaceChild(buildNoteEditor(note),old);
   }
   function cloudAttachmentPath(note,attachment){ return "users/"+currentUser.uid+"/notes/"+note.id+"/attachments/"+attachment.id; }
+  function attachmentById(note,id){ return (note.attachments||[]).find(function(attachment){ return attachment.id===id; })||null; }
+  function attachmentIsImage(attachment){ return /^image\//.test(attachment.type||""); }
+  function getAttachmentUrl(note,attachment){
+    return readAttachmentFile(note.id,attachment.id).then(function(file){
+      if(file) return {url:URL.createObjectURL(file),local:true};
+      if(storage&&attachment.storagePath) return storage.ref(attachment.storagePath).getDownloadURL().then(function(url){ return {url:url,local:false}; });
+      throw new Error("Attachment file is unavailable");
+    });
+  }
   function uploadAttachment(note,attachment,file){
     if(!currentUser||!storage) return Promise.resolve(false);
-    attachment.syncState="uploading"; refreshAttachments(note);
+    attachment.syncState="uploading"; refreshNoteEditor(note);
     var path=cloudAttachmentPath(note,attachment);
     return storage.ref(path).put(file,{contentType:attachment.type||file.type||"application/octet-stream"}).then(function(){
-      attachment.storagePath=path; attachment.syncState="cloud"; note.updated=Date.now(); persist(); refreshAttachments(note); return true;
-    }).catch(function(error){ attachment.syncState="device"; refreshAttachments(note); throw error; });
+      attachment.storagePath=path; attachment.syncState="cloud"; note.updated=Date.now(); persist(); refreshNoteEditor(note); return true;
+    }).catch(function(error){ attachment.syncState="device"; refreshNoteEditor(note); throw error; });
+  }
+  function attachmentInsertIndex(note){
+    var active=activeNoteTextBlock, index=(note.blocks||[]).length;
+    if(!active||active.noteId!==note.id) return index;
+    var textIndex=note.blocks.findIndex(function(block){ return block.id===active.blockId&&block.type==="text"; });
+    if(textIndex<0) return index;
+    var textBlock=note.blocks[textIndex], position=Math.max(0,Math.min(active.start||0,(textBlock.text||"").length));
+    if(position===0) return textIndex;
+    if(position<(textBlock.text||"").length){
+      var tail={id:uid(),type:"text",text:textBlock.text.slice(position)};
+      textBlock.text=textBlock.text.slice(0,position); note.blocks.splice(textIndex+1,0,tail); return textIndex+1;
+    }
+    return textIndex+1;
+  }
+  function insertAttachmentBlocks(note,attachments){
+    var index=attachmentInsertIndex(note), blocks=attachments.map(function(attachment){ return {id:uid(),type:"attachment",attachmentId:attachment.id,width:100}; });
+    note.blocks.splice.apply(note.blocks,[index,0].concat(blocks)); syncNoteBody(note); activeNoteTextBlock=null;
   }
   function addNoteAttachments(note,files){
     var selected=Array.prototype.slice.call(files||[]), accepted=[];
@@ -789,11 +840,12 @@
     });
     if(!accepted.length) return;
     note.attachments=note.attachments||[];
+    var newAttachments=[];
     accepted.forEach(function(file){
       var attachment={id:uid(),name:file.name||"Untitled file",type:file.type||"",size:file.size||0,added:Date.now(),syncState:"saving"};
-      note.attachments.push(attachment);
+      note.attachments.push(attachment); newAttachments.push(attachment);
       storeAttachmentFile(note.id,attachment.id,file).then(function(){
-        attachment.syncState="device"; note.updated=Date.now(); persist(); refreshAttachments(note);
+        attachment.syncState="device"; note.updated=Date.now(); persist(); refreshNoteEditor(note);
         return uploadAttachment(note,attachment,file);
       }).then(function(uploaded){
         if(uploaded) showToast("Attachment added and synced");
@@ -802,13 +854,14 @@
         console.warn("Attachment could not be synced:",error);
         if(attachment.syncState==="saving"){
           note.attachments=note.attachments.filter(function(item){ return item.id!==attachment.id; });
-          persist(); refreshAttachments(note); showToast("Couldn’t save that attachment",true);
+          note.blocks=note.blocks.filter(function(block){ return block.attachmentId!==attachment.id; }); syncNoteBody(note);
+          persist(); refreshNoteEditor(note); showToast("Couldn’t save that attachment",true);
         } else {
-          attachment.syncState="device"; persist(); refreshAttachments(note); showToast("Attachment saved on this device; cloud sync is unavailable");
+          attachment.syncState="device"; persist(); refreshNoteEditor(note); showToast("Attachment saved on this device; cloud sync is unavailable");
         }
       });
     });
-    note.updated=Date.now(); persist(); refreshAttachments(note);
+    insertAttachmentBlocks(note,newAttachments); note.updated=Date.now(); persist(); refreshNoteEditor(note);
   }
   function openAttachment(note,attachment){
     function clickLink(url,local){
@@ -816,40 +869,78 @@
       document.body.appendChild(link); link.click(); document.body.removeChild(link);
       if(local) setTimeout(function(){ URL.revokeObjectURL(url); },60000);
     }
-    readAttachmentFile(note.id,attachment.id).then(function(file){
-      if(file){ clickLink(URL.createObjectURL(file),true); return; }
-      if(storage&&attachment.storagePath) return storage.ref(attachment.storagePath).getDownloadURL().then(function(url){ clickLink(url,false); });
-      throw new Error("Attachment file is unavailable");
-    }).catch(function(error){ console.warn("Attachment could not be opened:",error); showToast("That attachment is not available on this device",true); });
+    getAttachmentUrl(note,attachment).then(function(result){ clickLink(result.url,result.local); }).catch(function(error){ console.warn("Attachment could not be opened:",error); showToast("That attachment is not available on this device",true); });
   }
-  function deleteAttachment(note,attachment){
-    if(!confirm('Remove "'+(attachment.name||"this attachment")+'"?')) return;
-    note.attachments=(note.attachments||[]).filter(function(item){ return item.id!==attachment.id; });
-    note.updated=Date.now(); persist(); refreshAttachments(note); removeAttachmentFile(note.id,attachment.id);
+  function removeInlineAttachment(note,block){
+    var attachment=attachmentById(note,block.attachmentId);
+    note.blocks=note.blocks.filter(function(item){ return item.id!==block.id; });
+    if(!note.blocks.some(function(item){ return item.type==="text"; })) note.blocks.push({id:uid(),type:"text",text:""});
+    var deleteFile=attachment&&!note.blocks.some(function(item){ return item.type==="attachment"&&item.attachmentId===attachment.id; });
+    if(deleteFile) note.attachments=note.attachments.filter(function(item){ return item.id!==attachment.id; });
+    syncNoteBody(note); note.updated=Date.now(); persist(); refreshNoteEditor(note);
+    if(!deleteFile) return;
+    removeAttachmentFile(note.id,attachment.id);
     if(storage&&attachment.storagePath) storage.ref(attachment.storagePath).delete().catch(function(error){ console.warn("Cloud attachment cleanup skipped:",error); });
+    showToast("Attachment removed");
   }
-  function buildAttachments(note){
-    var wrap=document.createElement("section"); wrap.className="attachments"; wrap.setAttribute("data-note-id",note.id);
-    var head=document.createElement("div"); head.className="attachments-head";
-    var copy=document.createElement("div"); copy.innerHTML="<b>Attachments</b><small>Stored separately from your note text</small>";
-    var add=document.createElement("button"); add.type="button"; add.className="attachment-add"; add.textContent="＋ Add files";
-    var picker=document.createElement("input"); picker.type="file"; picker.multiple=true; picker.hidden=true;
-    add.onclick=function(){ picker.click(); };
-    picker.onchange=function(){ addNoteAttachments(note,picker.files); picker.value=""; };
-    head.appendChild(copy); head.appendChild(add); head.appendChild(picker); wrap.appendChild(head);
-    var list=document.createElement("div"); list.className="attachment-list";
-    var attachments=note.attachments||[];
-    if(!attachments.length){ var empty=document.createElement("div"); empty.className="attachment-empty"; empty.textContent="Add files, images, PDFs, or other reference material (up to 25 MB each)."; list.appendChild(empty); }
-    attachments.forEach(function(attachment){
-      var row=document.createElement("div"); row.className="attachment-row";
+  function moveAttachmentBlock(note,blockId,targetIndex){
+    var from=note.blocks.findIndex(function(block){ return block.id===blockId; });
+    if(from<0) return;
+    var block=note.blocks.splice(from,1)[0]; if(from<targetIndex) targetIndex--;
+    note.blocks.splice(Math.max(0,Math.min(targetIndex,note.blocks.length)),0,block); note.updated=Date.now(); persist(); refreshNoteEditor(note);
+  }
+  function rememberNoteTextSelection(note,block,field){ activeNoteTextBlock={noteId:note.id,blockId:block.id,start:field.selectionStart||0,end:field.selectionEnd||0}; }
+  function buildNoteDropTarget(note,index){
+    var target=document.createElement("div"); target.className="note-drop";
+    target.ondragover=function(event){ if(!draggedNoteBlock||draggedNoteBlock.noteId!==note.id) return; event.preventDefault(); target.classList.add("over"); };
+    target.ondragleave=function(){ target.classList.remove("over"); };
+    target.ondrop=function(event){ event.preventDefault(); target.classList.remove("over"); if(draggedNoteBlock&&draggedNoteBlock.noteId===note.id) moveAttachmentBlock(note,draggedNoteBlock.blockId,index); draggedNoteBlock=null; };
+    return target;
+  }
+  function startAttachmentResize(event,note,block,card){
+    event.preventDefault(); event.stopPropagation();
+    var editor=card.closest(".note-editor"), rect=editor.getBoundingClientRect(), startX=event.clientX, startWidth=card.getBoundingClientRect().width;
+    function move(moveEvent){ var next=Math.max(180,Math.min(rect.width,startWidth+(moveEvent.clientX-startX))); block.width=Math.round(next/rect.width*100); card.style.setProperty("--attachment-width",block.width+"%"); }
+    function finish(){ document.removeEventListener("pointermove",move); document.removeEventListener("pointerup",finish); note.updated=Date.now(); persist(); }
+    document.addEventListener("pointermove",move); document.addEventListener("pointerup",finish);
+  }
+  function buildNoteAttachmentBlock(note,block){
+    var attachment=attachmentById(note,block.attachmentId); if(!attachment) return null;
+    var card=document.createElement("figure"); card.className="note-attachment"; card.draggable=true; card.title="Drag to move within this note"; card.style.setProperty("--attachment-width",Math.max(25,Math.min(100,block.width||100))+"%");
+    card.ondragstart=function(event){ if(event.target.closest("button")){ event.preventDefault(); return; } draggedNoteBlock={noteId:note.id,blockId:block.id}; card.classList.add("dragging"); event.dataTransfer.effectAllowed="move"; event.dataTransfer.setData("text/plain",block.id); var editor=card.closest(".note-editor"); if(editor) editor.classList.add("dragging"); };
+    card.ondragend=function(){ draggedNoteBlock=null; card.classList.remove("dragging"); var editor=card.closest(".note-editor"); if(editor) editor.classList.remove("dragging"); };
+    var grip=document.createElement("span"); grip.className="attachment-grip"; grip.textContent="⋮⋮"; card.appendChild(grip);
+    if(attachmentIsImage(attachment)){
+      var image=document.createElement("img"); image.className="note-attachment-image"; image.alt=attachment.name||"Attached image"; card.appendChild(image);
+      getAttachmentUrl(note,attachment).then(function(result){ if(!image.isConnected) return; image.src=result.url; if(result.local) image.onload=function(){ setTimeout(function(){ URL.revokeObjectURL(result.url); },1000); }; }).catch(function(){ image.alt="Image unavailable on this device"; });
+    } else {
+      var file=document.createElement("div"); file.className="note-attachment-file";
       var extension=(attachment.name||"").split(".").pop().toUpperCase(); if(!extension||extension===attachment.name) extension="FILE";
       var icon=document.createElement("span"); icon.className="attachment-icon"; icon.textContent=extension.slice(0,4);
-      var info=document.createElement("div"); info.className="attachment-info"; var name=document.createElement("b"); name.textContent=attachment.name||"Untitled file"; var details=document.createElement("small"); details.textContent=fileSize(attachment.size)+" · "+attachmentLabel(attachment); info.appendChild(name); info.appendChild(details);
-      var open=document.createElement("button"); open.type="button"; open.className="attachment-open"; open.textContent="Open"; open.onclick=function(){ openAttachment(note,attachment); };
-      var remove=document.createElement("button"); remove.type="button"; remove.className="attachment-remove"; remove.textContent="Remove"; remove.onclick=function(){ deleteAttachment(note,attachment); };
-      row.appendChild(icon); row.appendChild(info); row.appendChild(open); row.appendChild(remove); list.appendChild(row);
+      var info=document.createElement("div"); info.className="attachment-info"; var name=document.createElement("b"); name.textContent=attachment.name||"Untitled file"; var details=document.createElement("small"); details.textContent=fileSize(attachment.size)+" · "+attachmentLabel(attachment); info.appendChild(name); info.appendChild(details); file.appendChild(icon); file.appendChild(info); card.appendChild(file);
+    }
+    var actions=document.createElement("div"); actions.className="note-attachment-actions";
+    var open=document.createElement("button"); open.type="button"; open.className="attachment-open"; open.textContent="Open"; open.onclick=function(){ openAttachment(note,attachment); };
+    var remove=document.createElement("button"); remove.type="button"; remove.className="attachment-remove"; remove.textContent="Remove"; remove.onclick=function(){ removeInlineAttachment(note,block); };
+    var resize=document.createElement("button"); resize.type="button"; resize.className="attachment-resize"; resize.setAttribute("aria-label","Resize attachment"); resize.onpointerdown=function(event){ startAttachmentResize(event,note,block,card); };
+    actions.appendChild(open); actions.appendChild(remove); card.appendChild(actions); card.appendChild(resize);
+    if(attachmentIsImage(attachment)){ var status=document.createElement("span"); status.className="attachment-status"; status.textContent=attachment.name+" · "+attachmentLabel(attachment); card.appendChild(status); }
+    return card;
+  }
+  function buildNoteEditor(note){
+    ensureNoteBlocks(note);
+    var editor=document.createElement("section"); editor.className="note-editor"; editor.setAttribute("data-note-id",note.id);
+    var tools=document.createElement("div"); tools.className="note-editor-tools"; var add=document.createElement("button"); add.type="button"; add.className="attachment-add"; add.textContent="＋ Insert file"; var picker=document.createElement("input"); picker.type="file"; picker.multiple=true; picker.hidden=true; add.onclick=function(){ picker.click(); }; picker.onchange=function(){ addNoteAttachments(note,picker.files); picker.value=""; }; tools.appendChild(add); tools.appendChild(picker); editor.appendChild(tools);
+    note.blocks.forEach(function(block,index){
+      editor.appendChild(buildNoteDropTarget(note,index));
+      if(block.type==="text"){
+        var field=document.createElement("textarea"); field.className="note-text-block"; field.rows=1; field.value=block.text||""; field.placeholder="Start writing…";
+        field.oninput=function(){ block.text=field.value; syncNoteBody(note); note.updated=Date.now(); grow(field); updateMeta(); save(); refreshListMeta(); rememberNoteTextSelection(note,block,field); };
+        field.onfocus=function(){ rememberNoteTextSelection(note,block,field); }; field.onkeyup=function(){ rememberNoteTextSelection(note,block,field); }; field.onclick=function(){ rememberNoteTextSelection(note,block,field); }; field.onselect=function(){ rememberNoteTextSelection(note,block,field); };
+        editor.appendChild(field);
+      } else if(block.type==="attachment") { var attachmentBlock=buildNoteAttachmentBlock(note,block); if(attachmentBlock) editor.appendChild(attachmentBlock); }
     });
-    wrap.appendChild(list); return wrap;
+    editor.appendChild(buildNoteDropTarget(note,note.blocks.length)); return editor;
   }
   function buildTodo(it){
     var wrap=document.createElement("div"), list=document.createElement("div"); list.className="todo-list";
@@ -1112,7 +1203,7 @@
   /* =================== actions =================== */
   $("copyAll").onclick=function(){
     var it=current(); if(!it) return;
-    var text = it.type==="script" ? (it.sections||[]).map(function(x){ return (x.body||"").trim(); }).filter(Boolean).join("\n\n") : (it.type==="todo"?(it.todos||[]).map(function(x){return (x.done?"[x] ":"[ ] ")+(x.text||"");}).join("\n"):(it.body||""));
+    var text = it.type==="script" ? (it.sections||[]).map(function(x){ return (x.body||"").trim(); }).filter(Boolean).join("\n\n") : (it.type==="todo"?(it.todos||[]).map(function(x){return (x.done?"[x] ":"[ ] ")+(x.text||"");}).join("\n"):itemText(it));
     var b=this, lbl=$("copyAllLabel"), old=lbl.textContent;
     copy(text,function(){ b.classList.add("done"); lbl.textContent="Copied"; showToast(it.type==="script"?"Full script copied":"Note copied"); setTimeout(function(){ b.classList.remove("done"); lbl.textContent=old; },1300); });
   };
@@ -1175,7 +1266,7 @@
       try{
         var d=JSON.parse(r.result), inc=d.items||d.scripts||d;
         if(!Array.isArray(inc)) throw new Error("bad");
-        inc.forEach(function(s){ s.id=uid(); if(!s.type) s.type=s.sections?"script":"note"; s.tagIds=[]; s.folderId=null; if(s.type==="script"&&!Array.isArray(s.sections)) s.sections=[sec("",s.body||"")]; if(s.type==="todo"&&!Array.isArray(s.todos)) s.todos=[]; });
+        inc.forEach(function(s){ s.id=uid(); if(!s.type) s.type=s.sections?"script":"note"; s.tagIds=[]; s.folderId=null; if(s.type==="script"&&!Array.isArray(s.sections)) s.sections=[sec("",s.body||"")]; if(s.type==="todo"&&!Array.isArray(s.todos)) s.todos=[]; if(s.type==="note") ensureNoteBlocks(s); });
         state.items=inc.concat(state.items);
         if(d.folders) state.folders=state.folders.concat(d.folders.map(function(f){ return {id:uid(),name:f.name}; }));
         if(d.tags) state.tags=state.tags.concat(d.tags.map(function(t){ return {id:uid(),name:t.name,hue:t.hue||265}; }));
@@ -1318,10 +1409,11 @@
     hideLoginPrompt();
     try{ sessionStorage.setItem(PROMPT_KEY,"1"); }catch(e){}
   };
-  function hasContent(items){ return items && items.some(function(s){ return (s.title&&s.title.trim())||itemText(s).trim(); }); }
-  function sig(s){ return (s.title||"")+"|"+itemText(s); }
+  function hasContent(items){ return items && items.some(function(s){ return (s.title&&s.title.trim())||itemText(s).trim()||(s.type==="note"&&(s.attachments||[]).length); }); }
+  function sig(s){ return (s.title||"")+"|"+itemText(s)+"|"+(s.type==="note"?(s.attachments||[]).map(function(attachment){ return (attachment.name||"")+":"+(attachment.size||0); }).join(","):""); }
   function useData(d){
     state.items=(d.items&&d.items.length)?d.items:[newScriptItem()];
+    state.items.forEach(ensureNoteBlocks);
     state.folders=d.folders||[]; state.tags=d.tags||[];
     state.currentId=state.items[0].id; state.filterFolder=null; state.filterTag=null;
     state.pendingCloudSync=false; state.lastCloudSync=d.updated||Date.now();
@@ -1361,6 +1453,7 @@
       } else if(!seen[sig(s)]){ var copy=JSON.parse(JSON.stringify(s)); copy.id=copy.id||uid(); add.push(copy); seen[sig(copy)]=1; }
     });
     state.items=state.items.concat(add);
+    state.items.forEach(ensureNoteBlocks);
     state.folders=unionBy(state.folders,cloud.folders,function(f){ return f.name; });
     state.tags=unionBy(state.tags,cloud.tags,function(t){ return t.name; });
     applyAccountPreferences(cloud);
