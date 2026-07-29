@@ -211,6 +211,35 @@
   .todo-row.done .todo-delete{ display:block; }
   .todo-summary{ display:flex; align-items:center; justify-content:space-between; gap:12px; margin:2px 0 18px; color:var(--ink-faint); font:500 .72rem "DM Mono",monospace; }
 
+  /* ---------- audio entries ---------- */
+  .audio-entry{ display:grid; gap:14px; padding:4px 0 24px; }
+  .audio-recorder{ display:flex; align-items:center; gap:14px; padding:16px; border:1px solid var(--line); border-radius:16px; background:linear-gradient(135deg,rgba(255,255,255,.045),rgba(255,255,255,.018)); transition:border-color .18s,background .18s; }
+  .audio-recorder.is-recording{ border-color:rgba(248,113,113,.48); background:linear-gradient(135deg,rgba(248,113,113,.13),rgba(255,255,255,.022)); }
+  .audio-record-button{ width:50px; height:50px; flex:none; display:grid; place-items:center; border:0; border-radius:50%; color:#08080a; background:var(--accent); cursor:pointer; transition:transform .08s,filter .15s,background .15s; }
+  .audio-record-button:hover{ filter:brightness(1.1); } .audio-record-button:active{ transform:scale(.94); } .audio-record-button:disabled{ cursor:wait; opacity:.65; }
+  .audio-recorder.is-recording .audio-record-button{ color:#fff; background:#ef4444; }
+  .audio-record-button svg{ width:21px; height:21px; }
+  .audio-recorder-copy{ min-width:0; display:grid; gap:3px; }
+  .audio-recorder-copy b{ font-size:.92rem; } .audio-recorder-copy small{ color:var(--ink-faint); font:500 .7rem "DM Mono",monospace; }
+  .audio-recording-indicator{ display:inline-flex; align-items:center; gap:6px; color:#fca5a5; font:700 .66rem "DM Mono",monospace; letter-spacing:.08em; text-transform:uppercase; }
+  .audio-recording-indicator::before{ content:""; width:7px; height:7px; border-radius:50%; background:#ef4444; box-shadow:0 0 0 0 rgba(239,68,68,.55); animation:audioPulse 1.25s infinite; }
+  @keyframes audioPulse{ 70%{ box-shadow:0 0 0 7px rgba(239,68,68,0); } 100%{ box-shadow:0 0 0 0 rgba(239,68,68,0); } }
+  .audio-clips{ display:grid; gap:9px; }
+  .audio-clips-head{ display:flex; align-items:center; justify-content:space-between; gap:12px; padding:1px 2px; color:var(--ink-dim); font:600 .72rem "DM Mono",monospace; letter-spacing:.08em; text-transform:uppercase; }
+  .audio-clips-head span{ color:var(--ink-faint); font-weight:500; }
+  .audio-empty{ padding:25px 16px; border:1px dashed rgba(255,255,255,.13); border-radius:14px; color:var(--ink-faint); text-align:center; font-size:.86rem; line-height:1.55; }
+  .audio-clip{ display:grid; grid-template-columns:minmax(0,1fr) auto; gap:10px 12px; padding:13px; border:1px solid var(--line); border-radius:14px; background:rgba(255,255,255,.028); }
+  .audio-clip-info{ min-width:0; display:grid; gap:7px; }
+  .audio-clip-name{ width:100%; min-width:0; padding:0; border:0; outline:0; color:var(--ink); background:transparent; font:600 .9rem "DM Sans",sans-serif; }
+  .audio-clip-name::placeholder{ color:var(--ink-faint); }
+  .audio-clip-details{ color:var(--ink-faint); font:500 .67rem "DM Mono",monospace; }
+  .audio-clip audio{ grid-column:1 / -1; width:100%; height:36px; accent-color:var(--accent); }
+  .audio-clip-actions{ display:flex; align-items:flex-start; gap:5px; }
+  .audio-clip-actions button{ border:1px solid var(--line); border-radius:8px; padding:6px 8px; color:var(--ink-dim); background:rgba(255,255,255,.025); cursor:pointer; font:600 .68rem "DM Sans",sans-serif; }
+  .audio-clip-actions button:hover{ color:var(--ink); background:var(--accent-soft); border-color:var(--accent-line); }
+  .audio-clip-actions .audio-remove:hover{ color:#fca5a5; border-color:rgba(248,113,113,.32); background:rgba(248,113,113,.1); }
+  @media (max-width:560px){ .audio-recorder{ padding:13px; } .audio-clip{ grid-template-columns:minmax(0,1fr); } .audio-clip-actions{ grid-row:1; grid-column:1; justify-self:end; } }
+
   /* ---------- drawer ---------- */
   .drawer{ background:#000; border-right:1px solid var(--line); display:flex; flex-direction:column; padding-top:var(--safe-t); padding-bottom:var(--safe-b); min-height:0; }
   .scrim{ position:fixed; inset:0; z-index:20; background:rgba(0,0,0,.55); opacity:0; pointer-events:none; transition:opacity .26s; }
@@ -332,15 +361,24 @@
   .toast{ position:fixed; left:50%; bottom:calc(24px + var(--safe-b)); transform:translate(-50%,16px); z-index:120; padding:10px 18px; border-radius:12px; background:#141418; border:1px solid var(--line); font-size:.82rem; color:var(--ink); opacity:0; pointer-events:none; transition:.2s; max-width:88vw; }
   .toast.show{ opacity:1; transform:translate(-50%,0); } .toast .tk{ color:#6ee7b7; } .toast.bad .tk{ color:#f87171; }
 
-  /* ---------- optional sign-in reminder ---------- */
-  .login-prompt{ position:fixed; z-index:85; top:calc(var(--safe-t) + 18px); left:50%; width:min(440px,calc(100vw - 28px)); transform:translate(-50%,-18px); display:flex; align-items:center; gap:14px; padding:13px 14px 13px 16px; border:1px solid var(--accent-line); border-radius:16px; background:rgba(10,10,14,.94); box-shadow:0 18px 60px rgba(0,0,0,.48); backdrop-filter:blur(18px); opacity:0; pointer-events:none; transition:opacity .2s,transform .2s; }
-  .login-prompt.show{ opacity:1; transform:translate(-50%,0); pointer-events:auto; }
-  .login-prompt .lp-copy{ flex:1; min-width:0; }
-  .login-prompt b{ display:block; font-size:.88rem; margin-bottom:2px; }
-  .login-prompt small{ display:block; color:var(--ink-dim); font-size:.75rem; line-height:1.35; }
-  .login-prompt .lp-signin{ flex:none; padding:8px 12px; border:1px solid var(--accent-line); border-radius:9px; color:#08080a; background:var(--accent); font:600 .78rem "DM Sans",sans-serif; cursor:pointer; }
-  .login-prompt .lp-dismiss{ flex:none; width:30px; height:30px; display:grid; place-items:center; border:0; border-radius:8px; color:var(--ink-dim); background:transparent; font-size:1rem; cursor:pointer; }
-  .login-prompt .lp-dismiss:hover{ color:var(--ink); background:rgba(255,255,255,.07); }
+  /* ---------- required sign-in gate ---------- */
+  .auth-locked .app{ filter:blur(13px) saturate(.62); transform:scale(1.018); pointer-events:none; user-select:none; transition:filter .45s ease,transform .45s ease; }
+  .auth-locked .modal,.auth-locked .toast{ pointer-events:none; }
+  .auth-gate{ position:fixed; z-index:160; inset:0; display:grid; place-items:center; overflow:hidden; padding:max(24px,calc(var(--safe-t) + 16px)) 24px max(24px,calc(var(--safe-b) + 16px)); color:var(--ink); background:rgba(1,1,4,.45); opacity:0; visibility:hidden; pointer-events:none; transition:opacity .32s ease,visibility .32s; }
+  .auth-gate.show{ opacity:1; visibility:visible; pointer-events:auto; }
+  .auth-gate::before{ content:""; position:absolute; inset:-20%; background:radial-gradient(circle at 24% 18%,var(--accent-soft),transparent 27%),radial-gradient(circle at 77% 78%,rgba(112,72,255,.18),transparent 31%); filter:blur(20px); animation:gate-wash 12s ease-in-out infinite alternate; }
+  .gate-orbit{ position:absolute; width:min(78vw,720px); aspect-ratio:1; border:1px solid rgba(255,255,255,.065); border-radius:50%; opacity:.62; animation:gate-orbit 15s ease-in-out infinite alternate; }
+  .auth-card{ position:relative; width:min(100%,356px); padding:clamp(26px,5vw,32px); overflow:hidden; border:1px solid rgba(255,255,255,.12); border-radius:20px; background:linear-gradient(145deg,rgba(22,22,31,.88),rgba(7,7,12,.84)); box-shadow:0 28px 80px rgba(0,0,0,.52),inset 0 1px rgba(255,255,255,.06); backdrop-filter:blur(24px); text-align:center; }
+  .auth-card::after{ content:""; position:absolute; inset:0; pointer-events:none; background:linear-gradient(120deg,rgba(255,255,255,.08),transparent 28%,transparent 70%,rgba(255,255,255,.035)); }
+  .gate-eyebrow{ position:relative; z-index:1; margin:0 0 8px; color:var(--accent); font:600 .64rem "DM Mono",monospace; letter-spacing:.18em; text-transform:uppercase; }
+  .auth-card h1{ position:relative; z-index:1; max-width:300px; margin:0 auto; font-size:clamp(1.55rem,4.2vw,1.85rem); line-height:1.1; letter-spacing:-.04em; }
+  .auth-card > p:not(.gate-eyebrow){ position:relative; z-index:1; max-width:280px; margin:10px auto 20px; color:var(--ink-dim); font-size:.8rem; line-height:1.5; }
+  .auth-signin{ position:relative; z-index:1; width:100%; min-height:48px; display:inline-flex; align-items:center; justify-content:center; gap:9px; border:1px solid rgba(255,255,255,.16); border-radius:12px; color:#09090c; background:var(--accent); box-shadow:0 10px 26px var(--accent-soft); cursor:pointer; font:700 .84rem "DM Sans",sans-serif; transition:transform .15s,filter .15s,box-shadow .15s; }
+  .auth-signin:hover{ filter:brightness(1.1); box-shadow:0 16px 38px var(--accent-soft); transform:translateY(-2px); }.auth-signin:active{ transform:translateY(0) scale(.985); }.auth-signin:disabled{ cursor:wait; filter:saturate(.6); }
+  .google-mark{ width:19px; height:19px; display:block; flex:none; }.google-mark svg{ display:block; width:100%; height:100%; }
+  .auth-gate-status{ position:relative; z-index:1; margin:14px 0 0; color:var(--ink-faint); font-size:.72rem; line-height:1.4; }.auth-gate-status:empty{ display:none; }.auth-gate-status.error{ color:#fca5a5; }
+  @keyframes gate-orbit{ to{ transform:scale(1.06); opacity:.22; } } @keyframes gate-wash{ to{ transform:translate3d(4%,3%,0) scale(1.08); } }
+  @media (prefers-reduced-motion: reduce){ .auth-gate::before,.gate-orbit{ animation:none; } }
 
   /* ---------- modals ---------- */
   .modal{ position:fixed; inset:0; z-index:100; display:none; align-items:center; justify-content:center; background:rgba(0,0,0,.72); padding:18px; }
@@ -455,11 +493,11 @@
   }
 </style>
 </head>
-<body>
+<body class="auth-locked">
 
 <div class="ambient" id="ambient"><div class="glow g1"></div><div class="glow g2"></div><div class="glow g3"></div></div>
 
-<div class="app" id="app">
+<div class="app" id="app" inert aria-hidden="true">
   <div class="scrim" id="scrim"></div>
 
   <aside class="drawer">
@@ -489,10 +527,15 @@
   </div>
 </div>
 
-<div class="login-prompt" id="loginPrompt" role="status" aria-live="polite">
-  <div class="lp-copy"><b>Keep your notes with you</b><small>Sign in to sync notes and your theme across devices.</small></div>
-  <button class="lp-signin" id="promptSignIn">Sign in</button>
-  <button class="lp-dismiss" id="promptDismiss" aria-label="Dismiss sign-in reminder">×</button>
+<div class="auth-gate show" id="authGate" role="dialog" aria-modal="true" aria-labelledby="authGateTitle" aria-describedby="authGateCopy authGateStatus">
+  <div class="gate-orbit" aria-hidden="true"></div>
+  <section class="auth-card">
+    <p class="gate-eyebrow">Second Brain Notes</p>
+    <h1 id="authGateTitle">Sign in to continue.</h1>
+    <p id="authGateCopy">A cloud-based notes platform, synced across your devices.</p>
+    <button class="auth-signin" id="gateSignIn" type="button"><span class="google-mark" aria-hidden="true"><svg viewBox="0 0 48 48"><path fill="#FFC107" d="M43.6 20.5H42V20H24v8h11.3C33.7 32.9 29.3 36 24 36c-6.6 0-12-5.4-12-12s5.4-12 12-12c3.1 0 5.9 1.2 8 3.1l5.7-5.7C34.5 6.1 29.5 4 24 4 12.9 4 4 12.9 4 24s8.9 20 20 20 20-8.9 20-20c0-1.3-.1-2.3-.4-3.5z"/><path fill="#FF3D00" d="M6.3 14.7l6.6 4.8C14.7 15.1 19 12 24 12c3.1 0 5.9 1.2 8 3.1l5.7-5.7C34.5 6.1 29.5 4 24 4 16.3 4 9.7 8.3 6.3 14.7z"/><path fill="#4CAF50" d="M24 44c5.2 0 9.9-2 13.4-5.2l-6.2-5.2C29.2 35.1 26.7 36 24 36c-5.3 0-9.7-3.1-11.3-7.9l-6.5 5C9.6 39.6 16.2 44 24 44z"/><path fill="#1976D2" d="M43.6 20.5H42V20H24v8h11.3c-.8 2.2-2.2 4.1-4.1 5.6l6.2 5.2C41.9 35.6 44 30.3 44 24c0-1.3-.1-2.3-.4-3.5z"/></svg></span><span id="gateSignInLabel">Sign in with Google</span></button>
+    <p class="auth-gate-status" id="authGateStatus" role="status" aria-live="polite">Checking your secure session…</p>
+  </section>
 </div>
 <div class="toast" id="toast"></div>
 <div class="modal" id="settingsModal"><div class="modal-box" id="settingsBox"></div></div>
@@ -533,7 +576,7 @@
 
   /* =================== storage =================== */
   var KEY="astral-notes-v5", OLDS=["astral-notes-v4","astral-notes-v3"], CFGKEY="astral-fb-config", BACKUP_KEY="second-brain-auto-backups-v1", BACKUP_LIMIT=10, AUTO_BACKUP_COOLDOWN=60*60*1000, mem=null;
-  var deviceBackups=[], attachmentDbPromise=null, activeNoteTextBlock=null, draggedNoteBlock=null, activeAttachmentUploads={};
+  var deviceBackups=[], attachmentDbPromise=null, activeNoteTextBlock=null, draggedNoteBlock=null, activeAttachmentUploads={}, activeAudioRecorder=null;
   var DEFAULT_ELEVENLABS_VOICE="21m00Tcm4TlvDq8ikWAM", CUSTOM_VOICE_OPTION="__elevenlabs_voice_id__";
   var runtimeApiKeys={openai:"",elevenlabs:"",elevenlabsVoice:DEFAULT_ELEVENLABS_VOICE,savedVoices:[],audio:null,audioUrl:null,ttsControl:null,ttsRequestId:0};
   var canPersist=(function(){ try{ localStorage.setItem("__t","1"); localStorage.removeItem("__t"); return true; }catch(e){ return false; } })();
@@ -547,7 +590,7 @@
   }
   function loadLocal(){ var v=readKey(KEY); if(v&&v.items) return v; if(!canPersist&&mem) return mem; return migrate(); }
   function setSaveState(label,kind){ var el=$("saveState"); if(!el) return; el.textContent=label; el.className="save-state"+(kind?" "+kind:""); }
-  function backupPayload(){ return { app:"second-brain", version:10, items:state.items, folders:state.folders, tags:state.tags, preferences:{theme:state.theme,motion:state.motion,darkness:state.darkness,enabledTypes:state.enabledTypes,noteInsertOptions:state.noteInsertOptions,tagsCollapsed:state.tagsCollapsed,allNotesName:state.allNotesName}, created:Date.now() }; }
+  function backupPayload(){ return { app:"second-brain", version:11, items:state.items, folders:state.folders, tags:state.tags, preferences:{theme:state.theme,motion:state.motion,darkness:state.darkness,enabledTypes:state.enabledTypes,noteInsertOptions:state.noteInsertOptions,tagsCollapsed:state.tagsCollapsed,allNotesName:state.allNotesName}, created:Date.now() }; }
   function autoBackups(){ return deviceBackups; }
   function captureAutoBackup(force,kind){
     var created=Date.now(), backupKind=kind||"automatic";
@@ -565,6 +608,7 @@
   function newScriptItem(){ var it=baseItem(); it.type="script"; it.sections=[sec("Intro",""),sec("Main",""),sec("Outro","")]; return it; }
   function newNoteItem(){ var it=baseItem(); it.type="note"; it.body=""; it.attachments=[]; it.blocks=[{id:uid(),type:"text",text:""}]; return it; }
   function newTodoItem(){ var it=baseItem(); it.type="todo"; it.todos=[]; it.done=false; it.completed=null; return it; }
+  function newAudioItem(){ var it=baseItem(); it.type="audio"; it.recordings=[]; return it; }
   function newTask(){ return {id:uid(),text:"",description:"",body:"",attachments:[],blocks:[textBlock("")],subtasks:[],done:false,completed:null,detailsCollapsed:true}; }
   function newAgentItem(){ var it=baseItem(); it.type="agent"; it.title="New Agent"; it.agent={tab:"chat",model:"",voice:"Default",longTermMemory:"{}",shortTermMemory:"{}",instructions:"{\n  \"role\": \"helpful assistant\"\n}"}; return it; }
   var NOTE_INSERT_DEFAULTS={file:true,paragraph:true,comment:true,prompt:true,heading:true,group:true};
@@ -618,6 +662,18 @@
     ensureNoteBlocks(task);
     if(typeof task.detailsCollapsed!=="boolean") task.detailsCollapsed=!(task.body||task.attachments.length);
   }
+  function ensureAudioItem(it){
+    it.recordings=Array.isArray(it.recordings)?it.recordings:[];
+    it.recordings=it.recordings.filter(function(recording){ return recording&&typeof recording==="object"; });
+    it.recordings.forEach(function(recording){
+      if(!recording.id) recording.id=uid();
+      if(typeof recording.name!=="string"||!recording.name.trim()) recording.name="Recording";
+      if(typeof recording.type!=="string") recording.type="audio/webm";
+      if(typeof recording.size!=="number") recording.size=0;
+      if(typeof recording.added!=="number") recording.added=Date.now();
+      if(typeof recording.duration!=="number") recording.duration=0;
+    });
+  }
   function normalizeItem(it){
     if(!it||typeof it!=="object") return;
     if(it.type==="note") ensureNoteBlocks(it);
@@ -628,12 +684,14 @@
       if(!it.completed) it.completed=null;
       it.todos.forEach(ensureTodoTaskDetails);
     }
+    if(it.type==="audio") ensureAudioItem(it);
     if(it.type==="agent"&&!it.agent) it.agent={tab:"chat",model:"",voice:"Default",longTermMemory:"{}",shortTermMemory:"{}",instructions:"{}"};
   }
   function forEachItemContentDocument(item,handler){
     if(!item) return;
     if(item.type==="note") handler(item,item);
     if(item.type==="todo") (item.todos||[]).forEach(function(task){ handler(task,item); });
+    if(item.type==="audio") handler(item,item);
   }
   function forEachContentDocument(handler){ (state.items||[]).forEach(function(item){ forEachItemContentDocument(item,handler); }); }
   function contentOwner(note){ var owner=null; forEachContentDocument(function(document,item){ if(document===note) owner=item; }); return owner; }
@@ -642,7 +700,7 @@
     note.updated=now;
     if(owner&&owner!==note) owner.updated=now;
   }
-  function itemHasAttachments(item){ var has=false; forEachItemContentDocument(item,function(document){ if((document.attachments||[]).length) has=true; }); return has; }
+  function itemHasAttachments(item){ var has=false; forEachItemContentDocument(item,function(document){ if(contentFiles(document).length) has=true; }); return has; }
 
   var state=loadLocal();
   if(!state||!state.items){ state={ items:[], folders:[], tags:[], currentId:null, motion:true, theme:"nebula", filterFolder:null, filterTag:null }; state.items.push(newNoteItem()); state.currentId=state.items[0].id; }
@@ -656,6 +714,7 @@
   if(typeof state.enabledTypes.note!=="boolean") state.enabledTypes.note=true;
   if(typeof state.enabledTypes.todo!=="boolean") state.enabledTypes.todo=true;
   if(typeof state.enabledTypes.agent!=="boolean") state.enabledTypes.agent=false;
+  if(typeof state.enabledTypes.audio!=="boolean") state.enabledTypes.audio=true;
   state.noteInsertOptions=state.noteInsertOptions||{};
   Object.keys(NOTE_INSERT_DEFAULTS).forEach(function(type){ if(typeof state.noteInsertOptions[type]!=="boolean") state.noteInsertOptions[type]=NOTE_INSERT_DEFAULTS[type]; });
   if(typeof state.tagsCollapsed!=="boolean") state.tagsCollapsed=false;
@@ -670,7 +729,7 @@
   if(!state.currentId || !state.items.some(function(i){return i.id===state.currentId;})) state.currentId=state.items[0].id;
 
   function blankDeviceState(){
-    return {items:[],folders:[],tags:[],currentId:null,motion:true,theme:"nebula",darkness:82,enabledTypes:{script:true,note:true,todo:true,agent:false},noteInsertOptions:{file:true,paragraph:true,comment:true,prompt:true,heading:true,group:true},tagsCollapsed:false,allNotesName:"All notes",filterFolder:null,filterTag:null,listSort:"updated",pendingCloudSync:false,syncBaseline:null};
+    return {items:[],folders:[],tags:[],currentId:null,motion:true,theme:"nebula",darkness:82,enabledTypes:{script:true,note:true,todo:true,audio:true,agent:false},noteInsertOptions:{file:true,paragraph:true,comment:true,prompt:true,heading:true,group:true},tagsCollapsed:false,allNotesName:"All notes",filterFolder:null,filterTag:null,listSort:"updated",pendingCloudSync:false,syncBaseline:null};
   }
   function clearAttachmentStore(){
     if(!window.indexedDB) return;
@@ -684,6 +743,7 @@
   function wipeDeviceNotes(){
     clearTimeout(cloudTimer);
     cloudTimer=null; mem=null; deviceBackups=[]; activeAttachmentUploads={}; activeNoteTextBlock=null; draggedNoteBlock=null;
+    if(activeAudioRecorder){ try{ activeAudioRecorder.recorder.stop(); }catch(e){} activeAudioRecorder=null; }
     if(canPersist){
       try{
         [KEY,BACKUP_KEY].concat(OLDS).forEach(function(key){ localStorage.removeItem(key); });
@@ -748,9 +808,12 @@
     (task.subtasks||[]).forEach(function(subtask){ if(subtask.text) lines.push("  ["+(subtask.done?"x":" ")+"] "+subtask.text); });
     return lines.join("\n");
   }
-  function itemText(it){ if(it.type==="script") return (it.sections||[]).map(function(x){return x.body;}).join(" "); if(it.type==="todo") return (it.todos||[]).map(function(task){ return [task.text,taskDetailsText(task),(task.subtasks||[]).map(function(subtask){ return subtask.text||""; }).join(" ")].filter(Boolean).join(" "); }).join(" "); if(it.type==="agent") return [it.title,(it.agent||{}).longTermMemory,(it.agent||{}).shortTermMemory,(it.agent||{}).instructions].join(" "); if(it.type==="note"&&Array.isArray(it.blocks)) return it.blocks.map(blockPlainText).filter(Boolean).join("\n"); return it.body||""; }
+  function audioDuration(it){ return (it&&it.recordings||[]).reduce(function(total,recording){ return total+(Number(recording.duration)||0); },0); }
+  function formatAudioDuration(seconds){ seconds=Math.max(0,Math.round(Number(seconds)||0)); var minutes=Math.floor(seconds/60), remainder=seconds%60; return minutes+":"+(remainder<10?"0":"")+remainder; }
+  function audioMetaText(it){ var count=(it.recordings||[]).length; return count?count+" recording"+(count===1?"":"s")+" · "+formatAudioDuration(audioDuration(it)):"No recordings"; }
+  function itemText(it){ if(it.type==="script") return (it.sections||[]).map(function(x){return x.body;}).join(" "); if(it.type==="todo") return (it.todos||[]).map(function(task){ return [task.text,taskDetailsText(task),(task.subtasks||[]).map(function(subtask){ return subtask.text||""; }).join(" ")].filter(Boolean).join(" "); }).join(" "); if(it.type==="audio") return (it.recordings||[]).map(function(recording){ return recording.name||""; }).join(" "); if(it.type==="agent") return [it.title,(it.agent||{}).longTermMemory,(it.agent||{}).shortTermMemory,(it.agent||{}).instructions].join(" "); if(it.type==="note"&&Array.isArray(it.blocks)) return it.blocks.map(blockPlainText).filter(Boolean).join("\n"); return it.body||""; }
   function itemWords(it){ return words(itemText(it)); }
-  function itemLabel(it){ return it.type==="script"?"YouTube Script":(it.type==="todo"?"Todo":(it.type==="agent"?"Agent":"Note")); }
+  function itemLabel(it){ return it.type==="script"?"YouTube Script":(it.type==="todo"?"Todo":(it.type==="audio"?"Audio":(it.type==="agent"?"Agent":"Note"))); }
   function setTodoDone(it,done){
     it.done=typeof done==="boolean"?done:!it.done;
     it.completed=it.done?Date.now():null;
@@ -777,6 +840,7 @@
   var ICON_UNLOCK='<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="5" y="10" width="14" height="11" rx="2"/><path d="M8 10V7a4 4 0 0 1 7.2-2.4"/></svg>';
   var ICON_DELETE='<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 6h18M8 6V4h8v2M19 6l-1 14H6L5 6"/></svg>';
   var ICON_TODO='<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="4" y="4" width="16" height="16" rx="3"/><path d="M8 12l2.5 2.5L16 9"/></svg>';
+  var ICON_AUDIO='<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3v11a4 4 0 1 1-3-3.87V6l9-2v9a4 4 0 1 1-3-3.87V4.78z"/></svg>';
   var ICON_AGENT='<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="8" r="3.5"/><path d="M5 21c.8-4 3.2-6 7-6s6.2 2 7 6"/><path d="M19 5v4M17 7h4"/></svg>';
   var ICON_FOLDER='<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M3 7a2 2 0 0 1 2-2h4l2 2h8a2 2 0 0 1 2 2v8a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/></svg>';
 
@@ -904,15 +968,16 @@
       (task.blocks||[]).forEach(function(block){ block.id=uid(); if(block.type==="attachment") block.attachmentId=attachmentIds[block.attachmentId]||block.attachmentId; });
       if(sourceId) taskCopies.push({sourceId:sourceId,targetId:task.id,attachmentIds:attachmentIds});
     });
-    if(copy.type==="note"){
+    if(copy.type==="note"||copy.type==="audio"){
       var attachmentIds={};
-      (copy.attachments||[]).forEach(function(attachment){ var oldId=attachment.id; attachment.id=uid(); attachmentIds[oldId]=attachment.id; attachment.sourceNoteId=it.id; attachment.sourceAttachmentId=oldId; });
-      (copy.blocks||[]).forEach(function(block){ block.id=uid(); if(block.type==="attachment") block.attachmentId=attachmentIds[block.attachmentId]||block.attachmentId; });
+      var copyFiles=copy.type==="audio"?(copy.recordings||[]):(copy.attachments||[]);
+      copyFiles.forEach(function(attachment){ var oldId=attachment.id; attachment.id=uid(); attachmentIds[oldId]=attachment.id; attachment.sourceNoteId=it.id; attachment.sourceAttachmentId=oldId; });
+      if(copy.type==="note") (copy.blocks||[]).forEach(function(block){ block.id=uid(); if(block.type==="attachment") block.attachmentId=attachmentIds[block.attachmentId]||block.attachmentId; });
     }
     var ordered=visibleItems(), index=ordered.findIndex(function(item){ return item.id===it.id; }), next=ordered[index+1];
     copy.manualOrder=next?(it.manualOrder+next.manualOrder)/2:it.manualOrder+5;
     state.items.push(copy); state.currentId=copy.id;
-    if(copy.type==="note") Object.keys(attachmentIds).forEach(function(sourceId){ readAttachmentFile(it.id,sourceId).then(function(file){ if(file) return storeAttachmentFile(copy.id,attachmentIds[sourceId],file); }).catch(function(){}); });
+    if(copy.type==="note"||copy.type==="audio") Object.keys(attachmentIds).forEach(function(sourceId){ readAttachmentFile(it.id,sourceId).then(function(file){ if(file) return storeAttachmentFile(copy.id,attachmentIds[sourceId],file); }).catch(function(){}); });
     taskCopies.forEach(function(taskCopy){ Object.keys(taskCopy.attachmentIds).forEach(function(sourceAttachmentId){ readAttachmentFile(taskCopy.sourceId,sourceAttachmentId).then(function(file){ if(file) return storeAttachmentFile(taskCopy.targetId,taskCopy.attachmentIds[sourceAttachmentId],file); }).catch(function(){}); }); });
     persist(); renderAll(); showToast("Duplicate created");
   }
@@ -945,8 +1010,8 @@
       el.setAttribute("data-item-id",it.id);
       var dots=(it.tagIds||[]).map(function(id){ var t=tagById(id); return t?'<span class="dot" style="background:hsl('+t.hue+',65%,62%)"></span>':""; }).join("");
       var todoOpen=it.type==="todo"?(it.todos||[]).filter(function(x){return !x.done;}).length:null;
-      var icon=it.type==="script"?ICON_SCRIPT:(it.type==="todo"?ICON_TODO:(it.type==="agent"?ICON_AGENT:ICON_NOTE));
-      var metaText=it.type==="script"?((it.sections||[]).filter(function(s){return s.kind!=="cue";}).length+" ch · "+itemWords(it)+" words"):(it.type==="todo"?(todoOpen+" left"):(it.type==="agent"?"Agent prototype":itemWords(it)+" words"));
+      var icon=it.type==="script"?ICON_SCRIPT:(it.type==="todo"?ICON_TODO:(it.type==="audio"?ICON_AUDIO:(it.type==="agent"?ICON_AGENT:ICON_NOTE)));
+      var metaText=it.type==="script"?((it.sections||[]).filter(function(s){return s.kind!=="cue";}).length+" ch · "+itemWords(it)+" words"):(it.type==="todo"?(todoOpen+" left"):(it.type==="audio"?audioMetaText(it):(it.type==="agent"?"Agent prototype":itemWords(it)+" words")));
       var leading=it.type==="todo"?'<button class="side-todo-check'+(it.done?" done":"")+'" aria-label="'+(it.done?"Mark incomplete":"Mark complete")+'">'+(it.done?"✓":"")+'</button>':icon;
       var deleteLabel=it.type==="todo"&&it.done?"Delete?":"✕";
       var lockStatus=it.locked?'<span class="item-lock" title="Deletion locked" aria-label="Deletion locked">'+ICON_LOCK+'</span>':"";
@@ -960,12 +1025,12 @@
           taskRow.innerHTML='<button class="side-task-check" aria-label="'+(task.done?"Mark incomplete":"Mark complete")+'">'+(task.done?"✓":"")+'</button><button class="side-task-open"></button>';
           taskRow.querySelector(".side-task-open").textContent=task.text||"Untitled task";
           taskRow.querySelector(".side-task-check").onclick=function(e){ e.stopPropagation(); task.done=!task.done; task.completed=task.done?Date.now():null; it.updated=Date.now(); persist(); renderList(); if(current().id===it.id) renderMain(); };
-          taskRow.querySelector(".side-task-open").onclick=function(e){ e.stopPropagation(); state.currentId=it.id; app.classList.remove("open"); renderList(); renderMain(); };
+          taskRow.querySelector(".side-task-open").onclick=function(e){ e.stopPropagation(); if(activeAudioRecorder&&activeAudioRecorder.itemId!==it.id){ showToast("Finish the current recording before leaving it",true); return; } state.currentId=it.id; app.classList.remove("open"); renderList(); renderMain(); };
           taskBox.appendChild(taskRow);
         });
         el.appendChild(taskBox);
       }
-      el.onclick=function(e){ if(e.target.closest(".dx")||e.target.closest(".side-task")||e.target.closest(".side-todo-check")) return; state.currentId=it.id; app.classList.remove("open"); renderList(); renderMain(); };
+      el.onclick=function(e){ if(e.target.closest(".dx")||e.target.closest(".side-task")||e.target.closest(".side-todo-check")) return; if(activeAudioRecorder&&activeAudioRecorder.itemId!==it.id){ showToast("Finish the current recording before leaving it",true); return; } state.currentId=it.id; app.classList.remove("open"); renderList(); renderMain(); };
       el.querySelector(".dx").onclick=function(e){ e.stopPropagation(); openItemActions(e.currentTarget,it); };
       listEl.appendChild(el);
     });
@@ -973,6 +1038,7 @@
   function renderAll(){ renderFolders(); renderTags(); renderList(); renderMain(); }
   function delItem(id,message){
     var item=state.items.find(function(s){ return s.id===id; });
+    if(activeAudioRecorder&&activeAudioRecorder.itemId===id){ showToast("Stop the recording before deleting this audio entry",true); return; }
     if(item&&item.locked){ showToast("Unlock this item before deleting it",true); return; }
     if(!confirm(message||"Delete this? This can't be undone.")) return;
     captureAutoBackup(true,"recovery");
@@ -992,7 +1058,7 @@
     if(!it) return;
     updateTtsButton(it);
     var sheet=document.createElement("div"); sheet.className="sheet";
-    $("copyAll").style.display=it.type==="agent"?"none":"";
+    $("copyAll").style.display=it.type==="agent"||it.type==="audio"?"none":"";
 
     if(it.type==="agent"){
       sheet.className="sheet agent-view";
@@ -1002,7 +1068,7 @@
     }
 
     var ti=document.createElement("textarea"); ti.className="title"; ti.rows=1; ti.value=it.title||"";
-    ti.placeholder=it.type==="script"?"Untitled YouTube Script":(it.type==="todo"?"Untitled todo":"Untitled note");
+    ti.placeholder=it.type==="script"?"Untitled YouTube Script":(it.type==="todo"?"Untitled todo":(it.type==="audio"?"Untitled audio entry":"Untitled note"));
     ti.oninput=function(){ it.title=ti.value; it.updated=Date.now(); grow(ti); save(); refreshListTitles(); };
     if(it.type==="todo"){
       var titleRow=document.createElement("div"); titleRow.className="todo-title-row"+(it.done?" done":"");
@@ -1033,6 +1099,8 @@
       addTodo.onclick=function(){ it.todos=it.todos||[]; it.todos.push(newTask()); it.updated=Date.now(); persist(); renderMain(); renderList(); var inputs=canvas.querySelectorAll(".todo-text"); if(inputs.length) inputs[inputs.length-1].focus(); };
       addTodo.textContent="+  Add task";
       sheet.appendChild(addTodo);
+    } else if(it.type==="audio") {
+      sheet.appendChild(buildAudioEntry(it));
     } else {
       sheet.appendChild(buildNoteEditor(it));
     }
@@ -1088,12 +1156,22 @@
     if(attachment.cloudError) return "On this device — cloud upload needs setup";
     return "On this device";
   }
+  function contentFiles(document){ return document&&document.type==="audio"?(document.recordings||[]):(document&&document.attachments||[]); }
   function refreshNoteEditor(note){
     var old=canvas.querySelector('.note-editor[data-note-id="'+note.id+'"]');
     if(old) old.parentNode.replaceChild(buildNoteEditor(note),old);
   }
+  function refreshContentEditor(document){
+    if(document&&document.type==="audio"){
+      var old=canvas.querySelector('.audio-entry[data-audio-id="'+document.id+'"]');
+      if(old) old.parentNode.replaceChild(buildAudioEntry(document),old);
+      updateMeta(); refreshListMeta();
+      return;
+    }
+    refreshNoteEditor(document);
+  }
   function cloudAttachmentPath(note,attachment){ return "users/"+currentUser.uid+"/notes/"+note.id+"/attachments/"+attachment.id; }
-  function attachmentById(note,id){ return (note.attachments||[]).find(function(attachment){ return attachment.id===id; })||null; }
+  function attachmentById(note,id){ return contentFiles(note).find(function(attachment){ return attachment.id===id; })||null; }
   function attachmentIsImage(attachment){ return /^image\//.test(attachment.type||""); }
   function fallbackAttachmentUrl(attachment){
     if(attachment.inlineData) return Promise.resolve({url:attachment.inlineData,local:false});
@@ -1113,7 +1191,7 @@
     if(!currentUser||!storage) return Promise.resolve(false);
     var key=attachmentUploadKey(note,attachment);
     if(activeAttachmentUploads[key]) return activeAttachmentUploads[key];
-    attachment.syncState="uploading"; delete attachment.cloudError; touchContent(note); persist(); refreshNoteEditor(note);
+    attachment.syncState="uploading"; delete attachment.cloudError; touchContent(note); persist(); refreshContentEditor(note);
     var path=cloudAttachmentPath(note,attachment), task, timeout, settled=false;
     var upload=new Promise(function(resolve,reject){
       function finish(error,value){
@@ -1131,9 +1209,9 @@
         },ATTACHMENT_UPLOAD_TIMEOUT);
       }catch(error){ finish(error); }
     }).then(function(){
-      attachment.storagePath=path; delete attachment.inlineData; delete attachment.cloudError; attachment.syncState="cloud"; touchContent(note); persist(); refreshNoteEditor(note); return true;
+      attachment.storagePath=path; delete attachment.inlineData; delete attachment.cloudError; attachment.syncState="cloud"; touchContent(note); persist(); refreshContentEditor(note); return true;
     }).catch(function(error){
-      attachment.syncState="device"; attachment.cloudError=true; touchContent(note); persist(); refreshNoteEditor(note); throw error;
+      attachment.syncState="device"; attachment.cloudError=true; touchContent(note); persist(); refreshContentEditor(note); throw error;
     });
     activeAttachmentUploads[key]=upload;
     function clearUpload(){ delete activeAttachmentUploads[key]; }
@@ -1149,6 +1227,123 @@
       console.warn("Attachment retry failed:",error);
       showToast("Attachment is still local — check cloud storage setup",true);
     });
+  }
+  function audioRecordingMimeType(){
+    if(!window.MediaRecorder||typeof MediaRecorder.isTypeSupported!=="function") return "";
+    var choices=["audio/webm;codecs=opus","audio/webm","audio/mp4","audio/ogg;codecs=opus"];
+    return choices.find(function(type){ return MediaRecorder.isTypeSupported(type); })||"";
+  }
+  function audioFileExtension(type){
+    if(/mp4/i.test(type||"")) return "m4a";
+    if(/ogg/i.test(type||"")) return "ogg";
+    if(/wav/i.test(type||"")) return "wav";
+    return "webm";
+  }
+  function audioRecordingName(entry,type){ return "Recording "+((entry.recordings||[]).length+1)+"."+audioFileExtension(type); }
+  function audioClipDetails(clip){ return [formatAudioDuration(clip.duration),fileSize(clip.size),attachmentLabel(clip)].filter(Boolean).join(" · "); }
+  function audioEntryExists(entry){ return state.items.some(function(item){ return item.id===entry.id&&item.type==="audio"; }); }
+  function saveAudioRecording(entry,blob,duration){
+    if(!audioEntryExists(entry)||!blob||!blob.size) return;
+    if(blob.size>MAX_ATTACHMENT_BYTES){ showToast("This recording is over the 25 MB attachment limit",true); return; }
+    var type=blob.type||"audio/webm", recording={id:uid(),name:audioRecordingName(entry,type),type:type,size:blob.size,added:Date.now(),duration:duration||0,syncState:"saving"};
+    entry.recordings=entry.recordings||[]; entry.recordings.push(recording); touchContent(entry); persist(); refreshContentEditor(entry); renderList();
+    var file;
+    try{ file=new File([blob],recording.name,{type:type}); }catch(error){ file=blob; }
+    storeAttachmentFile(entry.id,recording.id,file).then(function(){
+      recording.syncState="device"; touchContent(entry); persist(); refreshContentEditor(entry);
+      return uploadAttachment(entry,recording,file);
+    }).then(function(uploaded){
+      showToast(uploaded?"Recording saved and synced":"Recording saved on this device");
+    }).catch(function(error){
+      console.warn("Recording could not be synced:",error);
+      if(recording.syncState==="saving"){
+        entry.recordings=entry.recordings.filter(function(item){ return item.id!==recording.id; }); touchContent(entry); persist(); refreshContentEditor(entry); showToast("Couldn’t save that recording",true);
+      } else {
+        recording.syncState="device"; touchContent(entry); persist(); refreshContentEditor(entry); showToast("Recording saved on this device; cloud sync is unavailable");
+      }
+    });
+  }
+  function refreshRecordingTime(entry){
+    if(!activeAudioRecorder||activeAudioRecorder.itemId!==entry.id) return;
+    var clock=canvas.querySelector('[data-audio-recording-time="'+entry.id+'"]');
+    if(clock) clock.textContent=formatAudioDuration((Date.now()-activeAudioRecorder.started)/1000);
+  }
+  function startAudioRecording(entry){
+    if(activeAudioRecorder){ if(activeAudioRecorder.itemId===entry.id) stopAudioRecording(entry); else showToast("Finish the current recording before starting another",true); return; }
+    if(!navigator.mediaDevices||!navigator.mediaDevices.getUserMedia||!window.MediaRecorder){ showToast("Voice recording isn’t supported in this browser",true); return; }
+    var requestId=Date.now()+Math.random();
+    navigator.mediaDevices.getUserMedia({audio:true}).then(function(stream){
+      if(activeAudioRecorder||!audioEntryExists(entry)){ stream.getTracks().forEach(function(track){ track.stop(); }); return; }
+      var mimeType=audioRecordingMimeType(), recorder, chunks=[], failed=false;
+      try{ recorder=mimeType?new MediaRecorder(stream,{mimeType:mimeType}):new MediaRecorder(stream); }catch(error){ stream.getTracks().forEach(function(track){ track.stop(); }); throw error; }
+      activeAudioRecorder={itemId:entry.id,recorder:recorder,stream:stream,started:Date.now(),timer:null,stopping:false,requestId:requestId};
+      recorder.ondataavailable=function(event){ if(event.data&&event.data.size) chunks.push(event.data); };
+      recorder.onerror=function(error){ failed=true; console.warn("Audio recording failed:",error); };
+      recorder.onstop=function(){
+        var active=activeAudioRecorder;
+        stream.getTracks().forEach(function(track){ track.stop(); });
+        if(active&&active.recorder===recorder){ clearInterval(active.timer); activeAudioRecorder=null; }
+        var seconds=Math.max(1,Math.round((Date.now()-(active&&active.started||Date.now()))/1000)), blob=new Blob(chunks,{type:recorder.mimeType||mimeType||"audio/webm"});
+        if(!failed) saveAudioRecording(entry,blob,seconds);
+        else showToast("Recording could not be saved",true);
+        if(current()&&current().id===entry.id) refreshContentEditor(entry);
+      };
+      try{
+        recorder.start();
+        activeAudioRecorder.timer=setInterval(function(){ refreshRecordingTime(entry); },500);
+        refreshContentEditor(entry);
+      }catch(error){
+        stream.getTracks().forEach(function(track){ track.stop(); }); activeAudioRecorder=null;
+        throw error;
+      }
+    }).catch(function(error){
+      console.warn("Microphone permission failed:",error);
+      showToast(error&&error.name==="NotAllowedError"?"Allow microphone access to record your voice":"Couldn’t start the microphone",true);
+    });
+  }
+  function stopAudioRecording(entry){
+    var active=activeAudioRecorder;
+    if(!active||active.itemId!==entry.id||active.stopping) return;
+    active.stopping=true;
+    if(current()&&current().id===entry.id) refreshContentEditor(entry);
+    try{ active.recorder.stop(); }catch(error){ console.warn("Couldn’t stop recording:",error); clearInterval(active.timer); active.stream.getTracks().forEach(function(track){ track.stop(); }); activeAudioRecorder=null; if(current()&&current().id===entry.id) refreshContentEditor(entry); showToast("Couldn’t stop the recording",true); }
+  }
+  function removeAudioRecording(entry,recording){
+    if(!confirm("Remove "+(recording.name||"this recording")+"?")) return;
+    entry.recordings=(entry.recordings||[]).filter(function(item){ return item.id!==recording.id; }); touchContent(entry); persist(); refreshContentEditor(entry); renderList();
+    removeAttachmentFile(entry.id,recording.id);
+    var shared=false;
+    if(recording.storagePath) forEachContentDocument(function(document){ if(document!==entry&&contentFiles(document).some(function(other){ return other.storagePath===recording.storagePath; })) shared=true; });
+    if(storage&&recording.storagePath&&!shared) storage.ref(recording.storagePath).delete().catch(function(error){ console.warn("Cloud recording cleanup skipped:",error); }).then(function(){ scheduleAccountUsageRefresh(0); });
+    showToast("Recording removed");
+  }
+  function buildAudioEntry(entry){
+    var wrap=document.createElement("section"); wrap.className="audio-entry"; wrap.setAttribute("data-audio-id",entry.id);
+    var active=activeAudioRecorder&&activeAudioRecorder.itemId===entry.id, recorder=document.createElement("div"); recorder.className="audio-recorder"+(active?" is-recording":"");
+    var button=document.createElement("button"); button.type="button"; button.className="audio-record-button"; button.title=active?"Stop recording":"Record voice"; button.setAttribute("aria-label",button.title);
+    button.innerHTML=active?'<svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><rect x="6" y="6" width="12" height="12" rx="2"/></svg>':'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><rect x="9" y="3" width="6" height="11" rx="3"/><path d="M6 11a6 6 0 0 0 12 0M12 17v4M8 21h8"/></svg>';
+    button.disabled=!!(active&&activeAudioRecorder.stopping); button.onclick=function(){ if(active) stopAudioRecording(entry); else startAudioRecording(entry); };
+    var copy=document.createElement("div"); copy.className="audio-recorder-copy";
+    var title=document.createElement("b"), hint=document.createElement("small");
+    if(active){ title.className="audio-recording-indicator"; title.textContent=activeAudioRecorder.stopping?"Saving recording…":"Recording "+formatAudioDuration((Date.now()-activeAudioRecorder.started)/1000); title.setAttribute("data-audio-recording-time",entry.id); hint.textContent=activeAudioRecorder.stopping?"Finishing this clip":"Tap the red button when you’re done"; }
+    else { title.textContent="Record your voice"; hint.textContent="Each recording is saved as a separate clip"; }
+    copy.appendChild(title); copy.appendChild(hint); recorder.appendChild(button); recorder.appendChild(copy); wrap.appendChild(recorder);
+    var clips=document.createElement("div"); clips.className="audio-clips"; var recordings=entry.recordings||[];
+    var head=document.createElement("div"); head.className="audio-clips-head"; head.innerHTML="<b>Recordings</b><span>"+(recordings.length?formatAudioDuration(audioDuration(entry))+" total":"")+"</span>"; clips.appendChild(head);
+    if(!recordings.length){ var empty=document.createElement("div"); empty.className="audio-empty"; empty.textContent="No recordings yet. Tap the microphone to add your first voice clip."; clips.appendChild(empty); }
+    recordings.forEach(function(recording,index){
+      var card=document.createElement("article"); card.className="audio-clip";
+      var info=document.createElement("div"); info.className="audio-clip-info"; var name=document.createElement("b"); name.className="audio-clip-name"; name.textContent=recording.name||"Recording "+(index+1); var details=document.createElement("small"); details.className="audio-clip-details"; details.textContent=audioClipDetails(recording); info.appendChild(name); info.appendChild(details); card.appendChild(info);
+      var actions=document.createElement("div"); actions.className="audio-clip-actions";
+      var download=document.createElement("button"); download.type="button"; download.textContent="Download"; download.onclick=function(){ openAttachment(entry,recording); }; actions.appendChild(download);
+      if(recording.cloudError){ var retry=document.createElement("button"); retry.type="button"; retry.textContent="Retry"; retry.onclick=function(){ retryAttachmentSync(entry,recording); }; actions.appendChild(retry); }
+      var remove=document.createElement("button"); remove.type="button"; remove.className="audio-remove"; remove.textContent="Remove"; remove.onclick=function(){ removeAudioRecording(entry,recording); }; actions.appendChild(remove); card.appendChild(actions);
+      var player=document.createElement("audio"); player.controls=true; player.preload="metadata"; player.setAttribute("aria-label",recording.name||"Recording "+(index+1));
+      player.onloadedmetadata=function(){ var duration=Number(player.duration); if(isFinite(duration)&&duration>0&&Math.abs(duration-(recording.duration||0))>.5){ recording.duration=duration; details.textContent=audioClipDetails(recording); touchContent(entry); updateMeta(); refreshListMeta(); persist(); } };
+      getAttachmentUrl(entry,recording).then(function(result){ if(!player.isConnected) return; player.src=result.url; if(result.local) player.onloadeddata=function(){ setTimeout(function(){ URL.revokeObjectURL(result.url); },1000); }; }).catch(function(){ details.textContent="Recording unavailable on this device"; });
+      card.appendChild(player); clips.appendChild(card);
+    });
+    wrap.appendChild(clips); return wrap;
   }
   function hasRichContent(html){ return !!richTextToPlain(html||"").trim()||/<(?:img|hr|br)\b/i.test(html||""); }
   function noteInsertIndex(note){
@@ -1224,10 +1419,10 @@
     showToast("Attachment removed");
   }
   function cleanupContentAttachments(note){
-    (note.attachments||[]).forEach(function(attachment){
+    contentFiles(note).forEach(function(attachment){
       removeAttachmentFile(note.id,attachment.id);
       var shared=false;
-      if(attachment.storagePath) forEachContentDocument(function(document){ if(document!==note&&(document.attachments||[]).some(function(other){ return other.storagePath===attachment.storagePath; })) shared=true; });
+      if(attachment.storagePath) forEachContentDocument(function(document){ if(document!==note&&contentFiles(document).some(function(other){ return other.storagePath===attachment.storagePath; })) shared=true; });
       if(storage&&attachment.storagePath&&!shared) storage.ref(attachment.storagePath).delete().catch(function(error){ console.warn("Cloud attachment cleanup skipped:",error); });
     });
     scheduleAccountUsageRefresh(0);
@@ -1498,7 +1693,7 @@
     var it=current(); if(!it) return;
     var node=listNodeFor(it.id); if(!node) return;
     var m=node.querySelector(".dt-meta .m");
-    if(m) m.textContent=it.type==="script"?((it.sections||[]).filter(function(s){return s.kind!=="cue";}).length+" ch · "+itemWords(it)+" words"):(it.type==="todo"?((it.todos||[]).filter(function(x){return !x.done;}).length+" left"):(it.type==="agent"?"Agent prototype":itemWords(it)+" words"));
+    if(m) m.textContent=it.type==="script"?((it.sections||[]).filter(function(s){return s.kind!=="cue";}).length+" ch · "+itemWords(it)+" words"):(it.type==="todo"?((it.todos||[]).filter(function(x){return !x.done;}).length+" left"):(it.type==="audio"?audioMetaText(it):(it.type==="agent"?"Agent prototype":itemWords(it)+" words")));
   }
 
   function buildAssign(it){
@@ -1609,6 +1804,7 @@
   function updateMeta(){
     var it=current(), m=$("meta"); if(!m||!it) return;
     if(it.type==="todo"){ var total=(it.todos||[]).length, done=(it.todos||[]).filter(function(x){return x.done;}).length; m.innerHTML="<b>"+(total-done)+"</b> remaining &nbsp;·&nbsp; <b>"+done+"</b> completed"; return; }
+    if(it.type==="audio"){ var recordings=(it.recordings||[]).length, totalDuration=audioDuration(it); m.innerHTML="<b>"+recordings+"</b> recording"+(recordings===1?"":"s")+" &nbsp;·&nbsp; <b>"+formatAudioDuration(totalDuration)+"</b> total"; return; }
     var w=itemWords(it), ch=itemText(it).length;
     var head = it.type==="script" ? ('<b>'+(it.sections||[]).filter(function(s){return s.kind!=="cue";}).length+'</b> chapters &nbsp;·&nbsp; ') : '';
     m.innerHTML=head+'<b>'+w.toLocaleString()+'</b> words &nbsp;·&nbsp; <b>'+ch.toLocaleString()+'</b> characters &nbsp;·&nbsp; ~<b>'+dur(w)+'</b> spoken';
@@ -1617,6 +1813,7 @@
   function ttsTextForItem(it){
     if(it.type==="script") return (it.sections||[]).filter(function(section){ return section.kind!=="cue"; }).map(function(section){ return [section.title,section.body].filter(Boolean).join(". "); }).filter(Boolean).join("\n\n");
     if(it.type==="todo") return (it.todos||[]).filter(function(task){ return !task.done; }).map(function(task){ return [task.text,taskDetailsText(task),(task.subtasks||[]).map(function(subtask){ return subtask.text||""; }).filter(Boolean).join(". ")].filter(Boolean).join(". "); }).filter(Boolean).join("\n");
+    if(it.type==="audio") return "";
     return it.body||"";
   }
   function ttsTextForSection(section){ return [section.title,section.body].filter(Boolean).join(". "); }
@@ -1686,6 +1883,7 @@
   /* =================== actions =================== */
   $("copyAll").onclick=function(){
     var it=current(); if(!it) return;
+    if(it.type==="audio") return;
     var text = it.type==="script" ? (it.sections||[]).map(function(x){ return (x.body||"").trim(); }).filter(Boolean).join("\n\n") : (it.type==="todo"?(it.todos||[]).map(function(task){ return (task.done?"[x] ":"[ ] ")+(task.text||"")+([taskDetailsText(task),(task.subtasks||[]).map(function(subtask){ return subtask.text?"  ["+(subtask.done?"x":" ")+"] "+subtask.text:""; }).filter(Boolean).join("\n")].filter(Boolean).length?"\n"+[taskDetailsText(task),(task.subtasks||[]).map(function(subtask){ return subtask.text?"  ["+(subtask.done?"x":" ")+"] "+subtask.text:""; }).filter(Boolean).join("\n")].filter(Boolean).join("\n"):""); }).join("\n"):itemText(it));
     if(it.type==="todo") text=(it.todos||[]).map(taskCopyText).join("\n");
     var b=this, lbl=$("copyAllLabel"), old=lbl.textContent;
@@ -1697,6 +1895,7 @@
     openMenu(self,function(m){
       if(state.enabledTypes.script) m.appendChild(mkItem(ICON_SCRIPT,"YouTube Script",false,function(){ closeMenu(); createItem(newScriptItem()); }));
       if(state.enabledTypes.note) m.appendChild(mkItem(ICON_NOTE,"Note",false,function(){ closeMenu(); createItem(newNoteItem()); }));
+      if(state.enabledTypes.audio) m.appendChild(mkItem(ICON_AUDIO,"Audio",false,function(){ closeMenu(); createItem(newAudioItem()); }));
       if(state.enabledTypes.todo) m.appendChild(mkItem(ICON_TODO,"Todo",false,function(){ closeMenu(); createItem(newTodoItem()); }));
       if(state.enabledTypes.agent) m.appendChild(mkItem(ICON_AGENT,"Agent",false,function(){ closeMenu(); createItem(newAgentItem()); }));
       m.appendChild(sep());
@@ -1704,7 +1903,7 @@
       m.appendChild(mkItem("<span style=\"font-size:1rem\">⚙</span>","Manage",false,function(){ closeMenu(); openSettings("manage"); }));
     });
   };
-  function createItem(it){ state.items.unshift(it); state.currentId=it.id; app.classList.remove("open"); persist(); renderAll(); var t=canvas.querySelector(".title"); if(t) t.focus(); }
+  function createItem(it){ if(activeAudioRecorder){ showToast("Finish the current recording before creating another item",true); return; } state.items.unshift(it); state.currentId=it.id; app.classList.remove("open"); persist(); renderAll(); var t=canvas.querySelector(".title"); if(t) t.focus(); }
   function openNewFolder(anchor){
     openMenu(anchor,function(m){
       var t=document.createElement("div"); t.className="mtitle"; t.textContent="New folder"; m.appendChild(t);
@@ -1741,6 +1940,7 @@
   /* On touch devices, swipe horizontally anywhere to reveal or dismiss the mobile drawer. */
   var sidebarSwipeStart=null, SIDEBAR_SWIPE_DISTANCE=56;
   document.addEventListener("touchstart",function(e){
+    if(!currentUser){ sidebarSwipeStart=null; return; }
     if(!usesOverlaySidebar()||e.touches.length!==1){ sidebarSwipeStart=null; return; }
     var touch=e.touches[0], target=e.target;
     if(target&&target.closest&&target.closest("input, textarea, select, [contenteditable='true']")){ sidebarSwipeStart=null; return; }
@@ -1756,6 +1956,7 @@
   },{passive:true});
   document.addEventListener("touchcancel",function(){ sidebarSwipeStart=null; },{passive:true});
   document.addEventListener("keydown",function(e){
+    if(!currentUser) return;
     if((e.metaKey||e.ctrlKey)&&e.key==="Enter"){ e.preventDefault(); $("copyAll").click(); }
     if(e.key==="Escape"){ closeMenu(); $("settingsModal").classList.remove("open"); }
   });
@@ -1795,7 +1996,6 @@
   /* =================== Firebase (configured in astral.config.js) =================== */
   var auth=null, db=null, storage=null, currentUser=null, cloudTimer=null, cloudAutoBackupInFlight=false, cloudSyncPaused=false, cloudSyncLoading=false, fbReady=false, apiSettingsUnsubscribe=null;
   var accountUsage={status:"idle",totalBytes:0,fileBytes:0,accountBytes:0,backupBytes:0,files:[],currentFileBytes:0,backupFileBytes:0,unlinkedFileBytes:0,unlinkedFileCount:0}, accountUsageTimer=null, accountUsageRequest=0, accountUsageUnsubscribers=[];
-  var PROMPT_KEY="second-brain-login-prompt-dismissed";
   function utf8Bytes(value){
     var text=String(value==null?"":value);
     if(typeof TextEncoder!=="undefined") return new TextEncoder().encode(text).length;
@@ -1828,6 +2028,7 @@
     (data&&data.items||[]).forEach(function(item){
       if(item&&item.type==="note") handler(item,item);
       if(item&&item.type==="todo") (item.todos||[]).forEach(function(task){ handler(task,item); });
+      if(item&&item.type==="audio") handler(item,item);
     });
   }
   function listCloudStorageFiles(ref){
@@ -1846,7 +2047,7 @@
   function collectAttachmentStoragePaths(data,userId,paths){
     var prefix="users/"+userId+"/";
     forEachStoredContentDocument(data,function(note){
-      (note&&note.attachments||[]).forEach(function(attachment){
+      contentFiles(note).forEach(function(attachment){
         var path=attachment&&attachment.storagePath;
         if(path&&path.indexOf(prefix)===0) paths[path]=true;
       });
@@ -1929,12 +2130,30 @@
     accountUsageUnsubscribers.push(userRef.collection("backups").onSnapshot(function(){ scheduleAccountUsageRefresh(250); },function(error){ console.warn("Backup storage usage updates are unavailable:",error); }));
     scheduleAccountUsageRefresh(0);
   }
-  function hideLoginPrompt(){ var p=$("loginPrompt"); if(p) p.classList.remove("show"); }
-  function showLoginPrompt(){
-    var dismissed=false;
-    try{ dismissed=sessionStorage.getItem(PROMPT_KEY)==="1"; }catch(e){}
-    var p=$("loginPrompt");
-    if(p&&!currentUser&&!dismissed&&fbReady) p.classList.add("show");
+  function setAuthGate(locked,message,isError){
+    var gate=$("authGate"), status=$("authGateStatus"), signInButton=$("gateSignIn");
+    document.body.classList.toggle("auth-locked",locked);
+    ["app","settingsModal","syncConflictModal","accountMergeModal"].forEach(function(id){
+      var element=$(id);
+      if(!element) return;
+      element.inert=locked;
+      if(locked) element.setAttribute("aria-hidden","true"); else element.removeAttribute("aria-hidden");
+    });
+    if(locked){
+      ["settingsModal","syncConflictModal","accountMergeModal"].forEach(function(id){ $(id).classList.remove("open"); });
+    }
+    if(gate){
+      gate.classList.toggle("show",locked);
+      gate.setAttribute("aria-hidden",locked?"false":"true");
+    }
+    if(status&&typeof message==="string"){
+      status.textContent=message;
+      status.classList.toggle("error",!!isError);
+    }
+    if(!locked&&signInButton){
+      signInButton.disabled=false;
+      $("gateSignInLabel").textContent="Sign in with Google";
+    }
   }
   function usableCfg(cfg){
     if(!cfg||!cfg.apiKey||!cfg.projectId||!cfg.authDomain) return false;
@@ -2015,7 +2234,11 @@
   }
   function initFirebase(){
     var cfg=getCfg();
-    if(!cfg||typeof firebase==="undefined"){ renderFoot(); return; }
+    if(!cfg||typeof firebase==="undefined"){
+      setAuthGate(true,"Sign-in is not configured for this app yet.",true);
+      renderFoot();
+      return;
+    }
     try{
       if(!firebase.apps || !firebase.apps.length) firebase.initializeApp(cfg);
       auth=firebase.auth(); db=firebase.firestore(); storage=typeof firebase.storage==="function"?firebase.storage():null; fbReady=true;
@@ -2024,7 +2247,7 @@
         currentUser=u;
         if(u){
           cloudSyncPaused=false;
-          hideLoginPrompt(); startApiSettingsSync(); startAccountUsageTracking(); renderFoot(); loadCloud();
+          setAuthGate(false); startApiSettingsSync(); startAccountUsageTracking(); renderFoot(); loadCloud();
         } else {
           cloudSyncPaused=true; cloudSyncLoading=false;
           stopAccountUsageTracking(); stopApiSettingsSync(); resetApiSettings();
@@ -2032,10 +2255,15 @@
              already on this device so their owner can choose how to sync them
              after signing in. A deliberate sign-out still clears this device. */
           if(signedOutUser){ wipeDeviceNotes(); renderAll(); }
-          renderFoot(); showLoginPrompt();
+          setAuthGate(true,""); renderFoot();
         }
       });
-    }catch(e){ console.warn("Firebase init failed:",e); fbReady=false; showToast("Firebase config could not be loaded",true); }
+    }catch(e){
+      console.warn("Firebase init failed:",e);
+      fbReady=false;
+      setAuthGate(true,"Sign-in could not be started. Check the app configuration and try again.",true);
+      showToast("Firebase config could not be loaded",true);
+    }
     renderFoot();
   }
   function authErrorMessage(e){
@@ -2050,18 +2278,28 @@
     return "Sign-in failed"+(code?" ("+code.replace(/^auth\//,"")+")":"");
   }
   function signIn(){
-    if(!fbReady){ showToast("Add your Firebase project settings to astral.config.js",true); return; }
-    if(location.protocol==="file:"){ showToast(authErrorMessage(),true); return; }
+    var button=$("gateSignIn");
+    if(!fbReady){
+      setAuthGate(true,"Sign-in is not configured for this app yet.",true);
+      showToast("Add your Firebase project settings to astral.config.js",true);
+      return;
+    }
+    if(location.protocol==="file:"){
+      setAuthGate(true,authErrorMessage(),true);
+      showToast(authErrorMessage(),true);
+      return;
+    }
+    if(button){ button.disabled=true; $("gateSignInLabel").textContent="Opening secure sign-in…"; }
+    setAuthGate(true,"Continue in the Google window to unlock your notes.");
     auth.signInWithPopup(new firebase.auth.GoogleAuthProvider()).catch(function(e){
       console.warn(e);
-      showToast(authErrorMessage(e),e&&e.code!=="auth/popup-closed-by-user");
+      var message=authErrorMessage(e);
+      if(button){ button.disabled=false; $("gateSignInLabel").textContent="Sign in with Google"; }
+      setAuthGate(true,message,e&&e.code!=="auth/popup-closed-by-user");
+      showToast(message,e&&e.code!=="auth/popup-closed-by-user");
     });
   }
-  $("promptSignIn").onclick=signIn;
-  $("promptDismiss").onclick=function(){
-    hideLoginPrompt();
-    try{ sessionStorage.setItem(PROMPT_KEY,"1"); }catch(e){}
-  };
+  $("gateSignIn").onclick=signIn;
   function hasContent(items){ return items && items.some(function(s){ return (s.title&&s.title.trim())||itemText(s).trim()||itemHasAttachments(s); }); }
   function cloneData(value){ return JSON.parse(JSON.stringify(value||{})); }
   function stableStringify(value){
@@ -2229,7 +2467,7 @@
     if(typeof prefs.motion==="boolean") state.motion=prefs.motion;
     if(typeof prefs.darkness==="number") state.darkness=Math.max(0,Math.min(100,prefs.darkness));
     if(prefs.enabledTypes&&typeof prefs.enabledTypes==="object"){
-      ["script","note","todo","agent"].forEach(function(type){ if(typeof prefs.enabledTypes[type]==="boolean") state.enabledTypes[type]=prefs.enabledTypes[type]; });
+      ["script","note","todo","audio","agent"].forEach(function(type){ if(typeof prefs.enabledTypes[type]==="boolean") state.enabledTypes[type]=prefs.enabledTypes[type]; });
     }
     if(prefs.noteInsertOptions&&typeof prefs.noteInsertOptions==="object") Object.keys(NOTE_INSERT_DEFAULTS).forEach(function(type){ if(typeof prefs.noteInsertOptions[type]==="boolean") state.noteInsertOptions[type]=prefs.noteInsertOptions[type]; });
     if(typeof prefs.tagsCollapsed==="boolean") state.tagsCollapsed=prefs.tagsCollapsed;
@@ -2383,7 +2621,7 @@
   function syncStoredAttachments(){
     if(!currentUser||!storage) return;
     forEachContentDocument(function(note){
-      (note.attachments||[]).forEach(function(attachment){
+      contentFiles(note).forEach(function(attachment){
         if(attachment.storagePath||isAttachmentUploading(note,attachment)) return;
         if(attachment.syncState==="uploading") attachment.syncState="device";
         readAttachmentFile(note.id,attachment.id).then(function(file){
@@ -2491,7 +2729,7 @@
     } else if(settingsPage==="voices"){
       content=settingsHeading("Voice",true)+'<p class="hint">Your saved, favorited, and added ElevenLabs voices appear here. Search by name or style, then choose one to use everywhere you listen in Second Brain.</p><div class="agent-edit"><label>Voice<button class="voice-picker" id="elevenlabsVoicePicker" type="button" aria-expanded="false" disabled><span class="voice-picker-copy"><b>Loading voices…</b><small>Your saved ElevenLabs voices</small></span><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="m6 9 6 6 6-6"/></svg></button></label><div class="voice-picker-menu" id="elevenlabsVoiceMenu" hidden><input class="voice-search" id="elevenlabsVoiceSearch" type="search" autocomplete="off" placeholder="Search voices or styles"><div class="voice-options" id="elevenlabsVoiceOptions"></div></div><div id="customVoiceEntry" hidden><label>ElevenLabs Voice ID<input id="customElevenlabsVoiceId" type="text" autocomplete="off" placeholder="Paste a voice ID"></label><div class="btnrow"><button class="b2 primary" id="saveCustomVoiceBtn">Save to list &amp; select</button></div></div><p class="hint" id="voiceStatus">Loading your available voices…</p></div>';
     } else if(settingsPage==="manage"){
-      content=settingsHeading("Manage",true)+'<p class="hint">Choose what appears under New and in a note’s Insert menu. Existing content is never removed when an option is turned off.</p><div class="grp"><div class="srow"><div class="sl">YouTube Script<small>Create chapter and cue-based scripts</small></div><button class="toggle" id="typeScript"><b></b></button></div><div class="srow"><div class="sl">Notes<small>Create standard notes</small></div><button class="toggle" id="typeNote"><b></b></button></div><div class="srow"><div class="sl">Todos<small>Create tasks with descriptions and subtasks</small></div><button class="toggle" id="typeTodo"><b></b></button></div></div><div class="grp"><h4>Note insert menu</h4><div class="srow"><div class="sl">File<small>Images, PDFs, and other attachments</small></div><button class="toggle" id="insertFile"><b></b></button></div><div class="srow"><div class="sl">Paragraph<small>Rich text with bold, italic, and underline</small></div><button class="toggle" id="insertParagraph"><b></b></button></div><div class="srow"><div class="sl">Comment<small>Cue-style note to yourself</small></div><button class="toggle" id="insertComment"><b></b></button></div><div class="srow"><div class="sl">Prompt<small>A copy-ready prompt drafting box</small></div><button class="toggle" id="insertPrompt"><b></b></button></div><div class="srow"><div class="sl">Heading<small>Simple size picker when selected</small></div><button class="toggle" id="insertHeading"><b></b></button></div><div class="srow"><div class="sl">Collapsible group<small>Hide supporting details until needed</small></div><button class="toggle" id="insertGroup"><b></b></button></div></div><div class="grp"><h4>Prototype</h4><div class="srow"><div class="sl">Agent<small>Enable the chat, voice, and JSON-memory agent prototype</small></div><button class="toggle" id="typeAgent"><b></b></button></div></div>';
+      content=settingsHeading("Manage",true)+'<p class="hint">Choose what appears under New and in a note’s Insert menu. Existing content is never removed when an option is turned off.</p><div class="grp"><div class="srow"><div class="sl">YouTube Script<small>Create chapter and cue-based scripts</small></div><button class="toggle" id="typeScript"><b></b></button></div><div class="srow"><div class="sl">Notes<small>Create standard notes</small></div><button class="toggle" id="typeNote"><b></b></button></div><div class="srow"><div class="sl">Audio<small>Record and keep multiple voice clips</small></div><button class="toggle" id="typeAudio"><b></b></button></div><div class="srow"><div class="sl">Todos<small>Create tasks with descriptions and subtasks</small></div><button class="toggle" id="typeTodo"><b></b></button></div></div><div class="grp"><h4>Note insert menu</h4><div class="srow"><div class="sl">File<small>Images, PDFs, and other attachments</small></div><button class="toggle" id="insertFile"><b></b></button></div><div class="srow"><div class="sl">Paragraph<small>Rich text with bold, italic, and underline</small></div><button class="toggle" id="insertParagraph"><b></b></button></div><div class="srow"><div class="sl">Comment<small>Cue-style note to yourself</small></div><button class="toggle" id="insertComment"><b></b></button></div><div class="srow"><div class="sl">Prompt<small>A copy-ready prompt drafting box</small></div><button class="toggle" id="insertPrompt"><b></b></button></div><div class="srow"><div class="sl">Heading<small>Simple size picker when selected</small></div><button class="toggle" id="insertHeading"><b></b></button></div><div class="srow"><div class="sl">Collapsible group<small>Hide supporting details until needed</small></div><button class="toggle" id="insertGroup"><b></b></button></div></div><div class="grp"><h4>Prototype</h4><div class="srow"><div class="sl">Agent<small>Enable the chat, voice, and JSON-memory agent prototype</small></div><button class="toggle" id="typeAgent"><b></b></button></div></div>';
     } else { settingsPage="home"; renderSettingsPage(); return; }
     box.innerHTML=content;
     $("closeSettings").onclick=function(){ $("settingsModal").classList.remove("open"); };
@@ -2518,7 +2756,7 @@
     range.onchange=function(){ persist(); };
   }
   function setupManageSettings(){
-    [["typeScript","script"],["typeNote","note"],["typeTodo","todo"],["typeAgent","agent"]].forEach(function(pair){ var button=$(pair[0]); button.classList.toggle("on",state.enabledTypes[pair[1]]); button.onclick=function(){ state.enabledTypes[pair[1]]=!state.enabledTypes[pair[1]]; button.classList.toggle("on",state.enabledTypes[pair[1]]); persist(); }; });
+    [["typeScript","script"],["typeNote","note"],["typeAudio","audio"],["typeTodo","todo"],["typeAgent","agent"]].forEach(function(pair){ var button=$(pair[0]); button.classList.toggle("on",state.enabledTypes[pair[1]]); button.onclick=function(){ state.enabledTypes[pair[1]]=!state.enabledTypes[pair[1]]; button.classList.toggle("on",state.enabledTypes[pair[1]]); persist(); }; });
     [["insertFile","file"],["insertParagraph","paragraph"],["insertComment","comment"],["insertPrompt","prompt"],["insertHeading","heading"],["insertGroup","group"]].forEach(function(pair){ var button=$(pair[0]); button.classList.toggle("on",state.noteInsertOptions[pair[1]]); button.onclick=function(){ state.noteInsertOptions[pair[1]]=!state.noteInsertOptions[pair[1]]; button.classList.toggle("on",state.noteInsertOptions[pair[1]]); persist(); }; });
   }
   var apiKeySaveTimer=null;
@@ -2776,9 +3014,13 @@
   function removeCloudFileReferences(path){
     var changed=false;
     forEachContentDocument(function(note){
-      var removed=(note.attachments||[]).filter(function(attachment){ return attachment.storagePath===path; });
+      var removed=contentFiles(note).filter(function(attachment){ return attachment.storagePath===path; });
       if(!removed.length) return;
       var removedIds={}; removed.forEach(function(attachment){ removedIds[attachment.id]=true; removeAttachmentFile(note.id,attachment.id); });
+      if(note.type==="audio"){
+        note.recordings=(note.recordings||[]).filter(function(recording){ return !removedIds[recording.id]; });
+        touchContent(note); changed=true; return;
+      }
       note.attachments=note.attachments.filter(function(attachment){ return !removedIds[attachment.id]; });
       note.blocks=(note.blocks||[]).filter(function(block){ return !(block.type==="attachment"&&removedIds[block.attachmentId]); });
       if(!note.blocks.some(function(block){ return block.type==="text"; })) note.blocks.unshift(textBlock(""));
