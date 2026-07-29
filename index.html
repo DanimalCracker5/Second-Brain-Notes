@@ -285,7 +285,7 @@
   .d-foot.has-account .account-summary{ display:contents; }
   .d-foot.has-account .who{ grid-column:1; grid-row:1; min-height:42px; }
   .d-foot.has-account > .sbtn{ grid-column:2; grid-row:1; width:42px; height:42px; padding:0; }
-  .storage-usage{ position:relative; display:grid; grid-template-columns:16px minmax(0,1fr) max-content; align-items:center; gap:8px; width:100%; min-height:38px; padding:9px 10px; border:1px solid var(--line); border-radius:10px; color:var(--ink-dim); background:linear-gradient(135deg,rgba(255,255,255,.045),rgba(255,255,255,.018)); line-height:1; cursor:default; outline:none; transition:border-color .14s,background .14s; }
+  .storage-usage{ position:relative; display:grid; grid-template-columns:16px minmax(0,1fr) max-content; align-items:center; gap:8px; width:100%; min-height:38px; padding:9px 10px; border:1px solid var(--line); border-radius:10px; color:var(--ink-dim); background:linear-gradient(135deg,rgba(255,255,255,.045),rgba(255,255,255,.018)); line-height:1; cursor:pointer; outline:none; transition:border-color .14s,background .14s; }
   .d-foot.has-account .storage-usage{ grid-column:1 / -1; grid-row:2; grid-template-columns:18px minmax(0,1fr) max-content; gap:10px; min-height:44px; padding:6px 12px; border-radius:12px; }
   .storage-usage:hover,.storage-usage:focus{ border-color:var(--accent-line); background:linear-gradient(135deg,var(--accent-soft),rgba(255,255,255,.035)); }
   .storage-usage:focus-visible{ box-shadow:0 0 0 3px var(--accent-soft); }
@@ -304,6 +304,17 @@
   .storage-breakdown dl{ display:grid; gap:5px; margin:0; }
   .storage-breakdown dl div{ display:flex; align-items:baseline; justify-content:space-between; gap:12px; color:var(--ink-dim); font:400 .68rem "DM Sans",sans-serif; }
   .storage-breakdown dt,.storage-breakdown dd{ margin:0; } .storage-breakdown dd{ color:var(--ink); font:500 .66rem "DM Mono",monospace; }
+  .cloud-storage-details{ margin-top:16px; }
+  .cloud-storage-details h4{ margin:0 0 5px; font-size:.84rem; }
+  .cloud-storage-details > p{ margin:0 0 10px; color:var(--ink-faint); font-size:.76rem; line-height:1.45; }
+  .cloud-storage-file-list{ display:grid; gap:7px; max-height:250px; overflow:auto; padding-right:2px; }
+  .cloud-storage-file{ display:grid; grid-template-columns:minmax(0,1fr) max-content; gap:4px 10px; padding:10px 11px; border:1px solid var(--line); border-radius:10px; background:rgba(255,255,255,.025); }
+  .cloud-storage-file b{ min-width:0; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; font-size:.78rem; }
+  .cloud-storage-file em{ align-self:center; color:var(--ink); font:500 .68rem "DM Mono",monospace; font-style:normal; }
+  .cloud-storage-file small{ grid-column:1 / -1; overflow:hidden; color:var(--ink-faint); font:.62rem/1.35 "DM Mono",monospace; text-overflow:ellipsis; white-space:nowrap; }
+  .cloud-storage-file button{ grid-column:1 / -1; justify-self:start; margin-top:2px; color:#fca5a5; border-color:rgba(248,113,113,.35); }
+  .cloud-storage-file button:hover{ color:#fff; border-color:#f87171; background:rgba(248,113,113,.14); }
+  .cloud-storage-file.unlinked{ border-color:rgba(248,113,113,.35); background:rgba(248,113,113,.055); }
 
   /* ---------- floating menu ---------- */
   .menu{ position:fixed; z-index:70; background:#0b0b0f; border:1px solid var(--line); border-radius:12px; padding:6px; box-shadow:0 18px 55px rgba(0,0,0,.7); min-width:200px; max-width:270px; }
@@ -1714,11 +1725,35 @@
   };
   $("tagsToggleBtn").onclick=function(){ state.tagsCollapsed=!state.tagsCollapsed; persist(); renderTags(); };
   listToolsBtn.onclick=function(){ if(openMenuEl){ closeMenu(); return; } openListTools(this); };
+  function usesOverlaySidebar(){ return window.matchMedia&&window.matchMedia("(max-width: 900px)").matches; }
+  function setOverlaySidebarOpen(open){
+    if(!usesOverlaySidebar()) return;
+    app.classList.remove("sidebar-collapsed");
+    app.classList.toggle("open",open);
+  }
   menuBtn.onclick=function(){
-    if(window.matchMedia&&window.matchMedia("(max-width: 900px)").matches){ app.classList.remove("sidebar-collapsed"); app.classList.toggle("open"); }
+    if(usesOverlaySidebar()) setOverlaySidebarOpen(!app.classList.contains("open"));
     else app.classList.toggle("sidebar-collapsed");
   };
-  scrim.onclick=function(){ app.classList.remove("open"); };
+  scrim.onclick=function(){ setOverlaySidebarOpen(false); };
+
+  /* On touch devices, reveal the mobile drawer from the screen edge and dismiss it with a left swipe. */
+  var sidebarSwipeStart=null, SIDEBAR_SWIPE_EDGE=32, SIDEBAR_SWIPE_DISTANCE=56;
+  document.addEventListener("touchstart",function(e){
+    if(!usesOverlaySidebar()||e.touches.length!==1){ sidebarSwipeStart=null; return; }
+    var touch=e.touches[0], target=e.target;
+    if(target&&target.closest&&target.closest("input, textarea, select, [contenteditable='true']")){ sidebarSwipeStart=null; return; }
+    sidebarSwipeStart={x:touch.clientX,y:touch.clientY,wasOpen:app.classList.contains("open")};
+  },{passive:true});
+  document.addEventListener("touchend",function(e){
+    if(!sidebarSwipeStart||!usesOverlaySidebar()||e.changedTouches.length!==1){ sidebarSwipeStart=null; return; }
+    var touch=e.changedTouches[0], dx=touch.clientX-sidebarSwipeStart.x, dy=touch.clientY-sidebarSwipeStart.y;
+    var isHorizontal=Math.abs(dx)>=SIDEBAR_SWIPE_DISTANCE&&Math.abs(dx)>Math.abs(dy)*1.25;
+    if(isHorizontal&&!sidebarSwipeStart.wasOpen&&sidebarSwipeStart.x<=SIDEBAR_SWIPE_EDGE&&dx>0) setOverlaySidebarOpen(true);
+    else if(isHorizontal&&sidebarSwipeStart.wasOpen&&dx<0) setOverlaySidebarOpen(false);
+    sidebarSwipeStart=null;
+  },{passive:true});
+  document.addEventListener("touchcancel",function(){ sidebarSwipeStart=null; },{passive:true});
   document.addEventListener("keydown",function(e){
     if((e.metaKey||e.ctrlKey)&&e.key==="Enter"){ e.preventDefault(); $("copyAll").click(); }
     if(e.key==="Escape"){ closeMenu(); $("settingsModal").classList.remove("open"); }
@@ -1758,7 +1793,7 @@
 
   /* =================== Firebase (configured in astral.config.js) =================== */
   var auth=null, db=null, storage=null, currentUser=null, cloudTimer=null, cloudAutoBackupInFlight=false, cloudSyncPaused=false, cloudSyncLoading=false, fbReady=false, apiSettingsUnsubscribe=null;
-  var accountUsage={status:"idle",totalBytes:0,fileBytes:0,accountBytes:0,backupBytes:0}, accountUsageTimer=null, accountUsageRequest=0, accountUsageUnsubscribers=[];
+  var accountUsage={status:"idle",totalBytes:0,fileBytes:0,accountBytes:0,backupBytes:0,files:[],currentFileBytes:0,backupFileBytes:0,unlinkedFileBytes:0,unlinkedFileCount:0}, accountUsageTimer=null, accountUsageRequest=0, accountUsageUnsubscribers=[];
   var PROMPT_KEY="second-brain-login-prompt-dismissed";
   function utf8Bytes(value){
     var text=String(value==null?"":value);
@@ -1807,37 +1842,68 @@
       });
     });
   }
-  function collectCloudStorageBytes(userId){
+  function collectAttachmentStoragePaths(data,userId,paths){
+    var prefix="users/"+userId+"/";
+    forEachStoredContentDocument(data,function(note){
+      (note&&note.attachments||[]).forEach(function(attachment){
+        var path=attachment&&attachment.storagePath;
+        if(path&&path.indexOf(prefix)===0) paths[path]=true;
+      });
+    });
+    return paths;
+  }
+  function cloudBackupAttachmentPaths(userData,backupDocs,userId){
+    var paths={};
+    (backupDocs||[]).forEach(function(doc){ var data=doc.data?doc.data():doc||{}; collectAttachmentStoragePaths(data.data||data,userId,paths); });
+    Object.keys(userData&&userData.backupSlots||{}).forEach(function(id){ collectAttachmentStoragePaths(userData.backupSlots[id],userId,paths); });
+    return paths;
+  }
+  function collectCloudStorageUsage(userId,userData,backupDocs){
+    var currentPaths=collectAttachmentStoragePaths(userData,userId,{}), backupPaths=cloudBackupAttachmentPaths(userData,backupDocs,userId);
     return listCloudStorageFiles(storage.ref("users/"+userId)).then(function(files){
       return Promise.all(files.map(function(file){
-        return file.getMetadata().then(function(metadata){ return Number(metadata.size)||0; });
+        return file.getMetadata().then(function(metadata){
+          var path=file.fullPath, current=!!currentPaths[path], backup=!!backupPaths[path];
+          return {path:path,name:file.name||path.split("/").pop(),size:Number(metadata.size)||0,kind:current?"current":backup?"backup":"unlinked",inBackup:current&&backup};
+        });
       }));
-    }).then(function(sizes){ return sizes.reduce(function(total,size){ return total+size; },0); });
+    }).then(function(files){
+      var usage={files:files,totalBytes:0,currentFileBytes:0,backupFileBytes:0,unlinkedFileBytes:0,unlinkedFileCount:0};
+      files.forEach(function(file){
+        usage.totalBytes+=file.size;
+        if(file.kind==="current") usage.currentFileBytes+=file.size;
+        else if(file.kind==="backup") usage.backupFileBytes+=file.size;
+        else { usage.unlinkedFileBytes+=file.size; usage.unlinkedFileCount++; }
+      });
+      usage.files.sort(function(a,b){ return b.size-a.size; });
+      return usage;
+    });
   }
   function accountUsageTitle(usage){
     if(usage.status!=="ready") return usage.status==="error"?"Cloud storage could not be calculated right now. Local device data is not included.":"Calculating cloud storage across notes, backups, and files.";
-    return "Account storage across everything saved in Second Brain."+"\nNote attachments: "+fileSize(usage.fileBytes)+"\nNotes and account data: "+fileSize(usage.accountBytes)+"\nBackups: "+fileSize(usage.backupBytes);
+    var unlinked=usage.unlinkedFileCount?"\nUnlinked cloud files: "+usage.unlinkedFileCount+" · "+fileSize(usage.unlinkedFileBytes):"";
+    return "Account storage across everything saved in Second Brain."+"\nCloud files: "+fileSize(usage.fileBytes)+unlinked+"\nNotes and account data: "+fileSize(usage.accountBytes)+"\nBackups: "+fileSize(usage.backupBytes);
   }
-  function setAccountUsage(next){ accountUsage=next; if(currentUser) renderFoot(); }
+  function setAccountUsage(next){ accountUsage=next; if(currentUser){ renderFoot(); if(settingsPage==="account"&&$("settingsModal").classList.contains("open")) renderAcct(); } }
   function stopAccountUsageTracking(){
     clearTimeout(accountUsageTimer); accountUsageTimer=null; accountUsageRequest++;
     accountUsageUnsubscribers.forEach(function(unsubscribe){ try{ unsubscribe(); }catch(e){} });
     accountUsageUnsubscribers=[];
-    accountUsage={status:"idle",totalBytes:0,fileBytes:0,accountBytes:0,backupBytes:0};
+    accountUsage={status:"idle",totalBytes:0,fileBytes:0,accountBytes:0,backupBytes:0,files:[],currentFileBytes:0,backupFileBytes:0,unlinkedFileBytes:0,unlinkedFileCount:0};
   }
   function refreshAccountUsage(){
     if(!currentUser||!db||!storage) return;
     var userId=currentUser.uid, request=++accountUsageRequest;
-    if(accountUsage.status!=="ready") setAccountUsage({status:"loading",totalBytes:0,fileBytes:0,accountBytes:0,backupBytes:0});
+    if(accountUsage.status!=="ready") setAccountUsage({status:"loading",totalBytes:0,fileBytes:0,accountBytes:0,backupBytes:0,files:[],currentFileBytes:0,backupFileBytes:0,unlinkedFileBytes:0,unlinkedFileCount:0});
     var userRef=db.collection("users").doc(userId), backupRef=userRef.collection("backups");
     Promise.all([userRef.get(),backupRef.get()]).then(function(results){
       if(request!==accountUsageRequest||!currentUser||currentUser.uid!==userId) return;
       var userDoc=results[0], backupDocs=results[1].docs||[], userData=userDoc.exists?userDoc.data():{};
-      return collectCloudStorageBytes(userId).then(function(fileBytes){
+      return collectCloudStorageUsage(userId,userData,backupDocs).then(function(fileUsage){
         if(request!==accountUsageRequest||!currentUser||currentUser.uid!==userId) return;
         var accountBytes=userDoc.exists?firestoreDocumentBytes(["users",userId],userData):0;
         var backupBytes=backupDocs.reduce(function(total,doc){ return total+firestoreDocumentBytes(["users",userId,"backups",doc.id],doc.data()); },0);
-        setAccountUsage({status:"ready",source:"cloud",totalBytes:fileBytes+accountBytes+backupBytes,fileBytes:fileBytes,accountBytes:accountBytes,backupBytes:backupBytes});
+        setAccountUsage({status:"ready",source:"cloud",totalBytes:fileUsage.totalBytes+accountBytes+backupBytes,fileBytes:fileUsage.totalBytes,accountBytes:accountBytes,backupBytes:backupBytes,files:fileUsage.files,currentFileBytes:fileUsage.currentFileBytes,backupFileBytes:fileUsage.backupFileBytes,unlinkedFileBytes:fileUsage.unlinkedFileBytes,unlinkedFileCount:fileUsage.unlinkedFileCount});
       });
     }).catch(function(error){
       if(request!==accountUsageRequest||!currentUser||currentUser.uid!==userId) return;
@@ -1845,7 +1911,7 @@
          and can change after a restore, neither of which belongs in a cloud
          quota or billing calculation. */
       console.warn("Cloud storage usage could not be read:",error);
-      setAccountUsage({status:"error",source:"cloud",totalBytes:0,fileBytes:0,accountBytes:0,backupBytes:0});
+      setAccountUsage({status:"error",source:"cloud",totalBytes:0,fileBytes:0,accountBytes:0,backupBytes:0,files:[],currentFileBytes:0,backupFileBytes:0,unlinkedFileBytes:0,unlinkedFileCount:0});
       scheduleAccountUsageRefresh(4000);
     });
   }
@@ -2292,17 +2358,24 @@
       who.innerHTML=(currentUser.photoURL?'<img src="'+currentUser.photoURL+'" alt="">':'')+'<b></b>';
       who.querySelector("b").textContent=currentUser.displayName||currentUser.email||"Signed in";
       summary.appendChild(who);
-      var usage=document.createElement("div"); usage.className="storage-usage "+(accountUsage.status==="ready"?"":accountUsage.status==="error"?"unavailable":"calculating"); usage.setAttribute("aria-label",accountUsageTitle(accountUsage)); usage.setAttribute("aria-live","polite"); usage.tabIndex=0;
+      var usage=document.createElement("div"); usage.className="storage-usage "+(accountUsage.status==="ready"?"":accountUsage.status==="error"?"unavailable":"calculating"); usage.setAttribute("aria-label",accountUsageTitle(accountUsage)); usage.setAttribute("aria-live","polite"); usage.setAttribute("role","button"); usage.setAttribute("aria-haspopup","dialog"); usage.tabIndex=0;
+      usage.onclick=function(){ openSettings("account"); }; usage.onkeydown=function(event){ if(event.key==="Enter"||event.key===" "){ event.preventDefault(); openSettings("account"); } };
       usage.innerHTML='<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><ellipse cx="12" cy="5" rx="7" ry="3"/><path d="M5 5v7c0 1.7 3.1 3 7 3s7-1.3 7-3V5"/><path d="M5 12v7c0 1.7 3.1 3 7 3s7-1.3 7-3v-7"/></svg>';
       var label=document.createElement("span"); label.className="storage-label";
       var labelTitle=document.createElement("strong"); labelTitle.textContent="Storage";
-      var labelCaption=document.createElement("small"); labelCaption.textContent=accountUsage.status==="error"?"Cloud total unavailable":"Saved to your account";
+      var labelCaption=document.createElement("small"); labelCaption.textContent=accountUsage.status==="error"?"Cloud total unavailable":accountUsage.unlinkedFileCount?(accountUsage.unlinkedFileCount+" unlinked cloud file"+(accountUsage.unlinkedFileCount===1?"":"s")):"Saved to your account";
       label.appendChild(labelTitle); label.appendChild(labelCaption);
       var value=document.createElement("b"); value.textContent=accountUsage.status==="ready"?fileSize(accountUsage.totalBytes):accountUsage.status==="error"?"Couldn’t calculate yet":"Calculating your total…";
       var detail=document.createElement("div"); detail.className="storage-breakdown"; detail.id="storageBreakdown"; detail.setAttribute("role","tooltip");
       var heading=document.createElement("h4"); heading.textContent="Cloud storage";
       var detailText=document.createElement("p"); detailText.textContent=accountUsage.status==="error"?"Couldn’t read your cloud total. Local notes and backups are not included.":"Everything saved in your Second Brain account.";
-      var breakdown=document.createElement("dl"); [["Attachments",accountUsage.fileBytes],["Notes & account data",accountUsage.accountBytes],["Backups",accountUsage.backupBytes]].forEach(function(row){ var item=document.createElement("div"), term=document.createElement("dt"), amount=document.createElement("dd"); term.textContent=row[0]; amount.textContent=fileSize(row[1]); item.appendChild(term); item.appendChild(amount); breakdown.appendChild(item); });
+      var breakdown=document.createElement("dl"), rows=[];
+      if(accountUsage.currentFileBytes) rows.push(["Current attachments",accountUsage.currentFileBytes]);
+      if(accountUsage.backupFileBytes) rows.push(["Backup-only files",accountUsage.backupFileBytes]);
+      if(accountUsage.unlinkedFileBytes) rows.push(["Unlinked cloud files",accountUsage.unlinkedFileBytes]);
+      if(!rows.length) rows.push(["Cloud files",accountUsage.fileBytes]);
+      rows.push(["Notes & account data",accountUsage.accountBytes],["Backups",accountUsage.backupBytes]);
+      rows.forEach(function(row){ var item=document.createElement("div"), term=document.createElement("dt"), amount=document.createElement("dd"); term.textContent=row[0]; amount.textContent=fileSize(row[1]); item.appendChild(term); item.appendChild(amount); breakdown.appendChild(item); });
       detail.appendChild(heading); detail.appendChild(detailText); detail.appendChild(breakdown); usage.setAttribute("aria-describedby",detail.id); usage.appendChild(label); usage.appendChild(value); usage.appendChild(detail); summary.appendChild(usage); dfoot.appendChild(summary);
     } else {
       var s=document.createElement("button"); s.className="sbtn"; s.style.flex="1";
@@ -2606,6 +2679,7 @@
     if(currentUser){
       el.innerHTML='<div class="acctbox">'+(currentUser.photoURL?'<img src="'+currentUser.photoURL+'" alt="">':'')+'<div class="ai"><b></b><small>Notes sync automatically</small></div></div><div class="btnrow"><button class="b2" id="soBtn">Sign out &amp; wipe this device</button></div>';
       el.querySelector(".ai b").textContent=currentUser.displayName||currentUser.email||"Signed in";
+      renderCloudStorageDetails(el);
       $("soBtn").onclick=function(){
         cloudSyncPaused=true; clearTimeout(cloudTimer);
         auth.signOut().then(function(){ showToast("Signed out and removed local notes"); setTimeout(renderAcct,300); }).catch(function(error){ cloudSyncPaused=false; console.warn(error); showToast("Couldn’t sign out. Your local notes were kept.",true); });
@@ -2619,6 +2693,61 @@
       return;
     }
     el.innerHTML='<p class="hint"><b>Sync is not configured.</b><br>Put this project’s Firebase web settings in <b>astral.config.js</b>, then reopen the app. People using the finished app will only see the sign-in button.</p>';
+  }
+  function cloudFileStatus(file){
+    if(file.kind==="current") return file.inBackup?"Current attachment and backup file":"Current attachment";
+    if(file.kind==="backup") return "Backup-only file";
+    return "Unlinked cloud file";
+  }
+  function removeCloudFileReferences(path){
+    var changed=false;
+    forEachContentDocument(function(note){
+      var removed=(note.attachments||[]).filter(function(attachment){ return attachment.storagePath===path; });
+      if(!removed.length) return;
+      var removedIds={}; removed.forEach(function(attachment){ removedIds[attachment.id]=true; removeAttachmentFile(note.id,attachment.id); });
+      note.attachments=note.attachments.filter(function(attachment){ return !removedIds[attachment.id]; });
+      note.blocks=(note.blocks||[]).filter(function(block){ return !(block.type==="attachment"&&removedIds[block.attachmentId]); });
+      if(!note.blocks.some(function(block){ return block.type==="text"; })) note.blocks.unshift(textBlock(""));
+      syncNoteBody(note); touchContent(note); changed=true;
+    });
+    return changed;
+  }
+  function deleteCloudStorageFile(file){
+    if(!currentUser||!storage||!file||!file.path||file.deleting) return;
+    var impact=file.kind==="current"?" It is attached to a current note, so its attachment block will also be removed. Any backup that references it will no longer be able to restore that file.":file.kind==="backup"?" It is only retained by a cloud backup, so that backup will no longer be able to restore the file.":" It is not referenced by your current notes or cloud backups.";
+    if(!confirm("Permanently delete "+file.name+" ("+fileSize(file.size)+") from cloud storage?"+impact)) return;
+    file.deleting=true; renderAcct();
+    storage.ref(file.path).delete().then(function(){
+      if(file.kind==="current"&&removeCloudFileReferences(file.path)){ persist(); renderAll(); }
+      showToast("Cloud file deleted"); scheduleAccountUsageRefresh(0);
+    }).catch(function(error){
+      file.deleting=false; console.warn("Cloud file could not be deleted:",error); renderAcct(); showToast("Couldn’t delete that cloud file",true);
+    });
+  }
+  function renderCloudStorageDetails(container){
+    var section=document.createElement("section"); section.className="cloud-storage-details";
+    var heading=document.createElement("h4"); heading.textContent="Cloud files"; section.appendChild(heading);
+    var intro=document.createElement("p");
+    if(accountUsage.status!=="ready"){
+      intro.textContent=accountUsage.status==="error"?"Cloud file details are unavailable right now.":"Reading saved cloud files…";
+      section.appendChild(intro); container.appendChild(section); return;
+    }
+    var files=accountUsage.files||[];
+    intro.textContent=files.length?"Every file stored for this account is listed below. Unlinked files still use storage; delete only files you no longer need.":"No files are stored in this account’s Cloud Storage folder.";
+    section.appendChild(intro);
+    if(files.length){
+      var list=document.createElement("div"); list.className="cloud-storage-file-list";
+      files.forEach(function(file){
+        var row=document.createElement("div"); row.className="cloud-storage-file"+(file.kind==="unlinked"?" unlinked":""); row.title=file.path;
+        var name=document.createElement("b"); name.textContent=file.name; row.appendChild(name);
+        var size=document.createElement("em"); size.textContent=fileSize(file.size); row.appendChild(size);
+        var detail=document.createElement("small"); detail.textContent=cloudFileStatus(file)+" · "+file.path; row.appendChild(detail);
+        var remove=document.createElement("button"); remove.type="button"; remove.className="b2"; remove.textContent=file.deleting?"Deleting…":"Delete permanently"; remove.disabled=!!file.deleting; remove.onclick=function(){ deleteCloudStorageFile(file); }; row.appendChild(remove);
+        list.appendChild(row);
+      });
+      section.appendChild(list);
+    }
+    container.appendChild(section);
   }
   $("settingsBtn").onclick=function(){ openSettings(); };
   $("settingsModal").onclick=function(e){ if(e.target===$("settingsModal")) $("settingsModal").classList.remove("open"); };
