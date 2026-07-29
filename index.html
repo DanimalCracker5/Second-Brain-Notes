@@ -40,7 +40,7 @@
   .g2{ width:80vw; height:58vh; bottom:-36vh; right:-28vw; background:var(--c2); opacity:var(--o2); animation-name:float2; animation-duration:46s; }
   .g3{ width:54vw; height:40vh; top:52vh; left:38vw; background:var(--c3); opacity:var(--o3); animation-name:float3; animation-duration:40s; }
   .ambient::after{ content:""; position:absolute; inset:0; pointer-events:none;
-    background:radial-gradient(88% 74% at 50% 38%, rgba(0,0,0,.86), rgba(0,0,0,0) 80%); }
+    background:radial-gradient(88% 74% at 50% 38%, rgba(0,0,0,var(--darkness,.86)), rgba(0,0,0,0) 80%); }
   .ambient.still .glow{ animation-play-state:paused; }
   @keyframes float1{ 0%,100%{transform:translate(0,0) scale(1)} 50%{transform:translate(12vw,9vh) scale(1.1)} }
   @keyframes float2{ 0%,100%{transform:translate(0,0) scale(1.05)} 50%{transform:translate(-13vw,-8vh) scale(.92)} }
@@ -71,8 +71,16 @@
   .canvas{ flex:1; overflow-y:auto; -webkit-overflow-scrolling:touch; min-height:0; padding:0 26px calc(120px + var(--safe-b)); }
   .canvas::-webkit-scrollbar{ width:9px; } .canvas::-webkit-scrollbar-thumb{ background:rgba(255,255,255,.08); border-radius:9px; }
   .sheet{ max-width:760px; margin:0 auto; padding-top:8px; }
-  .title{ width:100%; background:none; border:none; outline:none; color:var(--ink); font-weight:700; letter-spacing:-.02em; font-size:clamp(2rem,6vw,3rem); line-height:1.06; padding:6px 0 0; }
+  .title{ width:100%; background:none; border:none; outline:none; resize:none; overflow:hidden; display:block; color:var(--ink); font-family:inherit; font-weight:700; letter-spacing:-.02em; font-size:clamp(2rem,6vw,3rem); line-height:1.06; padding:6px 0 0; }
   .title::placeholder{ color:var(--ink-faint); }
+  .todo-title-row{ display:flex; align-items:flex-start; gap:12px; }
+  .todo-title-row .title{ flex:1; min-width:0; }
+  .todo-item-check{ width:40px; height:40px; margin-top:8px; flex:none; display:grid; place-items:center; border:1px solid var(--accent-line); border-radius:12px; color:var(--accent); background:var(--accent-soft); cursor:pointer; font-size:1.1rem; font-weight:800; transition:.15s; }
+  .todo-item-check:hover{ filter:brightness(1.15); transform:scale(1.04); }
+  .todo-item-check.done{ color:#07110c; background:#6ee7b7; border-color:#6ee7b7; }
+  .todo-item-delete{ flex:none; margin-top:8px; border:1px solid rgba(248,113,113,.3); border-radius:10px; padding:10px 12px; color:#f87171; background:rgba(248,113,113,.09); cursor:pointer; font:600 .78rem "DM Sans",sans-serif; }
+  .todo-item-delete:hover{ background:rgba(248,113,113,.18); }
+  .todo-title-row.done .title{ color:var(--ink-dim); text-decoration:line-through; }
 
   .assign{ display:flex; flex-wrap:wrap; align-items:center; gap:7px; margin:14px 0 12px; }
   .pickbtn{ display:inline-flex; align-items:center; gap:7px; font-size:.78rem; font-weight:500; color:var(--ink-dim); background:rgba(255,255,255,.04); border:1px solid var(--line); border-radius:8px; padding:5px 10px; cursor:pointer; transition:.14s; }
@@ -99,6 +107,11 @@
   .ch-copy.done{ color:#6ee7b7; border-color:rgba(110,231,183,.4); background:rgba(52,211,153,.16); }
   .ch-body{ width:100%; background:none; border:none; outline:none; resize:none; display:block; color:var(--ink); font-size:1.06rem; line-height:1.7; padding:4px 0 0; min-height:56px; overflow:hidden; }
   .ch-body::placeholder{ color:var(--ink-faint); }
+  .ch.cue{ padding:10px 0 16px; text-align:center; }
+  .ch.cue .ch-top{ justify-content:center; margin-bottom:0; }
+  .ch.cue .ch-idx{ color:var(--ink-faint); letter-spacing:.16em; font-size:.6rem; }
+  .cue-body{ min-height:38px; color:var(--ink-dim); text-align:center; font-style:italic; font-size:.94rem; line-height:1.55; }
+  .cue-body::placeholder{ color:var(--ink-faint); }
   .ch-foot{ display:flex; align-items:center; gap:2px; margin-top:8px; opacity:.3; transition:opacity .18s; }
   .ch:focus-within .ch-foot{ opacity:.9; }
   .ch-foot .g{ width:30px; height:30px; display:grid; place-items:center; border:none; background:none; color:var(--ink-dim); cursor:pointer; border-radius:8px; }
@@ -108,13 +121,23 @@
   .add{ width:100%; margin-top:6px; padding:14px; display:flex; align-items:center; justify-content:center; gap:8px; font-weight:500; font-size:.9rem; color:var(--ink-dim); background:none; border:1px solid var(--line); border-radius:14px; cursor:pointer; transition:.15s; }
   .add:hover{ color:var(--ink); border-color:var(--accent-line); background:var(--accent-soft); }
   .todo-list{ display:flex; flex-direction:column; gap:8px; margin-top:6px; }
-  .todo-row{ display:flex; align-items:center; gap:10px; min-height:48px; padding:8px 10px; border:1px solid var(--line); border-radius:12px; background:rgba(255,255,255,.025); }
+  .todo-row{ display:grid; grid-template-columns:25px minmax(0,1fr); gap:8px 10px; min-height:48px; padding:10px; border:1px solid var(--line); border-radius:12px; background:rgba(255,255,255,.025); }
   .todo-check{ width:25px; height:25px; flex:none; border:1px solid var(--accent-line); border-radius:8px; background:var(--accent-soft); color:var(--accent); cursor:pointer; font-weight:800; }
-  .todo-text{ flex:1; min-width:0; border:0; outline:0; background:transparent; color:var(--ink); font:500 .98rem "DM Sans",sans-serif; }
+  .todo-text{ min-width:0; border:0; outline:0; background:transparent; color:var(--ink); font:500 .98rem "DM Sans",sans-serif; }
   .todo-text::placeholder{ color:var(--ink-faint); }
   .todo-row.done .todo-text{ color:var(--ink-faint); text-decoration:line-through; }
   .todo-row.done .todo-check{ color:#07110c; background:#6ee7b7; border-color:#6ee7b7; }
-  .todo-delete{ display:none; flex:none; border:1px solid rgba(248,113,113,.25); border-radius:8px; padding:6px 9px; color:#f87171; background:rgba(248,113,113,.08); cursor:pointer; font-size:.72rem; font-weight:600; }
+  .todo-details{ grid-column:2; display:grid; gap:8px; padding-top:1px; }
+  .todo-description{ width:100%; min-height:28px; resize:none; border:0; outline:0; background:transparent; color:var(--ink-dim); font:400 .84rem/1.45 "DM Sans",sans-serif; }
+  .todo-description::placeholder{ color:var(--ink-faint); }
+  .subtasks{ display:grid; gap:5px; }
+  .subtask-row{ display:flex; align-items:center; gap:7px; color:var(--ink-dim); }
+  .subtask-row input[type="checkbox"]{ accent-color:var(--accent); margin:0; }
+  .subtask-row input[type="text"]{ flex:1; min-width:0; border:0; outline:0; color:var(--ink-dim); background:transparent; font:400 .8rem "DM Sans",sans-serif; }
+  .subtask-row.done input[type="text"]{ text-decoration:line-through; color:var(--ink-faint); }
+  .todo-actions{ grid-column:2; display:flex; align-items:center; gap:8px; }
+  .todo-link{ border:0; padding:2px 0; color:var(--accent); background:transparent; cursor:pointer; font:500 .74rem "DM Sans",sans-serif; }
+  .todo-delete{ margin-left:auto; display:none; border:1px solid rgba(248,113,113,.25); border-radius:8px; padding:6px 9px; color:#f87171; background:rgba(248,113,113,.08); cursor:pointer; font-size:.72rem; font-weight:600; }
   .todo-row.done .todo-delete{ display:block; }
   .todo-summary{ display:flex; align-items:center; justify-content:space-between; gap:12px; margin:2px 0 18px; color:var(--ink-faint); font:500 .72rem "DM Mono",monospace; }
 
@@ -122,6 +145,7 @@
   .drawer{ background:#000; border-right:1px solid var(--line); display:flex; flex-direction:column; padding-top:var(--safe-t); padding-bottom:var(--safe-b); min-height:0; }
   .scrim{ position:fixed; inset:0; z-index:20; background:rgba(0,0,0,.55); opacity:0; pointer-events:none; transition:opacity .26s; }
   .d-head{ padding:20px 18px 8px; } .d-head h2{ font-weight:700; font-size:1.2rem; letter-spacing:-.01em; margin:0; } .d-head h2 span{ color:var(--accent); }
+  .d-head small{ display:block; margin-top:3px; font-family:"DM Mono",monospace; font-size:.49rem; letter-spacing:.06em; color:var(--ink-faint); }
   .d-new{ margin:6px 14px; padding:11px; display:flex; align-items:center; justify-content:center; gap:8px; cursor:pointer; font-weight:600; font-size:.88rem; color:#08080a; background:var(--accent); border:none; border-radius:12px; }
   .d-scroll{ flex:1; overflow-y:auto; min-height:0; }
   .d-scroll::-webkit-scrollbar{ width:8px; } .d-scroll::-webkit-scrollbar-thumb{ background:rgba(255,255,255,.08); border-radius:8px; }
@@ -150,15 +174,24 @@
   .tag-empty{ padding:0 18px 8px; font-size:.76rem; color:var(--ink-faint); }
 
   .d-list{ padding:4px 10px 8px; }
-  .d-item{ display:flex; align-items:center; gap:9px; padding:10px 12px; border-radius:11px; cursor:pointer; transition:background .13s; }
+  .d-item{ display:grid; grid-template-columns:15px minmax(0,1fr) auto; align-items:center; gap:9px; padding:10px 12px; border-radius:11px; cursor:pointer; transition:background .13s; }
   .d-item:hover{ background:rgba(255,255,255,.05); } .d-item.active{ background:var(--accent-soft); }
   .d-item > svg{ width:15px; height:15px; color:var(--ink-dim); flex:none; }
-  .d-item .dt{ flex:1; min-width:0; } .d-item .dt-title{ font-weight:500; font-size:.92rem; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+  .side-todo-check{ width:15px; height:15px; padding:0; display:grid; place-items:center; border:1px solid var(--accent-line); border-radius:4px; color:#07110c; background:var(--accent-soft); cursor:pointer; font-size:.62rem; font-weight:800; }
+  .side-todo-check.done{ background:#6ee7b7; border-color:#6ee7b7; }
+  .d-item.todo-done .dt-title{ color:var(--ink-faint); text-decoration:line-through; }
+  .d-item .dt{ min-width:0; } .d-item .dt-title{ font-weight:500; font-size:.92rem; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
   .d-item .dt-meta{ display:flex; align-items:center; gap:5px; margin-top:3px; }
   .d-item .dt-meta .m{ font-family:"DM Mono",monospace; font-size:.62rem; color:var(--ink-faint); }
   .d-item .dot{ width:6px; height:6px; border-radius:50%; flex:none; }
   .d-item .dx{ opacity:0; border:none; background:none; color:var(--ink-faint); cursor:pointer; font-size:1rem; padding:2px 6px; border-radius:6px; }
   .d-item:hover .dx{ opacity:1; } .d-item .dx:hover{ color:#f87171; }
+  .d-item.todo-done .dx{ opacity:1; color:#f87171; font-size:.7rem; font-weight:600; }
+  .d-tasks{ grid-column:2 / 4; display:grid; gap:4px; padding-top:2px; }
+  .side-task{ display:flex; align-items:center; gap:7px; width:100%; padding:3px 0; }
+  .side-task-check{ width:14px; height:14px; padding:0; display:grid; place-items:center; flex:none; border:1px solid var(--accent-line); border-radius:4px; color:#07110c; background:var(--accent-soft); cursor:pointer; font-size:.62rem; font-weight:800; }
+  .side-task-open{ flex:1; min-width:0; padding:0; border:0; color:var(--ink-dim); background:transparent; text-align:left; cursor:pointer; font:400 .72rem "DM Sans",sans-serif; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+  .side-task.done .side-task-open{ color:var(--ink-faint); text-decoration:line-through; } .side-task.done .side-task-check{ background:#6ee7b7; border-color:#6ee7b7; }
 
   .d-foot{ display:flex; align-items:center; gap:8px; padding:11px 14px; border-top:1px solid var(--line); }
   .d-foot .sbtn{ flex:1; display:flex; align-items:center; justify-content:center; gap:7px; padding:9px; font-size:.8rem; font-weight:500; color:var(--ink-dim); background:rgba(255,255,255,.04); border:1px solid var(--line); border-radius:10px; cursor:pointer; }
@@ -206,6 +239,11 @@
   .grp > h4{ font-family:"DM Mono",monospace; font-size:.58rem; letter-spacing:.22em; text-transform:uppercase; color:var(--ink-faint); margin:0 0 11px; }
   .hint{ font-size:.8rem; color:var(--ink-dim); line-height:1.55; margin:0 0 12px; }
   .hint a{ color:var(--accent); }
+  .settings-nav{ display:grid; gap:8px; margin-top:20px; }
+  .settings-nav button{ display:flex; align-items:center; justify-content:space-between; gap:16px; width:100%; padding:13px 14px; cursor:pointer; text-align:left; color:var(--ink); background:rgba(255,255,255,.035); border:1px solid var(--line); border-radius:13px; }
+  .settings-nav button:hover{ border-color:var(--accent-line); background:var(--accent-soft); }
+  .settings-nav b{ display:block; font-size:.9rem; } .settings-nav small{ display:block; margin-top:3px; color:var(--ink-faint); font-size:.74rem; } .settings-nav .arrow{ color:var(--accent); font-size:1.1rem; }
+  .settings-back{ display:inline-flex; align-items:center; gap:5px; border:0; margin:0 0 12px; padding:3px 0; color:var(--accent); background:transparent; cursor:pointer; font:500 .78rem "DM Sans",sans-serif; }
 
   .themes{ display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:9px; }
   .th{ min-width:0; display:grid; grid-template-columns:76px 1fr 18px; align-items:center; gap:11px; cursor:pointer; color:var(--ink); text-align:left; padding:8px; border:1px solid var(--line); border-radius:14px; background:rgba(255,255,255,.025); transition:background .14s,border-color .14s,transform .14s; }
@@ -222,6 +260,9 @@
   .toggle{ width:44px; height:26px; flex:none; border-radius:999px; background:rgba(255,255,255,.12); border:none; cursor:pointer; position:relative; transition:.15s; }
   .toggle.on{ background:var(--accent); }
   .toggle b{ position:absolute; top:3px; left:3px; width:20px; height:20px; border-radius:50%; background:#fff; transition:left .16s; } .toggle.on b{ left:21px; }
+  .range-row{ display:grid; gap:8px; } .range-row label{ display:flex; align-items:center; justify-content:space-between; color:var(--ink-dim); font-size:.82rem; }
+  .range-row output{ color:var(--accent); font-family:"DM Mono",monospace; font-size:.75rem; }
+  input[type="range"]{ width:100%; accent-color:var(--accent); }
 
   .ta{ width:100%; min-height:120px; resize:vertical; background:rgba(255,255,255,.04); border:1px solid var(--line); border-radius:12px; color:var(--ink); padding:12px; font-family:"DM Mono",monospace; font-size:.76rem; line-height:1.5; outline:none; }
   .ta:focus{ border-color:var(--accent-line); }
@@ -240,6 +281,24 @@
   .modal-opt{ width:100%; text-align:left; padding:13px 15px; margin-bottom:9px; cursor:pointer; background:rgba(255,255,255,.04); border:1px solid var(--line); border-radius:12px; transition:.14s; }
   .modal-opt:hover{ background:var(--accent-soft); border-color:var(--accent-line); }
   .modal-opt b{ display:block; font-weight:600; font-size:.92rem; color:var(--ink); } .modal-opt small{ font-size:.74rem; color:var(--ink-faint); }
+  .backup-list{ display:grid; gap:8px; }
+  .backup-entry{ display:flex; align-items:center; gap:12px; padding:11px 12px; border:1px solid var(--line); border-radius:12px; background:rgba(255,255,255,.025); }
+  .backup-entry .bi{ flex:1; min-width:0; } .backup-entry b{ display:block; font-size:.84rem; } .backup-entry small{ display:block; margin-top:2px; color:var(--ink-faint); font:400 .67rem "DM Mono",monospace; }
+  .backup-entry button{ flex:none; }
+  .agent-view{ max-width:920px; }
+  .agent-hero{ display:flex; align-items:center; gap:14px; padding:18px; border:1px solid var(--line); border-radius:18px; background:linear-gradient(135deg,rgba(255,255,255,.07),rgba(255,255,255,.02)); }
+  .agent-avatar{ width:46px; height:46px; display:grid; place-items:center; border-radius:16px; color:#09090b; background:var(--accent); font-weight:700; }
+  .agent-hero h1{ margin:0; font-size:1.25rem; } .agent-hero p{ margin:3px 0 0; color:var(--ink-dim); font-size:.8rem; }
+  .agent-tabs{ display:flex; gap:6px; margin:16px 0; border-bottom:1px solid var(--line); }
+  .agent-tabs button{ padding:9px 12px; border:0; border-bottom:2px solid transparent; color:var(--ink-dim); background:transparent; cursor:pointer; font:500 .82rem "DM Sans",sans-serif; }
+  .agent-tabs button.on{ color:var(--ink); border-color:var(--accent); }
+  .agent-stage{ min-height:310px; padding:16px; border:1px solid var(--line); border-radius:16px; background:rgba(0,0,0,.2); }
+  .agent-message{ max-width:76%; padding:10px 12px; margin-bottom:10px; border-radius:12px 12px 12px 3px; color:var(--ink-dim); background:rgba(255,255,255,.06); font-size:.87rem; line-height:1.5; }
+  .agent-composer{ display:flex; gap:8px; margin-top:104px; } .agent-composer input{ flex:1; min-width:0; padding:11px; border:1px solid var(--line); border-radius:10px; color:var(--ink-faint); background:rgba(255,255,255,.03); } .agent-composer button{ padding:0 14px; border:0; border-radius:10px; color:#08080a; background:var(--accent); }
+  .voice-stage{ display:grid; place-items:center; gap:14px; min-height:270px; text-align:center; color:var(--ink-dim); }
+  .voice-orb{ width:118px; height:118px; border-radius:50%; background:radial-gradient(circle at 34% 28%,#fff 0, var(--accent) 12%, rgba(120,90,255,.44) 45%,transparent 70%); box-shadow:0 0 48px var(--accent-soft); }
+  .agent-edit{ display:grid; gap:14px; } .agent-edit label{ display:grid; gap:6px; color:var(--ink-dim); font-size:.78rem; } .agent-edit input,.agent-edit select{ padding:10px; border:1px solid var(--line); border-radius:10px; color:var(--ink); background:rgba(255,255,255,.04); font:400 .82rem "DM Mono",monospace; } .agent-edit select{ cursor:pointer; }
+  .agent-edit textarea{ min-height:110px; }
 
   @media (max-width: 900px){
     .app{ grid-template-columns:1fr; }
@@ -248,6 +307,10 @@
     .icon.hide-wide{ display:grid; }
     .canvas{ padding-left:20px; padding-right:20px; }
     .themes{ grid-template-columns:repeat(2,minmax(0,1fr)); }
+    .glow{ filter:blur(72px); mix-blend-mode:normal; }
+    .g1{ width:100vw; height:54vh; top:-21vh; left:-34vw; }
+    .g2{ width:108vw; height:56vh; bottom:-23vh; right:-40vw; }
+    .g3{ width:78vw; height:42vh; top:38vh; left:12vw; }
   }
   @media (max-width: 560px){
     .modal-box{ padding:20px; }
@@ -263,7 +326,7 @@
   <div class="scrim" id="scrim"></div>
 
   <aside class="drawer">
-    <div class="d-head"><h2>Second Brain</h2></div>
+    <div class="d-head"><h2>Second Brain Notes</h2><small>by Astral Studios LLC</small></div>
     <button class="d-new" id="newBtn">＋  New
       <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M6 9l6 6 6-6"/></svg>
     </button>
@@ -283,7 +346,8 @@
       <button class="icon hide-wide" id="menuBtn" aria-label="Toggle sidebar"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><line x1="4" y1="7" x2="20" y2="7"/><line x1="4" y1="12" x2="20" y2="12"/><line x1="4" y1="17" x2="20" y2="17"/></svg></button>
       <div class="spacer"></div>
       <button class="icon" id="settingsBtn" aria-label="Settings"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.7 1.7 0 0 0 .3 1.9l.1.1a2 2 0 1 1-2.8 2.8l-.1-.1a1.7 1.7 0 0 0-1.9-.3 1.7 1.7 0 0 0-1 1.5v.2a2 2 0 1 1-4 0v-.1a1.7 1.7 0 0 0-1.1-1.5 1.7 1.7 0 0 0-1.9.3l-.1.1a2 2 0 1 1-2.8-2.8l.1-.1a1.7 1.7 0 0 0 .3-1.9 1.7 1.7 0 0 0-1.5-1H2a2 2 0 1 1 0-4h.1A1.7 1.7 0 0 0 3.7 9a1.7 1.7 0 0 0-.3-1.9l-.1-.1a2 2 0 1 1 2.8-2.8l.1.1a1.7 1.7 0 0 0 1.9.3H9a1.7 1.7 0 0 0 1-1.5V3a2 2 0 1 1 4 0v.1a1.7 1.7 0 0 0 1 1.5 1.7 1.7 0 0 0 1.9-.3l.1-.1a2 2 0 1 1 2.8 2.8l-.1.1a1.7 1.7 0 0 0-.3 1.9V9a1.7 1.7 0 0 0 1.5 1h.2a2 2 0 1 1 0 4h-.1a1.7 1.7 0 0 0-1.5 1z"/></svg></button>
-      <span class="save-state" id="saveState" role="status" aria-live="polite">Saved locally</span>
+      <span class="save-state" id="saveState" role="status" aria-live="polite">Preparing cloud sync</span>
+      <button class="copy-all" id="ttsBtn" style="display:none"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M11 5 6 9H3v6h3l5 4z"/><path d="M15.5 8.5a5 5 0 0 1 0 7M18.5 5.5a9 9 0 0 1 0 13"/></svg><span id="ttsLabel">Listen</span></button>
       <button class="copy-all" id="copyAll"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15V5a2 2 0 0 1 2-2h10"/></svg><span id="copyAllLabel">Copy all</span></button>
     </div>
     <div class="canvas" id="canvas"></div>
@@ -297,7 +361,6 @@
 </div>
 <div class="toast" id="toast"></div>
 <div class="modal" id="settingsModal"><div class="modal-box" id="settingsBox"></div></div>
-<div class="modal" id="syncModal"><div class="modal-box" id="syncBox"></div></div>
 
 <script>
 (function(){
@@ -333,6 +396,8 @@
 
   /* =================== storage =================== */
   var KEY="astral-notes-v5", OLDS=["astral-notes-v4","astral-notes-v3"], CFGKEY="astral-fb-config", BACKUP_KEY="second-brain-auto-backups-v1", mem=null;
+  var DEFAULT_ELEVENLABS_VOICE="21m00Tcm4TlvDq8ikWAM", CUSTOM_VOICE_OPTION="__elevenlabs_voice_id__";
+  var runtimeApiKeys={openai:"",elevenlabs:"",elevenlabsVoice:DEFAULT_ELEVENLABS_VOICE,savedVoices:[],audio:null,audioUrl:null};
   var canPersist=(function(){ try{ localStorage.setItem("__t","1"); localStorage.removeItem("__t"); return true; }catch(e){ return false; } })();
   function readKey(k){ if(canPersist){ try{ return JSON.parse(localStorage.getItem(k)); }catch(e){} } return null; }
   function migrate(){
@@ -344,32 +409,51 @@
   }
   function loadLocal(){ var v=readKey(KEY); if(v&&v.items) return v; if(!canPersist&&mem) return mem; return migrate(); }
   function setSaveState(label,kind){ var el=$("saveState"); if(!el) return; el.textContent=label; el.className="save-state"+(kind?" "+kind:""); }
-  function backupPayload(){ return { app:"second-brain", version:6, items:state.items, folders:state.folders, tags:state.tags, preferences:{theme:state.theme,motion:state.motion}, created:Date.now() }; }
+  function backupPayload(){ return { app:"second-brain", version:7, items:state.items, folders:state.folders, tags:state.tags, preferences:{theme:state.theme,motion:state.motion,darkness:state.darkness,enabledTypes:state.enabledTypes}, created:Date.now() }; }
   function autoBackups(){ return readKey(BACKUP_KEY)||[]; }
   function captureAutoBackup(force){
     if(!canPersist) return;
     var list=autoBackups(), today=new Date().toISOString().slice(0,10);
     if(!force && list.length && list[0].day===today) return;
     list.unshift({day:today, created:Date.now(), data:backupPayload()});
-    try{ localStorage.setItem(BACKUP_KEY,JSON.stringify(list.slice(0,7))); }catch(e){}
+    try{ localStorage.setItem(BACKUP_KEY,JSON.stringify(list.slice(0,14))); }catch(e){}
   }
-  function persist(){ captureAutoBackup(false); var d=JSON.stringify(state); if(canPersist){ try{ localStorage.setItem(KEY,d); }catch(e){ mem=JSON.parse(d); } } else mem=JSON.parse(d); setSaveState(currentUser?"Saved locally · syncing":"Saved locally"); saveCloud(); }
+  function persist(){ captureAutoBackup(false); state.lastLocalChange=Date.now(); if(currentUser) state.pendingCloudSync=true; var d=JSON.stringify(state); if(canPersist){ try{ localStorage.setItem(KEY,d); }catch(e){ mem=JSON.parse(d); } } else mem=JSON.parse(d); setSaveState(currentUser?"Saving to cloud":"Sign in to sync"); saveCloud(); }
 
   function uid(){ return Date.now().toString(36)+Math.random().toString(36).slice(2,7); }
-  function sec(t,b){ return {id:uid(),title:t||"",body:b||""}; }
+  function sec(t,b,kind){ return {id:uid(),title:t||"",body:b||"",kind:kind||"chapter"}; }
   function baseItem(){ return { id:uid(), title:"", folderId:(state&&state.filterFolder)||null, tagIds:(state&&state.filterTag)?[state.filterTag]:[], updated:Date.now() }; }
   function newScriptItem(){ var it=baseItem(); it.type="script"; it.sections=[sec("Intro",""),sec("Main",""),sec("Outro","")]; return it; }
   function newNoteItem(){ var it=baseItem(); it.type="note"; it.body=""; return it; }
-  function newTodoItem(){ var it=baseItem(); it.type="todo"; it.todos=[{id:uid(),text:"",done:false,completed:null}]; return it; }
+  function newTodoItem(){ var it=baseItem(); it.type="todo"; it.todos=[]; it.done=false; it.completed=null; return it; }
+  function newTask(){ return {id:uid(),text:"",description:"",subtasks:[],done:false,completed:null}; }
+  function newAgentItem(){ var it=baseItem(); it.type="agent"; it.title="New Agent"; it.agent={tab:"chat",model:"",voice:"Default",longTermMemory:"{}",shortTermMemory:"{}",instructions:"{\n  \"role\": \"helpful assistant\"\n}"}; return it; }
 
   var state=loadLocal();
   if(!state||!state.items){ state={ items:[], folders:[], tags:[], currentId:null, motion:true, theme:"nebula", filterFolder:null, filterTag:null }; state.items.push(newScriptItem()); state.currentId=state.items[0].id; }
   state.folders=state.folders||[]; state.tags=state.tags||[]; state.items=state.items||[];
   if(typeof state.motion!=="boolean") state.motion=true;
   if(!state.theme) state.theme="nebula";
+  if(typeof state.darkness!=="number") state.darkness=82;
+  state.darkness=Math.max(0,Math.min(100,state.darkness));
+  state.enabledTypes=state.enabledTypes||{};
+  if(typeof state.enabledTypes.script!=="boolean") state.enabledTypes.script=true;
+  if(typeof state.enabledTypes.note!=="boolean") state.enabledTypes.note=true;
+  if(typeof state.enabledTypes.todo!=="boolean") state.enabledTypes.todo=true;
+  if(typeof state.enabledTypes.agent!=="boolean") state.enabledTypes.agent=false;
   state.filterFolder=state.filterFolder||null; state.filterTag=state.filterTag||null;
   state.listSort=state.listSort||"updated";
-  state.items.forEach(function(it){ if(it.type==="todo"&&!Array.isArray(it.todos)) it.todos=[]; });
+  if(typeof state.pendingCloudSync!=="boolean") state.pendingCloudSync=false;
+  state.items.forEach(function(it){
+    if(it.type==="script") (it.sections||[]).forEach(function(section){ if(!section.kind) section.kind="chapter"; });
+    if(it.type==="todo"){
+      if(!Array.isArray(it.todos)) it.todos=[];
+      if(typeof it.done!=="boolean") it.done=false;
+      if(!it.completed) it.completed=null;
+      it.todos.forEach(function(task){ if(typeof task.text!=="string") task.text=task.title||""; if(typeof task.description!=="string") task.description=""; if(!Array.isArray(task.subtasks)) task.subtasks=[]; });
+    }
+    if(it.type==="agent"&&!it.agent) it.agent={tab:"chat",model:"",voice:"Default",longTermMemory:"{}",shortTermMemory:"{}",instructions:"{}"};
+  });
   if(!state.items.length) state.items.push(newScriptItem());
   if(!state.currentId || !state.items.some(function(i){return i.id===state.currentId;})) state.currentId=state.items[0].id;
 
@@ -400,7 +484,9 @@
     rootS.setProperty("--c1",hsl(t.glows[0],shift));
     rootS.setProperty("--c2",hsl(t.glows[1],shift));
     rootS.setProperty("--c3",hsl(t.glows[2],shift));
-    rootS.setProperty("--o1",t.o[0]); rootS.setProperty("--o2",t.o[1]); rootS.setProperty("--o3",t.o[2]);
+    var glow=Math.max(0,1-(state.darkness||0)/100);
+    rootS.setProperty("--o1",(t.o[0]*glow).toFixed(3)); rootS.setProperty("--o2",(t.o[1]*glow).toFixed(3)); rootS.setProperty("--o3",(t.o[2]*glow).toFixed(3));
+    rootS.setProperty("--darkness",(0.48+((state.darkness||0)/100)*0.52).toFixed(3));
     var a=t.accent;
     rootS.setProperty("--accent","hsl("+a[0]+","+a[1]+"%,"+a[2]+"%)");
     rootS.setProperty("--accent-soft","hsla("+a[0]+","+a[1]+"%,"+Math.max(a[2]-14,30)+"%,.16)");
@@ -413,8 +499,17 @@
   /* =================== helpers =================== */
   function words(s){ var t=(s||"").trim(); return t?t.split(/\s+/).length:0; }
   function dur(w){ var s=Math.round(w/150*60), m=Math.floor(s/60), r=s%60; return m+":"+(r<10?"0":"")+r; }
-  function itemText(it){ if(it.type==="script") return (it.sections||[]).map(function(x){return x.body;}).join(" "); if(it.type==="todo") return (it.todos||[]).map(function(x){return x.text;}).join(" "); return it.body||""; }
+  function itemText(it){ if(it.type==="script") return (it.sections||[]).map(function(x){return x.body;}).join(" "); if(it.type==="todo") return (it.todos||[]).map(function(x){return (x.text||"")+" "+(x.description||"");}).join(" "); if(it.type==="agent") return [it.title,(it.agent||{}).longTermMemory,(it.agent||{}).shortTermMemory,(it.agent||{}).instructions].join(" "); return it.body||""; }
   function itemWords(it){ return words(itemText(it)); }
+  function itemLabel(it){ return it.type==="script"?"YouTube Script":(it.type==="todo"?"Todo":(it.type==="agent"?"Agent":"Note")); }
+  function setTodoDone(it,done){
+    it.done=typeof done==="boolean"?done:!it.done;
+    it.completed=it.done?Date.now():null;
+    it.updated=Date.now();
+    persist();
+    renderList();
+    if(current().id===it.id) renderMain();
+  }
   function escapeHtml(s){ return (s||"").replace(/[&<>"]/g,function(c){ return {"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]; }); }
   function copy(text,cb){ if(navigator.clipboard&&navigator.clipboard.writeText){ navigator.clipboard.writeText(text).then(cb,function(){ fbcopy(text,cb); }); } else fbcopy(text,cb); }
   function fbcopy(text,cb){ var t=document.createElement("textarea"); t.value=text; t.style.position="fixed"; t.style.opacity="0"; document.body.appendChild(t); t.select(); try{ document.execCommand("copy"); }catch(e){} document.body.removeChild(t); cb&&cb(); }
@@ -425,6 +520,7 @@
   var ICON_SCRIPT='<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><rect x="4" y="4" width="16" height="5" rx="1.5"/><rect x="4" y="12" width="16" height="8" rx="1.5"/></svg>';
   var ICON_NOTE='<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M5 3h9l5 5v13a1 1 0 0 1-1 1H5a1 1 0 0 1-1-1V4a1 1 0 0 1 1-1z"/><path d="M14 3v5h5"/></svg>';
   var ICON_TODO='<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="4" y="4" width="16" height="16" rx="3"/><path d="M8 12l2.5 2.5L16 9"/></svg>';
+  var ICON_AGENT='<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="8" r="3.5"/><path d="M5 21c.8-4 3.2-6 7-6s6.2 2 7 6"/><path d="M19 5v4M17 7h4"/></svg>';
   var ICON_FOLDER='<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M3 7a2 2 0 0 1 2-2h4l2 2h8a2 2 0 0 1 2 2v8a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/></svg>';
 
   /* =================== floating menu =================== */
@@ -502,22 +598,37 @@
     listEl.innerHTML="";
     if(!items.length){ var e=document.createElement("div"); e.className="tag-empty"; e.style.padding="10px 12px"; e.textContent="Nothing here yet."; listEl.appendChild(e); return; }
     items.forEach(function(it){
-      var el=document.createElement("div"); el.className="d-item"+(it.id===state.currentId?" active":"");
+      var el=document.createElement("div"); el.className="d-item"+(it.id===state.currentId?" active":"")+(it.type==="todo"&&it.done?" todo-done":"");
       el.setAttribute("data-item-id",it.id);
       var dots=(it.tagIds||[]).map(function(id){ var t=tagById(id); return t?'<span class="dot" style="background:hsl('+t.hue+',65%,62%)"></span>':""; }).join("");
       var todoOpen=it.type==="todo"?(it.todos||[]).filter(function(x){return !x.done;}).length:null;
-      var icon=it.type==="script"?ICON_SCRIPT:(it.type==="todo"?ICON_TODO:ICON_NOTE);
-      var metaText=it.type==="script"?((it.sections||[]).length+" ch · "+itemWords(it)+" words"):(it.type==="todo"?(todoOpen+" left"):itemWords(it)+" words");
-      el.innerHTML=icon+'<div class="dt"><div class="dt-title"></div><div class="dt-meta"><span class="m">'+metaText+'</span>'+dots+'</div></div><button class="dx" aria-label="Delete">✕</button>';
-      el.querySelector(".dt-title").textContent=it.title||(it.type==="script"?"Untitled script":(it.type==="todo"?"Untitled todo":"Untitled note"));
-      el.onclick=function(e){ if(e.target.classList.contains("dx")) return; state.currentId=it.id; app.classList.remove("open"); renderList(); renderMain(); };
+      var icon=it.type==="script"?ICON_SCRIPT:(it.type==="todo"?ICON_TODO:(it.type==="agent"?ICON_AGENT:ICON_NOTE));
+      var metaText=it.type==="script"?((it.sections||[]).filter(function(s){return s.kind!=="cue";}).length+" ch · "+itemWords(it)+" words"):(it.type==="todo"?(todoOpen+" left"):(it.type==="agent"?"Agent prototype":itemWords(it)+" words"));
+      var leading=it.type==="todo"?'<button class="side-todo-check'+(it.done?" done":"")+'" aria-label="'+(it.done?"Mark incomplete":"Mark complete")+'">'+(it.done?"✓":"")+'</button>':icon;
+      var deleteLabel=it.type==="todo"&&it.done?"Delete?":"✕";
+      el.innerHTML=leading+'<div class="dt"><div class="dt-title"></div><div class="dt-meta"><span class="m">'+metaText+'</span>'+dots+'</div></div><button class="dx" aria-label="Delete">'+deleteLabel+'</button>';
+      el.querySelector(".dt-title").textContent=it.title||("Untitled "+itemLabel(it).toLowerCase());
+      if(it.type==="todo") el.querySelector(".side-todo-check").onclick=function(e){ e.stopPropagation(); setTodoDone(it); };
+      if(it.type==="todo" && (it.todos||[]).length){
+        var taskBox=document.createElement("div"); taskBox.className="d-tasks";
+        it.todos.forEach(function(task){
+          var taskRow=document.createElement("div"); taskRow.className="side-task"+(task.done?" done":"");
+          taskRow.innerHTML='<button class="side-task-check" aria-label="'+(task.done?"Mark incomplete":"Mark complete")+'">'+(task.done?"✓":"")+'</button><button class="side-task-open"></button>';
+          taskRow.querySelector(".side-task-open").textContent=task.text||"Untitled task";
+          taskRow.querySelector(".side-task-check").onclick=function(e){ e.stopPropagation(); task.done=!task.done; task.completed=task.done?Date.now():null; it.updated=Date.now(); persist(); renderList(); if(current().id===it.id) renderMain(); };
+          taskRow.querySelector(".side-task-open").onclick=function(e){ e.stopPropagation(); state.currentId=it.id; app.classList.remove("open"); renderList(); renderMain(); };
+          taskBox.appendChild(taskRow);
+        });
+        el.appendChild(taskBox);
+      }
+      el.onclick=function(e){ if(e.target.classList.contains("dx")||e.target.closest(".side-task")||e.target.closest(".side-todo-check")) return; state.currentId=it.id; app.classList.remove("open"); renderList(); renderMain(); };
       el.querySelector(".dx").onclick=function(e){ e.stopPropagation(); delItem(it.id); };
       listEl.appendChild(el);
     });
   }
   function renderAll(){ renderFolders(); renderTags(); renderList(); renderMain(); }
-  function delItem(id){
-    if(!confirm("Delete this? This can't be undone.")) return;
+  function delItem(id,message){
+    if(!confirm(message||"Delete this? This can't be undone.")) return;
     captureAutoBackup(true);
     var i=state.items.findIndex(function(s){ return s.id===id; });
     if(i<0) return;
@@ -532,25 +643,47 @@
   function renderMain(){
     var it=current(); canvas.innerHTML="";
     if(!it) return;
+    updateTtsButton(it);
     var sheet=document.createElement("div"); sheet.className="sheet";
+    $("copyAll").style.display=it.type==="agent"?"none":"";
 
-    var ti=document.createElement("input"); ti.className="title"; ti.type="text"; ti.value=it.title||"";
-    ti.placeholder=it.type==="script"?"Untitled script":(it.type==="todo"?"Untitled todo":"Untitled note");
-    ti.oninput=function(){ it.title=ti.value; it.updated=Date.now(); save(); refreshListTitles(); };
-    sheet.appendChild(ti);
+    if(it.type==="agent"){
+      sheet.className="sheet agent-view";
+      sheet.appendChild(buildAgent(it));
+      canvas.appendChild(sheet);
+      return;
+    }
+
+    var ti=document.createElement("textarea"); ti.className="title"; ti.rows=1; ti.value=it.title||"";
+    ti.placeholder=it.type==="script"?"Untitled YouTube Script":(it.type==="todo"?"Untitled todo":"Untitled note");
+    ti.oninput=function(){ it.title=ti.value; it.updated=Date.now(); grow(ti); save(); refreshListTitles(); };
+    if(it.type==="todo"){
+      var titleRow=document.createElement("div"); titleRow.className="todo-title-row"+(it.done?" done":"");
+      titleRow.appendChild(ti);
+      var itemCheck=document.createElement("button"); itemCheck.className="todo-item-check"+(it.done?" done":"");
+      itemCheck.setAttribute("aria-label",it.done?"Mark incomplete":"Mark complete"); itemCheck.title=it.done?"Mark incomplete":"Mark complete"; itemCheck.textContent=it.done?"✓":"";
+      itemCheck.onclick=function(){ setTodoDone(it); };
+      titleRow.appendChild(itemCheck);
+      if(it.done){
+        var itemDelete=document.createElement("button"); itemDelete.className="todo-item-delete"; itemDelete.textContent="Delete?";
+        itemDelete.onclick=function(){ delItem(it.id,"Delete this completed todo? This can't be undone."); };
+        titleRow.appendChild(itemDelete);
+      }
+      sheet.appendChild(titleRow);
+    } else sheet.appendChild(ti);
 
     sheet.appendChild(buildAssign(it));
     var meta=document.createElement("div"); meta.className="meta"; meta.id="meta"; sheet.appendChild(meta);
 
     if(it.type==="script"){
       (it.sections||[]).forEach(function(section,i){ sheet.appendChild(buildCh(it,section,i)); });
-      var add=document.createElement("button"); add.className="add"; add.textContent="＋  Add chapter";
-      add.onclick=function(){ it.sections.push(sec("","")); it.updated=Date.now(); persist(); renderMain(); renderList(); var b=canvas.querySelectorAll(".ch-body"); if(b.length) b[b.length-1].focus(); };
+      var add=document.createElement("button"); add.className="add"; add.textContent="＋  New";
+      add.onclick=function(){ openScriptAdd(add,it); };
       sheet.appendChild(add);
     } else if(it.type==="todo"){
       sheet.appendChild(buildTodo(it));
-      var addTodo=document.createElement("button"); addTodo.className="add"; addTodo.textContent="＋  Add task";
-      addTodo.onclick=function(){ it.todos=it.todos||[]; it.todos.push({id:uid(),text:"",done:false,completed:null}); it.updated=Date.now(); persist(); renderMain(); renderList(); var inputs=canvas.querySelectorAll(".todo-text"); if(inputs.length) inputs[inputs.length-1].focus(); };
+      var addTodo=document.createElement("button"); addTodo.className="add"; addTodo.textContent="＋  Add subtask";
+      addTodo.onclick=function(){ it.todos=it.todos||[]; it.todos.push(newTask()); it.updated=Date.now(); persist(); renderMain(); renderList(); var inputs=canvas.querySelectorAll(".todo-text"); if(inputs.length) inputs[inputs.length-1].focus(); };
       sheet.appendChild(addTodo);
     } else {
       var body=document.createElement("textarea"); body.className="note-body"; body.value=it.body||""; body.placeholder="Start writing…";
@@ -558,7 +691,7 @@
       sheet.appendChild(body);
     }
     canvas.appendChild(sheet);
-    var tas=canvas.querySelectorAll(".ch-body,.note-body");
+    var tas=canvas.querySelectorAll(".title,.ch-body,.note-body,.todo-description");
     for(var i=0;i<tas.length;i++) grow(tas[i]);
     updateMeta();
   }
@@ -567,10 +700,28 @@
     var todos=it.todos||[];
     todos.forEach(function(task){
       var row=document.createElement("div"); row.className="todo-row"+(task.done?" done":"");
-      row.innerHTML='<button class="todo-check" aria-label="'+(task.done?"Mark incomplete":"Mark complete")+'">'+(task.done?"✓":"")+'</button><input class="todo-text" type="text" placeholder="What needs doing?"><button class="todo-delete">Delete permanently</button>';
+      row.innerHTML='<button class="todo-check" aria-label="'+(task.done?"Mark incomplete":"Mark complete")+'">'+(task.done?"✓":"")+'</button><input class="todo-text" type="text" placeholder="What needs doing?"><div class="todo-details"><textarea class="todo-description" rows="1" placeholder="Add a description (optional)"></textarea><div class="subtasks"></div></div><div class="todo-actions"><button class="todo-link add-subtask">＋ Add nested subtask</button><button class="todo-delete">Delete?</button></div>';
       var input=row.querySelector(".todo-text"); input.value=task.text||"";
-      input.oninput=function(){ task.text=input.value; it.updated=Date.now(); save(); };
+      input.oninput=function(){ task.text=input.value; it.updated=Date.now(); save(); refreshListMeta(); };
       row.querySelector(".todo-check").onclick=function(){ task.done=!task.done; task.completed=task.done?Date.now():null; it.updated=Date.now(); persist(); renderMain(); renderList(); };
+      var description=row.querySelector(".todo-description"); description.value=task.description||"";
+      description.oninput=function(){ task.description=description.value; it.updated=Date.now(); grow(description); save(); };
+      var subtasks=row.querySelector(".subtasks");
+      function drawSubtasks(){
+        subtasks.innerHTML="";
+        (task.subtasks||[]).forEach(function(subtask){
+          var sub=document.createElement("label"); sub.className="subtask-row"+(subtask.done?" done":"");
+          sub.innerHTML='<input type="checkbox"><input type="text" placeholder="Subtask"><button class="todo-link" aria-label="Remove subtask">×</button>';
+          var check=sub.querySelector('input[type="checkbox"]'), textInput=sub.querySelector('input[type="text"]');
+          check.checked=!!subtask.done; textInput.value=subtask.text||"";
+          check.onchange=function(){ subtask.done=check.checked; it.updated=Date.now(); persist(); drawSubtasks(); };
+          textInput.oninput=function(){ subtask.text=textInput.value; it.updated=Date.now(); save(); };
+          sub.querySelector("button").onclick=function(){ task.subtasks=task.subtasks.filter(function(x){ return x.id!==subtask.id; }); it.updated=Date.now(); persist(); drawSubtasks(); };
+          subtasks.appendChild(sub);
+        });
+      }
+      drawSubtasks();
+      row.querySelector(".add-subtask").onclick=function(){ task.subtasks=task.subtasks||[]; task.subtasks.push({id:uid(),text:"",done:false}); it.updated=Date.now(); persist(); drawSubtasks(); var fields=subtasks.querySelectorAll('input[type="text"]'); if(fields.length) fields[fields.length-1].focus(); };
       row.querySelector(".todo-delete").onclick=function(){
         if(!task.done) return;
         if(!confirm('Permanently delete "'+(task.text||"this completed task")+'"?')) return;
@@ -579,23 +730,63 @@
       };
       list.appendChild(row);
     });
-    if(!todos.length){ var empty=document.createElement("div"); empty.className="tag-empty"; empty.textContent="No tasks. Add one below."; list.appendChild(empty); }
+    if(!todos.length){ var empty=document.createElement("div"); empty.className="tag-empty"; empty.textContent="No subtasks yet. Add one below."; list.appendChild(empty); }
     var summary=document.createElement("div"); summary.className="todo-summary";
     summary.innerHTML="<span>"+todos.filter(function(x){return !x.done;}).length+" remaining</span><span>"+todos.filter(function(x){return x.done;}).length+" completed</span>";
     wrap.appendChild(summary); wrap.appendChild(list); return wrap;
+  }
+  function buildAgent(it){
+    var a=it.agent||(it.agent={tab:"chat",model:"",voice:"Default",responseStyle:"Balanced",longTermMemory:"{}",shortTermMemory:"{}",instructions:"{}"});
+    if(!a.tab) a.tab="chat";
+    if(!a.name) a.name=it.title||"New Agent";
+    var wrap=document.createElement("div");
+    var hero=document.createElement("div"); hero.className="agent-hero";
+    hero.innerHTML='<div class="agent-avatar">A</div><div><h1></h1><p>Private agent prototype · no model calls are made yet</p></div>';
+    hero.querySelector("h1").textContent=a.name;
+    wrap.appendChild(hero);
+    var tabs=document.createElement("div"); tabs.className="agent-tabs";
+    [ ["chat","Chat"], ["voice","Voice"], ["edit","Edit"] ].forEach(function(tab){
+      var b=document.createElement("button"); b.textContent=tab[1]; b.className=a.tab===tab[0]?"on":"";
+      b.onclick=function(){ a.tab=tab[0]; it.updated=Date.now(); persist(); renderMain(); };
+      tabs.appendChild(b);
+    });
+    wrap.appendChild(tabs);
+    var stage=document.createElement("div"); stage.className="agent-stage";
+    if(a.tab==="chat"){
+      var greeting=document.createElement("div"); greeting.className="agent-message"; greeting.textContent="This is the chat surface. Connect a model later and this agent can load its memory and instructions when a conversation starts.";
+      stage.appendChild(greeting);
+      var composer=document.createElement("div"); composer.className="agent-composer"; composer.innerHTML='<input disabled value="Chat is not connected in this prototype"><button disabled>Send</button>'; stage.appendChild(composer);
+    } else if(a.tab==="voice"){
+      stage.className+=" voice-stage";
+      stage.innerHTML='<div class="voice-orb"></div><div><b>Voice agent surface</b><p>Choose a voice in Edit. Real-time audio can be connected later.</p></div>';
+    } else {
+      var edit=document.createElement("div"); edit.className="agent-edit";
+      function field(label,key,placeholder){ var l=document.createElement("label"); l.textContent=label; var input=document.createElement("input"); input.value=a[key]||""; input.placeholder=placeholder||""; input.oninput=function(){ a[key]=input.value; it.updated=Date.now(); if(key==="name"){ it.title=input.value; hero.querySelector("h1").textContent=input.value||"New Agent"; refreshListTitles(); } save(); }; l.appendChild(input); edit.appendChild(l); }
+      function jsonField(label,key){ var l=document.createElement("label"); l.textContent=label; var area=document.createElement("textarea"); area.className="ta"; area.spellcheck=false; area.value=a[key]||"{}"; area.oninput=function(){ a[key]=area.value; it.updated=Date.now(); save(); }; l.appendChild(area); edit.appendChild(l); }
+      field("Agent name","name","New Agent");
+      field("Model", "model", "Model ID, e.g. your deployment name");
+      field("Voice", "voice", "Default");
+      field("Response style", "responseStyle", "Balanced");
+      jsonField("Long-term memory JSON", "longTermMemory");
+      jsonField("Short-term memory JSON", "shortTermMemory");
+      jsonField("Instructions JSON", "instructions");
+      stage.appendChild(edit);
+    }
+    wrap.appendChild(stage);
+    return wrap;
   }
   /* update sidebar text in place — never re-render the list while typing */
   function listNodeFor(id){ for(var i=0;i<listEl.children.length;i++){ if(listEl.children[i].getAttribute("data-item-id")===id) return listEl.children[i]; } return null; }
   function refreshListTitles(){
     var it=current(); if(!it) return;
     var node=listNodeFor(it.id); if(!node) return;
-    var t=node.querySelector(".dt-title"); if(t) t.textContent=it.title||(it.type==="script"?"Untitled script":(it.type==="todo"?"Untitled todo":"Untitled note"));
+    var t=node.querySelector(".dt-title"); if(t) t.textContent=it.title||("Untitled "+itemLabel(it).toLowerCase());
   }
   function refreshListMeta(){
     var it=current(); if(!it) return;
     var node=listNodeFor(it.id); if(!node) return;
     var m=node.querySelector(".dt-meta .m");
-    if(m) m.textContent=it.type==="script"?((it.sections||[]).length+" ch · "+itemWords(it)+" words"):(it.type==="todo"?((it.todos||[]).filter(function(x){return !x.done;}).length+" left"):itemWords(it)+" words");
+    if(m) m.textContent=it.type==="script"?((it.sections||[]).filter(function(s){return s.kind!=="cue";}).length+" ch · "+itemWords(it)+" words"):(it.type==="todo"?((it.todos||[]).filter(function(x){return !x.done;}).length+" left"):(it.type==="agent"?"Agent prototype":itemWords(it)+" words"));
   }
 
   function buildAssign(it){
@@ -657,17 +848,21 @@
   }
 
   function buildCh(it,section,i){
-    var ch=document.createElement("div"); ch.className="ch";
+    var isCue=section.kind==="cue";
+    var ch=document.createElement("div"); ch.className="ch"+(isCue?" cue":"");
     var top=document.createElement("div"); top.className="ch-top";
-    top.innerHTML='<span class="ch-idx">'+String(i+1).padStart(2,"0")+'</span><input class="ch-name" type="text" placeholder="Chapter name"><button class="ch-copy">Copy</button>';
-    var name=top.querySelector(".ch-name"); name.value=section.title||"";
-    name.oninput=function(){ section.title=name.value; it.updated=Date.now(); save(); };
-    top.querySelector(".ch-copy").onclick=function(){ var b=this; copy(section.body||"",function(){ b.classList.add("done"); b.textContent="Copied"; showToast("Copied “"+(section.title||"chapter")+"”"); setTimeout(function(){ b.classList.remove("done"); b.textContent="Copy"; },1200); }); };
+    if(isCue){ top.innerHTML='<span class="ch-idx">CUE</span>'; }
+    else {
+      top.innerHTML='<span class="ch-idx">'+String(i+1).padStart(2,"0")+'</span><input class="ch-name" type="text" placeholder="Chapter name"><button class="ch-copy">Copy</button>';
+      var name=top.querySelector(".ch-name"); name.value=section.title||"";
+      name.oninput=function(){ section.title=name.value; it.updated=Date.now(); save(); };
+      top.querySelector(".ch-copy").onclick=function(){ var b=this; copy(section.body||"",function(){ b.classList.add("done"); b.textContent="Copied"; showToast("Copied “"+(section.title||"chapter")+"”"); setTimeout(function(){ b.classList.remove("done"); b.textContent="Copy"; },1200); }); };
+    }
 
-    var body=document.createElement("textarea"); body.className="ch-body"; body.value=section.body||""; body.rows=2; body.placeholder="...";
+    var body=document.createElement("textarea"); body.className="ch-body"+(isCue?" cue-body":""); body.value=section.body||""; body.rows=isCue?1:2; body.placeholder=isCue?"[Queue intro music]":"...";
 
     var foot=document.createElement("div"); foot.className="ch-foot";
-    foot.innerHTML='<button class="g up" aria-label="Move up"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 15l-6-6-6 6"/></svg></button><button class="g down" aria-label="Move down"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M6 9l6 6 6-6"/></svg></button><button class="g del" aria-label="Delete chapter"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 6h18M8 6V4h8v2M19 6l-1 14H6L5 6"/></svg></button><span class="cc"></span>';
+    foot.innerHTML='<button class="g up" aria-label="Move section up"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 15l-6-6-6 6"/></svg></button><button class="g down" aria-label="Move section down"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M6 9l6 6 6-6"/></svg></button><button class="g del" aria-label="Delete section"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 6h18M8 6V4h8v2M19 6l-1 14H6L5 6"/></svg></button><span class="cc"></span>';
     var cc=foot.querySelector(".cc");
     function count(){ cc.textContent=(section.body||"").length ? (section.body.length.toLocaleString()+" ch") : ""; }
     count();
@@ -685,15 +880,52 @@
     ch.appendChild(top); ch.appendChild(body); ch.appendChild(foot);
     return ch;
   }
+  function openScriptAdd(anchor,it){
+    openMenu(anchor,function(m){
+      var title=document.createElement("div"); title.className="mtitle"; title.textContent="New section"; m.appendChild(title);
+      m.appendChild(mkItem(ICON_SCRIPT,"New chapter",false,function(){ closeMenu(); it.sections.push(sec("","","chapter")); it.updated=Date.now(); persist(); renderMain(); renderList(); var fields=canvas.querySelectorAll(".ch-name"); if(fields.length) fields[fields.length-1].focus(); }));
+      m.appendChild(mkItem("<span style=\"font-style:italic;color:var(--ink-dim)\">…</span>","New cue",false,function(){ closeMenu(); it.sections.push(sec("","","cue")); it.updated=Date.now(); persist(); renderMain(); renderList(); var fields=canvas.querySelectorAll(".cue-body"); if(fields.length) fields[fields.length-1].focus(); }));
+    });
+  }
   function mv(it,i,d){ var j=i+d; if(j<0||j>=it.sections.length) return; var t=it.sections[i]; it.sections[i]=it.sections[j]; it.sections[j]=t; it.updated=Date.now(); persist(); renderMain(); }
 
   function updateMeta(){
     var it=current(), m=$("meta"); if(!m||!it) return;
     if(it.type==="todo"){ var total=(it.todos||[]).length, done=(it.todos||[]).filter(function(x){return x.done;}).length; m.innerHTML="<b>"+(total-done)+"</b> remaining &nbsp;·&nbsp; <b>"+done+"</b> completed"; return; }
     var w=itemWords(it), ch=itemText(it).length;
-    var head = it.type==="script" ? ('<b>'+(it.sections||[]).length+'</b> chapters &nbsp;·&nbsp; ') : '';
+    var head = it.type==="script" ? ('<b>'+(it.sections||[]).filter(function(s){return s.kind!=="cue";}).length+'</b> chapters &nbsp;·&nbsp; ') : '';
     m.innerHTML=head+'<b>'+w.toLocaleString()+'</b> words &nbsp;·&nbsp; <b>'+ch.toLocaleString()+'</b> characters &nbsp;·&nbsp; ~<b>'+dur(w)+'</b> spoken';
   }
+
+  function ttsTextForItem(it){
+    if(it.type==="script") return (it.sections||[]).filter(function(section){ return section.kind!=="cue"; }).map(function(section){ return [section.title,section.body].filter(Boolean).join(". "); }).filter(Boolean).join("\n\n");
+    if(it.type==="todo") return (it.todos||[]).filter(function(task){ return !task.done; }).map(function(task){ return [task.text,task.description].filter(Boolean).join(". "); }).filter(Boolean).join("\n");
+    return it.body||"";
+  }
+  function updateTtsButton(it){
+    var button=$("ttsBtn"); if(!button) return;
+    var visible=!!(runtimeApiKeys.elevenlabs&&it&&it.type!=="agent"&&ttsTextForItem(it).trim());
+    button.style.display=visible?"inline-flex":"none";
+  }
+  function stopTts(){
+    if(runtimeApiKeys.audio){ runtimeApiKeys.audio.pause(); runtimeApiKeys.audio=null; }
+    if(runtimeApiKeys.audioUrl){ URL.revokeObjectURL(runtimeApiKeys.audioUrl); runtimeApiKeys.audioUrl=null; }
+    var label=$("ttsLabel"), button=$("ttsBtn"); if(label) label.textContent="Listen"; if(button){ button.disabled=false; button.classList.remove("done"); }
+  }
+  $("ttsBtn").onclick=function(){
+    var item=current(), button=this, label=$("ttsLabel"), text=ttsTextForItem(item).trim();
+    if(runtimeApiKeys.audio){ stopTts(); return; }
+    if(!runtimeApiKeys.elevenlabs||!text){ showToast("Add your ElevenLabs key in Settings first",true); return; }
+    button.disabled=true; label.textContent="Preparing…";
+    fetch("https://api.elevenlabs.io/v1/text-to-speech/"+encodeURIComponent(runtimeApiKeys.elevenlabsVoice||DEFAULT_ELEVENLABS_VOICE),{method:"POST",headers:{"Content-Type":"application/json","xi-api-key":runtimeApiKeys.elevenlabs,"Accept":"audio/mpeg"},body:JSON.stringify({text:text,model_id:"eleven_multilingual_v2"})}).then(function(response){
+      if(!response.ok) return response.text().then(function(message){ throw new Error(message||"ElevenLabs request failed"); });
+      return response.blob();
+    }).then(function(blob){
+      runtimeApiKeys.audioUrl=URL.createObjectURL(blob); runtimeApiKeys.audio=new Audio(runtimeApiKeys.audioUrl);
+      runtimeApiKeys.audio.onended=stopTts; runtimeApiKeys.audio.onerror=function(){ showToast("Audio playback failed",true); stopTts(); };
+      label.textContent="Stop"; button.disabled=false; button.classList.add("done"); return runtimeApiKeys.audio.play();
+    }).catch(function(error){ console.warn("ElevenLabs playback failed:",error); showToast("ElevenLabs could not create audio",true); stopTts(); });
+  };
 
   /* =================== actions =================== */
   $("copyAll").onclick=function(){
@@ -706,11 +938,13 @@
     var self=this;
     if(openMenuEl){ closeMenu(); return; }
     openMenu(self,function(m){
-      m.appendChild(mkItem(ICON_SCRIPT,"Video script",false,function(){ closeMenu(); createItem(newScriptItem()); }));
-      m.appendChild(mkItem(ICON_NOTE,"Note",false,function(){ closeMenu(); createItem(newNoteItem()); }));
-      m.appendChild(mkItem(ICON_TODO,"Todo",false,function(){ closeMenu(); createItem(newTodoItem()); }));
+      if(state.enabledTypes.script) m.appendChild(mkItem(ICON_SCRIPT,"YouTube Script",false,function(){ closeMenu(); createItem(newScriptItem()); }));
+      if(state.enabledTypes.note) m.appendChild(mkItem(ICON_NOTE,"Note",false,function(){ closeMenu(); createItem(newNoteItem()); }));
+      if(state.enabledTypes.todo) m.appendChild(mkItem(ICON_TODO,"Todo",false,function(){ closeMenu(); createItem(newTodoItem()); }));
+      if(state.enabledTypes.agent) m.appendChild(mkItem(ICON_AGENT,"Agent",false,function(){ closeMenu(); createItem(newAgentItem()); }));
       m.appendChild(sep());
       m.appendChild(mkItem(ICON_FOLDER,"New folder",false,function(){ closeMenu(); openNewFolder(self); }));
+      m.appendChild(mkItem("<span style=\"font-size:1rem\">⚙</span>","Manage",false,function(){ closeMenu(); openSettings("manage"); }));
     });
   };
   function createItem(it){ state.items.unshift(it); state.currentId=it.id; app.classList.remove("open"); persist(); renderAll(); var t=canvas.querySelector(".title"); if(t) t.focus(); }
@@ -777,7 +1011,7 @@
   }
 
   /* =================== Firebase (configured in astral.config.js) =================== */
-  var auth=null, db=null, currentUser=null, cloudTimer=null, fbReady=false;
+  var auth=null, db=null, currentUser=null, cloudTimer=null, fbReady=false, apiSettingsUnsubscribe=null;
   var PROMPT_KEY="second-brain-login-prompt-dismissed";
   function hideLoginPrompt(){ var p=$("loginPrompt"); if(p) p.classList.remove("show"); }
   function showLoginPrompt(){
@@ -796,6 +1030,52 @@
     if(usableCfg(external)) return external;
     var legacy=readKey(CFGKEY);
     return usableCfg(legacy)?legacy:null;
+  }
+  function cleanText(value){ return typeof value==="string"?value.trim():""; }
+  function cleanSavedVoices(list){
+    var seen={}, clean=[];
+    (Array.isArray(list)?list:[]).forEach(function(voice){
+      var id=cleanText(voice&&voice.id||voice&&voice.voice_id||voice);
+      if(!id||seen[id]) return;
+      seen[id]=true;
+      clean.push({id:id,name:cleanText(voice&&voice.name)||id});
+    });
+    return clean.slice(0,250);
+  }
+  function applyApiSettings(privateSettings){
+    var keys=privateSettings&&privateSettings.apiKeys||{}, voiceSettings=privateSettings&&privateSettings.voiceSettings||{};
+    runtimeApiKeys.openai=cleanText(keys.openai);
+    runtimeApiKeys.elevenlabs=cleanText(keys.elevenlabs);
+    runtimeApiKeys.elevenlabsVoice=cleanText(voiceSettings.selectedVoiceId)||cleanText(keys.elevenlabsVoice)||DEFAULT_ELEVENLABS_VOICE;
+    runtimeApiKeys.savedVoices=cleanSavedVoices(voiceSettings.savedVoices);
+    updateTtsButton(current());
+  }
+  function resetApiSettings(){
+    stopTts();
+    runtimeApiKeys.openai="";
+    runtimeApiKeys.elevenlabs="";
+    runtimeApiKeys.elevenlabsVoice=DEFAULT_ELEVENLABS_VOICE;
+    runtimeApiKeys.savedVoices=[];
+    updateTtsButton(current());
+  }
+  function stopApiSettingsSync(){
+    if(apiSettingsUnsubscribe){ apiSettingsUnsubscribe(); apiSettingsUnsubscribe=null; }
+  }
+  function startApiSettingsSync(){
+    stopApiSettingsSync();
+    if(!currentUser||!db) return;
+    apiSettingsUnsubscribe=db.collection("users").doc(currentUser.uid).onSnapshot(function(doc){
+      var data=doc.exists?doc.data():{};
+      applyApiSettings(data.privateSettings||{});
+    },function(error){ console.warn("API-key sync failed:",error); });
+  }
+  function getPrivateSettings(){
+    if(!currentUser||!db) return Promise.resolve({});
+    return db.collection("users").doc(currentUser.uid).get().then(function(doc){ var data=doc.exists?doc.data():{}; return data.privateSettings||{}; });
+  }
+  function savePrivateSettings(settings){
+    if(!currentUser||!db) return Promise.reject(new Error("Sign in required"));
+    return db.collection("users").doc(currentUser.uid).set({privateSettings:settings},{merge:true});
   }
   function parseCfg(text){
     if(!text) return null;
@@ -826,8 +1106,8 @@
       auth.onAuthStateChanged(function(u){
         currentUser=u;
         renderFoot();
-        if(u){ hideLoginPrompt(); loadCloud(); }
-        else showLoginPrompt();
+        if(u){ hideLoginPrompt(); startApiSettingsSync(); loadCloud(); }
+        else { stopApiSettingsSync(); resetApiSettings(); showLoginPrompt(); }
       });
     }catch(e){ console.warn("Firebase init failed:",e); fbReady=false; showToast("Firebase config could not be loaded",true); }
     renderFoot();
@@ -862,6 +1142,7 @@
     state.items=(d.items&&d.items.length)?d.items:[newScriptItem()];
     state.folders=d.folders||[]; state.tags=d.tags||[];
     state.currentId=state.items[0].id; state.filterFolder=null; state.filterTag=null;
+    state.pendingCloudSync=false; state.lastCloudSync=d.updated||Date.now();
     applyAccountPreferences(d);
     if(canPersist){ try{ localStorage.setItem(KEY,JSON.stringify(state)); }catch(e){} }
     renderAll();
@@ -877,69 +1158,100 @@
     if(!prefs) return false;
     if(prefs.theme&&THEMES.some(function(t){ return t.id===prefs.theme; })) state.theme=prefs.theme;
     if(typeof prefs.motion==="boolean") state.motion=prefs.motion;
+    if(typeof prefs.darkness==="number") state.darkness=Math.max(0,Math.min(100,prefs.darkness));
+    if(prefs.enabledTypes&&typeof prefs.enabledTypes==="object"){
+      ["script","note","todo","agent"].forEach(function(type){ if(typeof prefs.enabledTypes[type]==="boolean") state.enabledTypes[type]=prefs.enabledTypes[type]; });
+    }
     applyTheme(0); syncMotion(); buildThemeGrid();
     return true;
   }
   function unionBy(a,b,keyfn){ var seen={}; a.forEach(function(x){ seen[keyfn(x)]=1; }); return a.concat((b||[]).filter(function(x){ return !seen[keyfn(x)]; })); }
-  function askSync(cb){
-    var box=$("syncBox");
-    box.innerHTML='<div class="mh"><h3>Which notes do you want?</h3></div><p class="hint">This device and your account both have saved notes. Choose how to combine them.</p>'+
-      '<button class="modal-opt" data-c="cloud"><b>Use my account</b><small>replace what\u2019s on this device</small></button>'+
-      '<button class="modal-opt" data-c="local"><b>Use this device</b><small>overwrite what\u2019s in the cloud</small></button>'+
-      '<button class="modal-opt" data-c="merge"><b>Keep both</b><small>merge the two sets together</small></button>';
-    var btns=box.querySelectorAll(".modal-opt");
-    for(var i=0;i<btns.length;i++){ (function(b){ b.onclick=function(){ $("syncModal").classList.remove("open"); cb(b.getAttribute("data-c")); }; })(btns[i]); }
-    $("syncModal").classList.add("open");
+  function syncMarker(){ return currentUser?"second-brain-cloud-linked-"+currentUser.uid:""; }
+  function wasCloudLinked(){ try{ return !!(syncMarker()&&localStorage.getItem(syncMarker())); }catch(e){ return false; } }
+  function markCloudLinked(){ try{ if(syncMarker()) localStorage.setItem(syncMarker(),"1"); }catch(e){} }
+  function mergeWithCloud(cloud){
+    var seen={}, byId={}; state.items.forEach(function(s,index){ seen[sig(s)]=1; byId[s.id]=index; });
+    var add=[];
+    (cloud.items||[]).forEach(function(s){
+      if(Object.prototype.hasOwnProperty.call(byId,s.id)){
+        var local=state.items[byId[s.id]];
+        if((s.updated||0)>(local.updated||0)) state.items[byId[s.id]]=JSON.parse(JSON.stringify(s));
+      } else if(!seen[sig(s)]){ var copy=JSON.parse(JSON.stringify(s)); copy.id=copy.id||uid(); add.push(copy); seen[sig(copy)]=1; }
+    });
+    state.items=state.items.concat(add);
+    state.folders=unionBy(state.folders,cloud.folders,function(f){ return f.name; });
+    state.tags=unionBy(state.tags,cloud.tags,function(t){ return t.name; });
+    applyAccountPreferences(cloud);
+    return add.length;
   }
   function loadCloud(){
     if(!currentUser||!db) return;
+    setSaveState("Loading from cloud","saving");
     db.collection("users").doc(currentUser.uid).get().then(function(doc){
       var cloud=doc.exists?doc.data():null;
       var cloudHas=cloud&&cloud.items&&hasContent(cloud.items);
       var localHas=hasContent(state.items);
-      if(cloudHas&&localHas){
-        askSync(function(choice){
-          if(choice==="cloud"){ useData(cloud); showToast("Using your account"); }
-          else if(choice==="local"){ saveCloudNow(); showToast("Cloud updated from this device"); }
-          else {
-            var seen={}; state.items.forEach(function(s){ seen[sig(s)]=1; });
-            var add=cloud.items.filter(function(s){ return !seen[sig(s)]; }).map(function(s){ s.id=uid(); return s; });
-            state.items=state.items.concat(add);
-            state.folders=unionBy(state.folders,cloud.folders,function(f){ return f.name; });
-            state.tags=unionBy(state.tags,cloud.tags,function(t){ return t.name; });
-            applyAccountPreferences(cloud);
-            persist(); renderAll(); saveCloudNow(); showToast("Merged "+add.length+" from your account");
-          }
-        });
-      } else if(cloudHas){ useData(cloud); showToast("Synced from your account"); }
+      if(cloudHas&&localHas&&!wasCloudLinked()){
+        var added=mergeWithCloud(cloud); markCloudLinked(); persist(); renderAll(); saveCloudNow(); showToast(added?"Safely merged your existing notes":"Connected to your cloud notes");
+      } else if(cloudHas&&state.pendingCloudSync){
+        var recovered=mergeWithCloud(cloud); markCloudLinked(); persist(); renderAll(); saveCloudNow(); showToast(recovered?"Recovered unsynced changes":"Synced your offline changes");
+      } else if(cloudHas){ useData(cloud); markCloudLinked(); setSaveState("Saved to cloud","cloud"); showToast("Synced from your account"); }
       else {
         if(applyAccountPreferences(cloud)){
           if(canPersist){ try{ localStorage.setItem(KEY,JSON.stringify(state)); }catch(e){} }
           renderAll();
         }
-        saveCloudNow(); showToast("Account linked — your notes and theme are now saved");
+        markCloudLinked(); saveCloudNow(); showToast("Cloud sync is ready");
       }
     }).catch(function(e){ console.warn(e); showToast("Couldn’t read cloud data — check Firestore rules",true); });
   }
   function saveCloud(){ if(!currentUser||!db) return; clearTimeout(cloudTimer); cloudTimer=setTimeout(saveCloudNow,1500); }
+  function cloudBackupRef(id){ return db.collection("users").doc(currentUser.uid).collection("backups").doc(id); }
+  function trimCloudBackups(){
+    if(!currentUser||!db) return;
+    db.collection("users").doc(currentUser.uid).collection("backups").orderBy("created","desc").limit(50).get().then(function(snap){
+      var docs=snap.docs||[];
+      docs.slice(28).forEach(function(doc){ doc.ref.delete(); });
+    }).catch(function(e){ console.warn("Backup cleanup skipped:",e); });
+  }
+  function writeCloudBackup(kind){
+    if(!currentUser||!db) return Promise.reject(new Error("Sign in required"));
+    var created=Date.now(), id=kind==="automatic"?"auto-"+new Date(created).toISOString().slice(0,10):"manual-"+created;
+    return cloudBackupRef(id).set({kind:kind,created:created,itemCount:state.items.length,data:backupPayload()}).then(function(){ trimCloudBackups(); return id; });
+  }
   function maybeCloudBackup(){
     if(!currentUser||!db) return;
     var day=new Date().toISOString().slice(0,10), marker="second-brain-cloud-backup-"+currentUser.uid;
     try{ if(localStorage.getItem(marker)===day) return; }catch(e){}
-    var epochDay=Math.floor(Date.now()/86400000), slot="slot-"+(epochDay%7);
-    var patch={backupSlots:{}}; patch.backupSlots[slot]=backupPayload();
-    db.collection("users").doc(currentUser.uid).set(patch,{merge:true}).then(function(){ try{ localStorage.setItem(marker,day); }catch(e){} }).catch(function(e){ console.warn("Daily backup failed:",e); });
+    writeCloudBackup("automatic").then(function(){ try{ localStorage.setItem(marker,day); }catch(e){} }).catch(function(e){ console.warn("Daily backup failed:",e); });
   }
-  function restoreLatestCloudBackup(){
-    if(!currentUser||!db){ showToast("Sign in to use cloud backups",true); return; }
-    db.collection("users").doc(currentUser.uid).get().then(function(doc){
-      var slots=doc.exists?(doc.data().backupSlots||{}):{}, backups=Object.keys(slots).map(function(k){return slots[k];}).filter(Boolean).sort(function(a,b){return (b.created||0)-(a.created||0);});
-      if(!backups.length){ showToast("No cloud backup yet",true); return; }
-      if(!confirm("Restore the latest cloud backup? Your current data will be saved first.")) return;
-      captureAutoBackup(true); useData(backups[0]); persist(); showToast("Cloud backup restored"); $("settingsModal").classList.remove("open");
-    }).catch(function(e){ console.warn(e); showToast("Cloud backup could not be restored",true); });
+  function getCloudBackups(){
+    if(!currentUser||!db) return Promise.resolve([]);
+    var user=db.collection("users").doc(currentUser.uid);
+    return Promise.all([user.collection("backups").orderBy("created","desc").limit(28).get(),user.get()]).then(function(results){
+      var entries=results[0].docs.map(function(doc){ var v=doc.data(); return {id:doc.id,kind:v.kind||"automatic",created:v.created||0,itemCount:v.itemCount,data:v.data||v}; });
+      var legacy=results[1].exists?(results[1].data().backupSlots||{}):{};
+      Object.keys(legacy).forEach(function(id){ var v=legacy[id]; entries.push({id:"legacy-"+id,kind:"automatic",created:v.created||0,itemCount:(v.items||[]).length,data:v}); });
+      return entries.sort(function(a,b){ return b.created-a.created; });
+    });
   }
-  function saveCloudNow(){ if(!currentUser||!db) return; db.collection("users").doc(currentUser.uid).set({ items:state.items, folders:state.folders, tags:state.tags, preferences:{theme:state.theme,motion:state.motion}, theme:state.theme, motion:state.motion, updated:Date.now() },{merge:true}).then(function(){ setSaveState("Saved to cloud","cloud"); maybeCloudBackup(); }).catch(function(e){ console.warn(e); setSaveState("Saved locally · cloud sync failed","bad"); }); }
+  function restoreBackup(entry){
+    if(!entry||!entry.data) return;
+    if(!confirm("Restore this backup? Your current notes will be backed up first.")) return;
+    captureAutoBackup(true);
+    var before=currentUser&&db?writeCloudBackup("manual"):Promise.resolve();
+    before.catch(function(){}).then(function(){ useData(entry.data); persist(); showToast("Backup restored"); if($("backupList")) renderBackupList(); });
+  }
+  function restoreLatestCloudBackup(){ getCloudBackups().then(function(list){ if(!list.length){ showToast("No cloud backup yet",true); return; } restoreBackup(list[0]); }).catch(function(e){ console.warn(e); showToast("Cloud backups could not be loaded",true); }); }
+  function saveCloudNow(){
+    if(!currentUser||!db) return;
+    var sentAt=Date.now();
+    db.collection("users").doc(currentUser.uid).set({ items:state.items, folders:state.folders, tags:state.tags, preferences:{theme:state.theme,motion:state.motion,darkness:state.darkness,enabledTypes:state.enabledTypes}, theme:state.theme, motion:state.motion, updated:sentAt },{merge:true}).then(function(){
+      state.lastCloudSync=sentAt;
+      if((state.lastLocalChange||0)<=sentAt){ state.pendingCloudSync=false; if(canPersist){ try{ localStorage.setItem(KEY,JSON.stringify(state)); }catch(e){} } }
+      setSaveState("Saved to cloud","cloud"); maybeCloudBackup();
+    }).catch(function(e){ console.warn(e); setSaveState("Cloud sync failed — recovery copy kept","bad"); });
+  }
   window.addEventListener("beforeunload",saveCloudNow);
 
   /* =================== sidebar footer =================== */
@@ -963,28 +1275,225 @@
   }
 
   /* =================== settings =================== */
-  function openSettings(focus){
-    var box=$("settingsBox");
-    box.innerHTML='<div class="mh"><h3>Settings</h3><button class="x" id="closeSettings">✕</button></div>'+
-      '<div class="grp"><h4>Theme</h4><div class="themes" id="themeGrid"></div></div>'+
-      '<div class="grp"><div class="srow"><div class="sl">Background movement<small>Slow drifting glow and color sway</small></div><button class="toggle" id="motionToggle"><b></b></button></div></div>'+
-      '<div class="grp" id="acctGrp"><h4>Account &amp; sync</h4><div id="acctInner"></div></div>'+
-      '<div class="grp"><h4>Backup</h4><p class="hint">Automatic backups keep seven rolling restore points on this device at no cost. When signed in, one small cloud restore point is saved per day and rotated weekly.</p><div class="btnrow"><button class="b2 primary" id="restoreAutoBtn">Restore latest</button><button class="b2" id="restoreCloudBtn">Restore cloud</button><button class="b2" id="expBtn">Export file</button><button class="b2" id="impBtn">Import file</button><input type="file" id="impFile" accept="application/json" hidden></div></div>';
-
+  var settingsPage="home";
+  function settingsHeading(title,back){ return '<div class="mh"><h3>'+title+'</h3><button class="x" id="closeSettings">✕</button></div>'+(back?'<button class="settings-back" id="settingsBack">← Settings</button>':''); }
+  function openSettings(page){ settingsPage=page||"home"; renderSettingsPage(); $("settingsModal").classList.add("open"); }
+  function renderSettingsPage(){
+    var box=$("settingsBox"), content="";
+    if(settingsPage==="home"){
+      content=settingsHeading("Settings",false)+'<p class="hint">Your notes sync to your account when you are signed in. This device keeps a recovery cache and backup copies so a failed connection never means lost work.</p><div class="settings-nav">'+
+        '<button data-settings="appearance"><span><b>Appearance</b><small>Background movement and darkness</small></span><span class="arrow">›</span></button>'+
+        '<button data-settings="themes"><span><b>Themes</b><small>Choose your color palette</small></span><span class="arrow">›</span></button>'+
+        '<button data-settings="backups"><span><b>Backups</b><small>Browse, restore, or create backups</small></span><span class="arrow">›</span></button>'+
+        '<button data-settings="account"><span><b>Account &amp; sync</b><small>Cloud storage and sign-in</small></span><span class="arrow">›</span></button>'+
+        '<button data-settings="keys"><span><b>API keys</b><small>OpenAI and ElevenLabs keys synced to your account</small></span><span class="arrow">›</span></button>'+
+        '<button data-settings="voices"><span><b>Voice</b><small>Choose from your saved ElevenLabs voices</small></span><span class="arrow">›</span></button>'+
+        '<button data-settings="manage"><span><b>Manage</b><small>Choose which things New can create</small></span><span class="arrow">›</span></button></div>';
+    } else if(settingsPage==="appearance"){
+      content=settingsHeading("Appearance",true)+'<div class="grp"><div class="srow"><div class="sl">Background movement<small>Slow drifting color that works on desktop and mobile</small></div><button class="toggle" id="motionToggle"><b></b></button></div></div><div class="grp"><div class="range-row"><label for="darknessRange"><span>Background darkness</span><output id="darknessOutput"></output></label><input id="darknessRange" type="range" min="0" max="100" step="1"><p class="hint">At 100%, the background is pure AMOLED black. Lower it to reveal more of the moving theme color while keeping the surface black.</p></div></div>';
+    } else if(settingsPage==="themes"){
+      content=settingsHeading("Themes",true)+'<p class="hint">Themes are separate from the rest of Settings so you can browse them without burying the backup and sync controls.</p><div class="themes" id="themeGrid"></div>';
+    } else if(settingsPage==="backups"){
+      content=settingsHeading("Backups",true)+'<p class="hint">Automatic cloud backups are created daily while signed in and kept for four weeks. Restoring a point first saves your current notes as a fresh recovery point.</p><div class="btnrow"><button class="b2 primary" id="backupNowBtn">Back up now</button><button class="b2" id="expBtn">Export file</button><button class="b2" id="impBtn">Import file</button><input type="file" id="impFile" accept="application/json" hidden></div><div class="grp"><h4>Restore points</h4><div class="backup-list" id="backupList"></div></div>';
+    } else if(settingsPage==="account"){
+      content=settingsHeading("Account &amp; sync",true)+'<div id="acctInner"></div>';
+    } else if(settingsPage==="keys"){
+      content=settingsHeading("API keys",true)+'<p class="hint">Keys sync automatically to your signed-in account, so they are ready on your other signed-in devices. There is no separate vault passphrase to create or remember.</p><div class="agent-edit"><label>OpenAI (ChatGPT) API key<input id="openaiKey" type="password" autocomplete="off" placeholder="sk-…" disabled></label><label>ElevenLabs API key<input id="elevenlabsKey" type="password" autocomplete="off" placeholder="Your ElevenLabs key" disabled></label><p class="hint" id="apiKeyStatus">Sign in to add API keys.</p></div>';
+    } else if(settingsPage==="voices"){
+      content=settingsHeading("Voice",true)+'<p class="hint">Your saved, favorited, and added ElevenLabs voices appear here. Choose one to use it everywhere you listen in Second Brain.</p><div class="agent-edit"><label>Voice<select id="elevenlabsVoiceSelect" disabled><option value="">Loading voices…</option></select></label><div id="customVoiceEntry" hidden><label>ElevenLabs Voice ID<input id="customElevenlabsVoiceId" type="text" autocomplete="off" placeholder="Paste a voice ID"></label><div class="btnrow"><button class="b2 primary" id="saveCustomVoiceBtn">Save to list &amp; select</button></div></div><p class="hint" id="voiceStatus">Loading your available voices…</p></div>';
+    } else if(settingsPage==="manage"){
+      content=settingsHeading("Manage",true)+'<p class="hint">Choose what appears under New. Existing items are never removed when an option is turned off.</p><div class="grp"><div class="srow"><div class="sl">YouTube Script<small>Create chapter and cue-based scripts</small></div><button class="toggle" id="typeScript"><b></b></button></div><div class="srow"><div class="sl">Notes<small>Create standard notes</small></div><button class="toggle" id="typeNote"><b></b></button></div><div class="srow"><div class="sl">Todos<small>Create tasks with descriptions and subtasks</small></div><button class="toggle" id="typeTodo"><b></b></button></div></div><div class="grp"><h4>Prototype</h4><div class="srow"><div class="sl">Agent<small>Enable the chat, voice, and JSON-memory agent prototype</small></div><button class="toggle" id="typeAgent"><b></b></button></div></div>';
+    } else { settingsPage="home"; renderSettingsPage(); return; }
+    box.innerHTML=content;
     $("closeSettings").onclick=function(){ $("settingsModal").classList.remove("open"); };
-    buildThemeGrid();
-    var mt=$("motionToggle");
-    mt.classList.toggle("on",state.motion);
+    if($("settingsBack")) $("settingsBack").onclick=function(){ settingsPage="home"; renderSettingsPage(); };
+    var nav=box.querySelectorAll("[data-settings]"); for(var i=0;i<nav.length;i++){ nav[i].onclick=function(){ settingsPage=this.getAttribute("data-settings"); renderSettingsPage(); }; }
+    if(settingsPage==="appearance") setupAppearanceSettings();
+    if(settingsPage==="themes") buildThemeGrid();
+    if(settingsPage==="backups") setupBackupSettings();
+    if(settingsPage==="account") renderAcct();
+    if(settingsPage==="keys") setupApiKeySettings();
+    if(settingsPage==="voices") setupVoiceSettings();
+    if(settingsPage==="manage") setupManageSettings();
+  }
+  function setupAppearanceSettings(){
+    var mt=$("motionToggle"); mt.classList.toggle("on",state.motion);
     mt.onclick=function(){ state.motion=!state.motion; mt.classList.toggle("on",state.motion); syncMotion(); persist(); };
-    renderAcct();
-    $("restoreAutoBtn").onclick=restoreLatestAutoBackup;
-    $("restoreCloudBtn").onclick=restoreLatestCloudBackup;
+    var range=$("darknessRange"), output=$("darknessOutput"); range.value=state.darkness; output.textContent=state.darkness+"%";
+    range.oninput=function(){ state.darkness=Number(range.value); output.textContent=state.darkness+"%"; applyTheme(0); };
+    range.onchange=function(){ persist(); };
+  }
+  function setupManageSettings(){
+    [["typeScript","script"],["typeNote","note"],["typeTodo","todo"],["typeAgent","agent"]].forEach(function(pair){ var button=$(pair[0]); button.classList.toggle("on",state.enabledTypes[pair[1]]); button.onclick=function(){ state.enabledTypes[pair[1]]=!state.enabledTypes[pair[1]]; button.classList.toggle("on",state.enabledTypes[pair[1]]); persist(); }; });
+  }
+  var apiKeySaveTimer=null;
+  function setupApiKeySettings(){
+    var openai=$("openaiKey"), eleven=$("elevenlabsKey"), status=$("apiKeyStatus"), userId=currentUser&&currentUser.uid;
+    function setEnabled(on){ openai.disabled=!on; eleven.disabled=!on; }
+    if(!userId||!db){ status.textContent="Sign in first. API keys only sync to your signed-in account."; return; }
+    status.textContent="Loading your synced API keys…";
+    getPrivateSettings().then(function(settings){
+      if(!openai.isConnected||!eleven.isConnected) return;
+      var keys=settings.apiKeys||{};
+      openai.value=cleanText(keys.openai)||runtimeApiKeys.openai;
+      eleven.value=cleanText(keys.elevenlabs)||runtimeApiKeys.elevenlabs;
+      setEnabled(true);
+      status.textContent=settings.apiVault&&!settings.apiKeys?"An older vault was found. Type your keys once to replace it.":"Changes save and sync automatically as you type.";
+    }).catch(function(error){ console.warn(error); status.textContent="Could not load API keys. Check your cloud connection."; });
+    function saveKeys(){
+      if(!currentUser||currentUser.uid!==userId||!db) return;
+      var keys={version:1,openai:cleanText(openai.value),elevenlabs:cleanText(eleven.value),updated:Date.now()};
+      status.textContent="Saving and syncing…";
+      savePrivateSettings({apiKeys:keys,apiVault:firebase.firestore.FieldValue.delete()}).then(function(){
+        applyApiSettings({apiKeys:keys,voiceSettings:{selectedVoiceId:runtimeApiKeys.elevenlabsVoice,savedVoices:runtimeApiKeys.savedVoices}});
+        if(status.isConnected) status.textContent="Saved. Your signed-in devices update automatically.";
+      }).catch(function(error){ console.warn(error); if(status.isConnected) status.textContent="Could not sync API keys. Check your cloud connection."; });
+    }
+    function queueSave(){
+      clearTimeout(apiKeySaveTimer);
+      status.textContent="Saving changes…";
+      apiKeySaveTimer=setTimeout(saveKeys,650);
+    }
+    openai.oninput=queueSave;
+    eleven.oninput=queueSave;
+  }
+  function addVoiceOption(select,value,label){ var option=document.createElement("option"); option.value=value; option.textContent=label; select.appendChild(option); }
+  function renderVoiceOptions(select,voices,selectedId){
+    var all={}, ordered=[];
+    function include(voice){
+      var id=cleanText(voice&&voice.id||voice&&voice.voice_id||voice);
+      if(!id||all[id]) return;
+      all[id]={id:id,name:cleanText(voice&&voice.name)||id};
+      ordered.push(all[id]);
+    }
+    include({id:DEFAULT_ELEVENLABS_VOICE,name:"Default voice (Rachel)"});
+    cleanSavedVoices(runtimeApiKeys.savedVoices).forEach(include);
+    (voices||[]).forEach(include);
+    if(selectedId&&selectedId!==DEFAULT_ELEVENLABS_VOICE) include({id:selectedId,name:"Saved voice ("+selectedId+")"});
+    select.innerHTML="";
+    addVoiceOption(select,CUSTOM_VOICE_OPTION,"ElevenLabs Voice ID");
+    ordered.sort(function(a,b){ return a.name.localeCompare(b.name); }).forEach(function(voice){ addVoiceOption(select,voice.id,voice.name+" — "+voice.id); });
+    select.value=all[selectedId]?selectedId:(selectedId===DEFAULT_ELEVENLABS_VOICE?selectedId:CUSTOM_VOICE_OPTION);
+  }
+  function getElevenLabsSavedVoices(apiKey){
+    var voices=[];
+    function loadPage(token){
+      var url="https://api.elevenlabs.io/v2/voices?voice_type=saved&page_size=100&include_total_count=false"+(token?"&next_page_token="+encodeURIComponent(token):"");
+      return fetch(url,{headers:{"xi-api-key":apiKey}}).then(function(response){
+        if(!response.ok) return response.text().then(function(message){ throw new Error(message||"ElevenLabs could not load voices"); });
+        return response.json();
+      }).then(function(data){
+        voices=voices.concat(Array.isArray(data.voices)?data.voices:[]);
+        return data.has_more&&data.next_page_token?loadPage(data.next_page_token):voices;
+      });
+    }
+    return loadPage("");
+  }
+  function findElevenLabsVoice(apiKey,voiceId){
+    var url="https://api.elevenlabs.io/v2/voices?voice_ids="+encodeURIComponent(voiceId)+"&page_size=1&include_total_count=false";
+    return fetch(url,{headers:{"xi-api-key":apiKey}}).then(function(response){
+      if(!response.ok) return response.text().then(function(message){ throw new Error(message||"ElevenLabs could not check that voice"); });
+      return response.json();
+    }).then(function(data){ return Array.isArray(data.voices)&&data.voices.length?data.voices[0]:null; });
+  }
+  function saveVoiceSettings(selectedVoiceId,savedVoices){
+    return savePrivateSettings({voiceSettings:{version:1,selectedVoiceId:selectedVoiceId,savedVoices:cleanSavedVoices(savedVoices),updated:Date.now()}});
+  }
+  function setupVoiceSettings(){
+    var select=$("elevenlabsVoiceSelect"), custom=$("customVoiceEntry"), input=$("customElevenlabsVoiceId"), save=$("saveCustomVoiceBtn"), status=$("voiceStatus"), userId=currentUser&&currentUser.uid, fetched=[];
+    function showCustom(show){ custom.hidden=!show; }
+    function selectVoice(id,saved){
+      status.textContent="Saving your voice choice…";
+      saveVoiceSettings(id,saved).then(function(){
+        runtimeApiKeys.elevenlabsVoice=id;
+        runtimeApiKeys.savedVoices=cleanSavedVoices(saved);
+        updateTtsButton(current());
+        if(status.isConnected) status.textContent="Voice selected and synced to your signed-in devices.";
+      }).catch(function(error){ console.warn(error); if(status.isConnected) status.textContent="Could not save your voice choice. Check your cloud connection."; });
+    }
+    if(!userId||!db){ status.textContent="Sign in and add an ElevenLabs API key to choose a voice."; return; }
+    getPrivateSettings().then(function(settings){
+      if(!select.isConnected||!currentUser||currentUser.uid!==userId) return;
+      applyApiSettings(settings);
+      var selectedId=runtimeApiKeys.elevenlabsVoice;
+      if(!runtimeApiKeys.elevenlabs){
+        renderVoiceOptions(select,[],selectedId);
+        select.disabled=false;
+        showCustom(select.value===CUSTOM_VOICE_OPTION);
+        status.textContent="Add an ElevenLabs API key in API keys to load your saved voices.";
+        return;
+      }
+      status.textContent="Loading your saved ElevenLabs voices…";
+      getElevenLabsSavedVoices(runtimeApiKeys.elevenlabs).then(function(voices){
+        if(!select.isConnected) return;
+        fetched=voices;
+        renderVoiceOptions(select,fetched,selectedId);
+        select.disabled=false;
+        showCustom(select.value===CUSTOM_VOICE_OPTION);
+        status.textContent=voices.length?"Loaded "+voices.length+" saved ElevenLabs voice"+(voices.length===1?".":"s."):"No saved ElevenLabs voices were found yet.";
+      }).catch(function(error){
+        console.warn("ElevenLabs voice list failed:",error);
+        renderVoiceOptions(select,[],selectedId);
+        select.disabled=false;
+        showCustom(select.value===CUSTOM_VOICE_OPTION);
+        status.textContent="Could not load saved voices. Check your ElevenLabs API key.";
+      });
+    }).catch(function(error){ console.warn(error); status.textContent="Could not load voice settings. Check your cloud connection."; });
+    select.onchange=function(){
+      var id=select.value;
+      showCustom(id===CUSTOM_VOICE_OPTION);
+      if(id===CUSTOM_VOICE_OPTION) return;
+      selectVoice(id,runtimeApiKeys.savedVoices);
+    };
+    save.onclick=function(){
+      var id=cleanText(input.value);
+      if(!id){ status.textContent="Paste an ElevenLabs Voice ID first."; input.focus(); return; }
+      if(!runtimeApiKeys.elevenlabs){ status.textContent="Add an ElevenLabs API key before saving a voice ID."; return; }
+      save.disabled=true;
+      status.textContent="Checking that voice ID…";
+      findElevenLabsVoice(runtimeApiKeys.elevenlabs,id).then(function(voice){
+        if(!voice) throw new Error("Voice not found");
+        var saved=cleanSavedVoices(runtimeApiKeys.savedVoices.concat([{id:id,name:cleanText(voice.name)||id}]));
+        return saveVoiceSettings(id,saved).then(function(){ return {saved:saved,voice:voice}; });
+      }).then(function(result){
+        runtimeApiKeys.elevenlabsVoice=id;
+        runtimeApiKeys.savedVoices=result.saved;
+        updateTtsButton(current());
+        renderVoiceOptions(select,fetched,id);
+        showCustom(false);
+        status.textContent="Saved "+(cleanText(result.voice.name)||"voice")+" to your list and selected it.";
+      }).catch(function(error){ console.warn("ElevenLabs voice ID failed:",error); status.textContent="That voice ID is not available to this ElevenLabs API key."; }).then(function(){ save.disabled=false; });
+    };
+  }
+  function backupDate(value){ try{ return new Date(value).toLocaleString([], {month:"short",day:"numeric",year:"numeric",hour:"numeric",minute:"2-digit"}); }catch(e){ return "Unknown date"; } }
+  function renderBackupList(){
+    var el=$("backupList"); if(!el) return;
+    el.innerHTML='<p class="hint">Loading restore points…</p>';
+    var load=currentUser&&db?getCloudBackups():Promise.resolve(autoBackups().map(function(entry,index){ return {id:"device-"+index,kind:"automatic",created:entry.created,itemCount:(entry.data.items||[]).length,data:entry.data}; }));
+    load.then(function(entries){
+      if(!el||!el.isConnected) return;
+      if(!entries.length){ el.innerHTML='<p class="hint">No backups yet. Create one now, then automatic backups will appear here over time.</p>'; return; }
+      el.innerHTML="";
+      entries.forEach(function(entry){
+        var row=document.createElement("div"); row.className="backup-entry";
+        row.innerHTML='<div class="bi"><b></b><small></small></div><button class="b2">Restore</button>';
+        row.querySelector("b").textContent=entry.kind==="manual"?"Manual backup":"Automatic backup";
+        row.querySelector("small").textContent=backupDate(entry.created)+" · "+(entry.itemCount||((entry.data.items||[]).length))+" items";
+        row.querySelector("button").onclick=function(){ restoreBackup(entry); };
+        el.appendChild(row);
+      });
+    }).catch(function(e){ console.warn(e); if(el&&el.isConnected) el.innerHTML='<p class="hint">Cloud backups could not be loaded. Check that the updated Firestore rules have been deployed.</p>'; });
+  }
+  function setupBackupSettings(){
+    $("backupNowBtn").onclick=function(){
+      captureAutoBackup(true);
+      if(!currentUser||!db){ showToast("Sign in to create a cloud backup",true); renderBackupList(); return; }
+      writeCloudBackup("manual").then(function(){ showToast("Cloud backup created"); renderBackupList(); }).catch(function(e){ console.warn(e); showToast("Cloud backup failed",true); });
+    };
     $("expBtn").onclick=doExport;
     $("impBtn").onclick=function(){ $("impFile").click(); };
     $("impFile").onchange=function(e){ var f=e.target.files[0]; if(f) doImport(f); e.target.value=""; };
-
-    $("settingsModal").classList.add("open");
-    if(focus==="account"){ var g=$("acctGrp"); if(g&&g.scrollIntoView) g.scrollIntoView({behavior:"smooth",block:"center"}); }
+    renderBackupList();
   }
   function buildThemeGrid(){
     var grid=$("themeGrid"); if(!grid) return;
@@ -1005,7 +1514,7 @@
     if(currentUser){
       el.innerHTML='<div class="acctbox">'+(currentUser.photoURL?'<img src="'+currentUser.photoURL+'" alt="">':'')+'<div class="ai"><b></b><small>Notes sync automatically</small></div></div><div class="btnrow"><button class="b2" id="soBtn">Sign out</button></div>';
       el.querySelector(".ai b").textContent=currentUser.displayName||currentUser.email||"Signed in";
-      $("soBtn").onclick=function(){ auth.signOut(); showToast("Signed out"); setTimeout(renderAcct,300); };
+      $("soBtn").onclick=function(){ resetApiSettings(); auth.signOut(); showToast("Signed out"); setTimeout(renderAcct,300); };
       return;
     }
     if(cfg&&fbReady){
