@@ -102,8 +102,12 @@
   .note-paragraph{ min-height:88px; outline:none; color:var(--ink); font-size:1.08rem; line-height:1.72; padding:2px 0; white-space:pre-wrap; }
   .note-paragraph:empty::before{ content:attr(data-placeholder); color:var(--ink-faint); pointer-events:none; }
   .note-paragraph b,.note-paragraph strong{ font-weight:700; } .note-paragraph i,.note-paragraph em{ font-style:italic; } .note-paragraph u{ text-decoration-color:var(--accent); text-underline-offset:3px; }
-  .note-format{ position:absolute; z-index:4; right:0; top:-34px; display:flex; gap:3px; padding:4px; border:1px solid var(--line); border-radius:10px; background:rgba(13,13,17,.92); box-shadow:0 12px 30px rgba(0,0,0,.28); opacity:0; pointer-events:none; transform:translateY(4px); transition:.15s; }
-  .note-paragraph-wrap:focus-within .note-format{ opacity:1; pointer-events:auto; transform:translateY(0); }
+  .note-format-trigger{ position:absolute; z-index:5; right:0; top:18px; width:29px; height:29px; display:grid; place-items:center; border:1px solid var(--line); border-radius:9px; color:var(--ink-dim); background:rgba(13,13,17,.92); box-shadow:0 8px 22px rgba(0,0,0,.2); cursor:pointer; opacity:0; visibility:hidden; pointer-events:none; transform:translateY(4px); transition:opacity .15s,transform .15s,color .15s,border-color .15s,background .15s,visibility .15s; }
+  .note-format-trigger svg{ width:14px; height:14px; }
+  .note-paragraph-wrap:hover .note-format-trigger,.note-paragraph-wrap:focus-within .note-format-trigger,.note-paragraph-wrap.format-open .note-format-trigger{ opacity:1; visibility:visible; pointer-events:auto; transform:translateY(0); }
+  .note-format-trigger:hover,.note-paragraph-wrap.format-open .note-format-trigger{ color:var(--accent); border-color:var(--accent-line); background:var(--accent-soft); }
+  .note-format{ position:absolute; z-index:4; right:34px; top:18px; display:flex; gap:3px; padding:4px; border:1px solid var(--line); border-radius:10px; background:rgba(13,13,17,.92); box-shadow:0 12px 30px rgba(0,0,0,.28); opacity:0; visibility:hidden; pointer-events:none; transform:translateY(4px); transition:opacity .15s,transform .15s,visibility .15s; }
+  .note-paragraph-wrap.format-open .note-format{ opacity:1; visibility:visible; pointer-events:auto; transform:translateY(0); }
   .note-format button{ min-width:25px; height:24px; border:0; border-radius:6px; color:var(--ink-dim); background:transparent; cursor:pointer; font:700 .73rem "DM Sans",sans-serif; }
   .note-format button:hover{ color:var(--ink); background:var(--accent-soft); }
   .note-heading{ position:relative; display:flex; align-items:center; gap:8px; margin:18px 0 5px; }
@@ -136,8 +140,8 @@
   .attachment-info{ min-width:0; flex:1; display:grid; gap:3px; } .attachment-info b{ overflow:hidden; text-overflow:ellipsis; white-space:nowrap; font-size:.84rem; } .attachment-info small{ color:var(--ink-faint); font:400 .66rem "DM Mono",monospace; }
   .note-attachment-actions{ position:absolute; z-index:2; top:9px; right:9px; display:flex; gap:5px; opacity:0; transition:opacity .14s; }
   .note-attachment:hover .note-attachment-actions,.note-attachment:focus-within .note-attachment-actions{ opacity:1; }
-  .attachment-open,.attachment-remove{ border:1px solid rgba(255,255,255,.12); border-radius:8px; padding:6px 8px; cursor:pointer; font:600 .7rem "DM Sans",sans-serif; backdrop-filter:blur(8px); }
-  .attachment-open{ color:var(--ink); background:rgba(10,10,14,.76); } .attachment-remove{ color:#fca5a5; background:rgba(68,12,18,.82); }
+  .attachment-open,.attachment-retry,.attachment-remove{ border:1px solid rgba(255,255,255,.12); border-radius:8px; padding:6px 8px; cursor:pointer; font:600 .7rem "DM Sans",sans-serif; backdrop-filter:blur(8px); }
+  .attachment-open{ color:var(--ink); background:rgba(10,10,14,.76); } .attachment-retry{ color:var(--accent); background:rgba(10,10,14,.76); } .attachment-remove{ color:#fca5a5; background:rgba(68,12,18,.82); }
   .attachment-resize{ position:absolute; z-index:3; right:0; bottom:0; width:25px; height:25px; border:0; border-radius:10px 0 0; color:#08080a; background:var(--accent); cursor:se-resize; opacity:0; transition:opacity .14s; }
   .attachment-resize::before{ content:"↘"; font-size:.8rem; font-weight:800; } .note-attachment:hover .attachment-resize,.note-attachment:focus-within .attachment-resize{ opacity:1; }
   .attachment-status{ position:absolute; left:10px; bottom:8px; max-width:calc(100% - 42px); overflow:hidden; text-overflow:ellipsis; white-space:nowrap; padding:4px 7px; border-radius:6px; color:rgba(255,255,255,.72); background:rgba(0,0,0,.52); font:500 .62rem "DM Mono",monospace; }
@@ -457,7 +461,7 @@
 
   /* =================== storage =================== */
   var KEY="astral-notes-v5", OLDS=["astral-notes-v4","astral-notes-v3"], CFGKEY="astral-fb-config", BACKUP_KEY="second-brain-auto-backups-v1", mem=null;
-  var deviceBackups=[], attachmentDbPromise=null, activeNoteTextBlock=null, draggedNoteBlock=null;
+  var deviceBackups=[], attachmentDbPromise=null, activeNoteTextBlock=null, draggedNoteBlock=null, activeAttachmentUploads={};
   var DEFAULT_ELEVENLABS_VOICE="21m00Tcm4TlvDq8ikWAM", CUSTOM_VOICE_OPTION="__elevenlabs_voice_id__";
   var runtimeApiKeys={openai:"",elevenlabs:"",elevenlabsVoice:DEFAULT_ELEVENLABS_VOICE,savedVoices:[],audio:null,audioUrl:null,ttsControl:null,ttsRequestId:0};
   var canPersist=(function(){ try{ localStorage.setItem("__t","1"); localStorage.removeItem("__t"); return true; }catch(e){ return false; } })();
@@ -802,7 +806,7 @@
     for(var i=0;i<tas.length;i++) grow(tas[i]);
     updateMeta();
   }
-  var MAX_ATTACHMENT_BYTES=25*1024*1024, MAX_INLINE_IMAGE_BYTES=220*1024;
+  var MAX_ATTACHMENT_BYTES=25*1024*1024, MAX_INLINE_IMAGE_BYTES=220*1024, ATTACHMENT_UPLOAD_TIMEOUT=35000;
   function attachmentStoreKey(noteId,attachmentId){ return noteId+":"+attachmentId; }
   function getAttachmentDb(){
     if(attachmentDbPromise) return attachmentDbPromise;
@@ -843,9 +847,9 @@
     return new Promise(function(resolve){ var reader=new FileReader(); reader.onload=function(){ resolve(typeof reader.result==="string"?reader.result:""); }; reader.onerror=function(){ resolve(""); }; reader.readAsDataURL(file); });
   }
   function attachmentLabel(attachment){
-    if(attachment.syncState==="uploading") return "Saving to cloud…";
     if(attachment.storagePath) return "Synced to your account";
     if(attachment.inlineData) return "Synced with note";
+    if(attachment.syncState==="uploading") return "Saving to cloud…";
     if(attachment.cloudError) return "On this device — cloud upload needs setup";
     return "On this device";
   }
@@ -864,13 +868,48 @@
       throw new Error("Attachment file is unavailable");
     });
   }
+  function attachmentUploadKey(note,attachment){ return note.id+":"+attachment.id; }
+  function isAttachmentUploading(note,attachment){ return !!activeAttachmentUploads[attachmentUploadKey(note,attachment)]; }
   function uploadAttachment(note,attachment,file){
     if(!currentUser||!storage) return Promise.resolve(false);
-    attachment.syncState="uploading"; delete attachment.cloudError; refreshNoteEditor(note);
-    var path=cloudAttachmentPath(note,attachment);
-    return storage.ref(path).put(file,{contentType:attachment.type||file.type||"application/octet-stream"}).then(function(){
+    var key=attachmentUploadKey(note,attachment);
+    if(activeAttachmentUploads[key]) return activeAttachmentUploads[key];
+    attachment.syncState="uploading"; delete attachment.cloudError; note.updated=Date.now(); persist(); refreshNoteEditor(note);
+    var path=cloudAttachmentPath(note,attachment), task, timeout, settled=false;
+    var upload=new Promise(function(resolve,reject){
+      function finish(error,value){
+        if(settled) return;
+        settled=true; clearTimeout(timeout);
+        if(error) reject(error); else resolve(value);
+      }
+      try{
+        task=storage.ref(path).put(file,{contentType:attachment.type||file.type||"application/octet-stream"});
+        task.then(function(){ finish(null,true); },finish);
+        timeout=setTimeout(function(){
+          var error=new Error("Attachment upload timed out"); error.code="storage/timeout";
+          if(task&&typeof task.cancel==="function") task.cancel();
+          finish(error);
+        },ATTACHMENT_UPLOAD_TIMEOUT);
+      }catch(error){ finish(error); }
+    }).then(function(){
       attachment.storagePath=path; delete attachment.inlineData; delete attachment.cloudError; attachment.syncState="cloud"; note.updated=Date.now(); persist(); refreshNoteEditor(note); return true;
-    }).catch(function(error){ attachment.syncState="device"; attachment.cloudError=true; refreshNoteEditor(note); throw error; });
+    }).catch(function(error){
+      attachment.syncState="device"; attachment.cloudError=true; note.updated=Date.now(); persist(); refreshNoteEditor(note); throw error;
+    });
+    activeAttachmentUploads[key]=upload;
+    function clearUpload(){ delete activeAttachmentUploads[key]; }
+    upload.then(clearUpload,clearUpload);
+    return upload;
+  }
+  function retryAttachmentSync(note,attachment){
+    if(isAttachmentUploading(note,attachment)) return;
+    readAttachmentFile(note.id,attachment.id).then(function(file){
+      if(!file) throw new Error("The local attachment is unavailable");
+      return uploadAttachment(note,attachment,file);
+    }).then(function(){ showToast("Attachment synced to your account"); }).catch(function(error){
+      console.warn("Attachment retry failed:",error);
+      showToast("Attachment is still local — check cloud storage setup",true);
+    });
   }
   function hasRichContent(html){ return !!richTextToPlain(html||"").trim()||/<(?:img|hr|br)\b/i.test(html||""); }
   function noteInsertIndex(note){
@@ -983,7 +1022,9 @@
     var open=document.createElement("button"); open.type="button"; open.className="attachment-open"; open.textContent="Open"; open.onclick=function(){ openAttachment(note,attachment); };
     var remove=document.createElement("button"); remove.type="button"; remove.className="attachment-remove"; remove.textContent="Remove"; remove.onclick=function(){ removeInlineAttachment(note,block); };
     var resize=document.createElement("button"); resize.type="button"; resize.className="attachment-resize"; resize.setAttribute("aria-label","Resize attachment"); resize.onpointerdown=function(event){ startAttachmentResize(event,note,block,card); };
-    actions.appendChild(open); actions.appendChild(remove); card.appendChild(actions); card.appendChild(resize);
+    actions.appendChild(open);
+    if(attachment.cloudError){ var retry=document.createElement("button"); retry.type="button"; retry.className="attachment-retry"; retry.textContent="Retry"; retry.onclick=function(){ retryAttachmentSync(note,attachment); }; actions.appendChild(retry); }
+    actions.appendChild(remove); card.appendChild(actions); card.appendChild(resize);
     if(attachmentIsImage(attachment)){ var status=document.createElement("span"); status.className="attachment-status"; status.textContent=attachment.name+" · "+attachmentLabel(attachment); card.appendChild(status); }
     return card;
   }
@@ -1010,13 +1051,28 @@
     var field=document.createElement("div"); field.className="note-paragraph"; field.contentEditable="true"; field.setAttribute("role","textbox"); field.setAttribute("aria-multiline","true"); field.setAttribute("data-note-block",block.id); field.setAttribute("data-placeholder","Start writing…"); field.innerHTML=block.html||"";
     function changed(){ block.html=sanitizeRichHtml(field.innerHTML); block.text=richTextToPlain(block.html); saveNoteBlockChange(note,block,false); rememberNoteTextSelection(note,block,field); }
     field.oninput=changed; field.onfocus=function(){ rememberNoteTextSelection(note,block,field); }; field.onkeyup=function(){ rememberNoteTextSelection(note,block,field); }; field.onmouseup=function(){ rememberNoteTextSelection(note,block,field); };
+    var formatTrigger=document.createElement("button"); formatTrigger.type="button"; formatTrigger.className="note-format-trigger"; formatTrigger.title="Show text formatting"; formatTrigger.setAttribute("aria-label","Show text formatting"); formatTrigger.setAttribute("aria-expanded","false"); formatTrigger.innerHTML='<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 20h9"/><path d="M16.5 3.5a2.12 2.12 0 0 1 3 3L7 19l-4 1 1-4Z"/></svg>';
+    function setFormatOpen(open){ wrap.classList.toggle("format-open",open); formatTrigger.title=open?"Hide text formatting":"Show text formatting"; formatTrigger.setAttribute("aria-label",formatTrigger.title); formatTrigger.setAttribute("aria-expanded",open?"true":"false"); }
+    formatTrigger.onmousedown=function(event){ event.preventDefault(); };
+    formatTrigger.onclick=function(){ setFormatOpen(!wrap.classList.contains("format-open")); field.focus(); };
     var toolbar=document.createElement("div"); toolbar.className="note-format";
+    function hasParagraphSelection(){
+      var selection=window.getSelection();
+      if(!selection||selection.rangeCount===0||selection.isCollapsed) return false;
+      return field.contains(selection.getRangeAt(0).commonAncestorContainer);
+    }
+    function selectWholeParagraph(){
+      var selection=window.getSelection(), range=document.createRange();
+      if(!selection) return;
+      range.selectNodeContents(field); selection.removeAllRanges(); selection.addRange(range);
+    }
     [["bold","B","Bold"],["italic","I","Italic"],["underline","U","Underline"],["removeFormat","Tx","Clear formatting"]].forEach(function(action){
       var button=document.createElement("button"); button.type="button"; button.textContent=action[1]; button.title=action[2]; button.setAttribute("aria-label",action[2]);
-      button.onmousedown=function(event){ event.preventDefault(); }; button.onclick=function(){ field.focus(); document.execCommand(action[0],false,null); changed(); };
+      button.onmousedown=function(event){ event.preventDefault(); }; button.onclick=function(){ field.focus(); if(!hasParagraphSelection()) selectWholeParagraph(); document.execCommand(action[0],false,null); changed(); };
       toolbar.appendChild(button);
     });
-    wrap.appendChild(toolbar); wrap.appendChild(field); return wrap;
+    wrap.addEventListener("focusout",function(){ setTimeout(function(){ if(!wrap.contains(document.activeElement)) setFormatOpen(false); },0); });
+    wrap.appendChild(formatTrigger); wrap.appendChild(toolbar); wrap.appendChild(field); return wrap;
   }
   function buildNoteHeading(note,block){
     var wrap=document.createElement("div"); wrap.className="note-heading h"+(block.level||2);
@@ -1639,9 +1695,10 @@
     state.items.forEach(function(note){
       if(note.type!=="note") return;
       (note.attachments||[]).forEach(function(attachment){
-        if(attachment.storagePath||attachment.syncState==="uploading") return;
+        if(attachment.storagePath||isAttachmentUploading(note,attachment)) return;
+        if(attachment.syncState==="uploading") attachment.syncState="device";
         readAttachmentFile(note.id,attachment.id).then(function(file){
-          if(!file||attachment.storagePath||attachment.syncState==="uploading") return;
+          if(!file||attachment.storagePath||isAttachmentUploading(note,attachment)) return;
           return readInlineImage(file).then(function(data){ if(data&&!attachment.inlineData){ attachment.inlineData=data; note.updated=Date.now(); persist(); } return uploadAttachment(note,attachment,file); });
         }).catch(function(error){ console.warn("Attachment upload skipped:",error); });
       });
