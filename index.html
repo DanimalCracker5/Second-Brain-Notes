@@ -245,9 +245,11 @@
   .d-item .dt-meta{ display:flex; align-items:center; gap:5px; margin-top:3px; }
   .d-item .dt-meta .m{ font-family:"DM Mono",monospace; font-size:.62rem; color:var(--ink-faint); }
   .d-item .dot{ width:6px; height:6px; border-radius:50%; flex:none; }
-  .d-item .dx{ opacity:0; border:none; background:none; color:var(--ink-faint); cursor:pointer; font-size:1rem; padding:2px 6px; border-radius:6px; }
-  .d-item:hover .dx{ opacity:1; } .d-item .dx:hover{ color:#f87171; }
-  .d-item.todo-done .dx{ opacity:1; color:#f87171; font-size:.7rem; font-weight:600; }
+  .d-item .item-lock{ display:grid; place-items:center; color:var(--accent); }
+  .d-item .item-lock svg{ width:12px; height:12px; }
+  .d-item .dx{ width:30px; height:30px; display:grid; place-items:center; opacity:0; border:none; background:none; color:var(--ink-faint); cursor:pointer; padding:0; border-radius:7px; }
+  .d-item .dx svg{ width:15px; height:15px; }
+  .d-item:hover .dx,.d-item:focus-within .dx{ opacity:1; } .d-item .dx:hover,.d-item .dx:focus-visible{ color:var(--accent); background:var(--accent-soft); outline:none; }
   .d-tasks{ grid-column:2 / 4; display:grid; gap:4px; padding-top:2px; }
   .side-task{ display:flex; align-items:center; gap:7px; width:100%; padding:3px 0; }
   .side-task-check{ width:14px; height:14px; padding:0; display:grid; place-items:center; flex:none; border:1px solid var(--accent-line); border-radius:4px; color:#07110c; background:var(--accent-soft); cursor:pointer; font-size:.62rem; font-weight:800; }
@@ -262,17 +264,26 @@
   .d-foot .who{ display:flex; align-items:center; gap:8px; min-width:0; }
   .d-foot .who img{ width:26px; height:26px; border-radius:50%; flex:none; }
   .d-foot .who b{ font-size:.8rem; font-weight:600; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
-  .storage-usage{ display:flex; align-items:center; gap:7px; min-width:0; min-height:28px; margin-left:34px; padding:5px 8px; border:1px solid var(--line); border-radius:8px; color:var(--ink-dim); background:rgba(255,255,255,.025); font-size:.65rem; line-height:1; white-space:nowrap; overflow:hidden; }
-  .storage-usage svg{ width:13px; height:13px; flex:none; color:var(--accent); }
-  .storage-usage span{ flex:none; color:var(--ink-faint); font:500 .57rem "DM Mono",monospace; letter-spacing:.09em; text-transform:uppercase; }
-  .storage-usage b{ min-width:0; overflow:hidden; text-overflow:ellipsis; color:var(--ink); font:600 .69rem "DM Sans",sans-serif; }
+  .storage-usage{ position:relative; display:grid; grid-template-columns:14px minmax(0,1fr) auto; align-items:center; gap:7px; width:calc(100% - 34px); min-height:32px; margin-left:34px; padding:7px 9px; border:1px solid var(--line); border-radius:9px; color:var(--ink-dim); background:rgba(255,255,255,.025); line-height:1; cursor:default; outline:none; }
+  .storage-usage:hover,.storage-usage:focus{ border-color:var(--accent-line); background:rgba(255,255,255,.045); }
+  .storage-usage svg{ width:14px; height:14px; color:var(--accent); }
+  .storage-usage > span{ min-width:0; color:var(--ink-faint); font:500 .59rem "DM Mono",monospace; letter-spacing:.11em; text-transform:uppercase; }
+  .storage-usage > b{ color:var(--ink); font:600 .76rem "DM Sans",sans-serif; }
   .storage-usage.calculating b,.storage-usage.unavailable b{ color:var(--ink-dim); font-weight:500; }
+  .storage-breakdown{ position:absolute; z-index:120; left:0; bottom:calc(100% + 9px); width:248px; display:grid; gap:7px; padding:11px 12px; border:1px solid var(--accent-line); border-radius:11px; color:var(--ink); background:rgba(14,14,19,.97); box-shadow:0 15px 38px rgba(0,0,0,.58); backdrop-filter:blur(16px); opacity:0; visibility:hidden; pointer-events:none; transform:translateY(4px); transition:opacity .14s,transform .14s,visibility .14s; }
+  .storage-usage:hover .storage-breakdown,.storage-usage:focus .storage-breakdown{ opacity:1; visibility:visible; transform:translateY(0); }
+  .storage-breakdown h4{ margin:0; font:600 .72rem "DM Sans",sans-serif; }
+  .storage-breakdown p{ margin:0; color:var(--ink-faint); font:400 .61rem/1.35 "DM Mono",monospace; }
+  .storage-breakdown dl{ display:grid; gap:5px; margin:0; }
+  .storage-breakdown dl div{ display:flex; align-items:baseline; justify-content:space-between; gap:12px; color:var(--ink-dim); font:400 .68rem "DM Sans",sans-serif; }
+  .storage-breakdown dt,.storage-breakdown dd{ margin:0; } .storage-breakdown dd{ color:var(--ink); font:500 .66rem "DM Mono",monospace; }
 
   /* ---------- floating menu ---------- */
   .menu{ position:fixed; z-index:70; background:#0b0b0f; border:1px solid var(--line); border-radius:12px; padding:6px; box-shadow:0 18px 55px rgba(0,0,0,.7); min-width:200px; max-width:270px; }
   .menu .mtitle{ font-family:"DM Mono",monospace; font-size:.56rem; letter-spacing:.2em; text-transform:uppercase; color:var(--ink-faint); padding:6px 10px 4px; }
   .menu button.mi{ display:flex; align-items:center; gap:10px; width:100%; text-align:left; padding:9px 11px; background:none; border:none; color:var(--ink); font-size:.86rem; border-radius:8px; cursor:pointer; }
   .menu button.mi:hover{ background:rgba(255,255,255,.06); } .menu button.mi svg{ width:16px; height:16px; color:var(--ink-dim); flex:none; }
+  .menu button.mi.danger{ color:#fca5a5; } .menu button.mi.danger svg{ color:#f87171; } .menu button.mi.danger:hover{ background:rgba(248,113,113,.12); }
   .menu button.mi .chk{ margin-left:auto; color:var(--accent); opacity:0; } .menu button.mi.on .chk{ opacity:1; }
   .menu .sep{ height:1px; background:var(--line); margin:5px 4px; }
   .menu .mrow{ padding:6px; } .menu .mrow input{ width:100%; background:rgba(255,255,255,.05); border:1px solid var(--line); border-radius:8px; color:var(--ink); padding:9px 10px; font-family:inherit; font-size:.85rem; outline:none; }
@@ -591,6 +602,7 @@
   function visibleItems(){
     var items=state.items.filter(function(it){ if(state.filterFolder && it.folderId!==state.filterFolder) return false; if(state.filterTag && (it.tagIds||[]).indexOf(state.filterTag)<0) return false; return true; });
     return items.sort(function(a,b){
+      if(state.listSort==="manual") return (typeof a.manualOrder==="number"?a.manualOrder:state.items.indexOf(a))-(typeof b.manualOrder==="number"?b.manualOrder:state.items.indexOf(b));
       if(state.listSort==="title") return (a.title||"").localeCompare(b.title||"");
       if(state.listSort==="tag"){ var byTag=firstTagName(a).localeCompare(firstTagName(b)); return byTag||((b.updated||0)-(a.updated||0)); }
       return (b.updated||0)-(a.updated||0);
@@ -646,6 +658,12 @@
   var ICON_SCRIPT='<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><rect x="4" y="4" width="16" height="5" rx="1.5"/><rect x="4" y="12" width="16" height="8" rx="1.5"/></svg>';
   var ICON_NOTE='<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M5 3h9l5 5v13a1 1 0 0 1-1 1H5a1 1 0 0 1-1-1V4a1 1 0 0 1 1-1z"/><path d="M14 3v5h5"/></svg>';
   var ICON_EDIT='<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 20h9"/><path d="M16.5 3.5a2.12 2.12 0 0 1 3 3L7 19l-4 1 1-4Z"/></svg>';
+  var ICON_DUPLICATE='<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="9" y="9" width="11" height="11" rx="2"/><path d="M5 15V5a2 2 0 0 1 2-2h10"/></svg>';
+  var ICON_UP='<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m6 15 6-6 6 6"/></svg>';
+  var ICON_DOWN='<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m6 9 6 6 6-6"/></svg>';
+  var ICON_LOCK='<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="5" y="10" width="14" height="11" rx="2"/><path d="M8 10V7a4 4 0 0 1 8 0v3"/></svg>';
+  var ICON_UNLOCK='<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="5" y="10" width="14" height="11" rx="2"/><path d="M8 10V7a4 4 0 0 1 7.2-2.4"/></svg>';
+  var ICON_DELETE='<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 6h18M8 6V4h8v2M19 6l-1 14H6L5 6"/></svg>';
   var ICON_TODO='<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="4" y="4" width="16" height="16" rx="3"/><path d="M8 12l2.5 2.5L16 9"/></svg>';
   var ICON_AGENT='<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="8" r="3.5"/><path d="M5 21c.8-4 3.2-6 7-6s6.2 2 7 6"/><path d="M19 5v4M17 7h4"/></svg>';
   var ICON_FOLDER='<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M3 7a2 2 0 0 1 2-2h4l2 2h8a2 2 0 0 1 2 2v8a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/></svg>';
@@ -713,9 +731,62 @@
       });
       m.appendChild(tagBox); m.appendChild(sep());
       var st=document.createElement("div"); st.className="mtitle"; st.textContent="Sort notes"; m.appendChild(st);
+      m.appendChild(mkItem("","Custom order",state.listSort==="manual",function(){ state.listSort="manual"; closeMenu(); persist(); renderList(); }));
       [["updated","Recently updated"],["title","Title A–Z"],["tag","Tag A–Z"]].forEach(function(opt){
         m.appendChild(mkItem("",opt[1],state.listSort===opt[0],function(){ state.listSort=opt[0]; closeMenu(); persist(); renderList(); }));
       });
+    });
+  }
+  function prepareManualOrder(){
+    if(state.listSort==="manual"&&state.items.every(function(item){ return typeof item.manualOrder==="number"; })) return;
+    var ordered=visibleItems(), orderedIds={};
+    ordered.forEach(function(item,index){ item.manualOrder=(index+1)*10; orderedIds[item.id]=true; });
+    var next=(ordered.length+1)*10;
+    state.items.forEach(function(item){ if(!orderedIds[item.id]){ item.manualOrder=next; next+=10; } });
+    state.listSort="manual";
+  }
+  function moveItem(it,direction){
+    prepareManualOrder();
+    var items=visibleItems(), index=items.findIndex(function(item){ return item.id===it.id; }), target=index+direction;
+    if(index<0||target<0||target>=items.length){ showToast(direction<0?"Already at the top":"Already at the bottom"); return; }
+    var other=items[target], order=it.manualOrder;
+    it.manualOrder=other.manualOrder; other.manualOrder=order;
+    it.updated=Date.now(); other.updated=it.updated;
+    persist(); renderList();
+  }
+  function duplicateItem(it){
+    prepareManualOrder();
+    var copy=JSON.parse(JSON.stringify(it));
+    copy.id=uid(); copy.locked=false; copy.updated=Date.now();
+    copy.title=it.title?it.title+" copy":"Untitled "+itemLabel(it).toLowerCase()+" copy";
+    if(copy.type==="script") (copy.sections||[]).forEach(function(section){ section.id=uid(); });
+    if(copy.type==="todo") (copy.todos||[]).forEach(function(task){ task.id=uid(); (task.subtasks||[]).forEach(function(subtask){ subtask.id=uid(); }); });
+    if(copy.type==="note"){
+      var attachmentIds={};
+      (copy.attachments||[]).forEach(function(attachment){ var oldId=attachment.id; attachment.id=uid(); attachmentIds[oldId]=attachment.id; attachment.sourceNoteId=it.id; attachment.sourceAttachmentId=oldId; });
+      (copy.blocks||[]).forEach(function(block){ block.id=uid(); if(block.type==="attachment") block.attachmentId=attachmentIds[block.attachmentId]||block.attachmentId; });
+    }
+    var ordered=visibleItems(), index=ordered.findIndex(function(item){ return item.id===it.id; }), next=ordered[index+1];
+    copy.manualOrder=next?(it.manualOrder+next.manualOrder)/2:it.manualOrder+5;
+    state.items.push(copy); state.currentId=copy.id;
+    if(copy.type==="note") Object.keys(attachmentIds).forEach(function(sourceId){ readAttachmentFile(it.id,sourceId).then(function(file){ if(file) return storeAttachmentFile(copy.id,attachmentIds[sourceId],file); }).catch(function(){}); });
+    persist(); renderAll(); showToast("Duplicate created");
+  }
+  function toggleItemLock(it){
+    it.locked=!it.locked; it.updated=Date.now();
+    closeMenu(); persist(); renderList(); if(current().id===it.id) renderMain();
+    showToast(it.locked?"Locked — unlock it before deleting":"Unlocked — this item can be deleted");
+  }
+  function openItemActions(anchor,it){
+    openMenu(anchor,function(m){
+      var title=document.createElement("div"); title.className="mtitle"; title.textContent=itemLabel(it)+" actions"; m.appendChild(title);
+      m.appendChild(mkItem(ICON_DUPLICATE,"Duplicate",false,function(){ closeMenu(); duplicateItem(it); }));
+      m.appendChild(mkItem(ICON_UP,"Move up",false,function(){ closeMenu(); moveItem(it,-1); }));
+      m.appendChild(mkItem(ICON_DOWN,"Move down",false,function(){ closeMenu(); moveItem(it,1); }));
+      m.appendChild(mkItem(ICON_FOLDER,"Move to another folder",false,function(){ openFolderPick(anchor,it); }));
+      m.appendChild(sep());
+      m.appendChild(mkItem(it.locked?ICON_UNLOCK:ICON_LOCK,it.locked?"Unlock deletion":"Lock from deletion",false,function(){ toggleItemLock(it); }));
+      if(!it.locked){ var remove=mkItem(ICON_DELETE,"Delete",false,function(){ closeMenu(); delItem(it.id); }); remove.className+=" danger"; m.appendChild(remove); }
     });
   }
   function renderList(){
@@ -733,7 +804,8 @@
       var metaText=it.type==="script"?((it.sections||[]).filter(function(s){return s.kind!=="cue";}).length+" ch · "+itemWords(it)+" words"):(it.type==="todo"?(todoOpen+" left"):(it.type==="agent"?"Agent prototype":itemWords(it)+" words"));
       var leading=it.type==="todo"?'<button class="side-todo-check'+(it.done?" done":"")+'" aria-label="'+(it.done?"Mark incomplete":"Mark complete")+'">'+(it.done?"✓":"")+'</button>':icon;
       var deleteLabel=it.type==="todo"&&it.done?"Delete?":"✕";
-      el.innerHTML=leading+'<div class="dt"><div class="dt-title"></div><div class="dt-meta"><span class="m">'+metaText+'</span>'+dots+'</div></div><button class="dx" aria-label="Delete">'+deleteLabel+'</button>';
+      var lockStatus=it.locked?'<span class="item-lock" title="Deletion locked" aria-label="Deletion locked">'+ICON_LOCK+'</span>':"";
+      el.innerHTML=leading+'<div class="dt"><div class="dt-title"></div><div class="dt-meta"><span class="m">'+metaText+'</span>'+dots+lockStatus+'</div></div><button class="dx" type="button" title="Item actions" aria-label="Item actions">'+ICON_EDIT+'</button>';
       el.querySelector(".dt-title").textContent=it.title||("Untitled "+itemLabel(it).toLowerCase());
       if(it.type==="todo") el.querySelector(".side-todo-check").onclick=function(e){ e.stopPropagation(); setTodoDone(it); };
       if(it.type==="todo" && (it.todos||[]).length){
@@ -748,13 +820,15 @@
         });
         el.appendChild(taskBox);
       }
-      el.onclick=function(e){ if(e.target.classList.contains("dx")||e.target.closest(".side-task")||e.target.closest(".side-todo-check")) return; state.currentId=it.id; app.classList.remove("open"); renderList(); renderMain(); };
-      el.querySelector(".dx").onclick=function(e){ e.stopPropagation(); delItem(it.id); };
+      el.onclick=function(e){ if(e.target.closest(".dx")||e.target.closest(".side-task")||e.target.closest(".side-todo-check")) return; state.currentId=it.id; app.classList.remove("open"); renderList(); renderMain(); };
+      el.querySelector(".dx").onclick=function(e){ e.stopPropagation(); openItemActions(e.currentTarget,it); };
       listEl.appendChild(el);
     });
   }
   function renderAll(){ renderFolders(); renderTags(); renderList(); renderMain(); }
   function delItem(id,message){
+    var item=state.items.find(function(s){ return s.id===id; });
+    if(item&&item.locked){ showToast("Unlock this item before deleting it",true); return; }
     if(!confirm(message||"Delete this? This can't be undone.")) return;
     captureAutoBackup(true);
     var i=state.items.findIndex(function(s){ return s.id===id; });
@@ -791,7 +865,7 @@
       itemCheck.setAttribute("aria-label",it.done?"Mark incomplete":"Mark complete"); itemCheck.title=it.done?"Mark incomplete":"Mark complete"; itemCheck.textContent=it.done?"✓":"";
       itemCheck.onclick=function(){ setTodoDone(it); };
       titleRow.appendChild(itemCheck);
-      if(it.done){
+      if(it.done&&!it.locked){
         var itemDelete=document.createElement("button"); itemDelete.className="todo-item-delete"; itemDelete.textContent="Delete?";
         itemDelete.onclick=function(){ delItem(it.id,"Delete this completed todo? This can't be undone."); };
         titleRow.appendChild(itemDelete);
@@ -874,12 +948,16 @@
   function cloudAttachmentPath(note,attachment){ return "users/"+currentUser.uid+"/notes/"+note.id+"/attachments/"+attachment.id; }
   function attachmentById(note,id){ return (note.attachments||[]).find(function(attachment){ return attachment.id===id; })||null; }
   function attachmentIsImage(attachment){ return /^image\//.test(attachment.type||""); }
+  function fallbackAttachmentUrl(attachment){
+    if(attachment.inlineData) return Promise.resolve({url:attachment.inlineData,local:false});
+    if(storage&&attachment.storagePath) return storage.ref(attachment.storagePath).getDownloadURL().then(function(url){ return {url:url,local:false}; });
+    return Promise.reject(new Error("Attachment file is unavailable"));
+  }
   function getAttachmentUrl(note,attachment){
     return readAttachmentFile(note.id,attachment.id).then(function(file){
       if(file) return {url:URL.createObjectURL(file),local:true};
-      if(attachment.inlineData) return {url:attachment.inlineData,local:false};
-      if(storage&&attachment.storagePath) return storage.ref(attachment.storagePath).getDownloadURL().then(function(url){ return {url:url,local:false}; });
-      throw new Error("Attachment file is unavailable");
+      if(attachment.sourceNoteId&&attachment.sourceAttachmentId) return readAttachmentFile(attachment.sourceNoteId,attachment.sourceAttachmentId).then(function(sourceFile){ return sourceFile?{url:URL.createObjectURL(sourceFile),local:true}:fallbackAttachmentUrl(attachment); }).catch(function(){ return fallbackAttachmentUrl(attachment); });
+      return fallbackAttachmentUrl(attachment);
     });
   }
   function attachmentUploadKey(note,attachment){ return note.id+":"+attachment.id; }
@@ -993,7 +1071,8 @@
     syncNoteBody(note); note.updated=Date.now(); persist(); refreshNoteEditor(note);
     if(!deleteFile) return;
     removeAttachmentFile(note.id,attachment.id);
-    if(storage&&attachment.storagePath) storage.ref(attachment.storagePath).delete().catch(function(error){ console.warn("Cloud attachment cleanup skipped:",error); }).then(function(){ scheduleAccountUsageRefresh(0); });
+    var sharedInAnotherItem=attachment.storagePath&&state.items.some(function(item){ return item.id!==note.id&&(item.attachments||[]).some(function(other){ return other.storagePath===attachment.storagePath; }); });
+    if(storage&&attachment.storagePath&&!sharedInAnotherItem) storage.ref(attachment.storagePath).delete().catch(function(error){ console.warn("Cloud attachment cleanup skipped:",error); }).then(function(){ scheduleAccountUsageRefresh(0); });
     showToast("Attachment removed");
   }
   function moveAttachmentBlock(note,blockId,targetIndex){
@@ -1881,11 +1960,15 @@
       who.innerHTML=(currentUser.photoURL?'<img src="'+currentUser.photoURL+'" alt="">':'')+'<b></b>';
       who.querySelector("b").textContent=currentUser.displayName||currentUser.email||"Signed in";
       summary.appendChild(who);
-      var usage=document.createElement("div"); usage.className="storage-usage "+(accountUsage.status==="ready"?"":accountUsage.status==="error"?"unavailable":"calculating"); usage.title=accountUsageTitle(accountUsage); usage.setAttribute("aria-live","polite");
+      var usage=document.createElement("div"); usage.className="storage-usage "+(accountUsage.status==="ready"?"":accountUsage.status==="error"?"unavailable":"calculating"); usage.setAttribute("aria-label",accountUsageTitle(accountUsage)); usage.setAttribute("aria-live","polite"); usage.tabIndex=0;
       usage.innerHTML='<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><ellipse cx="12" cy="5" rx="7" ry="3"/><path d="M5 5v7c0 1.7 3.1 3 7 3s7-1.3 7-3V5"/><path d="M5 12v7c0 1.7 3.1 3 7 3s7-1.3 7-3v-7"/></svg>';
       var label=document.createElement("span"); label.textContent="Storage";
       var value=document.createElement("b"); value.textContent=accountUsage.status==="ready"?fileSize(accountUsage.totalBytes):accountUsage.status==="error"?"Couldn’t calculate yet":"Calculating your total…";
-      usage.appendChild(label); usage.appendChild(value); summary.appendChild(usage); dfoot.appendChild(summary);
+      var detail=document.createElement("div"); detail.className="storage-breakdown"; detail.id="storageBreakdown"; detail.setAttribute("role","tooltip");
+      var heading=document.createElement("h4"); heading.textContent=accountUsage.source==="device"?"Storage on this device":"Cloud storage";
+      var detailText=document.createElement("p"); detailText.textContent=accountUsage.source==="device"?"Cloud total updates automatically when reconnected.":"Everything saved in your Second Brain account.";
+      var breakdown=document.createElement("dl"); [["Attachments",accountUsage.fileBytes],["Notes & account data",accountUsage.accountBytes],["Backups",accountUsage.backupBytes]].forEach(function(row){ var item=document.createElement("div"), term=document.createElement("dt"), amount=document.createElement("dd"); term.textContent=row[0]; amount.textContent=fileSize(row[1]); item.appendChild(term); item.appendChild(amount); breakdown.appendChild(item); });
+      detail.appendChild(heading); detail.appendChild(detailText); detail.appendChild(breakdown); usage.setAttribute("aria-describedby",detail.id); usage.appendChild(label); usage.appendChild(value); usage.appendChild(detail); summary.appendChild(usage); dfoot.appendChild(summary);
     } else {
       var s=document.createElement("button"); s.className="sbtn"; s.style.flex="1";
       s.innerHTML='<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M15 3h4a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2h-4"/><path d="M10 17l5-5-5-5M15 12H3"/></svg><span>'+(fbReady?"Sign in":"Sync unavailable")+'</span>';
