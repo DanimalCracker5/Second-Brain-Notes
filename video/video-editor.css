@@ -1,0 +1,757 @@
+/*
+  Second Brain — video/video-editor.css
+
+  Styles for the Video and Edited Video item types. Every selector is prefixed
+  .ve- so nothing here can collide with the core app's CSS in index.html.
+
+  Colours come from the CSS variables the core theme engine sets on :root
+  (--accent, --ink, --line, ...), so the editor follows whatever theme is
+  active instead of hard-coding its own palette.
+*/
+
+.ve-video,
+.ve-edit {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+/* ---------- shared controls ---------- */
+
+.ve-hint {
+  margin: 0;
+  color: var(--ink-dim);
+  font-size: 0.82rem;
+  line-height: 1.5;
+}
+
+.ve-empty {
+  padding: 22px 16px;
+  border: 1px dashed var(--line);
+  border-radius: 14px;
+  color: var(--ink-faint);
+  font-size: 0.84rem;
+  text-align: center;
+}
+
+.ve-btn {
+  font: inherit;
+  font-size: 0.8rem;
+  font-weight: 600;
+  color: var(--ink);
+  background: rgba(255, 255, 255, 0.05);
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  padding: 7px 12px;
+  cursor: pointer;
+  white-space: nowrap;
+  transition: background 0.15s, border-color 0.15s, opacity 0.15s;
+}
+.ve-btn:hover:not(:disabled) {
+  background: rgba(255, 255, 255, 0.1);
+  border-color: var(--accent-line);
+}
+.ve-btn:disabled {
+  opacity: 0.45;
+  cursor: default;
+}
+.ve-btn-primary {
+  color: #08080a;
+  background: var(--accent);
+  border-color: transparent;
+}
+.ve-btn-primary:hover:not(:disabled) {
+  background: var(--accent);
+  filter: brightness(1.08);
+}
+.ve-btn-danger {
+  color: #fca5a5;
+}
+.ve-btn-danger:hover:not(:disabled) {
+  background: rgba(248, 113, 113, 0.14);
+  border-color: rgba(248, 113, 113, 0.4);
+}
+.ve-btn-icon {
+  min-width: 34px;
+  text-align: center;
+}
+
+.ve-chip {
+  font: inherit;
+  font-size: 0.72rem;
+  font-weight: 600;
+  color: var(--ink-dim);
+  background: rgba(255, 255, 255, 0.04);
+  border: 1px solid var(--line);
+  border-radius: 999px;
+  padding: 5px 11px;
+  cursor: pointer;
+  white-space: nowrap;
+}
+.ve-chip:hover {
+  color: var(--ink);
+}
+.ve-chip.is-on {
+  color: #08080a;
+  background: var(--accent);
+  border-color: transparent;
+}
+.ve-chip.is-off {
+  color: var(--ink-faint);
+}
+.ve-chip-danger:hover {
+  color: #fca5a5;
+  border-color: rgba(248, 113, 113, 0.4);
+}
+.ve-chip-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
+.ve-progress {
+  height: 4px;
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.08);
+  overflow: hidden;
+  margin-top: 6px;
+}
+.ve-progress-fill {
+  height: 100%;
+  width: 0;
+  background: var(--accent);
+  transition: width 0.2s linear;
+}
+
+.ve-field {
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+  align-items: flex-start;
+}
+.ve-field-label {
+  font-size: 0.72rem;
+  font-weight: 600;
+  letter-spacing: 0.02em;
+  color: var(--ink-dim);
+  text-transform: uppercase;
+}
+.ve-field-hint {
+  font-size: 0.7rem;
+  color: var(--ink-faint);
+  line-height: 1.4;
+}
+.ve-slider-row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  width: 100%;
+}
+.ve-slider-row input[type="range"] {
+  flex: 1;
+  min-width: 0;
+  accent-color: var(--accent);
+}
+.ve-slider-value {
+  font-family: "DM Mono", monospace;
+  font-size: 0.72rem;
+  color: var(--ink-dim);
+  min-width: 52px;
+  text-align: right;
+}
+.ve-textarea,
+.ve-search,
+.ve-clip-name {
+  font: inherit;
+  width: 100%;
+  color: var(--ink);
+  background: rgba(255, 255, 255, 0.04);
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  padding: 8px 10px;
+  resize: vertical;
+}
+.ve-textarea:focus,
+.ve-search:focus,
+.ve-clip-name:focus {
+  outline: none;
+  border-color: var(--accent-line);
+}
+.ve-color {
+  width: 54px;
+  height: 32px;
+  padding: 0;
+  background: none;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+}
+
+/* ---------- footage view ---------- */
+
+.ve-drop {
+  display: grid;
+  place-items: center;
+  gap: 4px;
+  padding: 26px 18px;
+  border: 1px dashed var(--line);
+  border-radius: 16px;
+  background: rgba(255, 255, 255, 0.02);
+  cursor: pointer;
+  text-align: center;
+  transition: border-color 0.15s, background 0.15s;
+}
+.ve-drop:hover,
+.ve-drop.is-over {
+  border-color: var(--accent-line);
+  background: var(--accent-soft);
+}
+.ve-drop b {
+  font-size: 0.92rem;
+}
+.ve-drop small {
+  color: var(--ink-faint);
+  font-size: 0.75rem;
+}
+.ve-drop-icon {
+  color: var(--accent);
+}
+.ve-drop-icon svg {
+  width: 26px;
+  height: 26px;
+}
+
+.ve-clip-grid {
+  display: grid;
+  gap: 10px;
+}
+.ve-clip-card {
+  display: grid;
+  grid-template-columns: 96px 1fr auto;
+  align-items: center;
+  gap: 12px;
+  padding: 10px;
+  border: 1px solid var(--line);
+  border-radius: 14px;
+  background: rgba(255, 255, 255, 0.02);
+}
+.ve-poster {
+  width: 96px;
+  aspect-ratio: 16 / 9;
+  object-fit: cover;
+  border-radius: 8px;
+  background: #000;
+}
+.ve-poster-empty {
+  display: grid;
+  place-items: center;
+  color: var(--ink-faint);
+  border: 1px solid var(--line);
+}
+.ve-poster-empty svg {
+  width: 22px;
+  height: 22px;
+}
+.ve-clip-body {
+  min-width: 0;
+}
+.ve-clip-summary {
+  display: block;
+  margin-top: 4px;
+  color: var(--ink-faint);
+  font-size: 0.72rem;
+}
+.ve-clip-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  justify-content: flex-end;
+}
+
+/* ---------- monitor and transport ---------- */
+
+.ve-stage {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+.ve-monitor {
+  position: relative;
+  border: 1px solid var(--line);
+  border-radius: 14px;
+  background: #000;
+  overflow: hidden;
+  cursor: pointer;
+}
+/* Kept deliberately short so the transport and the timeline are on screen
+   together without scrolling the page — the timeline is what gets used most. */
+.ve-canvas {
+  display: block;
+  width: 100%;
+  height: auto;
+  max-height: min(38vh, 360px);
+  object-fit: contain;
+  margin: 0 auto;
+}
+.ve-transport {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+.ve-play {
+  width: 40px;
+  height: 40px;
+  flex: none;
+  display: grid;
+  place-items: center;
+  color: #08080a;
+  background: var(--accent);
+  border: none;
+  border-radius: 999px;
+  cursor: pointer;
+}
+.ve-play svg {
+  width: 18px;
+  height: 18px;
+}
+.ve-time {
+  font-family: "DM Mono", monospace;
+  font-size: 0.78rem;
+  color: var(--ink-dim);
+}
+.ve-transport-tools {
+  display: flex;
+  gap: 6px;
+  margin-left: auto;
+  flex-wrap: wrap;
+}
+
+.ve-problem {
+  padding: 10px 12px;
+  border: 1px solid rgba(248, 113, 113, 0.35);
+  border-radius: 12px;
+  background: rgba(248, 113, 113, 0.08);
+  color: #fca5a5;
+  font-size: 0.78rem;
+  line-height: 1.5;
+}
+
+/* ---------- timeline ---------- */
+
+.ve-timeline {
+  border: 1px solid var(--line);
+  border-radius: 14px;
+  background: rgba(255, 255, 255, 0.02);
+  overflow: hidden;
+}
+.ve-scroller {
+  overflow-x: auto;
+  overflow-y: hidden;
+  -webkit-overflow-scrolling: touch;
+}
+.ve-surface {
+  position: relative;
+  min-width: 100%;
+  padding-left: 118px; /* leaves room for the sticky track headers */
+}
+.ve-ruler {
+  position: relative;
+  height: 26px;
+  border-bottom: 1px solid var(--line);
+  cursor: ew-resize;
+  touch-action: none;
+}
+.ve-tick {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  border-left: 1px solid var(--line-soft);
+  pointer-events: none;
+}
+.ve-tick span {
+  position: absolute;
+  top: 5px;
+  left: 5px;
+  font-family: "DM Mono", monospace;
+  font-size: 0.62rem;
+  color: var(--ink-faint);
+  white-space: nowrap;
+}
+
+.ve-lanes {
+  display: flex;
+  flex-direction: column;
+}
+.ve-lane-row {
+  position: relative;
+  border-bottom: 1px solid var(--line-soft);
+}
+.ve-lane-row:last-child {
+  border-bottom: none;
+}
+.ve-lane-head {
+  position: absolute;
+  left: -118px;
+  top: 0;
+  bottom: 0;
+  width: 118px;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  gap: 4px;
+  padding: 6px 8px;
+  border-right: 1px solid var(--line);
+  background: rgba(10, 10, 12, 0.86);
+  backdrop-filter: blur(6px);
+  z-index: 2;
+}
+.ve-lane-head b {
+  font-size: 0.7rem;
+  color: var(--ink-dim);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.ve-lane-tools {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 3px;
+}
+.ve-lane-tools .ve-chip {
+  font-size: 0.6rem;
+  padding: 2px 6px;
+}
+.ve-lane-row.is-active .ve-lane-head {
+  box-shadow: inset 2px 0 0 var(--accent);
+}
+
+.ve-lane {
+  position: relative;
+  height: 62px;
+  touch-action: pan-x;
+}
+.ve-lane-audio {
+  --ve-clip-tint: rgba(110, 231, 183, 0.22);
+}
+.ve-lane-video {
+  --ve-clip-tint: var(--accent-soft);
+}
+.ve-lane-text {
+  --ve-clip-tint: rgba(251, 191, 36, 0.2);
+}
+.ve-lane-text .ve-lane,
+.ve-lane-audio .ve-lane {
+  height: 46px;
+}
+
+.ve-clip {
+  position: absolute;
+  top: 6px;
+  bottom: 6px;
+  display: flex;
+  align-items: flex-end;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background-color: var(--ve-clip-tint);
+  background-size: cover;
+  background-position: center;
+  overflow: hidden;
+  cursor: grab;
+  touch-action: none;
+  user-select: none;
+}
+.ve-clip.is-selected {
+  border-color: var(--accent);
+  box-shadow: 0 0 0 1px var(--accent);
+}
+.ve-clip.is-dragging,
+.ve-clip.is-trimming {
+  /* Lets elementFromPoint see the lane underneath so a clip can be dragged to
+     another track. Pointer capture keeps the events coming here regardless. */
+  pointer-events: none;
+  cursor: grabbing;
+  opacity: 0.85;
+  z-index: 3;
+}
+.ve-clip.is-missing {
+  background-color: rgba(248, 113, 113, 0.2);
+  border-color: rgba(248, 113, 113, 0.5);
+}
+.ve-clip-caption {
+  padding: 2px 6px;
+  max-width: 100%;
+  font-size: 0.66rem;
+  font-weight: 600;
+  color: var(--ink);
+  background: linear-gradient(to top, rgba(0, 0, 0, 0.72), rgba(0, 0, 0, 0));
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  pointer-events: none;
+}
+.ve-handle {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  width: 14px;
+  cursor: ew-resize;
+  touch-action: none;
+}
+.ve-handle::after {
+  content: "";
+  position: absolute;
+  top: 30%;
+  bottom: 30%;
+  width: 2px;
+  border-radius: 2px;
+  background: rgba(255, 255, 255, 0.55);
+}
+.ve-handle-start {
+  left: 0;
+}
+.ve-handle-start::after {
+  left: 4px;
+}
+.ve-handle-end {
+  right: 0;
+}
+.ve-handle-end::after {
+  right: 4px;
+}
+
+.ve-playhead {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  left: 118px;
+  width: 2px;
+  margin-left: -1px;
+  background: #f87171;
+  pointer-events: none;
+  z-index: 4;
+}
+
+.ve-track-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  align-items: center;
+}
+.ve-recording {
+  font-size: 0.75rem;
+  color: #fca5a5;
+  animation: ve-pulse 1.4s ease-in-out infinite;
+}
+@keyframes ve-pulse {
+  50% {
+    opacity: 0.5;
+  }
+}
+
+/* ---------- inspector ---------- */
+
+.ve-inspector {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  padding: 14px;
+  border: 1px solid var(--line);
+  border-radius: 14px;
+  background: rgba(255, 255, 255, 0.02);
+}
+.ve-inspector-head b {
+  display: block;
+  font-size: 0.92rem;
+}
+.ve-inspector-head small {
+  display: block;
+  margin-top: 3px;
+  color: var(--ink-faint);
+  font-size: 0.72rem;
+}
+.ve-inspector-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+.ve-inspector-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(210px, 1fr));
+  gap: 14px;
+}
+.ve-notice {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex-wrap: wrap;
+  padding: 10px 12px;
+  border: 1px solid rgba(248, 113, 113, 0.3);
+  border-radius: 12px;
+  background: rgba(248, 113, 113, 0.07);
+  font-size: 0.78rem;
+}
+.ve-renders h4 {
+  margin: 0 0 8px;
+  font-size: 0.72rem;
+  letter-spacing: 0.02em;
+  color: var(--ink-dim);
+  text-transform: uppercase;
+}
+.ve-render-row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex-wrap: wrap;
+  padding: 8px 0;
+  border-top: 1px solid var(--line-soft);
+  font-size: 0.8rem;
+}
+.ve-render-row small {
+  color: var(--ink-faint);
+  font-size: 0.7rem;
+  margin-right: auto;
+}
+
+/* ---------- overlay: media picker and export ---------- */
+
+.ve-modal {
+  position: fixed;
+  inset: 0;
+  z-index: 60;
+  display: grid;
+  place-items: center;
+  padding: 16px;
+  background: rgba(0, 0, 0, 0.66);
+  backdrop-filter: blur(4px);
+}
+.ve-modal-box {
+  width: min(680px, 100%);
+  max-height: min(86dvh, 780px);
+  display: flex;
+  flex-direction: column;
+  border: 1px solid var(--line);
+  border-radius: 18px;
+  background: #0a0a0c;
+  overflow: hidden;
+}
+.ve-modal-head {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 14px 16px;
+  border-bottom: 1px solid var(--line);
+}
+.ve-modal-head h3 {
+  margin: 0;
+  font-size: 0.98rem;
+}
+.ve-modal-close {
+  margin-left: auto;
+  width: 30px;
+  height: 30px;
+  font: inherit;
+  color: var(--ink-dim);
+  background: none;
+  border: none;
+  border-radius: 8px;
+  cursor: pointer;
+}
+.ve-modal-close:hover {
+  color: var(--ink);
+  background: rgba(255, 255, 255, 0.06);
+}
+.ve-modal-body {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  padding: 16px;
+  overflow-y: auto;
+}
+.ve-preview-media {
+  width: 100%;
+  border-radius: 12px;
+  background: #000;
+}
+
+.ve-picker-controls {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+.ve-picker-grid {
+  display: grid;
+  gap: 8px;
+}
+.ve-picker-card {
+  display: grid;
+  grid-template-columns: 76px 1fr;
+  align-items: center;
+  gap: 10px;
+  padding: 8px;
+  font: inherit;
+  text-align: left;
+  color: var(--ink);
+  background: rgba(255, 255, 255, 0.03);
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  cursor: pointer;
+}
+.ve-picker-card:hover {
+  border-color: var(--accent-line);
+  background: var(--accent-soft);
+}
+.ve-picker-poster {
+  width: 76px;
+  aspect-ratio: 16 / 9;
+  object-fit: cover;
+  border-radius: 6px;
+  background: #000;
+}
+.ve-picker-info {
+  min-width: 0;
+}
+.ve-picker-info b {
+  display: block;
+  font-size: 0.82rem;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.ve-picker-info small {
+  display: block;
+  margin-top: 2px;
+  color: var(--ink-faint);
+  font-size: 0.7rem;
+}
+
+/* ---------- phones and small tablets ---------- */
+
+@media (max-width: 700px) {
+  .ve-clip-card {
+    grid-template-columns: 72px 1fr;
+  }
+  .ve-poster {
+    width: 72px;
+  }
+  .ve-clip-actions {
+    grid-column: 1 / -1;
+    justify-content: flex-start;
+  }
+  .ve-surface {
+    padding-left: 92px;
+  }
+  .ve-lane-head {
+    left: -92px;
+    width: 92px;
+  }
+  .ve-playhead {
+    left: 92px;
+  }
+  .ve-canvas {
+    max-height: 34vh;
+  }
+  .ve-transport-tools {
+    margin-left: 0;
+    width: 100%;
+  }
+}

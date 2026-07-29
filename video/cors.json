@@ -1,0 +1,13 @@
+[
+  {
+    "origin": [
+      "https://secondbrainnotes.com",
+      "https://www.secondbrainnotes.com",
+      "https://second-brain-4077e.firebaseapp.com",
+      "http://localhost:4173"
+    ],
+    "method": ["GET", "HEAD"],
+    "responseHeader": ["Content-Type", "Content-Length", "Content-Range", "Accept-Ranges"],
+    "maxAgeSeconds": 3600
+  }
+]
