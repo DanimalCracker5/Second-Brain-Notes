@@ -110,11 +110,17 @@
   .note-paragraph-wrap.format-open .note-format{ opacity:1; visibility:visible; pointer-events:auto; transform:translateY(0); }
   .note-format button{ min-width:25px; height:24px; border:0; border-radius:6px; color:var(--ink-dim); background:transparent; cursor:pointer; font:700 .73rem "DM Sans",sans-serif; }
   .note-format button:hover{ color:var(--ink); background:var(--accent-soft); }
+  .note-block-actions{ position:absolute; z-index:6; display:flex; gap:3px; padding:3px; border:1px solid var(--line); border-radius:10px; background:rgba(13,13,17,.92); box-shadow:0 8px 22px rgba(0,0,0,.2); opacity:0; visibility:hidden; pointer-events:none; transform:translateY(4px); transition:opacity .15s,transform .15s,visibility .15s; }
+  .note-block-actions button{ width:24px; height:24px; display:grid; place-items:center; border:0; border-radius:6px; color:var(--ink-dim); background:transparent; cursor:pointer; }
+  .note-block-actions button svg{ width:14px; height:14px; } .note-block-actions button:hover{ color:var(--ink); background:var(--accent-soft); } .note-block-actions button.delete:hover{ color:#fca5a5; background:rgba(248,113,113,.12); } .note-block-actions button:disabled{ cursor:default; opacity:.3; }
+  .note-paragraph-actions{ right:34px; top:18px; } .note-heading-actions{ right:34px; top:0; }
+  .note-paragraph-wrap:hover .note-paragraph-actions,.note-paragraph-wrap:focus-within .note-paragraph-actions,.note-heading:hover .note-heading-actions,.note-heading:focus-within .note-heading-actions{ opacity:1; visibility:visible; pointer-events:auto; transform:translateY(0); }
+  .note-paragraph-wrap.format-open .note-paragraph-actions{ opacity:0; visibility:hidden; pointer-events:none; }
   .note-heading{ position:relative; display:flex; align-items:center; gap:8px; margin:18px 0 5px; }
-  .note-heading input{ flex:1; min-width:0; padding:1px 0; border:0; outline:none; color:var(--ink); background:transparent; font-family:inherit; font-weight:700; letter-spacing:-.025em; }
+  .note-heading input{ flex:1; min-width:0; padding:1px 0; border:0; outline:none; color:var(--ink); background:transparent; font-family:inherit; font-weight:700; letter-spacing:-.025em; transition:padding .14s; }
   .note-heading.h1 input{ font-size:1.75rem; } .note-heading.h2 input{ font-size:1.4rem; } .note-heading.h3 input{ font-size:1.12rem; }
-  .heading-size{ width:28px; height:28px; flex:none; border:1px solid var(--line); border-radius:8px; color:var(--ink-dim); background:rgba(255,255,255,.03); cursor:pointer; opacity:0; transition:.14s; }
-  .note-heading:focus-within .heading-size,.note-heading:hover .heading-size{ opacity:1; } .heading-size:hover{ color:var(--accent); border-color:var(--accent-line); }
+  .heading-size{ position:absolute; right:0; top:0; width:29px; height:29px; display:grid; place-items:center; border:1px solid var(--line); border-radius:9px; color:var(--ink-dim); background:rgba(13,13,17,.92); box-shadow:0 8px 22px rgba(0,0,0,.2); cursor:pointer; opacity:0; visibility:hidden; pointer-events:none; transform:translateY(4px); transition:opacity .15s,transform .15s,color .15s,border-color .15s,background .15s,visibility .15s; }
+  .heading-size svg{ width:14px; height:14px; } .note-heading:focus-within input,.note-heading:hover input{ padding-right:124px; } .note-heading:focus-within .heading-size,.note-heading:hover .heading-size{ opacity:1; visibility:visible; pointer-events:auto; transform:translateY(0); } .heading-size:hover{ color:var(--accent); border-color:var(--accent-line); background:var(--accent-soft); }
   .note-comment{ margin:10px 0; padding:12px 16px; border-top:1px solid var(--line-soft); border-bottom:1px solid var(--line-soft); color:var(--ink-dim); text-align:center; }
   .note-comment small{ display:block; margin-bottom:4px; color:var(--accent); font:500 .6rem "DM Mono",monospace; letter-spacing:.15em; }
   .note-comment textarea{ width:100%; min-height:34px; border:0; outline:none; resize:none; color:inherit; background:transparent; text-align:center; font:italic .94rem/1.55 "DM Sans",sans-serif; }
@@ -251,9 +257,15 @@
   .d-foot .sbtn{ flex:1; display:flex; align-items:center; justify-content:center; gap:7px; padding:9px; font-size:.8rem; font-weight:500; color:var(--ink-dim); background:rgba(255,255,255,.04); border:1px solid var(--line); border-radius:10px; cursor:pointer; }
   .d-foot .sbtn:hover{ color:var(--ink); background:rgba(255,255,255,.08); }
   .d-foot .sbtn svg{ width:15px; height:15px; }
-  .d-foot .who{ display:flex; align-items:center; gap:8px; flex:1; min-width:0; }
+  .d-foot .account-summary{ display:grid; gap:6px; flex:1; min-width:0; }
+  .d-foot .who{ display:flex; align-items:center; gap:8px; min-width:0; }
   .d-foot .who img{ width:26px; height:26px; border-radius:50%; flex:none; }
   .d-foot .who b{ font-size:.8rem; font-weight:600; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+  .storage-usage{ display:flex; align-items:center; gap:7px; min-width:0; min-height:28px; margin-left:34px; padding:5px 8px; border:1px solid var(--line); border-radius:8px; color:var(--ink-dim); background:rgba(255,255,255,.025); font-size:.65rem; line-height:1; white-space:nowrap; overflow:hidden; }
+  .storage-usage svg{ width:13px; height:13px; flex:none; color:var(--accent); }
+  .storage-usage span{ flex:none; color:var(--ink-faint); font:500 .57rem "DM Mono",monospace; letter-spacing:.09em; text-transform:uppercase; }
+  .storage-usage b{ min-width:0; overflow:hidden; text-overflow:ellipsis; color:var(--ink); font:600 .69rem "DM Sans",sans-serif; }
+  .storage-usage.calculating b,.storage-usage.unavailable b{ color:var(--ink-dim); font-weight:500; }
 
   /* ---------- floating menu ---------- */
   .menu{ position:fixed; z-index:70; background:#0b0b0f; border:1px solid var(--line); border-radius:12px; padding:6px; box-shadow:0 18px 55px rgba(0,0,0,.7); min-width:200px; max-width:270px; }
@@ -632,6 +644,7 @@
 
   var ICON_SCRIPT='<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><rect x="4" y="4" width="16" height="5" rx="1.5"/><rect x="4" y="12" width="16" height="8" rx="1.5"/></svg>';
   var ICON_NOTE='<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M5 3h9l5 5v13a1 1 0 0 1-1 1H5a1 1 0 0 1-1-1V4a1 1 0 0 1 1-1z"/><path d="M14 3v5h5"/></svg>';
+  var ICON_EDIT='<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 20h9"/><path d="M16.5 3.5a2.12 2.12 0 0 1 3 3L7 19l-4 1 1-4Z"/></svg>';
   var ICON_TODO='<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="4" y="4" width="16" height="16" rx="3"/><path d="M8 12l2.5 2.5L16 9"/></svg>';
   var ICON_AGENT='<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="8" r="3.5"/><path d="M5 21c.8-4 3.2-6 7-6s6.2 2 7 6"/><path d="M19 5v4M17 7h4"/></svg>';
   var ICON_FOLDER='<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M3 7a2 2 0 0 1 2-2h4l2 2h8a2 2 0 0 1 2 2v8a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/></svg>';
@@ -979,7 +992,7 @@
     syncNoteBody(note); note.updated=Date.now(); persist(); refreshNoteEditor(note);
     if(!deleteFile) return;
     removeAttachmentFile(note.id,attachment.id);
-    if(storage&&attachment.storagePath) storage.ref(attachment.storagePath).delete().catch(function(error){ console.warn("Cloud attachment cleanup skipped:",error); });
+    if(storage&&attachment.storagePath) storage.ref(attachment.storagePath).delete().catch(function(error){ console.warn("Cloud attachment cleanup skipped:",error); }).then(function(){ scheduleAccountUsageRefresh(0); });
     showToast("Attachment removed");
   }
   function moveAttachmentBlock(note,blockId,targetIndex){
@@ -987,6 +1000,25 @@
     if(from<0) return;
     var block=note.blocks.splice(from,1)[0]; if(from<targetIndex) targetIndex--;
     note.blocks.splice(Math.max(0,Math.min(targetIndex,note.blocks.length)),0,block); note.updated=Date.now(); persist(); refreshNoteEditor(note);
+  }
+  function refreshNoteBlocks(note){ syncNoteBody(note); note.updated=Date.now(); updateMeta(); refreshListMeta(); persist(); refreshNoteEditor(note); }
+  function moveNoteBlock(note,block,direction){
+    var from=note.blocks.findIndex(function(item){ return item.id===block.id; }), target=from+direction;
+    if(from<0||target<0||target>=note.blocks.length) return;
+    note.blocks.splice(from,1); note.blocks.splice(target,0,block); activeNoteTextBlock=null; refreshNoteBlocks(note); focusNoteBlock(block);
+  }
+  function deleteNoteBlock(note,block){
+    var index=note.blocks.findIndex(function(item){ return item.id===block.id; });
+    if(index<0) return;
+    note.blocks.splice(index,1); if(!note.blocks.length) note.blocks.push(textBlock("")); activeNoteTextBlock=null; refreshNoteBlocks(note); showToast("Block deleted");
+  }
+  function buildNoteBlockActions(note,block,className){
+    var index=note.blocks.findIndex(function(item){ return item.id===block.id; }), actions=document.createElement("div"); actions.className="note-block-actions "+className;
+    function actionButton(icon,label,disabled,handler,kind){ var button=document.createElement("button"); button.type="button"; button.innerHTML=icon; button.title=label; button.setAttribute("aria-label",label); button.disabled=disabled; if(kind) button.className=kind; button.onmousedown=function(event){ event.preventDefault(); }; button.onclick=function(){ if(!button.disabled) handler(); }; return button; }
+    actions.appendChild(actionButton('<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m7 14 5-5 5 5"/></svg>',"Move block up",index<=0,function(){ moveNoteBlock(note,block,-1); }));
+    actions.appendChild(actionButton('<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m7 10 5 5 5-5"/></svg>',"Move block down",index<0||index>=note.blocks.length-1,function(){ moveNoteBlock(note,block,1); }));
+    actions.appendChild(actionButton('<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 6h18"/><path d="M8 6V4h8v2"/><path d="M19 6l-1 14H6L5 6"/><path d="M10 11v5M14 11v5"/></svg>',"Delete block",false,function(){ deleteNoteBlock(note,block); },"delete"));
+    return actions;
   }
   function rememberNoteTextSelection(note,block,field){ activeNoteTextBlock={noteId:note.id,blockId:block.id,start:field.selectionStart||0,end:field.selectionEnd||0}; }
   function buildNoteDropTarget(note,index){
@@ -1051,7 +1083,7 @@
     var field=document.createElement("div"); field.className="note-paragraph"; field.contentEditable="true"; field.setAttribute("role","textbox"); field.setAttribute("aria-multiline","true"); field.setAttribute("data-note-block",block.id); field.setAttribute("data-placeholder","Start writing…"); field.innerHTML=block.html||"";
     function changed(){ block.html=sanitizeRichHtml(field.innerHTML); block.text=richTextToPlain(block.html); saveNoteBlockChange(note,block,false); rememberNoteTextSelection(note,block,field); }
     field.oninput=changed; field.onfocus=function(){ rememberNoteTextSelection(note,block,field); }; field.onkeyup=function(){ rememberNoteTextSelection(note,block,field); }; field.onmouseup=function(){ rememberNoteTextSelection(note,block,field); };
-    var formatTrigger=document.createElement("button"); formatTrigger.type="button"; formatTrigger.className="note-format-trigger"; formatTrigger.title="Show text formatting"; formatTrigger.setAttribute("aria-label","Show text formatting"); formatTrigger.setAttribute("aria-expanded","false"); formatTrigger.innerHTML='<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 20h9"/><path d="M16.5 3.5a2.12 2.12 0 0 1 3 3L7 19l-4 1 1-4Z"/></svg>';
+    var formatTrigger=document.createElement("button"); formatTrigger.type="button"; formatTrigger.className="note-format-trigger"; formatTrigger.title="Show text formatting"; formatTrigger.setAttribute("aria-label","Show text formatting"); formatTrigger.setAttribute("aria-expanded","false"); formatTrigger.innerHTML=ICON_EDIT;
     function setFormatOpen(open){ wrap.classList.toggle("format-open",open); formatTrigger.title=open?"Hide text formatting":"Show text formatting"; formatTrigger.setAttribute("aria-label",formatTrigger.title); formatTrigger.setAttribute("aria-expanded",open?"true":"false"); }
     formatTrigger.onmousedown=function(event){ event.preventDefault(); };
     formatTrigger.onclick=function(){ setFormatOpen(!wrap.classList.contains("format-open")); field.focus(); };
@@ -1072,17 +1104,17 @@
       toolbar.appendChild(button);
     });
     wrap.addEventListener("focusout",function(){ setTimeout(function(){ if(!wrap.contains(document.activeElement)) setFormatOpen(false); },0); });
-    wrap.appendChild(formatTrigger); wrap.appendChild(toolbar); wrap.appendChild(field); return wrap;
+    wrap.appendChild(formatTrigger); wrap.appendChild(toolbar); wrap.appendChild(buildNoteBlockActions(note,block,"note-paragraph-actions")); wrap.appendChild(field); return wrap;
   }
   function buildNoteHeading(note,block){
     var wrap=document.createElement("div"); wrap.className="note-heading h"+(block.level||2);
     var input=document.createElement("input"); input.type="text"; input.value=block.text||""; input.placeholder="Heading"; input.setAttribute("data-note-block",block.id); input.oninput=function(){ block.text=input.value; saveNoteBlockChange(note,block,false); };
-    var size=document.createElement("button"); size.type="button"; size.className="heading-size"; size.textContent="✎"; size.title="Change heading size"; size.setAttribute("aria-label","Change heading size");
+    var size=document.createElement("button"); size.type="button"; size.className="heading-size"; size.innerHTML=ICON_EDIT; size.title="Change heading size"; size.setAttribute("aria-label","Change heading size");
     size.onclick=function(){ openMenu(size,function(menu){
       var title=document.createElement("div"); title.className="mtitle"; title.textContent="Heading size"; menu.appendChild(title);
       [[1,"Large"],[2,"Medium"],[3,"Small"]].forEach(function(option){ menu.appendChild(mkItem("<span style=\"font-weight:700\">H"+option[0]+"</span>",option[1],block.level===option[0],function(){ block.level=option[0]; note.updated=Date.now(); closeMenu(); persist(); refreshNoteEditor(note); focusNoteBlock(block); })); });
     }); };
-    wrap.appendChild(input); wrap.appendChild(size); return wrap;
+    wrap.appendChild(input); wrap.appendChild(buildNoteBlockActions(note,block,"note-heading-actions")); wrap.appendChild(size); return wrap;
   }
   function buildNoteComment(note,block){
     var wrap=document.createElement("div"); wrap.className="note-comment"; var label=document.createElement("small"); label.textContent="COMMENT"; var field=document.createElement("textarea"); field.rows=1; field.value=block.text||""; field.placeholder="[A note to yourself]"; field.setAttribute("data-note-block",block.id);
@@ -1472,7 +1504,95 @@
 
   /* =================== Firebase (configured in astral.config.js) =================== */
   var auth=null, db=null, storage=null, currentUser=null, cloudTimer=null, fbReady=false, apiSettingsUnsubscribe=null;
+  var accountUsage={status:"idle",totalBytes:0,fileBytes:0,accountBytes:0,backupBytes:0}, accountUsageTimer=null, accountUsageRequest=0, accountUsageUnsubscribers=[];
   var PROMPT_KEY="second-brain-login-prompt-dismissed";
+  function utf8Bytes(value){
+    var text=String(value==null?"":value);
+    if(typeof TextEncoder!=="undefined") return new TextEncoder().encode(text).length;
+    return unescape(encodeURIComponent(text)).length;
+  }
+  function firestoreStringBytes(value){ return utf8Bytes(value)+1; }
+  function firestoreMapBytes(value){
+    if(!value||typeof value!=="object") return 0;
+    return Object.keys(value).reduce(function(total,key){ return total+firestoreStringBytes(key)+firestoreValueBytes(value[key]); },0);
+  }
+  function firestoreValueBytes(value){
+    if(value===null||typeof value==="undefined") return 1;
+    if(typeof value==="string") return firestoreStringBytes(value);
+    if(typeof value==="boolean") return 1;
+    if(typeof value==="number") return 8;
+    if(value instanceof Date) return 8;
+    if(typeof Uint8Array!=="undefined"&&value instanceof Uint8Array) return value.byteLength;
+    if(value&&typeof value.toUint8Array==="function") return value.toUint8Array().byteLength;
+    if(value&&typeof value.seconds==="number"&&typeof value.nanoseconds==="number") return 8;
+    if(value&&typeof value.latitude==="number"&&typeof value.longitude==="number") return 16;
+    if(Array.isArray(value)) return value.reduce(function(total,item){ return total+firestoreValueBytes(item); },0);
+    if(value&&typeof value==="object") return firestoreMapBytes(value);
+    return firestoreStringBytes(value);
+  }
+  function firestoreDocumentBytes(path,data){
+    var nameBytes=(path||[]).reduce(function(total,segment){ return total+firestoreStringBytes(segment); },16);
+    return nameBytes+firestoreMapBytes(data||{})+32;
+  }
+  function collectLinkedCloudFiles(data,userId){
+    var seen={}, paths=[], prefix="users/"+userId+"/";
+    (data&&data.items||[]).forEach(function(note){
+      (note&&note.attachments||[]).forEach(function(attachment){
+        var path=attachment&&attachment.storagePath;
+        if(path&&path.indexOf(prefix)===0&&!seen[path]){ seen[path]=true; paths.push(path); }
+      });
+    });
+    return Promise.all(paths.map(function(path){
+      return storage.ref(path).getMetadata().then(function(metadata){ return Number(metadata.size)||0; }).catch(function(error){
+        if(error&&error.code==="storage/object-not-found") return 0;
+        throw error;
+      });
+    })).then(function(sizes){ return sizes.reduce(function(total,size){ return total+size; },0); });
+  }
+  function accountUsageTitle(usage){
+    if(usage.status!=="ready") return usage.status==="error"?"Storage could not be calculated right now.":"Calculating storage across notes, backups, and files.";
+    return "Account storage across everything saved in Second Brain.\nNote attachments: "+fileSize(usage.fileBytes)+"\nNotes and account data: "+fileSize(usage.accountBytes)+"\nCloud backups: "+fileSize(usage.backupBytes);
+  }
+  function setAccountUsage(next){ accountUsage=next; if(currentUser) renderFoot(); }
+  function stopAccountUsageTracking(){
+    clearTimeout(accountUsageTimer); accountUsageTimer=null; accountUsageRequest++;
+    accountUsageUnsubscribers.forEach(function(unsubscribe){ try{ unsubscribe(); }catch(e){} });
+    accountUsageUnsubscribers=[];
+    accountUsage={status:"idle",totalBytes:0,fileBytes:0,accountBytes:0,backupBytes:0};
+  }
+  function refreshAccountUsage(){
+    if(!currentUser||!db||!storage) return;
+    var userId=currentUser.uid, request=++accountUsageRequest;
+    if(accountUsage.status!=="ready") setAccountUsage({status:"loading",totalBytes:0,fileBytes:0,accountBytes:0,backupBytes:0});
+    var userRef=db.collection("users").doc(userId), backupRef=userRef.collection("backups");
+    Promise.all([userRef.get(),backupRef.get()]).then(function(results){
+      if(request!==accountUsageRequest||!currentUser||currentUser.uid!==userId) return;
+      var userDoc=results[0], backupDocs=results[1].docs||[], userData=userDoc.exists?userDoc.data():{};
+      return collectLinkedCloudFiles(userData,userId).then(function(fileBytes){
+        if(request!==accountUsageRequest||!currentUser||currentUser.uid!==userId) return;
+        var accountBytes=userDoc.exists?firestoreDocumentBytes(["users",userId],userData):0;
+        var backupBytes=backupDocs.reduce(function(total,doc){ return total+firestoreDocumentBytes(["users",userId,"backups",doc.id],doc.data()); },0);
+        setAccountUsage({status:"ready",totalBytes:fileBytes+accountBytes+backupBytes,fileBytes:fileBytes,accountBytes:accountBytes,backupBytes:backupBytes});
+      });
+    }).catch(function(error){
+      if(request!==accountUsageRequest||!currentUser||currentUser.uid!==userId) return;
+      console.warn("Storage usage could not be calculated:",error);
+      setAccountUsage({status:"error",totalBytes:0,fileBytes:0,accountBytes:0,backupBytes:0});
+    });
+  }
+  function scheduleAccountUsageRefresh(delay){
+    if(!currentUser||!db||!storage) return;
+    clearTimeout(accountUsageTimer);
+    accountUsageTimer=setTimeout(refreshAccountUsage,typeof delay==="number"?delay:450);
+  }
+  function startAccountUsageTracking(){
+    stopAccountUsageTracking();
+    if(!currentUser||!db||!storage) return;
+    var userId=currentUser.uid, userRef=db.collection("users").doc(userId);
+    accountUsageUnsubscribers.push(userRef.onSnapshot(function(){ scheduleAccountUsageRefresh(250); },function(error){ console.warn("Storage usage updates are unavailable:",error); }));
+    accountUsageUnsubscribers.push(userRef.collection("backups").onSnapshot(function(){ scheduleAccountUsageRefresh(250); },function(error){ console.warn("Backup storage usage updates are unavailable:",error); }));
+    scheduleAccountUsageRefresh(0);
+  }
   function hideLoginPrompt(){ var p=$("loginPrompt"); if(p) p.classList.remove("show"); }
   function showLoginPrompt(){
     var dismissed=false;
@@ -1566,8 +1686,8 @@
       auth.onAuthStateChanged(function(u){
         currentUser=u;
         renderFoot();
-        if(u){ hideLoginPrompt(); startApiSettingsSync(); loadCloud(); }
-        else { stopApiSettingsSync(); resetApiSettings(); showLoginPrompt(); }
+        if(u){ hideLoginPrompt(); startApiSettingsSync(); startAccountUsageTracking(); loadCloud(); }
+        else { stopAccountUsageTracking(); stopApiSettingsSync(); resetApiSettings(); showLoginPrompt(); }
       });
     }catch(e){ console.warn("Firebase init failed:",e); fbReady=false; showToast("Firebase config could not be loaded",true); }
     renderFoot();
@@ -1728,7 +1848,7 @@
     db.collection("users").doc(currentUser.uid).set({ items:state.items, folders:state.folders, tags:state.tags, preferences:{theme:state.theme,motion:state.motion,darkness:state.darkness,enabledTypes:state.enabledTypes,noteInsertOptions:state.noteInsertOptions}, theme:state.theme, motion:state.motion, updated:sentAt },{merge:true}).then(function(){
       state.lastCloudSync=sentAt;
       if((state.lastLocalChange||0)<=sentAt){ state.pendingCloudSync=false; if(canPersist){ try{ localStorage.setItem(KEY,JSON.stringify(state)); }catch(e){} } }
-      setSaveState("Saved to cloud","cloud"); maybeCloudBackup();
+      setSaveState("Saved to cloud","cloud"); maybeCloudBackup(); scheduleAccountUsageRefresh(0);
     }).catch(function(e){ console.warn(e); setSaveState("Cloud sync failed — recovery copy kept","bad"); });
   }
   window.addEventListener("beforeunload",saveCloudNow);
@@ -1737,10 +1857,16 @@
   function renderFoot(){
     dfoot.innerHTML="";
     if(currentUser){
+      var summary=document.createElement("div"); summary.className="account-summary";
       var who=document.createElement("div"); who.className="who";
       who.innerHTML=(currentUser.photoURL?'<img src="'+currentUser.photoURL+'" alt="">':'')+'<b></b>';
       who.querySelector("b").textContent=currentUser.displayName||currentUser.email||"Signed in";
-      dfoot.appendChild(who);
+      summary.appendChild(who);
+      var usage=document.createElement("div"); usage.className="storage-usage "+(accountUsage.status==="ready"?"":accountUsage.status==="error"?"unavailable":"calculating"); usage.title=accountUsageTitle(accountUsage); usage.setAttribute("aria-live","polite");
+      usage.innerHTML='<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><ellipse cx="12" cy="5" rx="7" ry="3"/><path d="M5 5v7c0 1.7 3.1 3 7 3s7-1.3 7-3V5"/><path d="M5 12v7c0 1.7 3.1 3 7 3s7-1.3 7-3v-7"/></svg>';
+      var label=document.createElement("span"); label.textContent="Storage";
+      var value=document.createElement("b"); value.textContent=accountUsage.status==="ready"?fileSize(accountUsage.totalBytes):accountUsage.status==="error"?"Couldn’t calculate yet":"Calculating your total…";
+      usage.appendChild(label); usage.appendChild(value); summary.appendChild(usage); dfoot.appendChild(summary);
     } else {
       var s=document.createElement("button"); s.className="sbtn"; s.style.flex="1";
       s.innerHTML='<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M15 3h4a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2h-4"/><path d="M10 17l5-5-5-5M15 12H3"/></svg><span>'+(fbReady?"Sign in":"Sync unavailable")+'</span>';
