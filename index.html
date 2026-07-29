@@ -98,29 +98,30 @@
   .note-editor-tools{ display:flex; justify-content:flex-end; margin:-7px 0 6px; }
   .attachment-add{ flex:none; border:1px solid var(--line); border-radius:999px; padding:7px 11px; color:var(--ink-dim); background:rgba(255,255,255,.035); cursor:pointer; font:600 .75rem "DM Sans",sans-serif; transition:.15s; }
   .attachment-add:hover{ color:var(--accent); border-color:var(--accent-line); background:var(--accent-soft); }
-  .note-paragraph-wrap{ position:relative; padding-bottom:2px; }
+  .note-paragraph-wrap{ position:relative; padding-bottom:2px; transition:padding-bottom .15s; }
   .note-paragraph{ min-height:88px; outline:none; color:var(--ink); font-size:1.08rem; line-height:1.72; padding:2px 0; white-space:pre-wrap; }
   .note-paragraph:empty::before{ content:attr(data-placeholder); color:var(--ink-faint); pointer-events:none; }
   .note-paragraph b,.note-paragraph strong{ font-weight:700; } .note-paragraph i,.note-paragraph em{ font-style:italic; } .note-paragraph u{ text-decoration-color:var(--accent); text-underline-offset:3px; }
-  .note-format-trigger{ position:absolute; z-index:5; right:0; top:18px; width:29px; height:29px; display:grid; place-items:center; border:1px solid var(--line); border-radius:9px; color:var(--ink-dim); background:rgba(13,13,17,.92); box-shadow:0 8px 22px rgba(0,0,0,.2); cursor:pointer; opacity:0; visibility:hidden; pointer-events:none; transform:translateY(4px); transition:opacity .15s,transform .15s,color .15s,border-color .15s,background .15s,visibility .15s; }
+  .note-format-trigger{ position:absolute; z-index:5; right:0; bottom:5px; width:29px; height:29px; display:grid; place-items:center; border:1px solid var(--line); border-radius:9px; color:var(--ink-dim); background:rgba(13,13,17,.92); box-shadow:0 8px 22px rgba(0,0,0,.2); cursor:pointer; opacity:0; visibility:hidden; pointer-events:none; transform:translateY(4px); transition:opacity .15s,transform .15s,color .15s,border-color .15s,background .15s,visibility .15s; }
   .note-format-trigger svg{ width:14px; height:14px; }
   .note-paragraph-wrap:hover .note-format-trigger,.note-paragraph-wrap:focus-within .note-format-trigger,.note-paragraph-wrap.format-open .note-format-trigger{ opacity:1; visibility:visible; pointer-events:auto; transform:translateY(0); }
   .note-format-trigger:hover,.note-paragraph-wrap.format-open .note-format-trigger{ color:var(--accent); border-color:var(--accent-line); background:var(--accent-soft); }
-  .note-format{ position:absolute; z-index:4; right:34px; top:18px; display:flex; gap:3px; padding:4px; border:1px solid var(--line); border-radius:10px; background:rgba(13,13,17,.92); box-shadow:0 12px 30px rgba(0,0,0,.28); opacity:0; visibility:hidden; pointer-events:none; transform:translateY(4px); transition:opacity .15s,transform .15s,visibility .15s; }
+  .note-format{ position:absolute; z-index:4; right:34px; bottom:5px; display:flex; gap:3px; padding:4px; border:1px solid var(--line); border-radius:10px; background:rgba(13,13,17,.92); box-shadow:0 12px 30px rgba(0,0,0,.28); opacity:0; visibility:hidden; pointer-events:none; transform:translateY(4px); transition:opacity .15s,transform .15s,visibility .15s; }
   .note-paragraph-wrap.format-open .note-format{ opacity:1; visibility:visible; pointer-events:auto; transform:translateY(0); }
   .note-format button{ min-width:25px; height:24px; border:0; border-radius:6px; color:var(--ink-dim); background:transparent; cursor:pointer; font:700 .73rem "DM Sans",sans-serif; }
   .note-format button:hover{ color:var(--ink); background:var(--accent-soft); }
   .note-block-actions{ position:absolute; z-index:6; display:flex; gap:3px; padding:3px; border:1px solid var(--line); border-radius:10px; background:rgba(13,13,17,.92); box-shadow:0 8px 22px rgba(0,0,0,.2); opacity:0; visibility:hidden; pointer-events:none; transform:translateY(4px); transition:opacity .15s,transform .15s,visibility .15s; }
   .note-block-actions button{ width:24px; height:24px; display:grid; place-items:center; border:0; border-radius:6px; color:var(--ink-dim); background:transparent; cursor:pointer; }
   .note-block-actions button svg{ width:14px; height:14px; } .note-block-actions button:hover{ color:var(--ink); background:var(--accent-soft); } .note-block-actions button.delete:hover{ color:#fca5a5; background:rgba(248,113,113,.12); } .note-block-actions button:disabled{ cursor:default; opacity:.3; }
-  .note-paragraph-actions{ right:34px; top:18px; } .note-heading-actions{ right:34px; top:0; }
+  .note-paragraph-actions{ right:34px; bottom:5px; } .note-heading-actions{ right:34px; bottom:5px; }
   .note-paragraph-wrap:hover .note-paragraph-actions,.note-paragraph-wrap:focus-within .note-paragraph-actions,.note-heading:hover .note-heading-actions,.note-heading:focus-within .note-heading-actions{ opacity:1; visibility:visible; pointer-events:auto; transform:translateY(0); }
+  .note-paragraph-wrap:hover,.note-paragraph-wrap:focus-within,.note-heading:hover,.note-heading:focus-within{ padding-bottom:39px; }
   .note-paragraph-wrap.format-open .note-paragraph-actions{ opacity:0; visibility:hidden; pointer-events:none; }
-  .note-heading{ position:relative; display:flex; align-items:center; gap:8px; margin:18px 0 5px; }
+  .note-heading{ position:relative; display:flex; align-items:center; gap:8px; margin:18px 0 5px; padding-bottom:2px; transition:padding-bottom .15s; }
   .note-heading input{ flex:1; min-width:0; padding:1px 0; border:0; outline:none; color:var(--ink); background:transparent; font-family:inherit; font-weight:700; letter-spacing:-.025em; transition:padding .14s; }
   .note-heading.h1 input{ font-size:1.75rem; } .note-heading.h2 input{ font-size:1.4rem; } .note-heading.h3 input{ font-size:1.12rem; }
-  .heading-size{ position:absolute; right:0; top:0; width:29px; height:29px; display:grid; place-items:center; border:1px solid var(--line); border-radius:9px; color:var(--ink-dim); background:rgba(13,13,17,.92); box-shadow:0 8px 22px rgba(0,0,0,.2); cursor:pointer; opacity:0; visibility:hidden; pointer-events:none; transform:translateY(4px); transition:opacity .15s,transform .15s,color .15s,border-color .15s,background .15s,visibility .15s; }
-  .heading-size svg{ width:14px; height:14px; } .note-heading:focus-within input,.note-heading:hover input{ padding-right:124px; } .note-heading:focus-within .heading-size,.note-heading:hover .heading-size{ opacity:1; visibility:visible; pointer-events:auto; transform:translateY(0); } .heading-size:hover{ color:var(--accent); border-color:var(--accent-line); background:var(--accent-soft); }
+  .heading-size{ position:absolute; right:0; bottom:5px; width:29px; height:29px; display:grid; place-items:center; border:1px solid var(--line); border-radius:9px; color:var(--ink-dim); background:rgba(13,13,17,.92); box-shadow:0 8px 22px rgba(0,0,0,.2); cursor:pointer; opacity:0; visibility:hidden; pointer-events:none; transform:translateY(4px); transition:opacity .15s,transform .15s,color .15s,border-color .15s,background .15s,visibility .15s; }
+  .heading-size svg{ width:14px; height:14px; } .note-heading:focus-within .heading-size,.note-heading:hover .heading-size{ opacity:1; visibility:visible; pointer-events:auto; transform:translateY(0); } .heading-size:hover{ color:var(--accent); border-color:var(--accent-line); background:var(--accent-soft); }
   .note-comment{ margin:10px 0; padding:12px 16px; border-top:1px solid var(--line-soft); border-bottom:1px solid var(--line-soft); color:var(--ink-dim); text-align:center; }
   .note-comment small{ display:block; margin-bottom:4px; color:var(--accent); font:500 .6rem "DM Mono",monospace; letter-spacing:.15em; }
   .note-comment textarea{ width:100%; min-height:34px; border:0; outline:none; resize:none; color:inherit; background:transparent; text-align:center; font:italic .94rem/1.55 "DM Sans",sans-serif; }
@@ -1545,13 +1546,30 @@
     return Promise.all(paths.map(function(path){
       return storage.ref(path).getMetadata().then(function(metadata){ return Number(metadata.size)||0; }).catch(function(error){
         if(error&&error.code==="storage/object-not-found") return 0;
-        throw error;
+        /* The attachment record preserves the original uploaded byte count.
+           Use it if metadata is briefly unavailable instead of losing the whole meter. */
+        var note=(data&&data.items||[]).find(function(item){ return (item.attachments||[]).some(function(attachment){ return attachment.storagePath===path; }); });
+        var attachment=note&&(note.attachments||[]).find(function(item){ return item.storagePath===path; });
+        console.warn("Attachment metadata unavailable; using its saved size:",error);
+        return Number(attachment&&attachment.size)||0;
       });
     })).then(function(sizes){ return sizes.reduce(function(total,size){ return total+size; },0); });
   }
   function accountUsageTitle(usage){
     if(usage.status!=="ready") return usage.status==="error"?"Storage could not be calculated right now.":"Calculating storage across notes, backups, and files.";
-    return "Account storage across everything saved in Second Brain.\nNote attachments: "+fileSize(usage.fileBytes)+"\nNotes and account data: "+fileSize(usage.accountBytes)+"\nCloud backups: "+fileSize(usage.backupBytes);
+    var source=usage.source==="device"?"Storage currently saved on this device. Cloud totals will replace it automatically when reconnected.":"Account storage across everything saved in Second Brain.";
+    return source+"\nNote attachments: "+fileSize(usage.fileBytes)+"\nNotes and account data: "+fileSize(usage.accountBytes)+"\nBackups: "+fileSize(usage.backupBytes);
+  }
+  function localUsageFallback(userId){
+    var data={items:state.items||[],folders:state.folders||[],tags:state.tags||[],preferences:{theme:state.theme,motion:state.motion,darkness:state.darkness,enabledTypes:state.enabledTypes,noteInsertOptions:state.noteInsertOptions},theme:state.theme,motion:state.motion,updated:state.lastLocalChange||Date.now()};
+    var seen={}, fileBytes=0;
+    data.items.forEach(function(note){ (note.attachments||[]).forEach(function(attachment){
+      var key=attachment.storagePath||note.id+":"+attachment.id;
+      if(!seen[key]){ seen[key]=true; fileBytes+=Number(attachment.size)||0; }
+    }); });
+    var accountBytes=firestoreDocumentBytes(["users",userId],data);
+    var backupBytes=(deviceBackups||[]).reduce(function(total,entry,index){ return total+firestoreDocumentBytes(["users",userId,"device-backups",(entry.day||"backup")+"-"+index],entry.data||{}); },0);
+    return {status:"ready",source:"device",totalBytes:fileBytes+accountBytes+backupBytes,fileBytes:fileBytes,accountBytes:accountBytes,backupBytes:backupBytes};
   }
   function setAccountUsage(next){ accountUsage=next; if(currentUser) renderFoot(); }
   function stopAccountUsageTracking(){
@@ -1572,12 +1590,13 @@
         if(request!==accountUsageRequest||!currentUser||currentUser.uid!==userId) return;
         var accountBytes=userDoc.exists?firestoreDocumentBytes(["users",userId],userData):0;
         var backupBytes=backupDocs.reduce(function(total,doc){ return total+firestoreDocumentBytes(["users",userId,"backups",doc.id],doc.data()); },0);
-        setAccountUsage({status:"ready",totalBytes:fileBytes+accountBytes+backupBytes,fileBytes:fileBytes,accountBytes:accountBytes,backupBytes:backupBytes});
+        setAccountUsage({status:"ready",source:"cloud",totalBytes:fileBytes+accountBytes+backupBytes,fileBytes:fileBytes,accountBytes:accountBytes,backupBytes:backupBytes});
       });
     }).catch(function(error){
       if(request!==accountUsageRequest||!currentUser||currentUser.uid!==userId) return;
-      console.warn("Storage usage could not be calculated:",error);
-      setAccountUsage({status:"error",totalBytes:0,fileBytes:0,accountBytes:0,backupBytes:0});
+      console.warn("Cloud storage usage could not be read; using this device's stored total:",error);
+      setAccountUsage(localUsageFallback(userId));
+      scheduleAccountUsageRefresh(4000);
     });
   }
   function scheduleAccountUsageRefresh(delay){
