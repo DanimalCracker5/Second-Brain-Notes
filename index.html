@@ -1737,8 +1737,8 @@
   };
   scrim.onclick=function(){ setOverlaySidebarOpen(false); };
 
-  /* On touch devices, reveal the mobile drawer from the screen edge and dismiss it with a left swipe. */
-  var sidebarSwipeStart=null, SIDEBAR_SWIPE_EDGE=32, SIDEBAR_SWIPE_DISTANCE=56;
+  /* On touch devices, swipe horizontally anywhere to reveal or dismiss the mobile drawer. */
+  var sidebarSwipeStart=null, SIDEBAR_SWIPE_DISTANCE=56;
   document.addEventListener("touchstart",function(e){
     if(!usesOverlaySidebar()||e.touches.length!==1){ sidebarSwipeStart=null; return; }
     var touch=e.touches[0], target=e.target;
@@ -1749,7 +1749,7 @@
     if(!sidebarSwipeStart||!usesOverlaySidebar()||e.changedTouches.length!==1){ sidebarSwipeStart=null; return; }
     var touch=e.changedTouches[0], dx=touch.clientX-sidebarSwipeStart.x, dy=touch.clientY-sidebarSwipeStart.y;
     var isHorizontal=Math.abs(dx)>=SIDEBAR_SWIPE_DISTANCE&&Math.abs(dx)>Math.abs(dy)*1.25;
-    if(isHorizontal&&!sidebarSwipeStart.wasOpen&&sidebarSwipeStart.x<=SIDEBAR_SWIPE_EDGE&&dx>0) setOverlaySidebarOpen(true);
+    if(isHorizontal&&!sidebarSwipeStart.wasOpen&&dx>0) setOverlaySidebarOpen(true);
     else if(isHorizontal&&sidebarSwipeStart.wasOpen&&dx<0) setOverlaySidebarOpen(false);
     sidebarSwipeStart=null;
   },{passive:true});
