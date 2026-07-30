@@ -12,6 +12,25 @@ service cloud.firestore {
       }
     }
 
+    // A share is a deliberately limited, read-only snapshot of one note or
+    // script. It is addressed by its unguessable document ID, not listable,
+    // and only its original owner can change or remove it.
+    match /shared/{shareId} {
+      allow get: if true;
+      allow create: if request.auth != null
+                    && request.resource.data.ownerId == request.auth.uid
+                    && request.resource.data.shareId == shareId
+                    && request.resource.data.type in ['note', 'script'];
+      allow update: if request.auth != null
+                    && resource.data.ownerId == request.auth.uid
+                    && request.resource.data.ownerId == resource.data.ownerId
+                    && request.resource.data.shareId == resource.data.shareId
+                    && request.resource.data.type == resource.data.type
+                    && request.resource.data.createdAt == resource.data.createdAt;
+      allow delete: if request.auth != null
+                    && resource.data.ownerId == request.auth.uid;
+    }
+
     match /{document=**} {
       allow read, write: if false;
     }

@@ -5,7 +5,7 @@ as the Pages source; `index.html` is the app and keeps the public URL clean.
 
 1. Create a new GitHub repository. For a free GitHub account, make it public.
 2. Upload the contents of this project, keeping the folders intact:
-   `index.html`, `astral.config.js`, `backups/`, `firebase.json`, `firestore.rules`, and
+   `index.html`, `shared.html`, `astral.config.js`, `backups/`, `firebase.json`, `firestore.rules`, and
    `Start Second Brain.cmd`.
 3. Open the repository on GitHub and choose **Settings → Pages**.
 4. Under **Build and deployment**, choose **Deploy from a branch**.
@@ -29,6 +29,9 @@ after pulling changes that touch `firestore.rules` or `storage.rules`. Deploy
 only the service whose rules changed:
 
 ```powershell
+# For public view-only sharing or the cloud-storage meter change:
+firebase deploy --project second-brain-4077e --only firestore:rules
+
 # For the cloud-storage meter change:
 firebase deploy --project second-brain-4077e --only storage
 
@@ -40,3 +43,12 @@ The Storage rules let signed-in users sync and enumerate attachments only
 within their own account path. Enumeration lets the in-app storage meter count
 the files actually retained in Cloud Storage, including any orphaned files that
 still consume storage. Device-only attachments still work without signing in.
+
+## Public view-only links
+
+The **Share** button on a note or video script creates a link to `shared.html`.
+Anyone with that link can view the published snapshot without signing in, but
+cannot list shared documents, edit them, or access the author's private notes.
+Changes made after publishing are refreshed the next time the note syncs; use
+**Public link → Stop public sharing** to revoke a link. Deploy the Firestore
+rules above before using this feature.
