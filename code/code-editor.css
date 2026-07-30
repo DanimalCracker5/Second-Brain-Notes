@@ -1,0 +1,305 @@
+/*
+  Second Brain — code/code-editor.css
+
+  Styles for the Code item type. Every selector is prefixed .ce- (editor
+  chrome) or .ct- (syntax tokens) so nothing collides with the core CSS.
+
+  The syntax palette is derived from the active theme's accent colour with
+  CSS relative color syntax: each token type is the accent hue rotated by a
+  fixed amount, so switching themes re-tints the whole editor — and the
+  Rainbow theme's slow hue drift carries the code with it. Browsers without
+  relative color support fall back to the static palette declared first.
+*/
+
+.ce-editor {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+
+  /* static fallback palette (roughly matches the default Nebula accent) */
+  --ce-kw: #c792ea;
+  --ce-str: #9ce08d;
+  --ce-num: #f7a56c;
+  --ce-fn: #82aaff;
+  --ce-typ: #ffcb6b;
+  --ce-attr: #f0d197;
+  --ce-tag: #f07178;
+  --ce-blt: #89ddff;
+  --ce-op: #a4a8c9;
+  --ce-cmt: var(--ink-faint);
+  --ce-pct: var(--ink-dim);
+}
+
+@supports (color: hsl(from white h s l)) {
+  .ce-editor {
+    --ce-kw: hsl(from var(--accent) h s l);
+    --ce-fn: hsl(from var(--accent) calc(h + 42) calc(s * 0.9) 72%);
+    --ce-attr: hsl(from var(--accent) calc(h + 68) calc(s * 0.8) 74%);
+    --ce-str: hsl(from var(--accent) calc(h + 108) calc(s * 0.72) 70%);
+    --ce-typ: hsl(from var(--accent) calc(h + 165) calc(s * 0.7) 72%);
+    --ce-blt: hsl(from var(--accent) calc(h - 115) calc(s * 0.7) 74%);
+    --ce-num: hsl(from var(--accent) calc(h - 72) calc(s * 0.85) 72%);
+    --ce-tag: hsl(from var(--accent) calc(h - 32) calc(s * 0.9) 74%);
+    --ce-op: hsl(from var(--accent) h calc(s * 0.35) 68%);
+  }
+}
+
+/* ---------- toolbar ---------- */
+
+.ce-toolbar {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+
+.ce-langs {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  flex: 1;
+  min-width: 0;
+  overflow-x: auto;
+  scrollbar-width: none;
+  padding: 2px;
+  margin: -2px;
+}
+.ce-langs::-webkit-scrollbar { display: none; }
+
+.ce-pill {
+  flex: none;
+  font: 600 0.76rem "DM Sans", sans-serif;
+  color: var(--ink-dim);
+  background: rgba(255, 255, 255, 0.04);
+  border: 1px solid var(--line);
+  border-radius: 999px;
+  padding: 6px 12px;
+  cursor: pointer;
+  white-space: nowrap;
+  transition: color 0.15s, background 0.15s, border-color 0.15s, box-shadow 0.15s;
+}
+.ce-pill:hover { color: var(--ink); background: rgba(255, 255, 255, 0.08); }
+.ce-pill.active {
+  color: var(--accent);
+  background: var(--accent-soft);
+  border-color: var(--accent-line);
+  box-shadow: 0 0 14px -6px var(--accent);
+}
+
+.ce-actions {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  flex: none;
+  margin-left: auto;
+}
+
+.ce-btn {
+  font: 600 0.76rem "DM Sans", sans-serif;
+  color: var(--ink-dim);
+  background: rgba(255, 255, 255, 0.04);
+  border: 1px solid var(--line);
+  border-radius: 9px;
+  padding: 6px 12px;
+  cursor: pointer;
+  white-space: nowrap;
+  transition: color 0.15s, background 0.15s, border-color 0.15s;
+}
+.ce-btn:hover { color: var(--ink); background: rgba(255, 255, 255, 0.08); border-color: var(--accent-line); }
+.ce-btn-primary {
+  color: #08080a;
+  background: var(--accent);
+  border-color: transparent;
+}
+.ce-btn-primary:hover { color: #08080a; background: var(--accent); filter: brightness(1.08); }
+
+/* ---------- editor frame ---------- */
+
+.ce-frame {
+  display: flex;
+  position: relative;
+  height: 440px;
+  min-height: 200px;
+  max-height: 80vh;
+  overflow: hidden;
+  resize: vertical;
+  background: rgba(9, 9, 13, 0.62);
+  border: 1px solid var(--line);
+  border-radius: 16px;
+  box-shadow: 0 24px 60px -46px var(--accent);
+  transition: border-color 0.18s, box-shadow 0.18s;
+}
+.ce-frame:focus-within {
+  border-color: var(--accent-line);
+  box-shadow: 0 24px 70px -42px var(--accent);
+}
+
+.ce-gutter {
+  flex: none;
+  overflow: hidden;
+  padding: 14px 0;
+  min-width: 46px;
+  text-align: right;
+  background: rgba(255, 255, 255, 0.025);
+  border-right: 1px solid var(--line-soft);
+  user-select: none;
+}
+.ce-gutter-inner { will-change: transform; }
+.ce-ln {
+  display: block;
+  padding: 0 12px 0 10px;
+  font: 400 0.82rem/1.6 "DM Mono", monospace;
+  color: var(--ink-faint);
+  transition: color 0.12s;
+}
+.ce-ln.active { color: var(--accent); }
+
+.ce-stage { position: relative; flex: 1; min-width: 0; }
+
+.ce-highlight,
+.ce-input {
+  position: absolute;
+  inset: 0;
+  margin: 0;
+  border: 0;
+  padding: 14px 16px;
+  font: 400 0.82rem/1.6 "DM Mono", monospace;
+  letter-spacing: 0;
+  tab-size: 2;
+  white-space: pre;
+  overflow-wrap: normal;
+  word-break: normal;
+}
+
+.ce-highlight {
+  overflow: hidden;
+  color: var(--ink);
+  pointer-events: none;
+}
+.ce-highlight code { font: inherit; display: block; min-height: 100%; }
+
+.ce-input {
+  width: 100%;
+  height: 100%;
+  overflow: auto;
+  resize: none;
+  outline: none;
+  background: transparent;
+  color: transparent;
+  caret-color: var(--accent);
+}
+.ce-input::placeholder { color: var(--ink-faint); }
+.ce-input::selection { background: var(--accent-soft); }
+.ce-input::-webkit-scrollbar { width: 10px; height: 10px; }
+.ce-input::-webkit-scrollbar-thumb { background: rgba(255, 255, 255, 0.12); border-radius: 999px; background-clip: padding-box; border: 2px solid transparent; }
+.ce-input::-webkit-scrollbar-corner { background: transparent; }
+
+/* ---------- syntax tokens ---------- */
+
+.ct-kw { color: var(--ce-kw); }
+.ct-str { color: var(--ce-str); }
+.ct-num { color: var(--ce-num); }
+.ct-fn { color: var(--ce-fn); }
+.ct-typ { color: var(--ce-typ); }
+.ct-attr { color: var(--ce-attr); }
+.ct-tag { color: var(--ce-tag); }
+.ct-blt { color: var(--ce-blt); }
+.ct-op { color: var(--ce-op); }
+.ct-pct { color: var(--ce-pct); }
+.ct-cmt { color: var(--ce-cmt); font-style: italic; }
+
+/* ---------- status bar ---------- */
+
+.ce-status {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  padding: 0 4px;
+  font: 400 0.68rem "DM Mono", monospace;
+  color: var(--ink-faint);
+}
+.ce-status-lang { color: var(--accent); }
+.ce-status span:last-child { margin-left: auto; }
+
+/* ---------- run / preview output ---------- */
+
+.ce-output {
+  border: 1px solid var(--line);
+  border-radius: 14px;
+  background: rgba(9, 9, 13, 0.62);
+  overflow: hidden;
+}
+
+.ce-output-head {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 12px;
+  border-bottom: 1px solid var(--line-soft);
+}
+.ce-output-head b {
+  font: 600 0.72rem "DM Sans", sans-serif;
+  color: var(--ink-dim);
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+.ce-output-head b::before {
+  content: "";
+  display: inline-block;
+  width: 7px;
+  height: 7px;
+  margin-right: 8px;
+  border-radius: 50%;
+  background: var(--accent);
+  box-shadow: 0 0 8px var(--accent);
+  vertical-align: 1px;
+}
+.ce-output-spacer { flex: 1; }
+
+.ce-mini {
+  font: 600 0.68rem "DM Sans", sans-serif;
+  color: var(--ink-dim);
+  background: none;
+  border: 1px solid var(--line);
+  border-radius: 7px;
+  padding: 4px 9px;
+  cursor: pointer;
+  transition: color 0.15s, border-color 0.15s;
+}
+.ce-mini:hover { color: var(--ink); border-color: var(--accent-line); }
+
+.ce-output-body {
+  max-height: 320px;
+  overflow: auto;
+  padding: 10px 14px;
+  display: grid;
+  gap: 2px;
+}
+
+.ce-line {
+  font: 400 0.78rem/1.55 "DM Mono", monospace;
+  color: var(--ink);
+  white-space: pre-wrap;
+  word-break: break-word;
+}
+.ce-line-warn { color: #fbd38d; }
+.ce-line-error { color: #fca5a5; }
+.ce-line-done { color: var(--ink-faint); font-style: italic; }
+
+.ce-runner { width: 0; height: 0; border: 0; position: absolute; visibility: hidden; }
+
+.ce-preview {
+  width: 100%;
+  height: 300px;
+  border: 0;
+  border-radius: 8px;
+  background: #fff;
+}
+
+/* ---------- small screens ---------- */
+
+@media (max-width: 720px) {
+  .ce-frame { height: 340px; }
+  .ce-actions { margin-left: 0; }
+  .ce-highlight, .ce-input, .ce-ln { font-size: 0.78rem; }
+}

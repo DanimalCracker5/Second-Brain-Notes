@@ -58,7 +58,7 @@
     (data.blocks||[]).forEach(function(block){
       if(!block||!block.type) return;
       if(block.type==="text"){ var paragraph=document.createElement("div"); paragraph.className="note-text"; appendRichText(paragraph,block.html,block.text); body.appendChild(paragraph); return; }
-      if(block.type==="heading"){ var level=Math.max(1,Math.min(3,Number(block.level)||2)), heading=document.createElement("h"+level+">"); heading.className="note-heading h"+level; heading.textContent=text(block.text); body.appendChild(heading); return; }
+      if(block.type==="heading"){ var level=Math.max(1,Math.min(3,Number(block.level)||2)), heading=document.createElement("h"+level); heading.className="note-heading h"+level; heading.textContent=text(block.text); body.appendChild(heading); return; }
       if(block.type==="comment"||block.type==="prompt"){ var callout=document.createElement("aside"), label=document.createElement("b"); callout.className=block.type; label.textContent=block.type==="prompt"?"Prompt":"Note"; callout.appendChild(label); callout.appendChild(document.createTextNode(text(block.text))); body.appendChild(callout); return; }
       if(block.type==="group"){ var group=document.createElement("details"), summary=document.createElement("summary"), groupBody=document.createElement("div"); group.className="group"; group.open=true; summary.textContent=text(block.title)||"Untitled group"; groupBody.className="group-body"; groupBody.textContent=text(block.text); group.appendChild(summary); group.appendChild(groupBody); body.appendChild(group); return; }
       if(block.type==="attachment"){ body.appendChild(attachmentView(files[block.attachmentId])); }

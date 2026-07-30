@@ -20,6 +20,8 @@
 
 <!-- Video editor feature. Self-contained in video/ — see video/README.md. -->
 <link rel="stylesheet" href="./video/video-editor.css">
+<!-- Code editor feature. Self-contained in code/ — see code/README.md. -->
+<link rel="stylesheet" href="./code/code-editor.css">
 
 <style>
   :root{
@@ -648,6 +650,12 @@
 <script src="./video/player.js"></script>
 <script src="./video/editor.js"></script>
 
+<!--
+  Code editor feature. Attaches to window.SecondBrainCode and runs nothing
+  until the app below calls SecondBrainCode.install().
+-->
+<script src="./code/code-editor.js"></script>
+
 <script>
 (function(){
   "use strict";
@@ -870,6 +878,9 @@
   try{
     if(window.SecondBrainVideo&&typeof window.SecondBrainVideo.install==="function") registerItemTypes(window.SecondBrainVideo.install(moduleHost()));
   }catch(e){ console.warn("Video editor could not be loaded:",e); }
+  try{
+    if(window.SecondBrainCode&&typeof window.SecondBrainCode.install==="function") registerItemTypes(window.SecondBrainCode.install(moduleHost()));
+  }catch(e){ console.warn("Code editor could not be loaded:",e); }
 
   var state=loadLocal();
   if(!state||!state.items){ state={ items:[], folders:[], tags:[], currentId:null, motion:true, theme:"nebula", filterFolder:null, filterTag:null }; state.items.push(newNoteItem()); state.currentId=state.items[0].id; }
@@ -2132,7 +2143,8 @@
     var it=current(); if(!it) return;
     var node=listNodeFor(it.id); if(!node) return;
     var m=node.querySelector(".dt-meta .m");
-    if(m) m.textContent=it.type==="script"?((it.sections||[]).filter(function(s){return s.kind!=="cue";}).length+" ch · "+itemWords(it)+" words"):(it.type==="todo"?((it.todos||[]).filter(function(x){return !x.done;}).length+" left"):(it.type==="audio"?audioMetaText(it):(it.type==="agent"?agentMetaText(it):itemWords(it)+" words")));
+    var mod=itemModule(it);
+    if(m) m.textContent=mod&&mod.meta?mod.meta(it):(it.type==="script"?((it.sections||[]).filter(function(s){return s.kind!=="cue";}).length+" ch · "+itemWords(it)+" words"):(it.type==="todo"?((it.todos||[]).filter(function(x){return !x.done;}).length+" left"):(it.type==="audio"?audioMetaText(it):(it.type==="agent"?agentMetaText(it):itemWords(it)+" words"))));
   }
 
   function buildAssign(it){
