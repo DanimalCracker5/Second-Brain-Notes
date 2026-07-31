@@ -65,6 +65,7 @@
   .icon:hover{ color:var(--ink); background:rgba(255,255,255,.05); } .icon svg{ width:20px; height:20px; }
   .icon.hide-wide{ display:grid; }
   .spacer{ flex:1; }
+  .bar-actions{ display:flex; align-items:center; justify-content:flex-end; gap:6px; min-width:0; }
   .copy-all{ display:inline-flex; align-items:center; gap:8px; flex:none; white-space:nowrap; font-weight:600; font-size:.9rem; color:#08080a; background:var(--accent); cursor:pointer; border:none; border-radius:999px; padding:9px 16px; transition:transform .06s, filter .15s; }
   .copy-all:hover{ filter:brightness(1.08); } .copy-all:active{ transform:scale(.97); } .copy-all svg{ width:16px; height:16px; }
   .copy-all.done{ background:#34d399; color:#04120c; }
@@ -72,6 +73,11 @@
   .save-state.saving{ color:var(--accent); }
   .save-state.cloud{ color:#6ee7b7; }
   .save-state.bad{ color:#f87171; }
+
+  .title-tools{ display:flex; align-items:center; gap:10px; margin:4px 0 0; }
+  .title-tools .title{ flex:1; min-width:0; }
+  .ai-title{ flex:none; display:inline-flex; align-items:center; gap:6px; margin-top:5px; padding:8px 10px; border:1px solid var(--accent-line); border-radius:10px; color:var(--accent); background:var(--accent-soft); cursor:pointer; font:600 .72rem "DM Sans",sans-serif; white-space:nowrap; }
+  .ai-title:hover{ filter:brightness(1.1); } .ai-title:disabled{ cursor:wait; opacity:.7; }
 
   /* ---------- canvas ---------- */
   .canvas{ flex:1; overflow-y:auto; -webkit-overflow-scrolling:touch; min-height:0; padding:0 26px calc(120px + var(--safe-b)); }
@@ -118,8 +124,8 @@
   .note-block-actions{ position:absolute; z-index:6; display:flex; gap:3px; padding:3px; border:1px solid var(--line); border-radius:10px; background:rgba(13,13,17,.92); box-shadow:0 8px 22px rgba(0,0,0,.2); opacity:0; visibility:hidden; pointer-events:none; transform:translateY(4px); transition:opacity .15s,transform .15s,visibility .15s; }
   .note-block-actions button{ width:24px; height:24px; display:grid; place-items:center; border:0; border-radius:6px; color:var(--ink-dim); background:transparent; cursor:pointer; }
   .note-block-actions button svg{ width:14px; height:14px; } .note-block-actions button:hover{ color:var(--ink); background:var(--accent-soft); } .note-block-actions button.delete:hover{ color:#fca5a5; background:rgba(248,113,113,.12); } .note-block-actions button:disabled{ cursor:default; opacity:.3; }
-  .note-paragraph-actions{ right:34px; bottom:5px; } .note-heading-actions{ right:34px; bottom:5px; }
-  .note-paragraph-wrap:hover .note-paragraph-actions,.note-paragraph-wrap:focus-within .note-paragraph-actions,.note-heading:hover .note-heading-actions,.note-heading:focus-within .note-heading-actions{ opacity:1; visibility:visible; pointer-events:auto; transform:translateY(0); }
+  .note-paragraph-actions{ right:34px; bottom:5px; } .note-heading-actions{ right:34px; bottom:5px; } .note-chapter-actions{ right:0; bottom:5px; }
+  .note-paragraph-wrap:hover .note-paragraph-actions,.note-paragraph-wrap:focus-within .note-paragraph-actions,.note-heading:hover .note-heading-actions,.note-heading:focus-within .note-heading-actions,.note-chapter:hover .note-chapter-actions,.note-chapter:focus-within .note-chapter-actions{ opacity:1; visibility:visible; pointer-events:auto; transform:translateY(0); }
   .note-paragraph-wrap:hover,.note-paragraph-wrap:focus-within,.note-heading:hover,.note-heading:focus-within{ padding-bottom:39px; }
   .note-paragraph-wrap.format-open .note-paragraph-actions{ opacity:0; visibility:hidden; pointer-events:none; }
   .note-heading{ position:relative; display:flex; align-items:center; gap:8px; margin:18px 0 5px; padding-bottom:2px; transition:padding-bottom .15s; }
@@ -138,6 +144,19 @@
   .note-group summary::before{ content:"›"; color:var(--accent); font-size:1.2rem; transition:transform .16s; } .note-group[open] summary::before{ transform:rotate(90deg); }
   .note-group summary input{ flex:1; min-width:0; border:0; outline:none; color:inherit; background:transparent; font:inherit; font-weight:inherit; }
   .note-group-body{ min-height:74px; padding:2px 13px 14px 34px; outline:none; color:var(--ink-dim); font-size:.94rem; line-height:1.65; white-space:pre-wrap; } .note-group-body:empty::before{ content:"Add group content…"; color:var(--ink-faint); }
+  .note-chapter{ position:relative; padding:4px 0 22px; border-bottom:1px solid var(--line-soft); margin-bottom:18px; }
+  .note-chapter:last-child{ border-bottom:none; }
+  .note-chapter-head{ display:flex; align-items:center; gap:9px; }
+  .note-chapter-index{ flex:none; color:var(--accent); font:500 .66rem "DM Mono",monospace; }
+  .note-chapter-title{ flex:1; min-width:0; border:0; outline:0; padding:3px 0; color:var(--ink); background:transparent; font:600 1.02rem "DM Sans",sans-serif; }
+  .note-chapter-title::placeholder{ color:var(--ink-faint); }
+  .note-chapter-listen{ flex:none; display:inline-flex; align-items:center; gap:5px; padding:6px 9px; border:1px solid var(--accent-line); border-radius:8px; color:var(--accent); background:var(--accent-soft); cursor:pointer; font:600 .7rem "DM Sans",sans-serif; }
+  .note-chapter-listen.done{ color:#04120c; background:#34d399; border-color:#34d399; }
+  .note-chapter .note-paragraph-wrap{ margin:5px 0 0 25px; }
+  .note-chapter .note-paragraph{ min-height:64px; font-size:1rem; }
+  .note-code{ position:relative; margin:12px 0; padding-top:1px; }
+  .note-code .note-block-actions{ top:10px; right:9px; bottom:auto; }
+  .note-code:hover .note-block-actions,.note-code:focus-within .note-block-actions{ opacity:1; visibility:visible; pointer-events:auto; transform:translateY(0); }
   .note-drop{ height:10px; margin:0; border-radius:7px; transition:height .14s,background .14s,border-color .14s; }
   .note-editor.dragging .note-drop{ height:30px; border:1px dashed rgba(255,255,255,.14); }
   .note-editor.dragging .note-drop::after{ content:"Drop attachment here"; display:block; color:var(--ink-faint); font:500 .64rem "DM Mono",monospace; text-align:center; line-height:28px; opacity:0; transition:opacity .14s; }
@@ -147,6 +166,7 @@
   .note-attachment.dragging{ opacity:.42; } .note-attachment:active{ cursor:grabbing; }
   .attachment-grip{ position:absolute; z-index:2; top:9px; left:9px; padding:4px 6px; border-radius:7px; color:rgba(255,255,255,.68); background:rgba(10,10,14,.58); font:700 .72rem "DM Mono",monospace; letter-spacing:-.18em; pointer-events:none; }
   .note-attachment-image{ display:block; width:100%; max-height:70vh; min-height:112px; object-fit:contain; background:rgba(0,0,0,.28); }
+  .note-attachment-video{ display:block; width:100%; max-height:70vh; min-height:180px; background:#000; }
   .note-attachment-file{ display:flex; align-items:center; gap:10px; min-height:78px; padding:14px 64px 14px 14px; }
   .attachment-icon{ width:34px; height:34px; flex:none; display:grid; place-items:center; border-radius:9px; color:var(--accent); background:var(--accent-soft); font-size:.76rem; font-weight:700; }
   .attachment-info{ min-width:0; flex:1; display:grid; gap:3px; } .attachment-info b{ overflow:hidden; text-overflow:ellipsis; white-space:nowrap; font-size:.84rem; } .attachment-info small{ color:var(--ink-faint); font:400 .66rem "DM Mono",monospace; }
@@ -226,6 +246,8 @@
   .audio-record-button svg{ width:21px; height:21px; }
   .audio-recorder-copy{ min-width:0; display:grid; gap:3px; }
   .audio-recorder-copy b{ font-size:.92rem; } .audio-recorder-copy small{ color:var(--ink-faint); font:500 .7rem "DM Mono",monospace; }
+  .audio-upload{ flex:none; border:1px solid var(--line); border-radius:9px; padding:8px 10px; color:var(--ink-dim); background:rgba(255,255,255,.035); cursor:pointer; font:600 .7rem "DM Sans",sans-serif; }
+  .audio-upload:hover{ color:var(--accent); border-color:var(--accent-line); background:var(--accent-soft); }
   .audio-recording-indicator{ display:inline-flex; align-items:center; gap:6px; color:#fca5a5; font:700 .66rem "DM Mono",monospace; letter-spacing:.08em; text-transform:uppercase; }
   .audio-recording-indicator::before{ content:""; width:7px; height:7px; border-radius:50%; background:#ef4444; box-shadow:0 0 0 0 rgba(239,68,68,.55); animation:audioPulse 1.25s infinite; }
   @keyframes audioPulse{ 70%{ box-shadow:0 0 0 7px rgba(239,68,68,0); } 100%{ box-shadow:0 0 0 0 rgba(239,68,68,0); } }
@@ -243,7 +265,7 @@
   .audio-clip-actions button{ border:1px solid var(--line); border-radius:8px; padding:6px 8px; color:var(--ink-dim); background:rgba(255,255,255,.025); cursor:pointer; font:600 .68rem "DM Sans",sans-serif; }
   .audio-clip-actions button:hover{ color:var(--ink); background:var(--accent-soft); border-color:var(--accent-line); }
   .audio-clip-actions .audio-remove:hover{ color:#fca5a5; border-color:rgba(248,113,113,.32); background:rgba(248,113,113,.1); }
-  @media (max-width:560px){ .audio-recorder{ padding:13px; } .audio-clip{ grid-template-columns:minmax(0,1fr); } .audio-clip-actions{ grid-row:1; grid-column:1; justify-self:end; } }
+  @media (max-width:560px){ .audio-recorder{ padding:13px; flex-wrap:wrap; } .audio-upload{ margin-left:64px; } .audio-clip{ grid-template-columns:minmax(0,1fr); } .audio-clip-actions{ grid-row:1; grid-column:1; justify-self:end; } }
 
   /* ---------- drawer ---------- */
   .drawer{ background:#000; border-right:1px solid var(--line); display:flex; flex-direction:column; padding-top:var(--safe-t); padding-bottom:var(--safe-b); min-height:0; }
@@ -269,10 +291,14 @@
   .folder-row svg{ width:15px; height:15px; color:var(--ink-dim); flex:none; }
   .folder-row .fn{ flex:1; min-width:0; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
   .folder-row .fx{ width:24px; height:24px; display:grid; place-items:center; flex:none; opacity:0; border:none; border-radius:6px; background:none; color:var(--ink-faint); cursor:pointer; padding:0; }
+  .folder-row .fx.visibility{ opacity:.72; }
   .folder-row .fx svg{ width:14px; height:14px; color:currentColor; }
   .folder-row:hover .fx,.folder-row:focus-within .fx{ opacity:1; }
   .folder-row .fx.rename:hover{ color:var(--accent); background:var(--accent-soft); }
   .folder-row .fx.delete:hover{ color:#f87171; background:rgba(248,113,113,.12); }
+  .folder-row .fx.visibility:hover{ color:var(--accent); background:var(--accent-soft); }
+  .folder-row .folder-grip{ color:var(--ink-faint); font:700 .74rem "DM Mono",monospace; letter-spacing:-.18em; cursor:grab; user-select:none; opacity:.45; }
+  .folder-row.dragging{ opacity:.42; } .folder-row.drop-target{ outline:1px dashed var(--accent-line); background:var(--accent-soft); }
 
   #tags.is-collapsed{ display:none; }
 
@@ -566,9 +592,15 @@
     .g3{ width:78vw; height:42vh; top:38vh; left:12vw; }
   }
   @media (max-width: 560px){
-    .bar{ min-height:calc(var(--safe-t) + 64px); padding-left:14px; padding-right:14px; }
-    .bar .save-state{ position:absolute; width:1px; height:1px; margin:-1px; padding:0; overflow:hidden; clip:rect(0 0 0 0); clip-path:inset(50%); white-space:nowrap; }
-    .bar .copy-all{ gap:6px; padding-left:12px; padding-right:12px; }
+    .bar{ min-height:calc(var(--safe-t) + 64px); gap:4px; padding-left:10px; padding-right:10px; }
+    .bar-actions{ gap:4px; overflow-x:auto; scrollbar-width:none; }
+    .bar-actions::-webkit-scrollbar{ display:none; }
+    .bar .save-state{ flex:none; margin:0 2px 0 0; font-size:.57rem; }
+    .bar .copy-all{ gap:4px; padding:7px 9px; font-size:.72rem; }
+    .bar .copy-all svg{ width:13px; height:13px; }
+    .app.folder-focus .drawer{ width:100vw; max-width:none; }
+    .app.folder-focus .scrim{ display:none; }
+    .app.folder-focus .d-scroll{ padding-bottom:24px; }
     .modal-box{ padding:20px; }
     .themes{ grid-template-columns:1fr; }
   }
@@ -585,10 +617,10 @@
     <div class="d-head"><h2>Second Brain Notes</h2><small>by Astral Studios LLC</small></div>
     <button class="d-new" id="newBtn">＋  New</button>
     <div class="d-scroll">
-      <div class="sec-h"><span>Folders</span><button id="addFolderBtn" title="New folder">＋</button></div>
-      <div id="folders"></div>
       <div class="sec-h"><button class="section-toggle" id="tagsToggleBtn" type="button" aria-controls="tags" aria-expanded="true" title="Collapse tags"><span>Tags</span><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m6 9 6 6 6-6"/></svg></button><button id="addTagBtn" title="New tag">＋</button></div>
       <div id="tags"></div>
+      <div class="sec-h"><span>Folders</span><button id="addFolderBtn" title="New folder">＋</button></div>
+      <div id="folders"></div>
       <div class="sec-h"><span id="listLabel">All notes</span><div class="list-tools"><button id="listToolsBtn" title="Filter and sort" aria-label="Filter and sort notes">⇅</button></div></div>
       <div class="d-list" id="list"></div>
     </div>
@@ -600,10 +632,12 @@
       <button class="icon hide-wide" id="menuBtn" aria-label="Toggle sidebar"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><line x1="4" y1="7" x2="20" y2="7"/><line x1="4" y1="12" x2="20" y2="12"/><line x1="4" y1="17" x2="20" y2="17"/></svg></button>
       <div class="spacer"></div>
       <button class="icon" id="settingsBtn" aria-label="Settings"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.7 1.7 0 0 0 .3 1.9l.1.1a2 2 0 1 1-2.8 2.8l-.1-.1a1.7 1.7 0 0 0-1.9-.3 1.7 1.7 0 0 0-1 1.5v.2a2 2 0 1 1-4 0v-.1a1.7 1.7 0 0 0-1.1-1.5 1.7 1.7 0 0 0-1.9.3l-.1.1a2 2 0 1 1-2.8-2.8l.1-.1a1.7 1.7 0 0 0 .3-1.9 1.7 1.7 0 0 0-1.5-1H2a2 2 0 1 1 0-4h.1A1.7 1.7 0 0 0 3.7 9a1.7 1.7 0 0 0-.3-1.9l-.1-.1a2 2 0 1 1 2.8-2.8l.1.1a1.7 1.7 0 0 0 1.9.3H9a1.7 1.7 0 0 0 1-1.5V3a2 2 0 1 1 4 0v.1a1.7 1.7 0 0 0 1 1.5 1.7 1.7 0 0 0 1.9-.3l.1-.1a2 2 0 1 1 2.8 2.8l-.1.1a1.7 1.7 0 0 0-.3 1.9V9a1.7 1.7 0 0 0 1.5 1h.2a2 2 0 1 1 0 4h-.1a1.7 1.7 0 0 0-1.5 1z"/></svg></button>
-      <span class="save-state" id="saveState" role="status" aria-live="polite">Preparing cloud sync</span>
-      <button class="copy-all" id="ttsBtn" style="display:none"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M11 5 6 9H3v6h3l5 4z"/><path d="M15.5 8.5a5 5 0 0 1 0 7M18.5 5.5a9 9 0 0 1 0 13"/></svg><span id="ttsLabel">Listen</span></button>
-      <button class="copy-all" id="shareBtn" style="display:none" title="Share a view-only link"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="18" cy="5" r="3"/><circle cx="6" cy="12" r="3"/><circle cx="18" cy="19" r="3"/><path d="m8.6 10.5 6.8-4M8.6 13.5l6.8 4"/></svg><span id="shareLabel">Share</span></button>
-      <button class="copy-all" id="copyAll"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15V5a2 2 0 0 1 2-2h10"/></svg><span id="copyAllLabel">Copy all</span></button>
+      <div class="bar-actions">
+        <span class="save-state" id="saveState" role="status" aria-live="polite">Preparing cloud sync</span>
+        <button class="copy-all" id="ttsBtn" style="display:none"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M11 5 6 9H3v6h3l5 4z"/><path d="M15.5 8.5a5 5 0 0 1 0 7M18.5 5.5a9 9 0 0 1 0 13"/></svg><span id="ttsLabel">Listen</span></button>
+        <button class="copy-all" id="shareBtn" style="display:none" title="Share a view-only link"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="18" cy="5" r="3"/><circle cx="6" cy="12" r="3"/><circle cx="18" cy="19" r="3"/><path d="m8.6 10.5 6.8-4M8.6 13.5l6.8 4"/></svg><span id="shareLabel">Share</span></button>
+        <button class="copy-all" id="copyAll"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15V5a2 2 0 0 1 2-2h10"/></svg><span id="copyAllLabel">Copy all</span></button>
+      </div>
     </div>
     <div class="canvas" id="canvas"></div>
   </div>
@@ -710,7 +744,7 @@
   }
   function loadLocal(){ var v=readKey(KEY); if(v&&v.items) return v; if(!canPersist&&mem) return mem; return migrate(); }
   function setSaveState(label,kind){ var el=$("saveState"); if(!el) return; el.textContent=label; el.className="save-state"+(kind?" "+kind:""); }
-  function backupPayload(){ return { app:"second-brain", version:12, items:state.items, folders:state.folders, tags:state.tags, preferences:{theme:state.theme,motion:state.motion,darkness:state.darkness,enabledTypes:state.enabledTypes,noteInsertOptions:state.noteInsertOptions,tagsCollapsed:state.tagsCollapsed,allNotesName:state.allNotesName,agentSettings:agentSettings()}, created:Date.now() }; }
+  function backupPayload(){ return { app:"second-brain", version:13, items:state.items, folders:state.folders, tags:state.tags, preferences:{theme:state.theme,motion:state.motion,darkness:state.darkness,enabledTypes:state.enabledTypes,noteInsertOptions:state.noteInsertOptions,tagsCollapsed:state.tagsCollapsed,allNotesName:state.allNotesName,mobileFolderFocus:state.mobileFolderFocus,readChapterNames:state.readChapterNames,agentSettings:agentSettings()}, created:Date.now() }; }
   function autoBackups(){ return deviceBackups; }
   function captureAutoBackup(force,kind){
     var created=Date.now(), backupKind=kind||"automatic";
@@ -725,13 +759,14 @@
   function uid(){ return Date.now().toString(36)+Math.random().toString(36).slice(2,7); }
   function sec(t,b,kind){ return {id:uid(),title:t||"",body:b||"",kind:kind||"chapter"}; }
   function baseItem(){ return { id:uid(), title:"", folderId:(state&&state.filterFolder)||null, tagIds:(state&&state.filterTag)?[state.filterTag]:[], updated:Date.now() }; }
-  function newScriptItem(){ var it=baseItem(); it.type="script"; it.sections=[sec("Intro",""),sec("Main",""),sec("Outro","")]; return it; }
+  function chapterBlock(title,body){ var block={id:uid(),type:"chapter",title:title||"",text:body||""}; block.html=escapeHtml(block.text).replace(/\n/g,"<br>"); return block; }
+  function newYoutubeScriptNote(){ var it=newNoteItem(); it.template="youtube-script"; it.blocks=[chapterBlock("Intro",""),chapterBlock("Main",""),chapterBlock("Outro","")]; syncNoteBody(it); return it; }
   function newNoteItem(){ var it=baseItem(); it.type="note"; it.body=""; it.attachments=[]; it.blocks=[{id:uid(),type:"text",text:""}]; return it; }
-  function newTodoItem(){ var it=baseItem(); it.type="todo"; it.todos=[]; it.done=false; it.completed=null; return it; }
+  function newTodoItem(){ var it=newNoteItem(); it.todo=true; it.done=false; it.completed=null; return it; }
   function newAudioItem(){ var it=baseItem(); it.type="audio"; it.recordings=[]; return it; }
   function newTask(){ return {id:uid(),text:"",description:"",body:"",attachments:[],blocks:[textBlock("")],subtasks:[],done:false,completed:null,detailsCollapsed:true}; }
   function newAgentItem(){ var it=baseItem(); it.type="agent"; it.title="New Agent"; it.agent={tab:"chat"}; normalizeAgent(it); return it; }
-  var NOTE_INSERT_DEFAULTS={file:true,paragraph:true,comment:true,prompt:true,heading:true,group:true};
+  var NOTE_INSERT_DEFAULTS={file:true,paragraph:true,comment:true,prompt:true,heading:true,chapter:true,group:true,code:true,scriptTemplate:true};
   function textBlock(text){ return {id:uid(),type:"text",text:text||"",html:escapeHtml(text||"").replace(/\n/g,"<br>")}; }
   function richTextToPlain(html){ var box=document.createElement("div"); box.innerHTML=html||""; return (box.innerText||box.textContent||"").replace(/\u00a0/g," "); }
   function sanitizeRichHtml(html){
@@ -746,7 +781,8 @@
   function syncTextBlock(block){ block.html=sanitizeRichHtml(typeof block.html==="string"?block.html:escapeHtml(block.text||"").replace(/\n/g,"<br>")); block.text=richTextToPlain(block.html); }
   function blockPlainText(block){
     if(block.type==="text") return block.text||"";
-    if(block.type==="heading"||block.type==="comment"||block.type==="prompt") return block.text||"";
+    if(block.type==="heading"||block.type==="prompt"||block.type==="code") return block.type==="code"?(block.code||""):(block.text||"");
+    if(block.type==="chapter") return block.text||"";
     if(block.type==="group") return [block.title,block.text].filter(Boolean).join("\n");
     return "";
   }
@@ -759,14 +795,16 @@
       note.blocks=[textBlock(note.body||"")];
       note.attachments.forEach(function(attachment){ note.blocks.push({id:uid(),type:"attachment",attachmentId:attachment.id,width:100}); });
     } else {
-      note.blocks=note.blocks.filter(function(block){ return block&&["text","attachment","heading","comment","prompt","group"].indexOf(block.type)>=0&&(block.type!=="attachment"||block.attachmentId); });
+      note.blocks=note.blocks.filter(function(block){ return block&&["text","attachment","heading","comment","prompt","chapter","group","code"].indexOf(block.type)>=0&&(block.type!=="attachment"||block.attachmentId); });
       note.blocks.forEach(function(block){
         if(!block.id) block.id=uid();
         if(block.type==="text") syncTextBlock(block);
         if(block.type==="attachment"&&typeof block.width!=="number") block.width=100;
         if(block.type==="heading"){ if(typeof block.text!=="string") block.text=""; block.level=Math.max(1,Math.min(3,Number(block.level)||2)); }
+        if(block.type==="chapter"){ if(typeof block.title!=="string") block.title=""; if(typeof block.text!=="string") block.text=""; block.html=sanitizeRichHtml(typeof block.html==="string"?block.html:escapeHtml(block.text).replace(/\n/g,"<br>")); block.text=richTextToPlain(block.html); }
         if(block.type==="comment"||block.type==="prompt"){ if(typeof block.text!=="string") block.text=""; }
         if(block.type==="group"){ if(typeof block.title!=="string") block.title="Untitled group"; if(typeof block.text!=="string") block.text=""; if(typeof block.collapsed!=="boolean") block.collapsed=false; }
+        if(block.type==="code"){ if(typeof block.language!=="string") block.language="javascript"; if(typeof block.code!=="string") block.code=""; }
       });
       note.attachments.forEach(function(attachment){ if(!note.blocks.some(function(block){ return block.type==="attachment"&&block.attachmentId===attachment.id; })) note.blocks.push({id:uid(),type:"attachment",attachmentId:attachment.id,width:100}); });
       if(!note.blocks.some(function(block){ return block.type==="text"; })) note.blocks.unshift(textBlock(""));
@@ -794,16 +832,28 @@
       if(typeof recording.duration!=="number") recording.duration=0;
     });
   }
+  function migrateScriptToNote(it){
+    var sections=Array.isArray(it.sections)?it.sections:[];
+    it.type="note"; it.template="youtube-script"; it.attachments=Array.isArray(it.attachments)?it.attachments:[];
+    it.blocks=sections.map(function(section){ return section&&section.kind==="cue" ? {id:uid(),type:"comment",text:section.body||""} : chapterBlock(section&&section.title||"",section&&section.body||""); });
+    if(!it.blocks.length) it.blocks=[chapterBlock("Intro","")];
+    delete it.sections;
+  }
+  function migrateTodoToNote(it){
+    var todos=Array.isArray(it.todos)?it.todos:[], blocks=[];
+    todos.forEach(function(task){
+      if(task.text) blocks.push({id:uid(),type:"heading",text:task.text,level:3});
+      var detail=taskDetailsText(task); if(detail) blocks.push(textBlock(detail));
+      (task.subtasks||[]).forEach(function(subtask){ if(subtask.text) blocks.push(textBlock((subtask.done?"[x] ":"[ ] ")+subtask.text)); });
+    });
+    it.type="note"; it.todo=true; it.done=!!it.done; it.completed=it.completed||null; it.attachments=[]; it.blocks=blocks.length?blocks:[textBlock("")];
+    delete it.todos;
+  }
   function normalizeItem(it){
     if(!it||typeof it!=="object") return;
-    if(it.type==="note") ensureNoteBlocks(it);
-    if(it.type==="script") (it.sections||[]).forEach(function(section){ if(!section.kind) section.kind="chapter"; });
-    if(it.type==="todo"){
-      if(!Array.isArray(it.todos)) it.todos=[];
-      if(typeof it.done!=="boolean") it.done=false;
-      if(!it.completed) it.completed=null;
-      it.todos.forEach(ensureTodoTaskDetails);
-    }
+    if(it.type==="script") migrateScriptToNote(it);
+    if(it.type==="todo") migrateTodoToNote(it);
+    if(it.type==="note"){ ensureNoteBlocks(it); if(it.todo){ it.done=!!it.done; if(!it.done) it.completed=null; } }
     if(it.type==="audio") ensureAudioItem(it);
     if(it.type==="agent") normalizeAgent(it);
     if(it.collabChat!==undefined) it.collabChat=trimChatLog(it.collabChat);
@@ -890,16 +940,18 @@
   if(typeof state.darkness!=="number") state.darkness=82;
   state.darkness=Math.max(0,Math.min(100,state.darkness));
   state.enabledTypes=state.enabledTypes||{};
-  if(typeof state.enabledTypes.script!=="boolean") state.enabledTypes.script=true;
+  if(typeof state.enabledTypes.script!=="boolean") state.enabledTypes.script=false;
   if(typeof state.enabledTypes.note!=="boolean") state.enabledTypes.note=true;
   if(typeof state.enabledTypes.todo!=="boolean") state.enabledTypes.todo=true;
-  if(typeof state.enabledTypes.agent!=="boolean") state.enabledTypes.agent=true;
+  if(typeof state.enabledTypes.agent!=="boolean") state.enabledTypes.agent=false;
   if(typeof state.enabledTypes.audio!=="boolean") state.enabledTypes.audio=true;
-  typeModuleList().forEach(function(def){ if(typeof state.enabledTypes[def.type]!=="boolean") state.enabledTypes[def.type]=def.defaultEnabled!==false; });
+  typeModuleList().forEach(function(def){ if(typeof state.enabledTypes[def.type]!=="boolean") state.enabledTypes[def.type]=false; });
   state.noteInsertOptions=state.noteInsertOptions||{};
   Object.keys(NOTE_INSERT_DEFAULTS).forEach(function(type){ if(typeof state.noteInsertOptions[type]!=="boolean") state.noteInsertOptions[type]=NOTE_INSERT_DEFAULTS[type]; });
   if(typeof state.tagsCollapsed!=="boolean") state.tagsCollapsed=false;
   state.allNotesName=typeof state.allNotesName==="string"&&state.allNotesName.trim()?state.allNotesName.trim():"All notes";
+  if(typeof state.mobileFolderFocus!=="boolean") state.mobileFolderFocus=true;
+  if(typeof state.readChapterNames!=="boolean") state.readChapterNames=false;
   state.filterFolder=state.filterFolder||null; state.filterTag=state.filterTag||null;
   state.listSort=state.listSort||"updated";
   agentSettings();
@@ -911,9 +963,9 @@
   if(!state.currentId || !state.items.some(function(i){return i.id===state.currentId;})) state.currentId=state.items[0].id;
 
   function blankDeviceState(){
-    var enabledTypes={script:true,note:true,todo:true,audio:true,agent:true};
-    typeModuleList().forEach(function(def){ enabledTypes[def.type]=def.defaultEnabled!==false; });
-    return {items:[],folders:[],tags:[],currentId:null,motion:true,theme:"nebula",darkness:82,enabledTypes:enabledTypes,noteInsertOptions:{file:true,paragraph:true,comment:true,prompt:true,heading:true,group:true},tagsCollapsed:false,allNotesName:"All notes",filterFolder:null,filterTag:null,listSort:"updated",agentSettings:defaultAgentSettings(),pendingCloudSync:false,syncBaseline:null};
+    var enabledTypes={script:false,note:true,todo:true,audio:true,agent:false};
+    typeModuleList().forEach(function(def){ enabledTypes[def.type]=false; });
+    return {items:[],folders:[],tags:[],currentId:null,motion:true,theme:"nebula",darkness:82,enabledTypes:enabledTypes,noteInsertOptions:{file:true,paragraph:true,comment:true,prompt:true,heading:true,chapter:true,group:true,code:true,scriptTemplate:true},tagsCollapsed:false,allNotesName:"All notes",mobileFolderFocus:true,readChapterNames:false,filterFolder:null,filterTag:null,listSort:"updated",agentSettings:defaultAgentSettings(),pendingCloudSync:false,syncBaseline:null};
   }
   function clearAttachmentStore(){
     if(!window.indexedDB) return;
@@ -949,7 +1001,12 @@
   function allNotesTitle(){ return state.allNotesName||"All notes"; }
   function firstTagName(it){ var names=(it.tagIds||[]).map(function(id){ var t=tagById(id); return t?t.name.toLowerCase():""; }).filter(Boolean).sort(); return names[0]||"\uffff"; }
   function visibleItems(){
-    var items=state.items.filter(function(it){ if(state.filterFolder && it.folderId!==state.filterFolder) return false; if(state.filterTag && (it.tagIds||[]).indexOf(state.filterTag)<0) return false; return true; });
+    var items=state.items.filter(function(it){
+      if(state.filterFolder && it.folderId!==state.filterFolder) return false;
+      if(!state.filterFolder&&it.folderId&&((folderById(it.folderId)||{}).hiddenFromAll)) return false;
+      if(state.filterTag && (it.tagIds||[]).indexOf(state.filterTag)<0) return false;
+      return true;
+    });
     return items.sort(function(a,b){
       if(state.listSort==="manual") return (typeof a.manualOrder==="number"?a.manualOrder:state.items.indexOf(a))-(typeof b.manualOrder==="number"?b.manualOrder:state.items.indexOf(b));
       if(state.listSort==="title") return (a.title||"").localeCompare(b.title||"");
@@ -997,9 +1054,10 @@
   function audioDuration(it){ return (it&&it.recordings||[]).reduce(function(total,recording){ return total+(Number(recording.duration)||0); },0); }
   function formatAudioDuration(seconds){ seconds=Math.max(0,Math.round(Number(seconds)||0)); var minutes=Math.floor(seconds/60), remainder=seconds%60; return minutes+":"+(remainder<10?"0":"")+remainder; }
   function audioMetaText(it){ var count=(it.recordings||[]).length; return count?count+" recording"+(count===1?"":"s")+" · "+formatAudioDuration(audioDuration(it)):"No recordings"; }
+  function isTodoNote(it){ return !!(it&&it.type==="note"&&it.todo); }
   function itemText(it){ var mod=itemModule(it); if(mod&&mod.text) return mod.text(it); if(it.type==="script") return (it.sections||[]).map(function(x){return x.body;}).join(" "); if(it.type==="todo") return (it.todos||[]).map(function(task){ return [task.text,taskDetailsText(task),(task.subtasks||[]).map(function(subtask){ return subtask.text||""; }).join(" ")].filter(Boolean).join(" "); }).join(" "); if(it.type==="audio") return (it.recordings||[]).map(function(recording){ return recording.name||""; }).join(" "); if(it.type==="agent") return [it.title,(it.agent||{}).longTermMemory,(it.agent||{}).shortTermMemory,(it.agent||{}).instructions].join(" "); if(it.type==="note"&&Array.isArray(it.blocks)) return it.blocks.map(blockPlainText).filter(Boolean).join("\n"); return it.body||""; }
   function itemWords(it){ return words(itemText(it)); }
-  function itemLabel(it){ var mod=itemModule(it); if(mod&&mod.label) return mod.label; return it.type==="script"?"YouTube Script":(it.type==="todo"?"Todo":(it.type==="audio"?"Audio":(it.type==="agent"?"Agent":"Note"))); }
+  function itemLabel(it){ var mod=itemModule(it); if(mod&&mod.label) return mod.label; return isTodoNote(it)||it.type==="todo"?"Todo":(it.type==="script"?"YouTube Script":(it.type==="audio"?"Audio":(it.type==="agent"?"Agent":"Note"))); }
   function setTodoDone(it,done){
     it.done=typeof done==="boolean"?done:!it.done;
     it.completed=it.done?Date.now():null;
@@ -1019,8 +1077,10 @@
       if(!block||!block.type) return null;
       if(block.type==="text") return {id:block.id||uid(),type:"text",html:sanitizeRichHtml(block.html||escapeHtml(block.text||"").replace(/\n/g,"<br>")),text:richTextToPlain(block.html||block.text||"")};
       if(block.type==="heading") return {id:block.id||uid(),type:"heading",level:Math.max(1,Math.min(3,Number(block.level)||2)),text:block.text||""};
+      if(block.type==="chapter") return {id:block.id||uid(),type:"chapter",title:block.title||"",html:sanitizeRichHtml(block.html||escapeHtml(block.text||"").replace(/\n/g,"<br>")),text:block.text||""};
       if(block.type==="comment"||block.type==="prompt") return {id:block.id||uid(),type:block.type,text:block.text||""};
       if(block.type==="group") return {id:block.id||uid(),type:"group",title:block.title||"Untitled group",text:block.text||""};
+      if(block.type==="code") return {id:block.id||uid(),type:"code",language:block.language||"javascript",code:block.code||""};
       if(block.type==="attachment") return {id:block.id||uid(),type:"attachment",attachmentId:block.attachmentId||"",width:Math.max(20,Math.min(100,Number(block.width)||100))};
       return null;
     }).filter(Boolean);
@@ -1159,19 +1219,41 @@
       setTimeout(function(){ input.select(); },0);
     });
   }
+  var draggedFolderId=null;
+  function moveFolder(folderId,targetId){
+    if(!folderId||folderId===targetId) return;
+    var from=state.folders.findIndex(function(folder){ return folder.id===folderId; }), to=state.folders.findIndex(function(folder){ return folder.id===targetId; });
+    if(from<0||to<0) return;
+    var folder=state.folders.splice(from,1)[0];
+    if(from<to) to--;
+    state.folders.splice(to,0,folder); persist(); renderFolders();
+  }
+  function openFolder(folderId){
+    state.filterFolder=folderId||null;
+    var mobile=window.matchMedia&&window.matchMedia("(max-width: 560px)").matches;
+    if(mobile&&state.mobileFolderFocus){ app.classList.add("open"); app.classList.add("folder-focus"); }
+    else { app.classList.remove("folder-focus"); app.classList.remove("open"); }
+    persist(); renderAll();
+  }
   function renderFolders(){
     foldersEl.innerHTML="";
     var all=document.createElement("div"); all.className="folder-row"+(state.filterFolder===null?" active":"");
     all.innerHTML='<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><path d="M4 6h16M4 12h16M4 18h16"/></svg><span class="fn"></span><button class="fx rename" type="button" title="Rename All notes" aria-label="Rename All notes">'+ICON_EDIT+'</button>';
     all.querySelector(".fn").textContent=allNotesTitle();
-    all.onclick=function(e){ if(e.target.closest(".fx")) return; state.filterFolder=null; persist(); renderAll(); };
+    all.onclick=function(e){ if(e.target.closest(".fx")) return; openFolder(null); };
     all.querySelector(".rename").onclick=function(e){ e.stopPropagation(); openRenameFolder(e.currentTarget,null); };
     foldersEl.appendChild(all);
     state.folders.forEach(function(f){
-      var row=document.createElement("div"); row.className="folder-row"+(state.filterFolder===f.id?" active":"");
-      row.innerHTML=ICON_FOLDER+'<span class="fn"></span><button class="fx rename" type="button" title="Rename folder" aria-label="Rename folder">'+ICON_EDIT+'</button><button class="fx delete" type="button" title="Delete folder" aria-label="Delete folder">'+ICON_DELETE+'</button>';
+      var row=document.createElement("div"); row.className="folder-row"+(state.filterFolder===f.id?" active":""); row.draggable=true; row.setAttribute("data-folder-id",f.id);
+      row.innerHTML='<span class="folder-grip" title="Drag to reorder">⋮⋮</span>'+ICON_FOLDER+'<span class="fn"></span><button class="fx visibility" type="button" title="'+(f.hiddenFromAll?"Show in "+allNotesTitle():"Hide from "+allNotesTitle())+'" aria-label="'+(f.hiddenFromAll?"Show in "+allNotesTitle():"Hide from "+allNotesTitle())+'">'+(f.hiddenFromAll?'◉':'◌')+'</button><button class="fx rename" type="button" title="Rename folder" aria-label="Rename folder">'+ICON_EDIT+'</button><button class="fx delete" type="button" title="Delete folder" aria-label="Delete folder">'+ICON_DELETE+'</button>';
       row.querySelector(".fn").textContent=f.name;
-      row.onclick=function(e){ if(e.target.closest(".fx")) return; state.filterFolder=f.id; app.classList.remove("open"); persist(); renderAll(); };
+      row.onclick=function(e){ if(e.target.closest(".fx")) return; openFolder(f.id); };
+      row.ondragstart=function(event){ draggedFolderId=f.id; row.classList.add("dragging"); event.dataTransfer.effectAllowed="move"; event.dataTransfer.setData("text/plain",f.id); };
+      row.ondragover=function(event){ if(!draggedFolderId||draggedFolderId===f.id) return; event.preventDefault(); row.classList.add("drop-target"); };
+      row.ondragleave=function(){ row.classList.remove("drop-target"); };
+      row.ondrop=function(event){ event.preventDefault(); row.classList.remove("drop-target"); moveFolder(draggedFolderId,f.id); draggedFolderId=null; };
+      row.ondragend=function(){ draggedFolderId=null; row.classList.remove("dragging","drop-target"); };
+      row.querySelector(".visibility").onclick=function(e){ e.stopPropagation(); f.hiddenFromAll=!f.hiddenFromAll; persist(); renderAll(); showToast(f.hiddenFromAll?"Folder hidden from "+allNotesTitle():"Folder shown in "+allNotesTitle()); };
       row.querySelector(".rename").onclick=function(e){ e.stopPropagation(); openRenameFolder(e.currentTarget,f); };
       row.querySelector(".delete").onclick=function(e){ e.stopPropagation(); if(!confirm('Delete folder "'+f.name+'"? Notes inside are kept and moved to '+allNotesTitle()+'.')) return; state.items.forEach(function(it){ if(it.folderId===f.id) it.folderId=null; }); state.folders=state.folders.filter(function(x){ return x.id!==f.id; }); if(state.filterFolder===f.id) state.filterFolder=null; persist(); renderAll(); };
       foldersEl.appendChild(row);
@@ -1284,19 +1366,20 @@
     listEl.innerHTML="";
     if(!items.length){ var e=document.createElement("div"); e.className="tag-empty"; e.style.padding="10px 12px"; e.textContent="Nothing here yet."; listEl.appendChild(e); return; }
     items.forEach(function(it){
-      var el=document.createElement("div"); el.className="d-item"+(it.id===state.currentId?" active":"")+(it.type==="todo"&&it.done?" todo-done":"");
+      var todoItem=isTodoNote(it)||it.type==="todo";
+      var el=document.createElement("div"); el.className="d-item"+(it.id===state.currentId?" active":"")+(todoItem&&it.done?" todo-done":"");
       el.setAttribute("data-item-id",it.id);
       var dots=(it.tagIds||[]).map(function(id){ var t=tagById(id); return t?'<span class="dot" style="background:hsl('+t.hue+',65%,62%)"></span>':""; }).join("");
       var todoOpen=it.type==="todo"?(it.todos||[]).filter(function(x){return !x.done;}).length:null;
       var mod=itemModule(it);
-      var icon=mod&&mod.icon?mod.icon:(it.type==="script"?ICON_SCRIPT:(it.type==="todo"?ICON_TODO:(it.type==="audio"?ICON_AUDIO:(it.type==="agent"?ICON_AGENT:ICON_NOTE))));
-      var metaText=mod&&mod.meta?mod.meta(it):(it.type==="script"?((it.sections||[]).filter(function(s){return s.kind!=="cue";}).length+" ch · "+itemWords(it)+" words"):(it.type==="todo"?(todoOpen+" left"):(it.type==="audio"?audioMetaText(it):(it.type==="agent"?agentMetaText(it):itemWords(it)+" words"))));
-      var leading=it.type==="todo"?'<button class="side-todo-check'+(it.done?" done":"")+'" aria-label="'+(it.done?"Mark incomplete":"Mark complete")+'">'+(it.done?"✓":"")+'</button>':icon;
-      var deleteLabel=it.type==="todo"&&it.done?"Delete?":"✕";
+      var icon=mod&&mod.icon?mod.icon:(it.type==="script"?ICON_SCRIPT:(todoItem?ICON_TODO:(it.type==="audio"?ICON_AUDIO:(it.type==="agent"?ICON_AGENT:ICON_NOTE))));
+      var metaText=mod&&mod.meta?mod.meta(it):(it.type==="script"?((it.sections||[]).filter(function(s){return s.kind!=="cue";}).length+" ch · "+itemWords(it)+" words"):(todoItem?(it.done?"Completed":"Open"):(it.type==="audio"?audioMetaText(it):(it.type==="agent"?agentMetaText(it):itemWords(it)+" words"))));
+      var leading=todoItem?'<button class="side-todo-check'+(it.done?" done":"")+'" aria-label="'+(it.done?"Mark incomplete":"Mark complete")+'">'+(it.done?"✓":"")+'</button>':icon;
+      var deleteLabel=todoItem&&it.done?"Delete?":"✕";
       var lockStatus=it.locked?'<span class="item-lock" title="Deletion locked" aria-label="Deletion locked">'+ICON_LOCK+'</span>':"";
       el.innerHTML=leading+'<div class="dt"><div class="dt-title"></div><div class="dt-meta"><span class="m">'+metaText+'</span>'+dots+lockStatus+'</div></div><button class="dx" type="button" title="Item actions" aria-label="Item actions">'+ICON_EDIT+'</button>';
       el.querySelector(".dt-title").textContent=it.title||("Untitled "+itemLabel(it).toLowerCase());
-      if(it.type==="todo") el.querySelector(".side-todo-check").onclick=function(e){ e.stopPropagation(); setTodoDone(it); };
+      if(todoItem) el.querySelector(".side-todo-check").onclick=function(e){ e.stopPropagation(); setTodoDone(it); };
       if(it.type==="todo" && (it.todos||[]).length){
         var taskBox=document.createElement("div"); taskBox.className="d-tasks";
         it.todos.forEach(function(task){
@@ -1304,12 +1387,12 @@
           taskRow.innerHTML='<button class="side-task-check" aria-label="'+(task.done?"Mark incomplete":"Mark complete")+'">'+(task.done?"✓":"")+'</button><button class="side-task-open"></button>';
           taskRow.querySelector(".side-task-open").textContent=task.text||"Untitled task";
           taskRow.querySelector(".side-task-check").onclick=function(e){ e.stopPropagation(); task.done=!task.done; task.completed=task.done?Date.now():null; it.updated=Date.now(); persist(); renderList(); if(current().id===it.id) renderMain(); };
-          taskRow.querySelector(".side-task-open").onclick=function(e){ e.stopPropagation(); if(activeAudioRecorder&&activeAudioRecorder.itemId!==it.id){ showToast("Finish the current recording before leaving it",true); return; } state.currentId=it.id; app.classList.remove("open"); renderList(); renderMain(); };
+          taskRow.querySelector(".side-task-open").onclick=function(e){ e.stopPropagation(); if(activeAudioRecorder&&activeAudioRecorder.itemId!==it.id){ showToast("Finish the current recording before leaving it",true); return; } state.currentId=it.id; app.classList.remove("open","folder-focus"); renderList(); renderMain(); };
           taskBox.appendChild(taskRow);
         });
         el.appendChild(taskBox);
       }
-      el.onclick=function(e){ if(e.target.closest(".dx")||e.target.closest(".side-task")||e.target.closest(".side-todo-check")) return; if(activeAudioRecorder&&activeAudioRecorder.itemId!==it.id){ showToast("Finish the current recording before leaving it",true); return; } state.currentId=it.id; app.classList.remove("open"); renderList(); renderMain(); };
+      el.onclick=function(e){ if(e.target.closest(".dx")||e.target.closest(".side-task")||e.target.closest(".side-todo-check")) return; if(activeAudioRecorder&&activeAudioRecorder.itemId!==it.id){ showToast("Finish the current recording before leaving it",true); return; } state.currentId=it.id; app.classList.remove("open","folder-focus"); renderList(); renderMain(); };
       el.querySelector(".dx").onclick=function(e){ e.stopPropagation(); openItemActions(e.currentTarget,it); };
       listEl.appendChild(el);
     });
@@ -1337,6 +1420,7 @@
     /* Let a registered type tear down timers, media elements, and listeners
        before its DOM is thrown away. */
     if(renderedModule&&renderedModule.detach) renderedModule.detach();
+    else if(window.SecondBrainCode&&typeof window.SecondBrainCode.detach==="function") window.SecondBrainCode.detach();
     renderedModule=null;
     /* A collaborator surface mounted in an Agent item's Chat tab lives inside
        the canvas, so it goes away with it. */
@@ -1358,9 +1442,9 @@
     }
 
     var ti=document.createElement("textarea"); ti.className="title"; ti.rows=1; ti.value=it.title||"";
-    ti.placeholder=(mod&&mod.placeholder)||(it.type==="script"?"Untitled YouTube Script":(it.type==="todo"?"Untitled todo":(it.type==="audio"?"Untitled audio entry":"Untitled note")));
+    ti.placeholder=(mod&&mod.placeholder)||(it.type==="script"?"Untitled YouTube Script":((isTodoNote(it)||it.type==="todo")?"Untitled todo":(it.type==="audio"?"Untitled audio entry":"Untitled note")));
     ti.oninput=function(){ it.title=ti.value; it.updated=Date.now(); grow(ti); save(); refreshListTitles(); };
-    if(it.type==="todo"){
+    if(isTodoNote(it)||it.type==="todo"){
       var titleRow=document.createElement("div"); titleRow.className="todo-title-row"+(it.done?" done":"");
       titleRow.appendChild(ti);
       var itemCheck=document.createElement("button"); itemCheck.className="todo-item-check"+(it.done?" done":"");
@@ -1374,6 +1458,18 @@
       }
       sheet.appendChild(titleRow);
     } else sheet.appendChild(ti);
+
+    if(!cleanText(it.title)&&runtimeApiKeys.openai){
+      var titleButton=document.createElement("button"); titleButton.type="button"; titleButton.className="ai-title"; titleButton.textContent="✦ Create title"; titleButton.title="Create a short title from this note";
+      titleButton.onclick=function(){
+        titleButton.disabled=true; titleButton.textContent="✦ Creating…";
+        generateNoteTitle(it).then(function(title){
+          if(!title) throw new Error("No title returned");
+          it.title=title; it.updated=Date.now(); ti.value=title; grow(ti); persist(); refreshListTitles(); titleButton.remove(); showToast("Title created");
+        }).catch(function(error){ console.warn("Title generation failed:",error); titleButton.disabled=false; titleButton.textContent="✦ Create title"; showToast("Couldn’t create a title",true); });
+      };
+      sheet.appendChild(titleButton);
+    }
 
     sheet.appendChild(buildAssign(it));
     var meta=document.createElement("div"); meta.className="meta"; meta.id="meta"; sheet.appendChild(meta);
@@ -1483,6 +1579,7 @@
   function cloudAttachmentPath(note,attachment){ return "users/"+currentUser.uid+"/notes/"+note.id+"/attachments/"+attachment.id; }
   function attachmentById(note,id){ return contentFiles(note).find(function(attachment){ return attachment.id===id; })||null; }
   function attachmentIsImage(attachment){ return /^image\//.test(attachment.type||""); }
+  function attachmentIsVideo(attachment){ return /^video\//.test(attachment.type||""); }
   function fallbackAttachmentUrl(attachment){
     if(attachment.inlineData) return Promise.resolve({url:attachment.inlineData,local:false});
     if(storage&&attachment.storagePath) return storage.ref(attachment.storagePath).getDownloadURL().then(function(url){ return {url:url,local:false}; });
@@ -1552,13 +1649,13 @@
   function audioRecordingName(entry,type){ return "Recording "+((entry.recordings||[]).length+1)+"."+audioFileExtension(type); }
   function audioClipDetails(clip){ return [formatAudioDuration(clip.duration),fileSize(clip.size),attachmentLabel(clip)].filter(Boolean).join(" · "); }
   function audioEntryExists(entry){ return state.items.some(function(item){ return item.id===entry.id&&item.type==="audio"; }); }
-  function saveAudioRecording(entry,blob,duration){
+  function saveAudioRecording(entry,blob,duration,name){
     if(!audioEntryExists(entry)||!blob||!blob.size) return;
     if(blob.size>MAX_ATTACHMENT_BYTES){ showToast("This recording is over the 25 MB attachment limit",true); return; }
-    var type=blob.type||"audio/webm", recording={id:uid(),name:audioRecordingName(entry,type),type:type,size:blob.size,added:Date.now(),duration:duration||0,syncState:"saving"};
+    var type=blob.type||"audio/webm", recording={id:uid(),name:name||audioRecordingName(entry,type),type:type,size:blob.size,added:Date.now(),duration:duration||0,syncState:"saving"};
     entry.recordings=entry.recordings||[]; entry.recordings.push(recording); touchContent(entry); persist(); refreshContentEditor(entry); renderList();
     var file;
-    try{ file=new File([blob],recording.name,{type:type}); }catch(error){ file=blob; }
+    try{ file=blob instanceof File?blob:new File([blob],recording.name,{type:type}); }catch(error){ file=blob; }
     storeAttachmentFile(entry.id,recording.id,file).then(function(){
       recording.syncState="device"; touchContent(entry); persist(); refreshContentEditor(entry);
       return uploadAttachment(entry,recording,file);
@@ -1571,6 +1668,12 @@
       } else {
         recording.syncState="device"; touchContent(entry); persist(); refreshContentEditor(entry); showToast("Recording saved on this device; cloud sync is unavailable");
       }
+    });
+  }
+  function addAudioFiles(entry,files){
+    Array.prototype.slice.call(files||[]).forEach(function(file){
+      if(!/^audio\//.test(file.type||"")&&!/\.(mp3|m4a|wav|ogg|webm|aac|flac)$/i.test(file.name||"")){ showToast((file.name||"That file")+" is not an audio file",true); return; }
+      saveAudioRecording(entry,file,0,file.name||audioRecordingName(entry,file.type));
     });
   }
   function refreshRecordingTime(entry){
@@ -1637,10 +1740,13 @@
     var title=document.createElement("b"), hint=document.createElement("small");
     if(active){ title.className="audio-recording-indicator"; title.textContent=activeAudioRecorder.stopping?"Saving recording…":"Recording "+formatAudioDuration((Date.now()-activeAudioRecorder.started)/1000); title.setAttribute("data-audio-recording-time",entry.id); hint.textContent=activeAudioRecorder.stopping?"Finishing this clip":"Tap the red button when you’re done"; }
     else { title.textContent="Record your voice"; hint.textContent="Each recording is saved as a separate clip"; }
-    copy.appendChild(title); copy.appendChild(hint); recorder.appendChild(button); recorder.appendChild(copy); wrap.appendChild(recorder);
+    copy.appendChild(title); copy.appendChild(hint); recorder.appendChild(button); recorder.appendChild(copy);
+    var upload=document.createElement("button"); upload.type="button"; upload.className="audio-upload"; upload.textContent="Upload audio"; upload.title="Upload audio files";
+    var picker=document.createElement("input"); picker.type="file"; picker.accept="audio/*,.m4a,.webm,.ogg,.wav,.flac,.aac"; picker.multiple=true; picker.hidden=true; picker.onchange=function(){ addAudioFiles(entry,picker.files); picker.value=""; };
+    upload.onclick=function(){ picker.click(); }; recorder.appendChild(upload); recorder.appendChild(picker); wrap.appendChild(recorder);
     var clips=document.createElement("div"); clips.className="audio-clips"; var recordings=entry.recordings||[];
     var head=document.createElement("div"); head.className="audio-clips-head"; head.innerHTML="<b>Recordings</b><span>"+(recordings.length?formatAudioDuration(audioDuration(entry))+" total":"")+"</span>"; clips.appendChild(head);
-    if(!recordings.length){ var empty=document.createElement("div"); empty.className="audio-empty"; empty.textContent="No recordings yet. Tap the microphone to add your first voice clip."; clips.appendChild(empty); }
+    if(!recordings.length){ var empty=document.createElement("div"); empty.className="audio-empty"; empty.textContent="No recordings yet. Record a voice clip or upload audio."; clips.appendChild(empty); }
     recordings.forEach(function(recording,index){
       var card=document.createElement("article"); card.className="audio-clip";
       var info=document.createElement("div"); info.className="audio-clip-info"; var name=document.createElement("b"); name.className="audio-clip-name"; name.textContent=recording.name||"Recording "+(index+1); var details=document.createElement("small"); details.className="audio-clip-details"; details.textContent=audioClipDetails(recording); info.appendChild(name); info.appendChild(details); card.appendChild(info);
@@ -1670,11 +1776,11 @@
     return textIndex+1;
   }
   function textBlockFromHtml(html){ var block=textBlock(""); block.html=sanitizeRichHtml(html); syncTextBlock(block); return block; }
-  function insertAttachmentBlocks(note,attachments){
-    var index=noteInsertIndex(note), blocks=attachments.map(function(attachment){ return {id:uid(),type:"attachment",attachmentId:attachment.id,width:100}; });
+  function insertAttachmentBlocks(note,attachments,insertAt){
+    var index=typeof insertAt==="number"?insertAt:noteInsertIndex(note), blocks=attachments.map(function(attachment){ return {id:uid(),type:"attachment",attachmentId:attachment.id,width:100}; });
     note.blocks.splice.apply(note.blocks,[index,0].concat(blocks)); syncNoteBody(note); activeNoteTextBlock=null;
   }
-  function addNoteAttachments(note,files){
+  function addNoteAttachments(note,files,insertAt){
     var selected=Array.prototype.slice.call(files||[]), accepted=[];
     selected.forEach(function(file){
       if(file.size>MAX_ATTACHMENT_BYTES){ showToast(file.name+" is over the 25 MB attachment limit",true); return; }
@@ -1704,7 +1810,7 @@
         }
       });
     });
-    insertAttachmentBlocks(note,newAttachments); touchContent(note); persist(); refreshNoteEditor(note);
+    insertAttachmentBlocks(note,newAttachments,insertAt); touchContent(note); persist(); refreshNoteEditor(note);
   }
   function openAttachment(note,attachment){
     function clickLink(url,local){
@@ -1759,6 +1865,9 @@
     function actionButton(icon,label,disabled,handler,kind){ var button=document.createElement("button"); button.type="button"; button.innerHTML=icon; button.title=label; button.setAttribute("aria-label",label); button.disabled=disabled; if(kind) button.className=kind; button.onmousedown=function(event){ event.preventDefault(); }; button.onclick=function(){ if(!button.disabled) handler(); }; return button; }
     actions.appendChild(actionButton('<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m7 14 5-5 5 5"/></svg>',"Move block up",index<=0,function(){ moveNoteBlock(note,block,-1); }));
     actions.appendChild(actionButton('<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m7 10 5 5 5-5"/></svg>',"Move block down",index<0||index>=note.blocks.length-1,function(){ moveNoteBlock(note,block,1); }));
+    actions.appendChild(actionButton(ICON_EDIT,"Edit block",false,function(){ focusNoteBlock(block); }));
+    actions.appendChild(actionButton('<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 19V5M6 11l6-6 6 6M5 19h14"/></svg>',"Insert above",false,function(){ openNoteInsertMenu(actions,note,null,index); }));
+    actions.appendChild(actionButton('<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 5v14M6 13l6 6 6-6M5 5h14"/></svg>',"Insert below",false,function(){ openNoteInsertMenu(actions,note,null,index+1); }));
     actions.appendChild(actionButton('<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 6h18"/><path d="M8 6V4h8v2"/><path d="M19 6l-1 14H6L5 6"/><path d="M10 11v5M14 11v5"/></svg>',"Delete block",false,function(){ deleteNoteBlock(note,block); },"delete"));
     return actions;
   }
@@ -1786,6 +1895,9 @@
     if(attachmentIsImage(attachment)){
       var image=document.createElement("img"); image.className="note-attachment-image"; image.alt=attachment.name||"Attached image"; card.appendChild(image);
       getAttachmentUrl(note,attachment).then(function(result){ if(!image.isConnected) return; image.src=result.url; if(result.local) image.onload=function(){ setTimeout(function(){ URL.revokeObjectURL(result.url); },1000); }; }).catch(function(){ image.alt="Image unavailable on this device"; });
+    } else if(attachmentIsVideo(attachment)){
+      var video=document.createElement("video"); video.className="note-attachment-video"; video.controls=true; video.preload="metadata"; video.setAttribute("aria-label",attachment.name||"Attached video"); card.appendChild(video);
+      getAttachmentUrl(note,attachment).then(function(result){ if(!video.isConnected) return; video.src=result.url; }).catch(function(){ video.outerHTML='<div class="note-attachment-file">Video unavailable on this device</div>'; });
     } else {
       var file=document.createElement("div"); file.className="note-attachment-file";
       var extension=(attachment.name||"").split(".").pop().toUpperCase(); if(!extension||extension===attachment.name) extension="FILE";
@@ -1799,7 +1911,7 @@
     actions.appendChild(open);
     if(attachment.cloudError){ var retry=document.createElement("button"); retry.type="button"; retry.className="attachment-retry"; retry.textContent="Retry"; retry.onclick=function(){ retryAttachmentSync(note,attachment); }; actions.appendChild(retry); }
     actions.appendChild(remove); card.appendChild(actions); card.appendChild(resize);
-    if(attachmentIsImage(attachment)){ var status=document.createElement("span"); status.className="attachment-status"; status.textContent=attachment.name+" · "+attachmentLabel(attachment); card.appendChild(status); }
+    if(attachmentIsImage(attachment)||attachmentIsVideo(attachment)){ var status=document.createElement("span"); status.className="attachment-status"; status.textContent=attachment.name+" · "+attachmentLabel(attachment); card.appendChild(status); }
     return card;
   }
   function createNoteBlock(type){
@@ -1807,15 +1919,21 @@
     if(type==="comment") return {id:uid(),type:"comment",text:""};
     if(type==="prompt") return {id:uid(),type:"prompt",text:""};
     if(type==="heading") return {id:uid(),type:"heading",text:"",level:2};
+    if(type==="chapter") return chapterBlock("","");
     if(type==="group") return {id:uid(),type:"group",title:"Untitled group",text:"",collapsed:false};
+    if(type==="code") return {id:uid(),type:"code",language:"javascript",code:""};
     return null;
   }
   function focusNoteBlock(block){
     setTimeout(function(){ var field=canvas.querySelector('[data-note-block="'+block.id+'"]'); if(field){ field.focus(); if(field.select) field.select(); } },0);
   }
-  function insertNoteBlock(note,type){
+  function insertNoteBlock(note,type,insertAt){
     var block=createNoteBlock(type); if(!block) return;
-    var index=noteInsertIndex(note); note.blocks.splice(index,0,block); activeNoteTextBlock=null; syncNoteBody(note); touchContent(note); persist(); refreshNoteEditor(note); focusNoteBlock(block);
+    var index=typeof insertAt==="number"?insertAt:noteInsertIndex(note); note.blocks.splice(index,0,block); activeNoteTextBlock=null; syncNoteBody(note); touchContent(note); persist(); refreshNoteEditor(note); focusNoteBlock(block);
+  }
+  function insertYoutubeScriptBlocks(note,insertAt){
+    var index=typeof insertAt==="number"?insertAt:noteInsertIndex(note), blocks=[chapterBlock("Intro",""),chapterBlock("Main",""),chapterBlock("Outro","")];
+    note.template="youtube-script"; note.blocks.splice.apply(note.blocks,[index,0].concat(blocks)); activeNoteTextBlock=null; syncNoteBody(note); touchContent(note); persist(); refreshNoteEditor(note); focusNoteBlock(blocks[0]);
   }
   function saveNoteBlockChange(note,block,immediate){
     syncNoteBody(note); touchContent(note); updateMeta(); refreshListMeta(); if(immediate) persist(); else save();
@@ -1858,6 +1976,38 @@
     }); };
     wrap.appendChild(input); wrap.appendChild(buildNoteBlockActions(note,block,"note-heading-actions")); wrap.appendChild(size); return wrap;
   }
+  function buildNoteChapter(note,block){
+    var wrap=document.createElement("section"); wrap.className="note-chapter";
+    var head=document.createElement("div"); head.className="note-chapter-head";
+    var index=document.createElement("span"); index.className="note-chapter-index"; index.textContent="CH";
+    var title=document.createElement("input"); title.type="text"; title.className="note-chapter-title"; title.value=block.title||""; title.placeholder="Chapter name"; title.setAttribute("data-note-block",block.id);
+    title.oninput=function(){ block.title=title.value; saveNoteBlockChange(note,block,false); };
+    var listen=document.createElement("button"); listen.type="button"; listen.className="note-chapter-listen"; listen.textContent="Listen";
+    listen.style.display=runtimeApiKeys.elevenlabs&&ttsTextForChapter(block).trim()?"inline-flex":"none";
+    listen.onclick=function(){ playTts(ttsTextForChapter(block).trim(),listen,listen); };
+    head.appendChild(index); head.appendChild(title); head.appendChild(listen); wrap.appendChild(head);
+    var bodyWrap=document.createElement("div"); bodyWrap.className="note-paragraph-wrap";
+    var body=document.createElement("div"); body.className="note-paragraph"; body.contentEditable="true"; body.setAttribute("role","textbox"); body.setAttribute("aria-multiline","true"); body.setAttribute("data-note-block",block.id); body.setAttribute("data-placeholder","Write this chapter…"); body.innerHTML=block.html||"";
+    body.oninput=function(){ block.html=sanitizeRichHtml(body.innerHTML); block.text=richTextToPlain(block.html); listen.style.display=runtimeApiKeys.elevenlabs&&ttsTextForChapter(block).trim()?"inline-flex":"none"; saveNoteBlockChange(note,block,false); };
+    bodyWrap.appendChild(body); wrap.appendChild(bodyWrap); wrap.appendChild(buildNoteBlockActions(note,block,"note-chapter-actions")); return wrap;
+  }
+  function buildNoteCode(note,block){
+    var wrap=document.createElement("section"); wrap.className="note-code"; wrap.tabIndex=-1; wrap.setAttribute("data-note-block",block.id);
+    if(window.SecondBrainCode&&typeof window.SecondBrainCode.buildEmbedded==="function"){
+      wrap.appendChild(window.SecondBrainCode.buildEmbedded(block,{
+        touchItem:function(){ touchContent(note); syncNoteBody(note); updateMeta(); refreshListMeta(); },
+        save:save,
+        persist:function(){ touchContent(note); syncNoteBody(note); persist(); },
+        refreshItemEditor:function(){ syncNoteBody(note); updateMeta(); refreshListMeta(); },
+        showToast:showToast,
+        escapeHtml:escapeHtml,
+        baseItem:baseItem
+      }));
+    } else {
+      var input=document.createElement("textarea"); input.className="ta"; input.value=block.code||""; input.placeholder="Code"; input.oninput=function(){ block.code=input.value; saveNoteBlockChange(note,block,false); }; wrap.appendChild(input);
+    }
+    wrap.appendChild(buildNoteBlockActions(note,block,"note-code-actions")); return wrap;
+  }
   function buildNoteComment(note,block){
     var wrap=document.createElement("div"); wrap.className="note-comment"; var label=document.createElement("small"); label.textContent="COMMENT"; var field=document.createElement("textarea"); field.rows=1; field.value=block.text||""; field.placeholder="[A note to yourself]"; field.setAttribute("data-note-block",block.id);
     field.oninput=function(){ block.text=field.value; grow(field); saveNoteBlockChange(note,block,false); }; wrap.appendChild(label); wrap.appendChild(field); return wrap;
@@ -1876,21 +2026,26 @@
     if(block.type==="text") return buildNoteParagraph(note,block);
     if(block.type==="attachment") return buildNoteAttachmentBlock(note,block);
     if(block.type==="heading") return buildNoteHeading(note,block);
+    if(block.type==="chapter") return buildNoteChapter(note,block);
     if(block.type==="comment") return buildNoteComment(note,block);
     if(block.type==="prompt") return buildNotePrompt(note,block);
     if(block.type==="group") return buildNoteGroup(note,block);
+    if(block.type==="code") return buildNoteCode(note,block);
     return null;
   }
-  function openNoteInsertMenu(anchor,note,picker){
+  function openNoteInsertMenu(anchor,note,picker,insertAt){
     openMenu(anchor,function(menu){
       var title=document.createElement("div"); title.className="mtitle"; title.textContent="Insert"; menu.appendChild(title);
       var options=[
-        ["file","<span style=\"font-size:1rem\">↗</span>","File",function(){ picker.click(); }],
-        ["paragraph","<span style=\"font-size:1rem\">¶</span>","Paragraph",function(){ insertNoteBlock(note,"paragraph"); }],
-        ["comment","<span style=\"font-style:italic;color:var(--ink-dim)\">…</span>","Comment",function(){ insertNoteBlock(note,"comment"); }],
-        ["prompt","<span style=\"font:700 .76rem DM Mono\">›_</span>","Prompt",function(){ insertNoteBlock(note,"prompt"); }],
-        ["heading","<span style=\"font-weight:700\">H</span>","Heading",function(){ insertNoteBlock(note,"heading"); }],
-        ["group","<span style=\"font-size:1rem\">⌄</span>","Collapsible group",function(){ insertNoteBlock(note,"group"); }]
+        ["file","<span style=\"font-size:1rem\">↗</span>","Photo, video, or file",function(){ if(picker) picker.click(); else { var input=document.createElement("input"); input.type="file"; input.multiple=true; input.hidden=true; input.onchange=function(){ addNoteAttachments(note,input.files,insertAt); input.remove(); }; document.body.appendChild(input); input.click(); } }],
+        ["paragraph","<span style=\"font-size:1rem\">¶</span>","Paragraph",function(){ insertNoteBlock(note,"paragraph",insertAt); }],
+        ["comment","<span style=\"font-style:italic;color:var(--ink-dim)\">…</span>","Comment",function(){ insertNoteBlock(note,"comment",insertAt); }],
+        ["prompt","<span style=\"font:700 .76rem DM Mono\">›_</span>","Prompt",function(){ insertNoteBlock(note,"prompt",insertAt); }],
+        ["heading","<span style=\"font-weight:700\">H</span>","Heading",function(){ insertNoteBlock(note,"heading",insertAt); }],
+        ["chapter","<span style=\"font-weight:700\">CH</span>","Chapter",function(){ insertNoteBlock(note,"chapter",insertAt); }],
+        ["group","<span style=\"font-size:1rem\">⌄</span>","Collapsible group",function(){ insertNoteBlock(note,"group",insertAt); }],
+        ["code","<span style=\"font:700 .76rem DM Mono\">&lt;/&gt;</span>","Code",function(){ insertNoteBlock(note,"code",insertAt); }],
+        ["scriptTemplate","<span style=\"font-weight:700\">▶</span>","YouTube script starter",function(){ insertYoutubeScriptBlocks(note,insertAt); }]
       ];
       options.forEach(function(option){ if(state.noteInsertOptions[option[0]]) menu.appendChild(mkItem(option[1],option[2],false,function(){ closeMenu(); option[3](); })); });
       if(menu.children.length===1){ var empty=document.createElement("div"); empty.className="tag-empty"; empty.textContent="Enable insert options in Settings → Manage."; menu.appendChild(empty); }
@@ -2144,7 +2299,7 @@
     var node=listNodeFor(it.id); if(!node) return;
     var m=node.querySelector(".dt-meta .m");
     var mod=itemModule(it);
-    if(m) m.textContent=mod&&mod.meta?mod.meta(it):(it.type==="script"?((it.sections||[]).filter(function(s){return s.kind!=="cue";}).length+" ch · "+itemWords(it)+" words"):(it.type==="todo"?((it.todos||[]).filter(function(x){return !x.done;}).length+" left"):(it.type==="audio"?audioMetaText(it):(it.type==="agent"?agentMetaText(it):itemWords(it)+" words"))));
+    if(m) m.textContent=mod&&mod.meta?mod.meta(it):(isTodoNote(it)?(it.done?"Completed":"Open"):(it.type==="script"?((it.sections||[]).filter(function(s){return s.kind!=="cue";}).length+" ch · "+itemWords(it)+" words"):(it.type==="todo"?((it.todos||[]).filter(function(x){return !x.done;}).length+" left"):(it.type==="audio"?audioMetaText(it):(it.type==="agent"?agentMetaText(it):itemWords(it)+" words")))));
   }
 
   function buildAssign(it){
@@ -2256,6 +2411,7 @@
     var it=current(), m=$("meta"); if(!m||!it) return;
     var mod=itemModule(it);
     if(mod&&mod.meta){ m.textContent=mod.meta(it); return; }
+    if(isTodoNote(it)){ m.innerHTML="<b>"+(it.done?"Completed":"Open")+"</b> todo note"; return; }
     if(it.type==="todo"){ var total=(it.todos||[]).length, done=(it.todos||[]).filter(function(x){return x.done;}).length; m.innerHTML="<b>"+(total-done)+"</b> remaining &nbsp;·&nbsp; <b>"+done+"</b> completed"; return; }
     if(it.type==="audio"){ var recordings=(it.recordings||[]).length, totalDuration=audioDuration(it); m.innerHTML="<b>"+recordings+"</b> recording"+(recordings===1?"":"s")+" &nbsp;·&nbsp; <b>"+formatAudioDuration(totalDuration)+"</b> total"; return; }
     var w=itemWords(it), ch=itemText(it).length;
@@ -2263,13 +2419,22 @@
     m.innerHTML=head+'<b>'+w.toLocaleString()+'</b> words &nbsp;·&nbsp; <b>'+ch.toLocaleString()+'</b> characters &nbsp;·&nbsp; ~<b>'+dur(w)+'</b> spoken';
   }
 
+  function ttsTextForNote(it){
+    return (it.blocks||[]).map(function(block){
+      if(!block||block.type==="attachment"||block.type==="comment"||block.type==="code") return "";
+      if(block.type==="chapter") return [(state.readChapterNames?block.title:""),block.text].filter(Boolean).join(". ");
+      return blockPlainText(block);
+    }).filter(Boolean).join("\n\n");
+  }
   function ttsTextForItem(it){
     if(it.type==="script") return (it.sections||[]).filter(function(section){ return section.kind!=="cue"; }).map(function(section){ return [section.title,section.body].filter(Boolean).join(". "); }).filter(Boolean).join("\n\n");
     if(it.type==="todo") return (it.todos||[]).filter(function(task){ return !task.done; }).map(function(task){ return [task.text,taskDetailsText(task),(task.subtasks||[]).map(function(subtask){ return subtask.text||""; }).filter(Boolean).join(". ")].filter(Boolean).join(". "); }).filter(Boolean).join("\n");
     if(it.type==="audio") return "";
+    if(it.type==="note") return ttsTextForNote(it);
     return it.body||"";
   }
   function ttsTextForSection(section){ return [section.title,section.body].filter(Boolean).join(". "); }
+  function ttsTextForChapter(block){ return [block.title,block.text].filter(Boolean).join(". "); }
   function updateTtsButton(it){
     var button=$("ttsBtn"); if(!button) return;
     var visible=!!(runtimeApiKeys.elevenlabs&&it&&it.type!=="agent"&&ttsTextForItem(it).trim());
@@ -2411,12 +2576,14 @@
   }
 
   /* ---------- what the agent may look at and, once approved, change ---------- */
-  function isEditableBlock(block){ return !!block&&["text","heading","comment","prompt","group"].indexOf(block.type)>=0; }
+  function isEditableBlock(block){ return !!block&&["text","heading","comment","prompt","chapter","group","code"].indexOf(block.type)>=0; }
   function blockLabelFor(block,index){
     if(block.type==="heading") return "Heading";
     if(block.type==="comment") return "Comment";
     if(block.type==="prompt") return "Prompt";
+    if(block.type==="chapter") return "Chapter — "+(cleanText(block.title)||"untitled");
     if(block.type==="group") return "Group — "+(cleanText(block.title)||"untitled");
+    if(block.type==="code") return "Code";
     return "Paragraph "+(index+1);
   }
   function collabTargets(it){
@@ -2438,7 +2605,7 @@
     } else if(it.type==="note"){
       ensureNoteBlocks(it);
       it.blocks.forEach(function(block,i){
-        if(isEditableBlock(block)) targets.push({id:block.id,kind:"block",block:block,owner:it,text:block.text||"",label:blockLabelFor(block,i),inline:block.type==="heading"});
+        if(isEditableBlock(block)) targets.push({id:block.id,kind:"block",block:block,owner:it,text:block.type==="code"?(block.code||""):(block.text||""),label:blockLabelFor(block,i),inline:block.type==="heading"});
       });
     } else {
       targets.push({id:"body",kind:"body",text:it.body||"",label:"Body"});
@@ -2452,7 +2619,8 @@
     return head.replace(/\s+$/,"")+(inline?" ":"\n\n")+tail.replace(/^\s+/,"");
   }
   function setBlockText(block,text){
-    if(block.type==="text"){ block.html=escapeHtml(text).replace(/\n/g,"<br>"); syncTextBlock(block); }
+    if(block.type==="text"||block.type==="chapter"){ block.html=escapeHtml(text).replace(/\n/g,"<br>"); if(block.type==="text") syncTextBlock(block); else block.text=richTextToPlain(block.html); }
+    else if(block.type==="code") block.code=text;
     else block.text=text;
   }
   function writeTarget(it,target,text){
@@ -2576,6 +2744,22 @@
         if(!data) throw new Error("OpenAI returned an unreadable response.");
         return data;
       });
+    });
+  }
+  function generateNoteTitle(note){
+    var source=itemText(note).replace(/\s+/g," ").trim().slice(0,12000);
+    if(!source) return Promise.reject(new Error("The note is empty"));
+    return openaiRequest("chat/completions",{
+      model:"gpt-4o-mini",
+      temperature:0.2,
+      max_tokens:24,
+      messages:[
+        {role:"system",content:"Create a concise, descriptive title for the user's note. Return only 1 to 6 words. Do not use quotation marks, markdown, or ending punctuation."},
+        {role:"user",content:source}
+      ]
+    }).then(function(result){
+      var raw=cleanText(result&&result.choices&&result.choices[0]&&result.choices[0].message&&result.choices[0].message.content).replace(/^['\"`]+|['\"`]+$/g,"").replace(/[.!?]+$/g,"").trim();
+      return raw.split(/\s+/).slice(0,6).join(" ");
     });
   }
   /* Reasoning models reject temperature outright. Rather than track which ones,
@@ -3243,8 +3427,10 @@
     var self=this;
     if(openMenuEl){ closeMenu(); return; }
     openMenu(self,function(m){
-      if(state.enabledTypes.script) m.appendChild(mkItem(ICON_SCRIPT,"YouTube Script",false,function(){ closeMenu(); createItem(newScriptItem()); }));
-      if(state.enabledTypes.note) m.appendChild(mkItem(ICON_NOTE,"Note",false,function(){ closeMenu(); createItem(newNoteItem()); }));
+      if(state.enabledTypes.note){
+        m.appendChild(mkItem(ICON_NOTE,"Note",false,function(){ closeMenu(); createItem(newNoteItem()); }));
+        m.appendChild(mkItem(ICON_SCRIPT,"YouTube script template",false,function(){ closeMenu(); createItem(newYoutubeScriptNote()); }));
+      }
       if(state.enabledTypes.audio) m.appendChild(mkItem(ICON_AUDIO,"Audio",false,function(){ closeMenu(); createItem(newAudioItem()); }));
       if(state.enabledTypes.todo) m.appendChild(mkItem(ICON_TODO,"Todo",false,function(){ closeMenu(); createItem(newTodoItem()); }));
       typeModuleList().forEach(function(def){
@@ -3830,6 +4016,8 @@
     if(prefs.noteInsertOptions&&typeof prefs.noteInsertOptions==="object") Object.keys(NOTE_INSERT_DEFAULTS).forEach(function(type){ if(typeof prefs.noteInsertOptions[type]==="boolean") state.noteInsertOptions[type]=prefs.noteInsertOptions[type]; });
     if(typeof prefs.tagsCollapsed==="boolean") state.tagsCollapsed=prefs.tagsCollapsed;
     if(typeof prefs.allNotesName==="string"&&prefs.allNotesName.trim()) state.allNotesName=prefs.allNotesName.trim();
+    if(typeof prefs.mobileFolderFocus==="boolean") state.mobileFolderFocus=prefs.mobileFolderFocus;
+    if(typeof prefs.readChapterNames==="boolean") state.readChapterNames=prefs.readChapterNames;
     if(prefs.agentSettings&&typeof prefs.agentSettings==="object"){
       var incoming=prefs.agentSettings, local=agentSettings();
       ["defaultAgentId","activeAgentId"].forEach(function(key){ if(typeof incoming[key]==="string") local[key]=incoming[key]; });
@@ -3952,7 +4140,9 @@
       }
     }).then(function(){ trimCloudBackups(); }).catch(function(e){ cloudSyncLoading=false; console.warn(e); showToast("Couldn’t read cloud data — check Firestore rules",true); });
   }
-  function saveCloud(){ if(!currentUser||!db||cloudSyncPaused||cloudSyncLoading) return; clearTimeout(cloudTimer); cloudTimer=setTimeout(saveCloudNow,1500); }
+  /* Cloud writes are deliberately batched: local recovery saves stay immediate,
+     while a burst of typing becomes one network write after a quiet moment. */
+  function saveCloud(){ if(!currentUser||!db||cloudSyncPaused||cloudSyncLoading) return; clearTimeout(cloudTimer); cloudTimer=setTimeout(saveCloudNow,4500); }
   function cloudBackupRef(id){ return db.collection("users").doc(currentUser.uid).collection("backups").doc(id); }
   function trimCloudBackups(maximum){
     if(!currentUser||!db) return Promise.resolve();
@@ -4015,7 +4205,7 @@
   function saveCloudNow(){
     if(!currentUser||!db||cloudSyncPaused||cloudSyncLoading) return;
     var sentAt=Date.now();
-    db.collection("users").doc(currentUser.uid).set({ items:state.items, folders:state.folders, tags:state.tags, preferences:{theme:state.theme,motion:state.motion,darkness:state.darkness,enabledTypes:state.enabledTypes,noteInsertOptions:state.noteInsertOptions,tagsCollapsed:state.tagsCollapsed,allNotesName:state.allNotesName,agentSettings:agentSettings()}, theme:state.theme, motion:state.motion, updated:sentAt },{merge:true}).then(function(){
+    db.collection("users").doc(currentUser.uid).set({ items:state.items, folders:state.folders, tags:state.tags, preferences:{theme:state.theme,motion:state.motion,darkness:state.darkness,enabledTypes:state.enabledTypes,noteInsertOptions:state.noteInsertOptions,tagsCollapsed:state.tagsCollapsed,allNotesName:state.allNotesName,mobileFolderFocus:state.mobileFolderFocus,readChapterNames:state.readChapterNames,agentSettings:agentSettings()}, theme:state.theme, motion:state.motion, updated:sentAt },{merge:true}).then(function(){
       state.lastCloudSync=sentAt;
       if((state.lastLocalChange||0)<=sentAt){ state.pendingCloudSync=false; recordSyncBaseline({items:state.items},sentAt); if(canPersist){ try{ localStorage.setItem(KEY,JSON.stringify(state)); }catch(e){} } }
       setSaveState("Saved to cloud","cloud"); syncPublicShares(); maybeCloudBackup(); scheduleAccountUsageRefresh(0);
@@ -4087,7 +4277,7 @@
         '<button data-settings="collab"><span><b>AI collaborator</b><small>Pick the agent the microphone opens</small></span><span class="arrow">›</span></button>'+
         '<button data-settings="manage"><span><b>Manage</b><small>Choose which things New can create</small></span><span class="arrow">›</span></button></div>';
     } else if(settingsPage==="appearance"){
-      content=settingsHeading("Appearance",true)+'<div class="grp"><div class="srow"><div class="sl">Background movement<small>Slow drifting color that works on desktop and mobile</small></div><button class="toggle" id="motionToggle"><b></b></button></div></div><div class="grp"><div class="range-row"><label for="darknessRange"><span>Background darkness</span><output id="darknessOutput"></output></label><input id="darknessRange" type="range" min="0" max="100" step="1"><p class="hint">At 100%, the background is pure AMOLED black. Lower it to reveal more of the moving theme color while keeping the surface black.</p></div></div>';
+      content=settingsHeading("Appearance",true)+'<div class="grp"><div class="srow"><div class="sl">Background movement<small>Slow drifting color that works on desktop and mobile</small></div><button class="toggle" id="motionToggle"><b></b></button></div><div class="srow"><div class="sl">Full-screen mobile folder view<small>Keep a selected folder open full-screen until you open a note</small></div><button class="toggle" id="mobileFolderFocusToggle"><b></b></button></div></div><div class="grp"><div class="range-row"><label for="darknessRange"><span>Background darkness</span><output id="darknessOutput"></output></label><input id="darknessRange" type="range" min="0" max="100" step="1"><p class="hint">At 100%, the background is pure AMOLED black. Lower it to reveal more of the moving theme color while keeping the surface black.</p></div></div>';
     } else if(settingsPage==="themes"){
       content=settingsHeading("Themes",true)+'<p class="hint">Themes are separate from the rest of Settings so you can browse them without burying the backup and sync controls.</p><div class="themes" id="themeGrid"></div>';
     } else if(settingsPage==="backups"){
@@ -4097,11 +4287,11 @@
     } else if(settingsPage==="keys"){
       content=settingsHeading("API keys",true)+'<p class="hint">Keys sync automatically to your signed-in account, so they are ready on your other signed-in devices. There is no separate vault passphrase to create or remember.</p><div class="agent-edit"><label>OpenAI (ChatGPT) API key<input id="openaiKey" type="password" autocomplete="off" placeholder="sk-…" disabled></label><label>ElevenLabs API key<input id="elevenlabsKey" type="password" autocomplete="off" placeholder="Your ElevenLabs key" disabled></label><p class="hint" id="apiKeyStatus">Sign in to add API keys.</p></div>';
     } else if(settingsPage==="voices"){
-      content=settingsHeading("Voice",true)+'<p class="hint">Your saved, favorited, and added ElevenLabs voices appear here. Search by name or style, then choose one to use everywhere you listen in Second Brain.</p><div class="agent-edit"><label>Voice<button class="voice-picker" id="elevenlabsVoicePicker" type="button" aria-expanded="false" disabled><span class="voice-picker-copy"><b>Loading voices…</b><small>Your saved ElevenLabs voices</small></span><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="m6 9 6 6 6-6"/></svg></button></label><div class="voice-picker-menu" id="elevenlabsVoiceMenu" hidden><input class="voice-search" id="elevenlabsVoiceSearch" type="search" autocomplete="off" placeholder="Search voices or styles"><div class="voice-options" id="elevenlabsVoiceOptions"></div></div><div id="customVoiceEntry" hidden><label>ElevenLabs Voice ID<input id="customElevenlabsVoiceId" type="text" autocomplete="off" placeholder="Paste a voice ID"></label><div class="btnrow"><button class="b2 primary" id="saveCustomVoiceBtn">Save to list &amp; select</button></div></div><p class="hint" id="voiceStatus">Loading your available voices…</p></div>';
+      content=settingsHeading("Voice",true)+'<p class="hint">Your saved, favorited, and added ElevenLabs voices appear here. Search by name or style, then choose one to use everywhere you listen in Second Brain.</p><div class="grp"><div class="srow"><div class="sl">Read chapter names<small>Off by default. Full-note Listen always skips comments and files.</small></div><button class="toggle" id="readChapterNamesToggle"><b></b></button></div></div><div class="agent-edit"><label>Voice<button class="voice-picker" id="elevenlabsVoicePicker" type="button" aria-expanded="false" disabled><span class="voice-picker-copy"><b>Loading voices…</b><small>Your saved ElevenLabs voices</small></span><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="m6 9 6 6 6-6"/></svg></button></label><div class="voice-picker-menu" id="elevenlabsVoiceMenu" hidden><input class="voice-search" id="elevenlabsVoiceSearch" type="search" autocomplete="off" placeholder="Search voices or styles"><div class="voice-options" id="elevenlabsVoiceOptions"></div></div><div id="customVoiceEntry" hidden><label>ElevenLabs Voice ID<input id="customElevenlabsVoiceId" type="text" autocomplete="off" placeholder="Paste a voice ID"></label><div class="btnrow"><button class="b2 primary" id="saveCustomVoiceBtn">Save to list &amp; select</button></div></div><p class="hint" id="voiceStatus">Loading your available voices…</p></div>';
     } else if(settingsPage==="collab"){
       content=settingsHeading("AI collaborator",true)+'<p class="hint">The microphone beside this gear starts a conversation about whatever you have open — a note, a YouTube script, or a todo. The agent can suggest changes to your text, but nothing is written until you press Apply, and a backup is saved before every session.</p><div class="agent-edit" id="collabSettings"></div>';
     } else if(settingsPage==="manage"){
-      content=settingsHeading("Manage",true)+'<p class="hint">Choose what appears under New and in a note’s Insert menu. Existing content is never removed when an option is turned off.</p><div class="grp"><div class="srow"><div class="sl">YouTube Script<small>Create chapter and cue-based scripts</small></div><button class="toggle" id="typeScript"><b></b></button></div><div class="srow"><div class="sl">Notes<small>Create standard notes</small></div><button class="toggle" id="typeNote"><b></b></button></div><div class="srow"><div class="sl">Audio<small>Record and keep multiple voice clips</small></div><button class="toggle" id="typeAudio"><b></b></button></div><div class="srow"><div class="sl">Todos<small>Create tasks with descriptions and subtasks</small></div><button class="toggle" id="typeTodo"><b></b></button></div><div class="srow"><div class="sl">Agent<small>AI collaborators you can talk to inside any note, script, or todo</small></div><button class="toggle" id="typeAgent"><b></b></button></div></div><div class="grp" id="moduleTypes"></div><div class="grp"><h4>Note insert menu</h4><div class="srow"><div class="sl">File<small>Images, PDFs, and other attachments</small></div><button class="toggle" id="insertFile"><b></b></button></div><div class="srow"><div class="sl">Paragraph<small>Rich text with bold, italic, and underline</small></div><button class="toggle" id="insertParagraph"><b></b></button></div><div class="srow"><div class="sl">Comment<small>Cue-style note to yourself</small></div><button class="toggle" id="insertComment"><b></b></button></div><div class="srow"><div class="sl">Prompt<small>A copy-ready prompt drafting box</small></div><button class="toggle" id="insertPrompt"><b></b></button></div><div class="srow"><div class="sl">Heading<small>Simple size picker when selected</small></div><button class="toggle" id="insertHeading"><b></b></button></div><div class="srow"><div class="sl">Collapsible group<small>Hide supporting details until needed</small></div><button class="toggle" id="insertGroup"><b></b></button></div></div>';
+      content=settingsHeading("Manage",true)+'<p class="hint">Choose what appears under New and in a note’s Insert menu. Existing content is never removed when an option is turned off.</p><div class="grp"><div class="srow"><div class="sl">Notes<small>Notes and the YouTube script template</small></div><button class="toggle" id="typeNote"><b></b></button></div><div class="srow"><div class="sl">Audio<small>Record or upload audio clips</small></div><button class="toggle" id="typeAudio"><b></b></button></div><div class="srow"><div class="sl">Todos<small>A note with a completion checkbox</small></div><button class="toggle" id="typeTodo"><b></b></button></div><div class="srow"><div class="sl">Agent<small>AI collaborators you can talk to inside a note</small></div><button class="toggle" id="typeAgent"><b></b></button></div></div><div class="grp" id="moduleTypes"></div><div class="grp"><h4>Note insert menu</h4><div class="srow"><div class="sl">Photo, video, or file<small>Inline images and videos, plus any attachment</small></div><button class="toggle" id="insertFile"><b></b></button></div><div class="srow"><div class="sl">Paragraph<small>Rich text with bold, italic, and underline</small></div><button class="toggle" id="insertParagraph"><b></b></button></div><div class="srow"><div class="sl">Comment<small>A cue-style note to yourself</small></div><button class="toggle" id="insertComment"><b></b></button></div><div class="srow"><div class="sl">Prompt<small>A copy-ready prompt drafting box</small></div><button class="toggle" id="insertPrompt"><b></b></button></div><div class="srow"><div class="sl">Heading<small>Simple size picker when selected</small></div><button class="toggle" id="insertHeading"><b></b></button></div><div class="srow"><div class="sl">Chapter<small>Named section with its own Listen button</small></div><button class="toggle" id="insertChapter"><b></b></button></div><div class="srow"><div class="sl">Collapsible group<small>Hide supporting details until needed</small></div><button class="toggle" id="insertGroup"><b></b></button></div><div class="srow"><div class="sl">Code<small>Syntax-highlighted editor, preview, and run tools</small></div><button class="toggle" id="insertCode"><b></b></button></div><div class="srow"><div class="sl">YouTube script starter<small>Add Intro, Main, and Outro chapters</small></div><button class="toggle" id="insertScriptTemplate"><b></b></button></div></div>';
     } else { settingsPage="home"; renderSettingsPage(); return; }
     box.innerHTML=content;
     $("closeSettings").onclick=function(){ $("settingsModal").classList.remove("open"); };
@@ -4109,7 +4299,7 @@
     var nav=box.querySelectorAll("[data-settings]"); for(var i=0;i<nav.length;i++){ nav[i].onclick=function(){ settingsPage=this.getAttribute("data-settings"); renderSettingsPage(); }; }
     if(settingsPage==="manage"){
       var manageHint=box.querySelector(".hint"), insertHeading=box.querySelector(".grp h4");
-      if(manageHint) manageHint.textContent="Choose what appears under New and in every note or task Details Insert menu. Existing content is never removed when an option is turned off.";
+      if(manageHint) manageHint.textContent="Choose what appears under New and in every note’s Insert menu. Existing content is never removed when an option is turned off.";
       if(insertHeading) insertHeading.textContent="Shared insert menu";
     }
     if(settingsPage==="appearance") setupAppearanceSettings();
@@ -4210,6 +4400,8 @@
   function setupAppearanceSettings(){
     var mt=$("motionToggle"); mt.classList.toggle("on",state.motion);
     mt.onclick=function(){ state.motion=!state.motion; mt.classList.toggle("on",state.motion); syncMotion(); persist(); };
+    var mobileFocus=$("mobileFolderFocusToggle"); mobileFocus.classList.toggle("on",state.mobileFolderFocus);
+    mobileFocus.onclick=function(){ state.mobileFolderFocus=!state.mobileFolderFocus; mobileFocus.classList.toggle("on",state.mobileFolderFocus); persist(); };
     var range=$("darknessRange"), output=$("darknessOutput"); range.value=state.darkness; output.textContent=state.darkness+"%";
     range.oninput=function(){ state.darkness=Number(range.value); output.textContent=state.darkness+"%"; applyTheme(0); };
     range.onchange=function(){ persist(); };
@@ -4220,7 +4412,7 @@
     var moduleBox=$("moduleTypes"), moduleDefs=typeModuleList().filter(function(def){ return !!def.create; });
     if(moduleBox&&!moduleDefs.length) moduleBox.parentNode.removeChild(moduleBox);
     else if(moduleBox){
-      moduleBox.appendChild(Object.assign(document.createElement("h4"),{textContent:"Video"}));
+      moduleBox.appendChild(Object.assign(document.createElement("h4"),{textContent:"More item types"}));
       moduleDefs.forEach(function(def){
         var srow=document.createElement("div"); srow.className="srow";
         var label=document.createElement("div"); label.className="sl";
@@ -4231,8 +4423,8 @@
         srow.appendChild(label); srow.appendChild(toggle); moduleBox.appendChild(srow);
       });
     }
-    [["typeScript","script"],["typeNote","note"],["typeAudio","audio"],["typeTodo","todo"],["typeAgent","agent"]].forEach(function(pair){ var button=$(pair[0]); button.classList.toggle("on",state.enabledTypes[pair[1]]); button.onclick=function(){ state.enabledTypes[pair[1]]=!state.enabledTypes[pair[1]]; button.classList.toggle("on",state.enabledTypes[pair[1]]); persist(); }; });
-    [["insertFile","file"],["insertParagraph","paragraph"],["insertComment","comment"],["insertPrompt","prompt"],["insertHeading","heading"],["insertGroup","group"]].forEach(function(pair){ var button=$(pair[0]); button.classList.toggle("on",state.noteInsertOptions[pair[1]]); button.onclick=function(){ state.noteInsertOptions[pair[1]]=!state.noteInsertOptions[pair[1]]; button.classList.toggle("on",state.noteInsertOptions[pair[1]]); persist(); }; });
+    [["typeNote","note"],["typeAudio","audio"],["typeTodo","todo"],["typeAgent","agent"]].forEach(function(pair){ var button=$(pair[0]); button.classList.toggle("on",state.enabledTypes[pair[1]]); button.onclick=function(){ state.enabledTypes[pair[1]]=!state.enabledTypes[pair[1]]; button.classList.toggle("on",state.enabledTypes[pair[1]]); persist(); }; });
+    [["insertFile","file"],["insertParagraph","paragraph"],["insertComment","comment"],["insertPrompt","prompt"],["insertHeading","heading"],["insertChapter","chapter"],["insertGroup","group"],["insertCode","code"],["insertScriptTemplate","scriptTemplate"]].forEach(function(pair){ var button=$(pair[0]); button.classList.toggle("on",state.noteInsertOptions[pair[1]]); button.onclick=function(){ state.noteInsertOptions[pair[1]]=!state.noteInsertOptions[pair[1]]; button.classList.toggle("on",state.noteInsertOptions[pair[1]]); persist(); }; });
   }
   var apiKeySaveTimer=null;
   function setupApiKeySettings(){
@@ -4335,6 +4527,8 @@
   }
   function setupVoiceSettings(){
     var picker=$("elevenlabsVoicePicker"), menu=$("elevenlabsVoiceMenu"), search=$("elevenlabsVoiceSearch"), list=$("elevenlabsVoiceOptions"), custom=$("customVoiceEntry"), input=$("customElevenlabsVoiceId"), save=$("saveCustomVoiceBtn"), status=$("voiceStatus"), userId=currentUser&&currentUser.uid, fetched=[];
+    var chapterNames=$("readChapterNamesToggle"); chapterNames.classList.toggle("on",state.readChapterNames);
+    chapterNames.onclick=function(){ state.readChapterNames=!state.readChapterNames; chapterNames.classList.toggle("on",state.readChapterNames); persist(); };
     function currentVoiceId(){ return runtimeApiKeys.elevenlabsVoice||DEFAULT_ELEVENLABS_VOICE; }
     function render(selectedId){ renderVoicePicker(picker,list,fetched,selectedId||currentVoiceId(),search.value); }
     function setMenu(open){ menu.hidden=!open; picker.classList.toggle("open",open); picker.setAttribute("aria-expanded",open?"true":"false"); if(open) search.focus(); }

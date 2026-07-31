@@ -27,6 +27,11 @@ only place you should need to touch.**
 coerces anything else back to `javascript` and guarantees `code` is a
 string, so old or synced data can't break the editor.
 
+Notes can also contain a `{ type: "code", language, code }` block. The core
+uses `SecondBrainCode.buildEmbedded(block, bridge)` so that inline blocks get
+the same language picker, highlighting, run/preview, copy, and download
+behaviour as a standalone Code item without creating a second editor.
+
 ## Highlighting
 
 There is no library — the app stays a static site with zero new

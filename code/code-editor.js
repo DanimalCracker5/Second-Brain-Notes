@@ -298,7 +298,8 @@
     done && done();
   }
 
-  function buildEditor(item) {
+  function buildEditor(item, bridge) {
+    var editorHost = bridge || host;
     tearDown();
     ensureCodeItem(item);
 
@@ -327,9 +328,9 @@
       pill.onclick = function () {
         if (item.language === lang.id) return;
         item.language = lang.id;
-        host.touchItem(item);
-        host.persist();
-        host.refreshItemEditor(item);
+        editorHost.touchItem(item);
+        editorHost.persist();
+        editorHost.refreshItemEditor(item);
         closeOutput();
         syncLanguage();
         paint();
@@ -434,7 +435,7 @@
 
     function runJavaScript() {
       var code = ta.value;
-      if (!code.trim()) { host.showToast("Nothing to run yet", true); return; }
+      if (!code.trim()) { editorHost.showToast("Nothing to run yet", true); return; }
       openOutput("js", "Console", true);
       var head = [
         "<script>",
@@ -508,7 +509,7 @@
 
     /* ---------- JSON format ---------- */
     function formatJson() {
-      if (!ta.value.trim()) { host.showToast("Nothing to format yet", true); return; }
+      if (!ta.value.trim()) { editorHost.showToast("Nothing to format yet", true); return; }
       try {
         var pretty = JSON.stringify(JSON.parse(ta.value), null, 2);
         if (pretty !== ta.value) {
@@ -516,9 +517,9 @@
           insertText(ta, pretty);
           ta.setSelectionRange(0, 0);
         }
-        host.showToast("Valid JSON — formatted");
+        editorHost.showToast("Valid JSON — formatted");
       } catch (e) {
-        host.showToast("Invalid JSON: " + (e && e.message ? e.message : "could not parse"), true);
+        editorHost.showToast("Invalid JSON: " + (e && e.message ? e.message : "could not parse"), true);
       }
     }
 
@@ -547,8 +548,8 @@
       var copyBtn = el("button", "ce-btn", "Copy");
       copyBtn.type = "button";
       copyBtn.onclick = function () {
-        if (!ta.value) { host.showToast("Nothing to copy yet", true); return; }
-        copyText(ta.value, function () { host.showToast("Code copied"); });
+        if (!ta.value) { editorHost.showToast("Nothing to copy yet", true); return; }
+        copyText(ta.value, function () { editorHost.showToast("Code copied"); });
       };
       actions.appendChild(copyBtn);
       var dlBtn = el("button", "ce-btn", "Download");
@@ -560,7 +561,7 @@
         a.href = url; a.download = name + "." + languageDef(item.language).ext;
         document.body.appendChild(a); a.click(); document.body.removeChild(a);
         URL.revokeObjectURL(url);
-        host.showToast(a.download + " downloaded");
+        editorHost.showToast(a.download + " downloaded");
       };
       actions.appendChild(dlBtn);
     }
@@ -621,15 +622,15 @@
     ta.addEventListener("scroll", syncScroll);
     ta.addEventListener("input", function () {
       item.code = ta.value;
-      host.touchItem(item);
-      host.save();
+      editorHost.touchItem(item);
+      editorHost.save();
       paint();
       schedulePreview();
       clearTimeout(view.metaTimer);
       /* Refresh the header meta and sidebar line count once typing pauses.
          refreshItemEditor calls back into refresh(), which no-ops while the
          textarea already matches item.code. */
-      view.metaTimer = setTimeout(function () { host.refreshItemEditor(item); }, 700);
+      view.metaTimer = setTimeout(function () { editorHost.refreshItemEditor(item); }, 700);
     });
     ta.addEventListener("keyup", updateStatus);
     ta.addEventListener("click", updateStatus);
@@ -752,7 +753,7 @@
         menuLabel: "Code",
         manageLabel: "Code",
         manageHint: "A syntax-highlighted editor with run, preview and export",
-        defaultEnabled: true,
+        defaultEnabled: false,
         icon: ICON_CODE,
         placeholder: "Untitled code",
         create: newCodeItem,
@@ -769,4 +770,6 @@
       }
     ];
   };
+  ns.buildEmbedded = function (block, bridge) { return buildEditor(block, bridge); };
+  ns.detach = tearDown;
 })(window.SecondBrainCode = window.SecondBrainCode || {});
