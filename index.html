@@ -766,7 +766,7 @@
   function newAudioItem(){ var it=baseItem(); it.type="audio"; it.recordings=[]; return it; }
   function newTask(){ return {id:uid(),text:"",description:"",body:"",attachments:[],blocks:[textBlock("")],subtasks:[],done:false,completed:null,detailsCollapsed:true}; }
   function newAgentItem(){ var it=baseItem(); it.type="agent"; it.title="New Agent"; it.agent={tab:"chat"}; normalizeAgent(it); return it; }
-  var NOTE_INSERT_DEFAULTS={file:true,paragraph:true,comment:true,prompt:true,heading:true,chapter:true,group:true,code:true,scriptTemplate:true};
+  var NOTE_INSERT_DEFAULTS={file:true,paragraph:true,comment:true,prompt:true,heading:true,chapter:true,group:true,code:true};
   function textBlock(text){ return {id:uid(),type:"text",text:text||"",html:escapeHtml(text||"").replace(/\n/g,"<br>")}; }
   function richTextToPlain(html){ var box=document.createElement("div"); box.innerHTML=html||""; return (box.innerText||box.textContent||"").replace(/\u00a0/g," "); }
   function sanitizeRichHtml(html){
@@ -791,7 +791,7 @@
     if(!note||typeof note!=="object") return;
     note.attachments=Array.isArray(note.attachments)?note.attachments:[];
     note.attachments.forEach(function(attachment){ if(!attachment.id) attachment.id=uid(); });
-    if(!Array.isArray(note.blocks)||!note.blocks.length){
+    if(!Array.isArray(note.blocks)){
       note.blocks=[textBlock(note.body||"")];
       note.attachments.forEach(function(attachment){ note.blocks.push({id:uid(),type:"attachment",attachmentId:attachment.id,width:100}); });
     } else {
@@ -807,7 +807,6 @@
         if(block.type==="code"){ if(typeof block.language!=="string") block.language="javascript"; if(typeof block.code!=="string") block.code=""; }
       });
       note.attachments.forEach(function(attachment){ if(!note.blocks.some(function(block){ return block.type==="attachment"&&block.attachmentId===attachment.id; })) note.blocks.push({id:uid(),type:"attachment",attachmentId:attachment.id,width:100}); });
-      if(!note.blocks.some(function(block){ return block.type==="text"; })) note.blocks.unshift(textBlock(""));
     }
     syncNoteBody(note);
   }
@@ -965,7 +964,7 @@
   function blankDeviceState(){
     var enabledTypes={script:false,note:true,todo:true,audio:true,agent:false};
     typeModuleList().forEach(function(def){ enabledTypes[def.type]=false; });
-    return {items:[],folders:[],tags:[],currentId:null,motion:true,theme:"nebula",darkness:82,enabledTypes:enabledTypes,noteInsertOptions:{file:true,paragraph:true,comment:true,prompt:true,heading:true,chapter:true,group:true,code:true,scriptTemplate:true},tagsCollapsed:false,allNotesName:"All notes",mobileFolderFocus:true,readChapterNames:false,filterFolder:null,filterTag:null,listSort:"updated",agentSettings:defaultAgentSettings(),pendingCloudSync:false,syncBaseline:null};
+    return {items:[],folders:[],tags:[],currentId:null,motion:true,theme:"nebula",darkness:82,enabledTypes:enabledTypes,noteInsertOptions:{file:true,paragraph:true,comment:true,prompt:true,heading:true,chapter:true,group:true,code:true},tagsCollapsed:false,allNotesName:"All notes",mobileFolderFocus:true,readChapterNames:false,filterFolder:null,filterTag:null,listSort:"updated",agentSettings:defaultAgentSettings(),pendingCloudSync:false,syncBaseline:null};
   }
   function clearAttachmentStore(){
     if(!window.indexedDB) return;
@@ -1095,10 +1094,10 @@
   }
   function publicShareSignature(item){
     if(item.type==="script") return JSON.stringify({type:item.type,title:item.title||"",sections:(item.sections||[]).map(function(section){ return {title:section.title||"",body:section.body||"",kind:section.kind||"chapter"}; })});
-    return JSON.stringify({type:item.type,title:item.title||"",blocks:publicNoteBlocks(item),attachments:(item.attachments||[]).map(function(attachment){ return attachment&&{id:attachment.id,name:attachment.name,type:attachment.type,size:attachment.size,storagePath:attachment.storagePath,inlineData:attachment.inlineData}; })});
+    return JSON.stringify({type:item.type,title:item.title||"",todo:!!item.todo,done:!!item.done,blocks:publicNoteBlocks(item),attachments:(item.attachments||[]).map(function(attachment){ return attachment&&{id:attachment.id,name:attachment.name,type:attachment.type,size:attachment.size,storagePath:attachment.storagePath,inlineData:attachment.inlineData}; })});
   }
   function publicSharePayload(item){
-    var now=Date.now(), payload={ownerId:currentUser.uid,shareId:item.shareId,type:item.type,title:item.title||"",createdAt:item.shareCreatedAt||now,updatedAt:now};
+    var now=Date.now(), payload={ownerId:currentUser.uid,shareId:item.shareId,type:item.type,title:item.title||"",todo:!!item.todo,done:!!item.done,createdAt:item.shareCreatedAt||now,updatedAt:now};
     if(item.type==="script"){
       payload.sections=(item.sections||[]).map(function(section){ return {id:section.id||uid(),title:section.title||"",body:section.body||"",kind:section.kind||"chapter"}; });
       return Promise.resolve(payload);
@@ -1181,6 +1180,8 @@
   var ICON_AUDIO='<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3v11a4 4 0 1 1-3-3.87V6l9-2v9a4 4 0 1 1-3-3.87V4.78z"/></svg>';
   var ICON_AGENT='<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="8" r="3.5"/><path d="M5 21c.8-4 3.2-6 7-6s6.2 2 7 6"/><path d="M19 5v4M17 7h4"/></svg>';
   var ICON_FOLDER='<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M3 7a2 2 0 0 1 2-2h4l2 2h8a2 2 0 0 1 2 2v8a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/></svg>';
+  var ICON_EYE='<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M2.5 12s3.5-6 9.5-6 9.5 6 9.5 6-3.5 6-9.5 6S2.5 12 2.5 12Z"/><circle cx="12" cy="12" r="2.5"/></svg>';
+  var ICON_EYE_OFF='<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="m3 3 18 18"/><path d="M10.6 5.1A10.7 10.7 0 0 1 12 5c6 0 9.5 7 9.5 7a17.8 17.8 0 0 1-3.1 3.9M6.2 6.2C3.9 8 2.5 12 2.5 12S6 19 12 19c1.5 0 2.8-.4 3.9-.9"/><path d="M9.9 9.9a3 3 0 0 0 4.2 4.2"/></svg>';
 
   /* =================== floating menu =================== */
   var openMenuEl=null, openMenuAnchor=null;
@@ -1245,7 +1246,7 @@
     foldersEl.appendChild(all);
     state.folders.forEach(function(f){
       var row=document.createElement("div"); row.className="folder-row"+(state.filterFolder===f.id?" active":""); row.draggable=true; row.setAttribute("data-folder-id",f.id);
-      row.innerHTML='<span class="folder-grip" title="Drag to reorder">⋮⋮</span>'+ICON_FOLDER+'<span class="fn"></span><button class="fx visibility" type="button" title="'+(f.hiddenFromAll?"Show in "+allNotesTitle():"Hide from "+allNotesTitle())+'" aria-label="'+(f.hiddenFromAll?"Show in "+allNotesTitle():"Hide from "+allNotesTitle())+'">'+(f.hiddenFromAll?'◉':'◌')+'</button><button class="fx rename" type="button" title="Rename folder" aria-label="Rename folder">'+ICON_EDIT+'</button><button class="fx delete" type="button" title="Delete folder" aria-label="Delete folder">'+ICON_DELETE+'</button>';
+      row.innerHTML='<span class="folder-grip" title="Drag to reorder">⋮⋮</span>'+ICON_FOLDER+'<span class="fn"></span><button class="fx visibility" type="button" title="'+(f.hiddenFromAll?"Show in "+allNotesTitle():"Hide from "+allNotesTitle())+'" aria-label="'+(f.hiddenFromAll?"Show in "+allNotesTitle():"Hide from "+allNotesTitle())+'">'+(f.hiddenFromAll?ICON_EYE_OFF:ICON_EYE)+'</button><button class="fx rename" type="button" title="Rename folder" aria-label="Rename folder">'+ICON_EDIT+'</button><button class="fx delete" type="button" title="Delete folder" aria-label="Delete folder">'+ICON_DELETE+'</button>';
       row.querySelector(".fn").textContent=f.name;
       row.onclick=function(e){ if(e.target.closest(".fx")) return; openFolder(f.id); };
       row.ondragstart=function(event){ draggedFolderId=f.id; row.classList.add("dragging"); event.dataTransfer.effectAllowed="move"; event.dataTransfer.setData("text/plain",f.id); };
@@ -1858,7 +1859,7 @@
   function deleteNoteBlock(note,block){
     var index=note.blocks.findIndex(function(item){ return item.id===block.id; });
     if(index<0) return;
-    note.blocks.splice(index,1); if(!note.blocks.length) note.blocks.push(textBlock("")); activeNoteTextBlock=null; refreshNoteBlocks(note); showToast("Block deleted");
+    note.blocks.splice(index,1); activeNoteTextBlock=null; refreshNoteBlocks(note); showToast("Block deleted");
   }
   function buildNoteBlockActions(note,block,className){
     var index=note.blocks.findIndex(function(item){ return item.id===block.id; }), actions=document.createElement("div"); actions.className="note-block-actions "+className;
@@ -1930,10 +1931,6 @@
   function insertNoteBlock(note,type,insertAt){
     var block=createNoteBlock(type); if(!block) return;
     var index=typeof insertAt==="number"?insertAt:noteInsertIndex(note); note.blocks.splice(index,0,block); activeNoteTextBlock=null; syncNoteBody(note); touchContent(note); persist(); refreshNoteEditor(note); focusNoteBlock(block);
-  }
-  function insertYoutubeScriptBlocks(note,insertAt){
-    var index=typeof insertAt==="number"?insertAt:noteInsertIndex(note), blocks=[chapterBlock("Intro",""),chapterBlock("Main",""),chapterBlock("Outro","")];
-    note.template="youtube-script"; note.blocks.splice.apply(note.blocks,[index,0].concat(blocks)); activeNoteTextBlock=null; syncNoteBody(note); touchContent(note); persist(); refreshNoteEditor(note); focusNoteBlock(blocks[0]);
   }
   function saveNoteBlockChange(note,block,immediate){
     syncNoteBody(note); touchContent(note); updateMeta(); refreshListMeta(); if(immediate) persist(); else save();
@@ -2044,8 +2041,7 @@
         ["heading","<span style=\"font-weight:700\">H</span>","Heading",function(){ insertNoteBlock(note,"heading",insertAt); }],
         ["chapter","<span style=\"font-weight:700\">CH</span>","Chapter",function(){ insertNoteBlock(note,"chapter",insertAt); }],
         ["group","<span style=\"font-size:1rem\">⌄</span>","Collapsible group",function(){ insertNoteBlock(note,"group",insertAt); }],
-        ["code","<span style=\"font:700 .76rem DM Mono\">&lt;/&gt;</span>","Code",function(){ insertNoteBlock(note,"code",insertAt); }],
-        ["scriptTemplate","<span style=\"font-weight:700\">▶</span>","YouTube script starter",function(){ insertYoutubeScriptBlocks(note,insertAt); }]
+        ["code","<span style=\"font:700 .76rem DM Mono\">&lt;/&gt;</span>","Code",function(){ insertNoteBlock(note,"code",insertAt); }]
       ];
       options.forEach(function(option){ if(state.noteInsertOptions[option[0]]) menu.appendChild(mkItem(option[1],option[2],false,function(){ closeMenu(); option[3](); })); });
       if(menu.children.length===1){ var empty=document.createElement("div"); empty.className="tag-empty"; empty.textContent="Enable insert options in Settings → Manage."; menu.appendChild(empty); }
@@ -3429,7 +3425,7 @@
     openMenu(self,function(m){
       if(state.enabledTypes.note){
         m.appendChild(mkItem(ICON_NOTE,"Note",false,function(){ closeMenu(); createItem(newNoteItem()); }));
-        m.appendChild(mkItem(ICON_SCRIPT,"YouTube script template",false,function(){ closeMenu(); createItem(newYoutubeScriptNote()); }));
+        m.appendChild(mkItem(ICON_SCRIPT,"YouTube Script",false,function(){ closeMenu(); createItem(newYoutubeScriptNote()); }));
       }
       if(state.enabledTypes.audio) m.appendChild(mkItem(ICON_AUDIO,"Audio",false,function(){ closeMenu(); createItem(newAudioItem()); }));
       if(state.enabledTypes.todo) m.appendChild(mkItem(ICON_TODO,"Todo",false,function(){ closeMenu(); createItem(newTodoItem()); }));
@@ -4291,7 +4287,7 @@
     } else if(settingsPage==="collab"){
       content=settingsHeading("AI collaborator",true)+'<p class="hint">The microphone beside this gear starts a conversation about whatever you have open — a note, a YouTube script, or a todo. The agent can suggest changes to your text, but nothing is written until you press Apply, and a backup is saved before every session.</p><div class="agent-edit" id="collabSettings"></div>';
     } else if(settingsPage==="manage"){
-      content=settingsHeading("Manage",true)+'<p class="hint">Choose what appears under New and in a note’s Insert menu. Existing content is never removed when an option is turned off.</p><div class="grp"><div class="srow"><div class="sl">Notes<small>Notes and the YouTube script template</small></div><button class="toggle" id="typeNote"><b></b></button></div><div class="srow"><div class="sl">Audio<small>Record or upload audio clips</small></div><button class="toggle" id="typeAudio"><b></b></button></div><div class="srow"><div class="sl">Todos<small>A note with a completion checkbox</small></div><button class="toggle" id="typeTodo"><b></b></button></div><div class="srow"><div class="sl">Agent<small>AI collaborators you can talk to inside a note</small></div><button class="toggle" id="typeAgent"><b></b></button></div></div><div class="grp" id="moduleTypes"></div><div class="grp"><h4>Note insert menu</h4><div class="srow"><div class="sl">Photo, video, or file<small>Inline images and videos, plus any attachment</small></div><button class="toggle" id="insertFile"><b></b></button></div><div class="srow"><div class="sl">Paragraph<small>Rich text with bold, italic, and underline</small></div><button class="toggle" id="insertParagraph"><b></b></button></div><div class="srow"><div class="sl">Comment<small>A cue-style note to yourself</small></div><button class="toggle" id="insertComment"><b></b></button></div><div class="srow"><div class="sl">Prompt<small>A copy-ready prompt drafting box</small></div><button class="toggle" id="insertPrompt"><b></b></button></div><div class="srow"><div class="sl">Heading<small>Simple size picker when selected</small></div><button class="toggle" id="insertHeading"><b></b></button></div><div class="srow"><div class="sl">Chapter<small>Named section with its own Listen button</small></div><button class="toggle" id="insertChapter"><b></b></button></div><div class="srow"><div class="sl">Collapsible group<small>Hide supporting details until needed</small></div><button class="toggle" id="insertGroup"><b></b></button></div><div class="srow"><div class="sl">Code<small>Syntax-highlighted editor, preview, and run tools</small></div><button class="toggle" id="insertCode"><b></b></button></div><div class="srow"><div class="sl">YouTube script starter<small>Add Intro, Main, and Outro chapters</small></div><button class="toggle" id="insertScriptTemplate"><b></b></button></div></div>';
+      content=settingsHeading("Manage",true)+'<p class="hint">Choose what appears under New and in a note’s Insert menu. Existing content is never removed when an option is turned off.</p><div class="grp"><div class="srow"><div class="sl">Notes<small>Notes and YouTube Script</small></div><button class="toggle" id="typeNote"><b></b></button></div><div class="srow"><div class="sl">Audio<small>Record or upload audio clips</small></div><button class="toggle" id="typeAudio"><b></b></button></div><div class="srow"><div class="sl">Todos<small>A note with a completion checkbox</small></div><button class="toggle" id="typeTodo"><b></b></button></div><div class="srow"><div class="sl">Agent<small>AI collaborators you can talk to inside a note</small></div><button class="toggle" id="typeAgent"><b></b></button></div></div><div class="grp" id="moduleTypes"></div><div class="grp"><h4>Note insert menu</h4><div class="srow"><div class="sl">Photo, video, or file<small>Inline images and videos, plus any attachment</small></div><button class="toggle" id="insertFile"><b></b></button></div><div class="srow"><div class="sl">Paragraph<small>Rich text with bold, italic, and underline</small></div><button class="toggle" id="insertParagraph"><b></b></button></div><div class="srow"><div class="sl">Comment<small>A cue-style note to yourself</small></div><button class="toggle" id="insertComment"><b></b></button></div><div class="srow"><div class="sl">Prompt<small>A copy-ready prompt drafting box</small></div><button class="toggle" id="insertPrompt"><b></b></button></div><div class="srow"><div class="sl">Heading<small>Simple size picker when selected</small></div><button class="toggle" id="insertHeading"><b></b></button></div><div class="srow"><div class="sl">Chapter<small>Named section with its own Listen button</small></div><button class="toggle" id="insertChapter"><b></b></button></div><div class="srow"><div class="sl">Collapsible group<small>Hide supporting details until needed</small></div><button class="toggle" id="insertGroup"><b></b></button></div><div class="srow"><div class="sl">Code<small>Syntax-highlighted editor, preview, and run tools</small></div><button class="toggle" id="insertCode"><b></b></button></div></div>';
     } else { settingsPage="home"; renderSettingsPage(); return; }
     box.innerHTML=content;
     $("closeSettings").onclick=function(){ $("settingsModal").classList.remove("open"); };
@@ -4424,7 +4420,7 @@
       });
     }
     [["typeNote","note"],["typeAudio","audio"],["typeTodo","todo"],["typeAgent","agent"]].forEach(function(pair){ var button=$(pair[0]); button.classList.toggle("on",state.enabledTypes[pair[1]]); button.onclick=function(){ state.enabledTypes[pair[1]]=!state.enabledTypes[pair[1]]; button.classList.toggle("on",state.enabledTypes[pair[1]]); persist(); }; });
-    [["insertFile","file"],["insertParagraph","paragraph"],["insertComment","comment"],["insertPrompt","prompt"],["insertHeading","heading"],["insertChapter","chapter"],["insertGroup","group"],["insertCode","code"],["insertScriptTemplate","scriptTemplate"]].forEach(function(pair){ var button=$(pair[0]); button.classList.toggle("on",state.noteInsertOptions[pair[1]]); button.onclick=function(){ state.noteInsertOptions[pair[1]]=!state.noteInsertOptions[pair[1]]; button.classList.toggle("on",state.noteInsertOptions[pair[1]]); persist(); }; });
+    [["insertFile","file"],["insertParagraph","paragraph"],["insertComment","comment"],["insertPrompt","prompt"],["insertHeading","heading"],["insertChapter","chapter"],["insertGroup","group"],["insertCode","code"]].forEach(function(pair){ var button=$(pair[0]); button.classList.toggle("on",state.noteInsertOptions[pair[1]]); button.onclick=function(){ state.noteInsertOptions[pair[1]]=!state.noteInsertOptions[pair[1]]; button.classList.toggle("on",state.noteInsertOptions[pair[1]]); persist(); }; });
   }
   var apiKeySaveTimer=null;
   function setupApiKeySettings(){
