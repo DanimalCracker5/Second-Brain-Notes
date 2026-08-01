@@ -1,0 +1,20 @@
+{
+  "name": "Second Brain Notes",
+  "short_name": "Second Brain",
+  "description": "A cloud-synced workspace for notes, tasks, scripts, media, and AI collaboration.",
+  "start_url": "/?source=pwa",
+  "scope": "/",
+  "display": "standalone",
+  "orientation": "any",
+  "background_color": "#08080c",
+  "theme_color": "#08080c",
+  "categories": ["productivity", "business"],
+  "icons": [
+    {
+      "src": "/icons/icon.svg",
+      "sizes": "any",
+      "type": "image/svg+xml",
+      "purpose": "any maskable"
+    }
+  ]
+}

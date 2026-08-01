@@ -4,6 +4,14 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
 <meta name="theme-color" content="#000000">
+<meta name="description" content="Second Brain Notes — a cloud-synced workspace for notes, tasks, scripts, media, and AI collaboration.">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="Second Brain">
+<link rel="manifest" href="./manifest.webmanifest">
+<link rel="icon" type="image/svg+xml" href="./icons/icon.svg">
+<link rel="apple-touch-icon" href="./icons/icon.svg">
 <title>Second Brain</title>
 
 <!-- Firebase project settings live beside this file. -->
@@ -4780,6 +4788,15 @@
   captureAutoBackup(false); applyTheme(0); syncMotion(); renderAll(); renderFoot(); initFirebase();
   window.__astral={ state:state, render:renderAll, api:runtimeApiKeys };
 })();
+</script>
+<script>
+  if ('serviceWorker' in navigator && location.protocol !== 'file:') {
+    window.addEventListener('load', function () {
+      navigator.serviceWorker.register('./service-worker.js').catch(function (error) {
+        console.warn('Second Brain offline support could not start:', error);
+      });
+    });
+  }
 </script>
 </body>
 </html>
