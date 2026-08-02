@@ -1,0 +1,14 @@
+[
+  {
+    "relation": [
+      "delegate_permission/common.handle_all_urls"
+    ],
+    "target": {
+      "namespace": "android_app",
+      "package_name": "com.astralstudios.secondbrainnotes",
+      "sha256_cert_fingerprints": [
+        "0C:E1:CD:19:CD:DC:51:F8:09:74:6D:11:29:6B:06:12:83:0E:9A:D5:E6:20:A0:CA:08:4D:AE:AE:77:87:2C:6D"
+      ]
+    }
+  }
+]
