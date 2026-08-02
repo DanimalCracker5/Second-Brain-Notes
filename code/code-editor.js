@@ -318,14 +318,14 @@
 
     /* ---------- toolbar ---------- */
     var bar = el("div", "ce-toolbar");
-    var langs = el("div", "ce-langs");
-    langs.setAttribute("role", "tablist");
-    var pills = {};
+    var langs = document.createElement("select");
+    langs.className = "ce-language-select";
+    langs.setAttribute("aria-label", "Code language");
     LANGUAGES.forEach(function (lang) {
-      var pill = el("button", "ce-pill", lang.name);
-      pill.type = "button";
-      pill.setAttribute("role", "tab");
-      pill.onclick = function () {
+      var option = document.createElement("option"); option.value = lang.id; option.textContent = lang.name; langs.appendChild(option);
+    });
+    langs.onchange = function () {
+      var lang = languageDef(langs.value);
         if (item.language === lang.id) return;
         item.language = lang.id;
         editorHost.touchItem(item);
@@ -335,10 +335,7 @@
         syncLanguage();
         paint();
         ta.focus();
-      };
-      pills[lang.id] = pill;
-      langs.appendChild(pill);
-    });
+    };
     var actions = el("div", "ce-actions");
     bar.appendChild(langs);
     bar.appendChild(actions);
@@ -567,10 +564,7 @@
     }
 
     function syncLanguage() {
-      LANGUAGES.forEach(function (lang) {
-        pills[lang.id].classList.toggle("active", lang.id === item.language);
-        pills[lang.id].setAttribute("aria-selected", lang.id === item.language ? "true" : "false");
-      });
+      langs.value = languageDef(item.language).id;
       ta.placeholder = languageDef(item.language).placeholder;
       statusLang.textContent = languageDef(item.language).name;
       syncActions();

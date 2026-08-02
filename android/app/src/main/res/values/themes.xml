@@ -1,0 +1,9 @@
+<resources>
+    <style name="Theme.SecondBrain" parent="android:style/Theme.Material.Light.NoActionBar">
+        <item name="android:fontFamily">sans</item>
+        <item name="android:colorAccent">#8B6BE8</item>
+        <item name="android:windowLightStatusBar">false</item>
+        <item name="android:statusBarColor">@color/brand_background</item>
+        <item name="android:navigationBarColor">@color/brand_background</item>
+    </style>
+</resources>

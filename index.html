@@ -164,8 +164,10 @@
   .note-chapter .note-paragraph-wrap{ margin:5px 0 0 25px; }
   .note-chapter .note-paragraph{ min-height:64px; font-size:1rem; }
   .note-code{ position:relative; margin:12px 0; padding-top:1px; }
-  .note-code .note-block-actions{ top:10px; right:9px; bottom:auto; }
+  .note-code .note-block-actions{ right:9px; bottom:5px; top:auto; }
   .note-code:hover .note-block-actions,.note-code:focus-within .note-block-actions{ opacity:1; visibility:visible; pointer-events:auto; transform:translateY(0); }
+  .workout-summary{ display:flex; align-items:baseline; justify-content:space-between; gap:12px; margin:8px 0 12px; padding:12px 14px; border:1px solid var(--line); border-radius:12px; background:var(--accent-soft); }
+  .workout-summary b{ color:var(--accent); } .workout-summary small{ color:var(--ink-faint); }
   .note-drop{ height:10px; margin:0; border-radius:7px; transition:height .14s,background .14s,border-color .14s; }
   .note-editor.dragging .note-drop{ height:30px; border:1px dashed rgba(255,255,255,.14); }
   .note-editor.dragging .note-drop::after{ content:"Drop attachment here"; display:block; color:var(--ink-faint); font:500 .64rem "DM Mono",monospace; text-align:center; line-height:28px; opacity:0; transition:opacity .14s; }
@@ -736,13 +738,13 @@
   var TAG_HUES=[265,320,15,42,158,205,95,340,180,55];
 
   /* =================== storage =================== */
-  var KEY="astral-notes-v5", OLDS=["astral-notes-v4","astral-notes-v3"], CFGKEY="astral-fb-config", BACKUP_KEY="second-brain-auto-backups-v1", BACKUP_LIMIT=10, AUTO_BACKUP_COOLDOWN=60*60*1000, mem=null;
-  var deviceBackups=[], attachmentDbPromise=null, activeNoteTextBlock=null, draggedNoteBlock=null, activeAttachmentUploads={}, activeAudioRecorder=null;
+  var KEY="astral-notes-v5", OLDS=["astral-notes-v4","astral-notes-v3"], CFGKEY="astral-fb-config", BACKUP_KEY="second-brain-auto-backups-v1", DOCUMENT_BACKUP_KEY="second-brain-document-backups-v1", BACKUP_LIMIT=10, AUTO_BACKUP_COOLDOWN=60*60*1000, mem=null;
+  var deviceBackups=[], documentBackups={}, attachmentDbPromise=null, activeNoteTextBlock=null, draggedNoteBlock=null, activeAttachmentUploads={}, activeAudioRecorder=null;
   var DEFAULT_ELEVENLABS_VOICE="21m00Tcm4TlvDq8ikWAM", CUSTOM_VOICE_OPTION="__elevenlabs_voice_id__";
   var runtimeApiKeys={openai:"",elevenlabs:"",elevenlabsVoice:DEFAULT_ELEVENLABS_VOICE,savedVoices:[],audio:null,audioUrl:null,ttsControl:null,ttsRequestId:0};
   /* AI collaborator limits. Transcripts ride along in the synced state document,
      so they are capped hard in both directions. */
-  var AGENT_DEFAULT_MODEL="gpt-4o-mini", AGENT_FALLBACK_MODELS=["gpt-4o","gpt-4o-mini"];
+  var AGENT_DEFAULT_ID="__default_agent__", AGENT_DEFAULT_NAME="Default assistant", AGENT_DEFAULT_MODEL="gpt-4o-mini", AGENT_FALLBACK_MODELS=["gpt-4o-mini","gpt-4o"];
   var COLLAB_HISTORY_LIMIT=24, COLLAB_MESSAGE_LIMIT=4000, COLLAB_CONTEXT_LIMIT=24000, COLLAB_PROPOSAL_CONTEXT_LIMIT=12000, COLLAB_TOOL_ROUNDS=4, COLLAB_SPEECH_CHUNK_LIMIT=2400;
   var canPersist=(function(){ try{ localStorage.setItem("__t","1"); localStorage.removeItem("__t"); return true; }catch(e){ return false; } })();
   function readKey(k){ if(canPersist){ try{ return JSON.parse(localStorage.getItem(k)); }catch(e){} } return null; }
@@ -765,7 +767,18 @@
     if(!canPersist) return false;
     try{ localStorage.setItem(BACKUP_KEY,JSON.stringify(deviceBackups)); return true; }catch(e){ console.warn("Device backup could not be saved:",e); return false; }
   }
-  function persist(){ captureAutoBackup(false); state.lastLocalChange=Date.now(); if(currentUser) state.pendingCloudSync=true; var d=JSON.stringify(state); if(canPersist){ try{ localStorage.setItem(KEY,d); }catch(e){ mem=JSON.parse(d); } } else mem=JSON.parse(d); setSaveState(currentUser?"Saving to cloud":"Sign in to sync"); if(!cloudSyncPaused&&!cloudSyncLoading) saveCloud(); }
+  function documentBackupPayload(item){ return {app:"second-brain",version:13,item:JSON.parse(JSON.stringify(item)),created:Date.now()}; }
+  function captureDocumentBackup(item,force,kind){
+    if(!item||!item.id) return false;
+    var list=documentBackups[item.id]||(documentBackups[item.id]=[]), created=Date.now(), backupKind=kind||"automatic";
+    if(backupKind==="automatic"&&list.length&&created-(list[0].created||0)<AUTO_BACKUP_COOLDOWN) return true;
+    if(list.length>=BACKUP_LIMIT) list.pop();
+    list.unshift({kind:backupKind,created:created,data:documentBackupPayload(item)});
+    if(!canPersist) return false;
+    try{ localStorage.setItem(DOCUMENT_BACKUP_KEY,JSON.stringify(documentBackups)); return true; }catch(e){ console.warn("Document backup could not be saved:",e); return false; }
+  }
+  function documentBackupList(item){ return item&&documentBackups[item.id]||[]; }
+  function persist(){ captureAutoBackup(false); captureDocumentBackup(current(),false,"automatic"); state.lastLocalChange=Date.now(); if(currentUser) state.pendingCloudSync=true; var d=JSON.stringify(state); if(canPersist){ try{ localStorage.setItem(KEY,d); }catch(e){ mem=JSON.parse(d); } } else mem=JSON.parse(d); setSaveState(currentUser?"Saving to cloud":"Sign in to sync"); if(!cloudSyncPaused&&!cloudSyncLoading) saveCloud(); }
 
   function uid(){ return Date.now().toString(36)+Math.random().toString(36).slice(2,7); }
   function sec(t,b,kind){ return {id:uid(),title:t||"",body:b||"",kind:kind||"chapter"}; }
@@ -777,6 +790,7 @@
   function newAudioItem(){ var it=baseItem(); it.type="audio"; it.recordings=[]; return it; }
   function newTask(){ return {id:uid(),text:"",description:"",body:"",attachments:[],blocks:[textBlock("")],subtasks:[],done:false,completed:null,detailsCollapsed:true}; }
   function newAgentItem(){ var it=baseItem(); it.type="agent"; it.title="New Agent"; it.agent={tab:"chat"}; normalizeAgent(it); return it; }
+  function newWorkoutRoutine(){ var it=baseItem(); it.type="workout"; it.title="New Workout Routine"; it.workout={sessions:[],lastCompleted:null}; it.blocks=[textBlock("")]; it.body=""; return it; }
   var NOTE_INSERT_DEFAULTS={file:true,paragraph:true,comment:true,prompt:true,heading:true,chapter:true,group:true,code:true};
   function textBlock(text){ return {id:uid(),type:"text",text:text||"",html:escapeHtml(text||"").replace(/\n/g,"<br>")}; }
   function richTextToPlain(html){ var box=document.createElement("div"); box.innerHTML=html||""; return (box.innerText||box.textContent||"").replace(/\u00a0/g," "); }
@@ -867,6 +881,7 @@
     if(it.type==="note"){ ensureNoteBlocks(it); if(it.todo){ it.done=!!it.done; if(!it.done) it.completed=null; } }
     if(it.type==="audio") ensureAudioItem(it);
     if(it.type==="agent") normalizeAgent(it);
+    if(it.type==="workout") { it.workout=it.workout&&typeof it.workout==="object"?it.workout:{sessions:[],lastCompleted:null}; if(!Array.isArray(it.workout.sessions)) it.workout.sessions=[]; }
     if(it.collabChat!==undefined) it.collabChat=trimChatLog(it.collabChat);
     var def=itemModule(it);
     if(def&&def.normalize) def.normalize(it);
@@ -955,6 +970,7 @@
   if(typeof state.enabledTypes.note!=="boolean") state.enabledTypes.note=true;
   if(typeof state.enabledTypes.todo!=="boolean") state.enabledTypes.todo=true;
   if(typeof state.enabledTypes.agent!=="boolean") state.enabledTypes.agent=false;
+  if(typeof state.enabledTypes.workout!=="boolean") state.enabledTypes.workout=false;
   if(typeof state.enabledTypes.audio!=="boolean") state.enabledTypes.audio=true;
   typeModuleList().forEach(function(def){ if(typeof state.enabledTypes[def.type]!=="boolean") state.enabledTypes[def.type]=false; });
   state.noteInsertOptions=state.noteInsertOptions||{};
@@ -968,13 +984,14 @@
   agentSettings();
   if(typeof state.pendingCloudSync!=="boolean") state.pendingCloudSync=false;
   deviceBackups=(readKey(BACKUP_KEY)||[]).sort(function(a,b){ return (b.created||0)-(a.created||0); }).slice(0,BACKUP_LIMIT);
+  documentBackups=readKey(DOCUMENT_BACKUP_KEY)||{};
   if(canPersist){ try{ localStorage.setItem(BACKUP_KEY,JSON.stringify(deviceBackups)); }catch(e){} }
   state.items.forEach(normalizeItem);
   if(!state.items.length) state.items.push(newNoteItem());
   if(!state.currentId || !state.items.some(function(i){return i.id===state.currentId;})) state.currentId=state.items[0].id;
 
   function blankDeviceState(){
-    var enabledTypes={script:false,note:true,todo:true,audio:true,agent:false};
+    var enabledTypes={script:false,note:true,todo:true,audio:true,agent:false,workout:false};
     typeModuleList().forEach(function(def){ enabledTypes[def.type]=false; });
     return {items:[],folders:[],tags:[],currentId:null,motion:true,theme:"nebula",darkness:82,enabledTypes:enabledTypes,noteInsertOptions:{file:true,paragraph:true,comment:true,prompt:true,heading:true,chapter:true,group:true,code:true},tagsCollapsed:false,allNotesName:"All notes",readChapterNames:false,filterFolder:null,filterTag:null,listSort:"updated",agentSettings:defaultAgentSettings(),pendingCloudSync:false,syncBaseline:null};
   }
@@ -989,11 +1006,11 @@
   }
   function wipeDeviceNotes(){
     clearTimeout(cloudTimer);
-    cloudTimer=null; mem=null; deviceBackups=[]; activeAttachmentUploads={}; activeNoteTextBlock=null; draggedNoteBlock=null;
+    cloudTimer=null; mem=null; deviceBackups=[]; documentBackups={}; activeAttachmentUploads={}; activeNoteTextBlock=null; draggedNoteBlock=null;
     if(activeAudioRecorder){ try{ activeAudioRecorder.recorder.stop(); }catch(e){} activeAudioRecorder=null; }
     if(canPersist){
       try{
-        [KEY,BACKUP_KEY].concat(OLDS).forEach(function(key){ localStorage.removeItem(key); });
+        [KEY,BACKUP_KEY,DOCUMENT_BACKUP_KEY].concat(OLDS).forEach(function(key){ localStorage.removeItem(key); });
         for(var i=localStorage.length-1;i>=0;i--){ var name=localStorage.key(i); if(name&&/^second-brain-(cloud-linked|cloud-backup)-/.test(name)) localStorage.removeItem(name); }
       }catch(e){}
     }
@@ -1074,9 +1091,9 @@
   function formatAudioDuration(seconds){ seconds=Math.max(0,Math.round(Number(seconds)||0)); var minutes=Math.floor(seconds/60), remainder=seconds%60; return minutes+":"+(remainder<10?"0":"")+remainder; }
   function audioMetaText(it){ var count=(it.recordings||[]).length; return count?count+" recording"+(count===1?"":"s")+" · "+formatAudioDuration(audioDuration(it)):"No recordings"; }
   function isTodoNote(it){ return !!(it&&it.type==="note"&&it.todo); }
-  function itemText(it){ var mod=itemModule(it); if(mod&&mod.text) return mod.text(it); if(it.type==="script") return (it.sections||[]).map(function(x){return x.body;}).join(" "); if(it.type==="todo") return (it.todos||[]).map(function(task){ return [task.text,taskDetailsText(task),(task.subtasks||[]).map(function(subtask){ return subtask.text||""; }).join(" ")].filter(Boolean).join(" "); }).join(" "); if(it.type==="audio") return (it.recordings||[]).map(function(recording){ return recording.name||""; }).join(" "); if(it.type==="agent") return [it.title,(it.agent||{}).longTermMemory,(it.agent||{}).shortTermMemory,(it.agent||{}).instructions].join(" "); if(it.type==="note"&&Array.isArray(it.blocks)) return it.blocks.map(blockPlainText).filter(Boolean).join("\n"); return it.body||""; }
+  function itemText(it){ var mod=itemModule(it); if(mod&&mod.text) return mod.text(it); if(it.type==="workout") return (it.blocks||[]).map(blockPlainText).filter(Boolean).join("\n"); if(it.type==="script") return (it.sections||[]).map(function(x){return x.body;}).join(" "); if(it.type==="todo") return (it.todos||[]).map(function(task){ return [task.text,taskDetailsText(task),(task.subtasks||[]).map(function(subtask){ return subtask.text||""; }).join(" ")].filter(Boolean).join(" "); }).join(" "); if(it.type==="audio") return (it.recordings||[]).map(function(recording){ return recording.name||""; }).join(" "); if(it.type==="agent") return [it.title,(it.agent||{}).longTermMemory,(it.agent||{}).shortTermMemory,(it.agent||{}).instructions].join(" "); if(it.type==="note"&&Array.isArray(it.blocks)) return it.blocks.map(blockPlainText).filter(Boolean).join("\n"); return it.body||""; }
   function itemWords(it){ return words(itemText(it)); }
-  function itemLabel(it){ var mod=itemModule(it); if(mod&&mod.label) return mod.label; return isTodoNote(it)||it.type==="todo"?"Todo":(it.type==="script"?"YouTube Script":(it.type==="audio"?"Audio":(it.type==="agent"?"Agent":"Note"))); }
+  function itemLabel(it){ var mod=itemModule(it); if(mod&&mod.label) return mod.label; return isTodoNote(it)||it.type==="todo"?"Todo":(it.type==="script"?"YouTube Script":(it.type==="audio"?"Audio":(it.type==="agent"?"Agent":(it.type==="workout"?"Workout Routine":"Note")))); }
   function setTodoDone(it,done){
     it.done=typeof done==="boolean"?done:!it.done;
     it.completed=it.done?Date.now():null;
@@ -1378,10 +1395,23 @@
     closeMenu(); persist(); renderList(); if(current().id===it.id) renderMain();
     showToast(it.locked?"Locked — unlock it before deleting":"Unlocked — this item can be deleted");
   }
+  function restoreDocumentBackup(item){
+    var list=documentBackupList(item); if(!list.length){ showToast("No document backups yet",true); return; }
+    if(!confirm("Restore the latest backup of this document? Your current document will be saved first.")) return;
+    captureDocumentBackup(item,true,"recovery");
+    var saved=list[0]&&list[0].data&&list[0].data.item;
+    if(!saved) return;
+    var index=state.items.findIndex(function(entry){ return entry.id===item.id; });
+    if(index<0) return;
+    saved.id=item.id; state.items[index]=saved; normalizeItem(saved); state.currentId=saved.id; persist(); renderAll(); showToast("Document backup restored");
+  }
   function openItemActions(anchor,it){
     openMenu(anchor,function(m){
       var title=document.createElement("div"); title.className="mtitle"; title.textContent=itemLabel(it)+" actions"; m.appendChild(title);
-      m.appendChild(mkItem(ICON_DUPLICATE,"Duplicate",false,function(){ closeMenu(); duplicateItem(it); }));
+       m.appendChild(mkItem(ICON_DUPLICATE,"Duplicate",false,function(){ closeMenu(); duplicateItem(it); }));
+       m.appendChild(mkItem(ICON_DOWNLOAD,"Back up this document",false,function(){ closeMenu(); var saved=captureDocumentBackup(it,true,"manual"); if(saved&&currentUser&&db) writeCloudDocumentBackup(it,"manual").then(function(){ showToast("Document backup saved"); }).catch(function(){ showToast("Document backup saved on this device"); }); else showToast(saved?"Document backup saved on this device":"Couldn’t save document backup",!saved); }));
+       var docBackups=documentBackupList(it);
+       if(docBackups.length) m.appendChild(mkItem(ICON_UP,"Restore document backup",false,function(){ closeMenu(); restoreDocumentBackup(it); }));
       if(runtimeApiKeys.elevenlabs&&it.type!=="agent"&&ttsTextForItem(it).trim()) m.appendChild(mkItem(ICON_DOWNLOAD,"Download as audio",false,function(){ closeMenu(); downloadTts(it); }));
       m.appendChild(mkItem(ICON_UP,"Move up",false,function(){ closeMenu(); moveItem(it,-1); }));
       m.appendChild(mkItem(ICON_DOWN,"Move down",false,function(){ closeMenu(); moveItem(it,1); }));
@@ -1521,6 +1551,8 @@
       sheet.appendChild(addTodo);
     } else if(it.type==="audio") {
       sheet.appendChild(buildAudioEntry(it));
+    } else if(it.type==="workout") {
+      sheet.appendChild(buildWorkoutRoutine(it));
     } else if(mod&&mod.build){
       renderedModule=mod;
       sheet.appendChild(mod.build(it));
@@ -1532,6 +1564,14 @@
     for(var i=0;i<tas.length;i++) grow(tas[i]);
     updateMeta();
     syncCollabToCurrentItem();
+  }
+  function buildWorkoutRoutine(it){
+    var wrap=document.createElement("section"); wrap.className="workout-routine";
+    var sessions=it.workout.sessions||[], head=document.createElement("div"); head.className="workout-summary";
+    var count=document.createElement("b"); count.textContent=sessions.length+" workout"+(sessions.length===1?"":"s")+" completed";
+    var last=document.createElement("small"); last.textContent=it.workout.lastCompleted?"Last done "+new Date(it.workout.lastCompleted).toLocaleDateString():"No workouts logged yet"; head.appendChild(count); head.appendChild(last); wrap.appendChild(head);
+    var log=document.createElement("button"); log.type="button"; log.className="b2 primary"; log.textContent="Log workout completed"; log.onclick=function(){ var now=Date.now(); sessions.push(now); it.workout.lastCompleted=now; touchContent(it); persist(); renderMain(); renderList(); showToast("Workout logged"); }; wrap.appendChild(log);
+    var editor=buildNoteEditor(it); wrap.appendChild(editor); return wrap;
   }
   var MAX_ATTACHMENT_BYTES=25*1024*1024, MAX_INLINE_IMAGE_BYTES=220*1024, ATTACHMENT_UPLOAD_TIMEOUT=35000;
   function attachmentStoreKey(noteId,attachmentId){ return noteId+":"+attachmentId; }
@@ -2570,20 +2610,25 @@
   var agentModelCache=null;
   var collab={open:false,host:null,hostKind:null,mode:"document",agentId:"",itemId:"",draft:"",busy:false,
     notes:[],proposals:[],recorder:null,recorderStream:null,recorderStop:false,
-    audio:null,audioUrl:null,speakToken:0,sessionKey:""};
+    audio:null,audioUrl:null,speakToken:0,sessionKey:"",grantedNoteIds:{}};
 
-  function defaultAgentSettings(){ return {defaultAgentId:"",activeAgentId:"",backupBeforeWork:true,speakReplies:true}; }
+  function defaultAgentSettings(){ return {defaultAgentId:"",activeAgentId:"",backupBeforeWork:true,speakReplies:true,requireApproval:true,defaultChat:[]}; }
   function agentSettings(){
     if(!state.agentSettings||typeof state.agentSettings!=="object") state.agentSettings=defaultAgentSettings();
     var s=state.agentSettings, defaults=defaultAgentSettings();
     Object.keys(defaults).forEach(function(key){ if(typeof s[key]!==typeof defaults[key]) s[key]=defaults[key]; });
+    s.defaultChat=trimChatLog(s.defaultChat);
     return s;
   }
   function agentItems(){ return (state.items||[]).filter(function(it){ return it.type==="agent"; }); }
   function agentById(id){ if(!id) return null; return agentItems().find(function(it){ return it.id===id; })||null; }
   function preferredAgent(){
     var s=agentSettings();
-    return agentById(s.activeAgentId)||agentById(s.defaultAgentId)||agentItems()[0]||null;
+    return agentById(s.activeAgentId)||agentById(s.defaultAgentId)||agentItems()[0]||defaultAgent();
+  }
+  function defaultAgent(){
+    var it={id:AGENT_DEFAULT_ID,type:"agent",title:AGENT_DEFAULT_NAME,updated:0,agent:{name:AGENT_DEFAULT_NAME,model:AGENT_DEFAULT_MODEL,tab:"chat",responseStyle:"Balanced",instructions:'{\n  "role": "helpful notes assistant",\n  "tone": "direct and friendly"\n}',longTermMemory:"{}",shortTermMemory:"{}",stats:{sessions:0,messages:0,edits:0,tokens:0,lastUsed:0},chat:agentSettings().defaultChat}};
+    return it;
   }
   function trimChatLog(log){
     return (Array.isArray(log)?log:[]).filter(function(m){ return m&&(m.role==="user"||m.role==="agent")&&typeof m.text==="string"; })
@@ -2657,7 +2702,10 @@
     } else if(it.type==="note"){
       ensureNoteBlocks(it);
       it.blocks.forEach(function(block,i){
-        if(isEditableBlock(block)) targets.push({id:block.id,kind:"block",block:block,owner:it,text:block.type==="code"?(block.code||""):(block.text||""),label:blockLabelFor(block,i),inline:block.type==="heading"});
+        if(isEditableBlock(block)){
+          targets.push({id:block.id,kind:"block",block:block,owner:it,text:block.type==="code"?(block.code||""):(block.text||""),label:blockLabelFor(block,i),inline:block.type==="heading"});
+          if(block.type==="chapter"||block.type==="group") targets.push({id:block.id+":title",kind:"block-title",block:block,owner:it,text:block.title||"",label:blockLabelFor(block,i)+" title",inline:true});
+        }
       });
     } else {
       targets.push({id:"body",kind:"body",text:it.body||"",label:"Body"});
@@ -2681,9 +2729,10 @@
     if(target.kind==="section"){ target.section.body=text; return true; }
     if(target.kind==="task"){ target.task.text=text; return true; }
     if(target.kind==="block"){ setBlockText(target.block,text); syncNoteBody(target.owner); return true; }
+    if(target.kind==="block-title"){ target.block.title=text; syncNoteBody(target.owner); return true; }
     return false;
   }
-  function insertAfterTarget(it,afterId,text){
+  function insertAfterTarget(it,afterId,text,blockType){
     if(it.type==="script"){
       var sections=it.sections||(it.sections=[]), at=sections.findIndex(function(s){ return s.id===afterId; });
       var section=sec("New chapter",text);
@@ -2698,7 +2747,12 @@
     }
     if(it.type==="note"){
       ensureNoteBlocks(it);
-      var block=textBlock(text), blockAt=it.blocks.findIndex(function(b){ return b.id===afterId; });
+      var type=blockType||"paragraph", block=createNoteBlock(type)||textBlock(text);
+      if(block.type==="code") block.code=text;
+      else if(block.type==="chapter"){ block.title="New chapter"; setBlockText(block,text); }
+      else if(block.type==="group"){ block.title="Untitled group"; block.text=text; }
+      else setBlockText(block,text);
+      var blockAt=it.blocks.findIndex(function(b){ return b.id===afterId; });
       if(blockAt<0) it.blocks.push(block); else it.blocks.splice(blockAt+1,0,block);
       return true;
     }
@@ -2713,9 +2767,15 @@
     lines.push("Response style: "+a.responseStyle+".");
     lines.push("");
     lines.push("HOW YOU WORK");
-    lines.push("- You cannot write into the document yourself. To change anything you must call propose_edits; the app then shows the user a before/after preview with Apply and Discard buttons. Only the user can apply it.");
-    lines.push("- Never say you have changed, updated, fixed, or saved anything. Say you have drafted or suggested it and it is waiting for them.");
+    lines.push(agentSettings().requireApproval
+      ? "- You cannot write into the document yourself. To change anything you must call propose_edits; the app then shows the user a before/after preview with Apply and Discard buttons. Only the user can apply it."
+      : "- When the user asks you to change the document, call propose_edits. The app is configured to apply your proposed edits automatically after saving a backup.");
+    lines.push(agentSettings().requireApproval
+      ? "- Never say you have changed, updated, fixed, or saved anything. Say you have drafted or suggested it and it is waiting for them."
+      : "- After proposing an edit, say it was applied automatically only when the app confirms the application succeeded.");
     lines.push("- If the user only wants feedback, an opinion, or an answer, reply in words and do not call propose_edits.");
+    lines.push("- You can use list_notes to see note titles and ids. Before reading any note that is not open, call request_note_access; the app will ask the user first. Only use read_notes after access is granted.");
+    lines.push("- When the user asks you to create a new note, call create_note. The app asks the user for confirmation before saving it.");
     lines.push("- Only propose an edit when they asked for one, or when you offered and they agreed.");
     lines.push("- Keep normal replies to one to three short sentences. They are read aloud, so use no markdown, lists, headings, or emoji.");
     lines.push("- Exception: after proposing an edit, or when the user asks to hear, repeat, or recap a pending suggestion, read the proposed wording aloud verbatim before saying it is waiting for approval. Never tell them to look at the preview or say you cannot see it.");
@@ -2726,7 +2786,7 @@
       lines.push("");
       lines.push("EDITING RULES");
       lines.push("- Every editable piece of the open document is listed below with a target_id. Use those ids exactly and never invent one.");
-      lines.push('- "replace" needs the complete new text for that piece. "append" and "prepend" need only the new text. "insert_after" adds a new piece below the target_id you name, or below everything if you pass "end".');
+      lines.push('- "replace" needs the complete new text for that piece. "append" and "prepend" need only the new text. "insert_after" adds a new piece below the target_id you name, or below everything if you pass "end". For insert_after, set block_type to paragraph, heading, chapter, comment, prompt, group, or code when the new piece should not be a paragraph.');
       lines.push('- "title" is always a valid target_id.');
       lines.push("- Change the fewest pieces that answer the request. Do not silently rewrite parts the user did not mention.");
       lines.push("- If the document is empty and the user has just rambled at you, propose a title plus clean prose paragraphs that keep every point they made.");
@@ -2753,7 +2813,7 @@
       var body=targets.map(function(t){ return "--- target_id: "+t.id+"\npart: "+t.label+"\ntext: "+(t.text?t.text:"(empty)"); }).join("\n");
       lines.push(body.length>COLLAB_CONTEXT_LIMIT?body.slice(0,COLLAB_CONTEXT_LIMIT)+"\n(document truncated — ask the user about parts you cannot see)":body);
     } else {
-      lines.push("No document is open, so propose_edits is unavailable. Talk with the user; if they want you to edit something, tell them to open the note, script, or todo first.");
+      lines.push("No document is open, so propose_edits is unavailable. You can still use list_notes, request_note_access, read_notes, create_note, and remember.");
     }
     return lines.join("\n");
   }
@@ -2768,6 +2828,7 @@
           target_id:{type:"string",description:'A target_id from the OPEN DOCUMENT list, "title", or "end" when inserting at the bottom.'},
           action:{type:"string",enum:["replace","append","prepend","insert_after"]},
           text:{type:"string",description:"For replace, the complete new text. For the others, only the new text being added."},
+          block_type:{type:"string",enum:["paragraph","heading","chapter","comment","prompt","group","code"],description:"For insert_after only. Defaults to paragraph."},
           note:{type:"string",description:"Optional one-line reason for this specific edit."}
         },required:["target_id","action","text"]}}
       },required:["summary","edits"]}
@@ -2780,6 +2841,26 @@
         key:{type:"string",description:"Short snake_case label for the fact."},
         value:{type:"string",description:"The fact itself, in one sentence."}
       },required:["key","value"]}
+    }});
+    tools.push({type:"function",function:{
+      name:"list_notes",
+      description:"List the user's notes by id and title without reading their contents. Use this before asking to read another note.",
+      parameters:{type:"object",properties:{include_agents:{type:"boolean",description:"Whether to include agent items. Defaults to false."}}}
+    }});
+    tools.push({type:"function",function:{
+      name:"request_note_access",
+      description:"Ask the user for permission to read the contents of one or more notes. The app shows a confirmation prompt; never assume permission.",
+      parameters:{type:"object",properties:{note_ids:{type:"array",items:{type:"string"},description:"Note ids returned by list_notes."},reason:{type:"string",description:"Short reason the notes are needed."}},required:["note_ids","reason"]}
+    }});
+    tools.push({type:"function",function:{
+      name:"read_notes",
+      description:"Read notes after the user has granted access. Only ids approved by the user will work.",
+      parameters:{type:"object",properties:{note_ids:{type:"array",items:{type:"string"},description:"Approved note ids."}},required:["note_ids"]}
+    }});
+    tools.push({type:"function",function:{
+      name:"create_note",
+      description:"Create a new plain note after asking the user for confirmation. Use this when the user explicitly asks you to save a new note.",
+      parameters:{type:"object",properties:{title:{type:"string",description:"Short note title."},content:{type:"string",description:"The note body."}},required:["title","content"]}
     }});
     return tools;
   }
@@ -2818,16 +2899,20 @@
      retry once without it whenever the API names it in the error. */
   function agentCompletion(agentItem,messages,tools){
     var a=normalizeAgent(agentItem);
-    function send(withTemperature){
+    function send(withTemperature,allowModelFallback){
       var body={model:a.model||AGENT_DEFAULT_MODEL,messages:messages};
       if(tools&&tools.length){ body.tools=tools; body.tool_choice="auto"; }
       if(withTemperature) body.temperature=a.temperature;
       return openaiRequest("chat/completions",body).catch(function(error){
         if(withTemperature&&/temperature/i.test(error.message||"")) return send(false);
+        if(allowModelFallback!==false&&a.model!==AGENT_DEFAULT_MODEL&&/(model|does not exist|not found|unavailable)/i.test(error.message||"")){
+          console.warn("Agent model unavailable; retrying with "+AGENT_DEFAULT_MODEL);
+          a.model=AGENT_DEFAULT_MODEL; return send(withTemperature,false);
+        }
         throw error;
       });
     }
-    return send(true);
+    return send(true,true);
   }
   function agentModels(){
     if(agentModelCache) return Promise.resolve(agentModelCache);
@@ -2837,9 +2922,9 @@
       if(!response.ok) throw new Error("Model list unavailable");
       return response.json();
     }).then(function(data){
-      var skip=/embedding|whisper|tts|dall-e|moderation|audio|realtime|transcribe|image|davinci|babbage|codex|sora|computer-use/i;
+      var skip=/embedding|whisper|tts|dall-e|moderation|audio|realtime|transcribe|image|davinci|babbage|codex|sora|computer-use|instruct|vision-preview|search-preview|gpt-3\.5|gpt-4-0613|turbo-2024/i;
       var ids=(data&&data.data||[]).map(function(model){ return cleanText(model&&model.id); })
-        .filter(function(id){ return id&&!skip.test(id); }).sort();
+        .filter(function(id){ return id&&( /^(gpt-|o[134])/i.test(id))&&!skip.test(id); }).sort();
       agentModelCache=ids.length?ids:AGENT_FALLBACK_MODELS.slice();
       return agentModelCache;
     }).catch(function(error){ console.warn("OpenAI model list unavailable:",error); return AGENT_FALLBACK_MODELS.slice(); });
@@ -2941,6 +3026,7 @@
     var doc=collabDocument();
     if(doc){ if(!Array.isArray(doc.collabChat)) doc.collabChat=[]; return doc.collabChat; }
     var agentItem=collabAgent();
+    if(agentItem&&agentItem.id===AGENT_DEFAULT_ID) return agentSettings().defaultChat;
     return agentItem?normalizeAgent(agentItem).chat:[];
   }
   function pushCollabMessage(role,text){
@@ -2950,6 +3036,20 @@
     if(doc) doc.updated=Date.now();
     if(agentItem){ var a=normalizeAgent(agentItem); a.stats.messages++; a.stats.lastUsed=Date.now(); agentItem.updated=Date.now(); }
     save(); renderCollabLog();
+  }
+  function noteCatalog(includeAgents){
+    return (state.items||[]).filter(function(it){ return includeAgents||it.type!=="agent"; }).map(function(it){
+      return {id:it.id,title:it.title||("Untitled "+itemLabel(it).toLowerCase()),type:itemLabel(it)};
+    });
+  }
+  function noteTextForAgent(it){
+    var text=itemText(it)||"";
+    return (it.title?"Title: "+it.title+"\n":"")+(text.length>COLLAB_CONTEXT_LIMIT?text.slice(0,COLLAB_CONTEXT_LIMIT)+"\n[truncated]":text);
+  }
+  function createAgentNote(title,content){
+    var note=newNoteItem(); note.title=cleanText(title)||"New note"; note.blocks=[textBlock(content||"")]; syncNoteBody(note);
+    state.items.unshift(note); state.currentId=note.id; note.updated=Date.now();
+    persist(); renderAll(); return note;
   }
   /* Session notes and proposals are deliberately not persisted: they describe
      one sitting, and the synced state document stays small without them. */
@@ -2994,8 +3094,10 @@
         if(text) readings.push((proposal.edits.length>1?"For "+edit.label+", ":"")+text);
       });
     });
-    if(!readings.length) return "I have a suggestion waiting for your approval.";
-    return "Here is the suggested wording. "+readings.join(" ")+" It is only a suggestion and is waiting for your approval.";
+    if(!readings.length) return agentSettings().requireApproval?"I have a suggestion waiting for your approval.":"I applied the requested change automatically.";
+    return agentSettings().requireApproval
+      ? "Here is the suggested wording. "+readings.join(" ")+" It is only a suggestion and is waiting for your approval."
+      : "I drafted and applied this automatically. "+readings.join(" ");
   }
   function buildProposal(summary,rawEdits,targets){
     var index={};
@@ -3009,6 +3111,7 @@
       var target=index[targetId];
       if(action==="insert_after"){
         edits.push({targetId:targetId,action:action,after:text,before:"",note:cleanText(raw.note),
+          blockType:["paragraph","heading","chapter","comment","prompt","group","code"].indexOf(raw.block_type)>=0?raw.block_type:"paragraph",
           label:target?target.label:(targetId==="end"?"End of document":"Unknown part"),
           actionLabel:target?"new part after this":"added at the end"});
         return;
@@ -3029,7 +3132,7 @@
     var index={}, applied=0, skipped=0;
     collabTargets(it).forEach(function(t){ index[t.id]=t; });
     proposal.edits.forEach(function(edit){
-      if(edit.action==="insert_after"){ if(insertAfterTarget(it,edit.targetId,edit.after)) applied++; else skipped++; return; }
+      if(edit.action==="insert_after"){ if(insertAfterTarget(it,edit.targetId,edit.after,edit.blockType)) applied++; else skipped++; return; }
       var target=index[edit.targetId];
       if(!target){ skipped++; return; }
       var next=edit.action==="append"?joinText(target.text,edit.after,target.inline)
@@ -3079,8 +3182,40 @@
           try{ args=JSON.parse(call.function.arguments||"{}"); }catch(e){ args={}; }
           if(name==="propose_edits"){
             var proposal=buildProposal(args.summary,args.edits,targets);
-            if(proposal){ collab.proposals.push(proposal); turnProposals.push(proposal); renderCollabLog(); result="Preview shown to the user with Apply and Discard buttons. The app will read the exact proposed wording aloud and remind them it is waiting for approval."; }
+            if(proposal){
+              collab.proposals.push(proposal); turnProposals.push(proposal);
+              if(agentSettings().requireApproval){
+                renderCollabLog();
+                result="Preview shown to the user with Apply and Discard buttons. The app will read the exact proposed wording aloud and remind them it is waiting for approval.";
+              } else {
+                applyProposal(proposal);
+                result="The proposal was applied automatically after saving a backup.";
+              }
+            }
             else result="No usable edits were in that call. Check that every target_id came from the OPEN DOCUMENT list.";
+          } else if(name==="list_notes"){
+            result=JSON.stringify(noteCatalog(!!args.include_agents));
+          } else if(name==="request_note_access"){
+            var requested=(Array.isArray(args.note_ids)?args.note_ids:[]).map(cleanText).filter(Boolean);
+            var available=(state.items||[]).filter(function(it){ return requested.indexOf(it.id)>=0&&it.type!=="agent"; });
+            if(!available.length) result="No matching notes were found. Use list_notes first.";
+            else {
+              var labels=available.map(function(it){ return (it.title||"Untitled")+" ("+itemLabel(it)+")"; }).join(", ");
+              var allowed=window.confirm("Allow the assistant to read these notes?\n\n"+labels+"\n\nReason: "+(cleanText(args.reason)||"requested by the assistant"));
+              if(allowed){ collab.grantedNoteIds=collab.grantedNoteIds||{}; available.forEach(function(it){ collab.grantedNoteIds[it.id]=true; }); result="Permission granted for: "+available.map(function(it){return it.id;}).join(", "); }
+              else result="Permission denied by the user.";
+            }
+          } else if(name==="read_notes"){
+            var ids=(Array.isArray(args.note_ids)?args.note_ids:[]).map(cleanText).filter(Boolean), granted=collab.grantedNoteIds||{};
+            var readable=(state.items||[]).filter(function(it){ return ids.indexOf(it.id)>=0&&granted[it.id]&&it.type!=="agent"; });
+            result=readable.length?readable.map(noteTextForAgent).join("\n\n---\n\n"):"No approved notes matched. Ask for permission first.";
+          } else if(name==="create_note"){
+            var noteTitle=cleanText(args.title), noteContent=typeof args.content==="string"?args.content.trim():"";
+            if(!noteTitle||!noteContent) result="A title and non-empty content are required.";
+            else if(window.confirm("Create a new note?\n\n"+noteTitle+"\n\n"+noteContent.slice(0,800)+(noteContent.length>800?"…":""))){
+              if(agentSettings().backupBeforeWork) captureAutoBackup(true,"agent");
+              var created=createAgentNote(noteTitle,noteContent); result="Created note "+created.id+" titled \""+created.title+"\".";
+            } else result="The user cancelled note creation.";
           } else if(name==="remember"){
             var key=cleanText(args.key), value=cleanText(args.value);
             if(key&&value){
@@ -3174,7 +3309,6 @@
   function collabReadiness(){
     var missing=[], warnings=[];
     if(!runtimeApiKeys.openai) missing.push(currentUser?"Add your OpenAI API key in Settings → API keys.":"Sign in, then add your OpenAI API key in Settings → API keys.");
-    if(!agentItems().length) missing.push("Create an agent with New → Agent.");
     if(!runtimeApiKeys.elevenlabs) warnings.push("Add your ElevenLabs API key for voice in and spoken replies. Typing works without it.");
     return {missing:missing,warnings:warnings,ok:!missing.length};
   }
@@ -3384,7 +3518,7 @@
       var agents=agentItems();
       if(!agents.length){
         var empty=document.createElement("div"); empty.className="mtitle"; empty.style.textTransform="none"; empty.style.letterSpacing="0";
-        empty.textContent="No agents yet — create one from New → Agent."; menu.appendChild(empty);
+        empty.textContent="Using the hidden default assistant. Create a custom agent from New → Agent."; menu.appendChild(empty);
         return;
       }
       var activeId=(collabAgent()||{}).id;
@@ -3487,7 +3621,8 @@
         if(!state.enabledTypes[def.type]||!def.create) return;
         m.appendChild(mkItem(def.icon||ICON_NOTE,def.menuLabel||def.label||def.type,false,function(){ closeMenu(); createItem(def.create()); }));
       });
-      if(state.enabledTypes.agent) m.appendChild(mkItem(ICON_AGENT,"Agent",false,function(){ closeMenu(); createItem(newAgentItem()); }));
+       if(state.enabledTypes.agent) m.appendChild(mkItem(ICON_AGENT,"Agent",false,function(){ closeMenu(); createItem(newAgentItem()); }));
+       if(state.enabledTypes.workout) m.appendChild(mkItem(ICON_TODO,"Workout Routine",false,function(){ closeMenu(); createItem(newWorkoutRoutine()); }));
       m.appendChild(sep());
       m.appendChild(mkItem(ICON_FOLDER,"New folder",false,function(){ closeMenu(); openNewFolder(self); }));
       m.appendChild(mkItem("<span style=\"font-size:1rem\">⚙</span>","Manage",false,function(){ closeMenu(); openSettings("manage"); }));
@@ -4061,7 +4196,7 @@
     if(typeof prefs.motion==="boolean") state.motion=prefs.motion;
     if(typeof prefs.darkness==="number") state.darkness=Math.max(0,Math.min(100,prefs.darkness));
     if(prefs.enabledTypes&&typeof prefs.enabledTypes==="object"){
-      ["script","note","todo","audio","agent"].forEach(function(type){ if(typeof prefs.enabledTypes[type]==="boolean") state.enabledTypes[type]=prefs.enabledTypes[type]; });
+      ["script","note","todo","audio","agent","workout"].forEach(function(type){ if(typeof prefs.enabledTypes[type]==="boolean") state.enabledTypes[type]=prefs.enabledTypes[type]; });
     }
     if(prefs.noteInsertOptions&&typeof prefs.noteInsertOptions==="object") Object.keys(NOTE_INSERT_DEFAULTS).forEach(function(type){ if(typeof prefs.noteInsertOptions[type]==="boolean") state.noteInsertOptions[type]=prefs.noteInsertOptions[type]; });
     if(typeof prefs.tagsCollapsed==="boolean") state.tagsCollapsed=prefs.tagsCollapsed;
@@ -4207,6 +4342,11 @@
     var payload;
     try{ payload=JSON.parse(JSON.stringify(backupPayload())); }catch(e){ return Promise.reject(e); }
     return trimCloudBackups(BACKUP_LIMIT-1).then(function(){ return cloudBackupRef(id).set({kind:kind,created:created,itemCount:state.items.length,data:payload}); }).then(function(){ return id; });
+  }
+  function writeCloudDocumentBackup(item,kind){
+    if(!currentUser||!db||!item) return Promise.reject(new Error("Sign in required"));
+    var created=Date.now(), payload=documentBackupPayload(item), id=(kind||"manual")+"-"+created;
+    return db.collection("users").doc(currentUser.uid).collection("documents").doc(item.id).collection("backups").doc(id).set({kind:kind||"manual",created:created,itemId:item.id,data:payload});
   }
   function maybeCloudBackup(){
     if(!currentUser||!db||cloudAutoBackupInFlight) return;
@@ -4411,7 +4551,7 @@
       else button.onclick=function(){ s[key]=!s[key]; button.classList.toggle("on",s[key]); persist(); refreshCollabChrome(); };
       srow.appendChild(copy); srow.appendChild(button); group.appendChild(srow); box.appendChild(group);
     }
-    toggleRow("Ask before changing my text","Every suggestion waits behind an Apply button. This cannot be turned off.","",true);
+    toggleRow("Ask before changing my text","When off, requested edits are applied automatically after a backup.","requireApproval");
     toggleRow("Back up before every session","Saves a restore point the moment a conversation starts and again before each Apply.","backupBeforeWork");
     toggleRow("Speak replies out loud","Uses this agent’s ElevenLabs voice. Turn off to read replies instead.","speakReplies");
 
@@ -4457,6 +4597,7 @@
     /* Types registered from their own files get their Manage rows built here,
        so adding a type never means editing the settings markup. */
     var moduleBox=$("moduleTypes"), moduleDefs=typeModuleList().filter(function(def){ return !!def.create; });
+    if(moduleBox){ var workoutRow=document.createElement("div"); workoutRow.className="srow"; workoutRow.innerHTML='<div class="sl"><span>Workout Routine</span><small>Track how often you complete a routine; off by default</small></div><button class="toggle"><b></b></button>'; var workoutToggle=workoutRow.querySelector("button"); workoutToggle.classList.toggle("on",!!state.enabledTypes.workout); workoutToggle.onclick=function(){ state.enabledTypes.workout=!state.enabledTypes.workout; workoutToggle.classList.toggle("on",state.enabledTypes.workout); persist(); }; moduleBox.insertBefore(workoutRow,moduleBox.firstChild); }
     if(moduleBox&&!moduleDefs.length) moduleBox.parentNode.removeChild(moduleBox);
     else if(moduleBox){
       moduleBox.appendChild(Object.assign(document.createElement("h4"),{textContent:"More item types"}));
