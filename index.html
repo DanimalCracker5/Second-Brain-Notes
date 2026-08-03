@@ -500,8 +500,13 @@
   .backup-entry .bi{ flex:1; min-width:0; } .backup-entry b{ display:block; font-size:.84rem; } .backup-entry small{ display:block; margin-top:2px; color:var(--ink-faint); font:400 .67rem "DM Mono",monospace; }
   .backup-actions{ display:flex; gap:6px; flex:none; } .backup-actions button{ flex:none; }
   .document-backups{ margin:2px 0 22px; padding:13px; border:1px solid var(--line); border-radius:14px; background:rgba(255,255,255,.018); }
-  .document-backups-head{ display:flex; align-items:center; justify-content:space-between; gap:12px; margin-bottom:11px; }
-  .document-backups-head b{ display:block; font-size:.86rem; } .document-backups-head small{ display:block; margin-top:2px; color:var(--ink-faint); font-size:.7rem; }
+  .document-backups summary{ display:flex; align-items:center; gap:10px; cursor:pointer; list-style:none; }
+  .document-backups summary::-webkit-details-marker{ display:none; }
+  .document-backups summary::before{ content:"›"; flex:none; color:var(--accent); font-size:1.25rem; transition:transform .16s; }
+  .document-backups[open] summary::before{ transform:rotate(90deg); }
+  .document-backups summary b{ display:block; font-size:.86rem; } .document-backups summary small{ display:block; margin-top:2px; color:var(--ink-faint); font-size:.7rem; }
+  .document-backups-content{ padding-top:12px; }
+  .document-backups-head{ display:flex; align-items:center; justify-content:flex-end; gap:12px; margin-bottom:11px; }
   .agent-view{ max-width:920px; }
   .agent-hero{ display:flex; align-items:center; gap:14px; padding:18px; border:1px solid var(--line); border-radius:18px; background:linear-gradient(135deg,rgba(255,255,255,.07),rgba(255,255,255,.02)); }
   .agent-avatar{ width:46px; height:46px; display:grid; place-items:center; border-radius:16px; color:#09090b; background:var(--accent); font-weight:700; }
@@ -1566,21 +1571,22 @@
     }).catch(function(error){ console.warn("Document history could not be loaded:",error); if(el.isConnected) el.innerHTML='<p class="hint">Document history could not be loaded right now.</p>'; });
   }
   function buildDocumentBackupPanel(item){
-    var panel=document.createElement("section"); panel.className="document-backups"; panel.id="documentBackupHistory";
+    var panel=document.createElement("details"); panel.className="document-backups"; panel.id="documentBackupHistory";
+    var summary=document.createElement("summary"), copy=document.createElement("div"), title=document.createElement("b"), hint=document.createElement("small");
+    title.textContent="Document history"; hint.textContent="Browse and restore this document’s backups.";
+    copy.appendChild(title); copy.appendChild(hint); summary.appendChild(copy); panel.appendChild(summary);
+    var content=document.createElement("div"); content.className="document-backups-content";
     var head=document.createElement("div"); head.className="document-backups-head";
-    var copy=document.createElement("div"), title=document.createElement("b"), hint=document.createElement("small");
-    title.textContent="Document history"; hint.textContent="Automatic restore points appear after substantial edits. This history is separate from account backups.";
-    copy.appendChild(title); copy.appendChild(hint);
     var saveButton=document.createElement("button"); saveButton.type="button"; saveButton.className="b2"; saveButton.textContent="Save manual backup"; saveButton.onclick=function(){ saveManualDocumentBackup(item,saveButton); };
-    head.appendChild(copy); head.appendChild(saveButton); panel.appendChild(head);
-    var list=document.createElement("div"); list.className="backup-list"; list.id="documentBackupList"; panel.appendChild(list);
-    renderDocumentBackupList(item,list);
+    head.appendChild(saveButton); content.appendChild(head);
+    var list=document.createElement("div"); list.className="backup-list"; list.id="documentBackupList"; content.appendChild(list); panel.appendChild(content);
+    panel.ontoggle=function(){ if(panel.open) renderDocumentBackupList(item,list); };
     return panel;
   }
   function openDocumentBackupHistory(item){
     if(!item) return;
     if(!current()||current().id!==item.id){ state.currentId=item.id; renderList(); renderMain(); }
-    setTimeout(function(){ var history=$("documentBackupHistory"); if(history){ history.scrollIntoView({behavior:"smooth",block:"start"}); var list=$("documentBackupList"); if(list) renderDocumentBackupList(current(),list); } },0);
+    setTimeout(function(){ var history=$("documentBackupHistory"); if(history){ history.open=true; history.scrollIntoView({behavior:"smooth",block:"start"}); var list=$("documentBackupList"); if(list) renderDocumentBackupList(current(),list); } },0);
   }
   function openItemActions(anchor,it){
     openMenu(anchor,function(m){
