@@ -495,7 +495,7 @@
   .backup-list{ display:grid; gap:8px; }
   .backup-entry{ display:flex; align-items:center; gap:12px; padding:11px 12px; border:1px solid var(--line); border-radius:12px; background:rgba(255,255,255,.025); }
   .backup-entry .bi{ flex:1; min-width:0; } .backup-entry b{ display:block; font-size:.84rem; } .backup-entry small{ display:block; margin-top:2px; color:var(--ink-faint); font:400 .67rem "DM Mono",monospace; }
-  .backup-entry button{ flex:none; }
+  .backup-actions{ display:flex; gap:6px; flex:none; } .backup-actions button{ flex:none; }
   .agent-view{ max-width:920px; }
   .agent-hero{ display:flex; align-items:center; gap:14px; padding:18px; border:1px solid var(--line); border-radius:18px; background:linear-gradient(135deg,rgba(255,255,255,.07),rgba(255,255,255,.02)); }
   .agent-avatar{ width:46px; height:46px; display:grid; place-items:center; border-radius:16px; color:#09090b; background:var(--accent); font-weight:700; }
@@ -759,11 +759,14 @@
   function setSaveState(label,kind){ var el=$("saveState"); if(!el) return; el.textContent=label; el.className="save-state"+(kind?" "+kind:""); }
   function backupPayload(){ return { app:"second-brain", version:13, items:state.items, folders:state.folders, tags:state.tags, preferences:{theme:state.theme,motion:state.motion,darkness:state.darkness,enabledTypes:state.enabledTypes,noteInsertOptions:state.noteInsertOptions,tagsCollapsed:state.tagsCollapsed,allNotesName:state.allNotesName,readChapterNames:state.readChapterNames,agentSettings:agentSettings()}, created:Date.now() }; }
   function autoBackups(){ return deviceBackups; }
-  function captureAutoBackup(force,kind){
+  function backupSnapshot(data){
+    try{ return JSON.parse(JSON.stringify(data)); }catch(e){ console.warn("Backup snapshot could not be copied:",e); return data; }
+  }
+  function captureAutoBackup(force,kind,data){
     var created=Date.now(), backupKind=kind||"automatic";
     if(backupKind==="automatic"&&deviceBackups.length&&created-(deviceBackups[0].created||0)<AUTO_BACKUP_COOLDOWN) return true;
     if(deviceBackups.length>=BACKUP_LIMIT) deviceBackups.pop();
-    deviceBackups.unshift({day:new Date(created).toISOString().slice(0,10), kind:backupKind, created:created, data:backupPayload()});
+    deviceBackups.unshift({day:new Date(created).toISOString().slice(0,10), kind:backupKind, created:created, data:backupSnapshot(data||backupPayload())});
     if(!canPersist) return false;
     try{ localStorage.setItem(BACKUP_KEY,JSON.stringify(deviceBackups)); return true; }catch(e){ console.warn("Device backup could not be saved:",e); return false; }
   }
@@ -811,9 +814,62 @@
     if(block.type==="group") return [block.title,block.text].filter(Boolean).join("\n");
     return "";
   }
+  /* A short-lived migration build could save an old script's sections as JSON
+     inside a note instead of converting them into blocks. Recognize only the
+     old, strongly shaped script data so normal JSON notes remain untouched. */
+  function legacyScriptSections(value,explicitScript){
+    var parsed=value, attempts=0, declared=!!explicitScript;
+    while(typeof parsed==="string"&&attempts<2){
+      var raw=parsed.trim();
+      if(!raw||("[{".indexOf(raw.charAt(0))<0)) return null;
+      try{ parsed=JSON.parse(raw); }catch(e){ return null; }
+      attempts++;
+    }
+    if(parsed&&typeof parsed==="object"&&!Array.isArray(parsed)){
+      declared=declared||parsed.type==="script";
+      parsed=parsed.sections;
+    }
+    if(!Array.isArray(parsed)||!parsed.length) return null;
+    var hasScriptKind=false, sections=[];
+    for(var i=0;i<parsed.length;i++){
+      var section=parsed[i];
+      if(!section||typeof section!=="object"||typeof section.body!=="string") return null;
+      if(section.kind==="chapter"||section.kind==="cue") hasScriptKind=true;
+      sections.push({title:typeof section.title==="string"?section.title:"",body:section.body,kind:section.kind==="cue"?"cue":"chapter"});
+    }
+    return (declared||hasScriptKind)?sections:null;
+  }
+  function serializedScriptSectionsForNote(note){
+    if(!note||note.type!=="note") return null;
+    var sections=legacyScriptSections(note.sections,true);
+    if(sections) return sections;
+    sections=legacyScriptSections(note.blocks,false);
+    if(sections) return sections;
+    if(Array.isArray(note.blocks)){
+      for(var i=0;i<note.blocks.length;i++){
+        var block=note.blocks[i];
+        if(block&&block.type==="text"){
+          sections=legacyScriptSections(block.text||block.html||"",false);
+          if(sections) return sections;
+        }
+      }
+    }
+    return legacyScriptSections(note.body||"",false);
+  }
+  function scriptSectionsToNoteBlocks(sections){
+    return (sections||[]).filter(Boolean).map(function(section){ return section.kind==="cue" ? {id:uid(),type:"comment",text:section.body||""} : chapterBlock(section.title||"",section.body||""); });
+  }
   function syncNoteBody(note){ note.body=(note.blocks||[]).map(blockPlainText).filter(Boolean).join("\n"); if(Object.prototype.hasOwnProperty.call(note,"description")) note.description=note.body; }
   function ensureNoteBlocks(note){
     if(!note||typeof note!=="object") return;
+    var recoveredSections=serializedScriptSectionsForNote(note);
+    if(recoveredSections){
+      note.blocks=scriptSectionsToNoteBlocks(recoveredSections);
+      delete note.sections;
+      note.attachments=Array.isArray(note.attachments)?note.attachments:[];
+      syncNoteBody(note);
+      return;
+    }
     note.attachments=Array.isArray(note.attachments)?note.attachments:[];
     note.attachments.forEach(function(attachment){ if(!attachment.id) attachment.id=uid(); });
     if(!Array.isArray(note.blocks)){
@@ -821,6 +877,9 @@
       note.attachments.forEach(function(attachment){ note.blocks.push({id:uid(),type:"attachment",attachmentId:attachment.id,width:100}); });
     } else {
       note.blocks=note.blocks.filter(function(block){ return block&&["text","attachment","heading","comment","prompt","chapter","group","code"].indexOf(block.type)>=0&&(block.type!=="attachment"||block.attachmentId); });
+      /* A malformed legacy block list must not make the collaborator see only
+         the title while the note's body still contains editable text. */
+      if(!note.blocks.length&&typeof note.body==="string"&&note.body.trim()) note.blocks=[textBlock(note.body)];
       note.blocks.forEach(function(block){
         if(!block.id) block.id=uid();
         if(block.type==="text") syncTextBlock(block);
@@ -859,7 +918,7 @@
   function migrateScriptToNote(it){
     var sections=Array.isArray(it.sections)?it.sections:[];
     it.type="note"; it.template="youtube-script"; it.attachments=Array.isArray(it.attachments)?it.attachments:[];
-    it.blocks=sections.map(function(section){ return section&&section.kind==="cue" ? {id:uid(),type:"comment",text:section.body||""} : chapterBlock(section&&section.title||"",section&&section.body||""); });
+    it.blocks=scriptSectionsToNoteBlocks(sections);
     if(!it.blocks.length) it.blocks=[chapterBlock("Intro","")];
     delete it.sections;
   }
@@ -872,6 +931,11 @@
     });
     it.type="note"; it.todo=true; it.done=!!it.done; it.completed=it.completed||null; it.attachments=[]; it.blocks=blocks.length?blocks:[textBlock("")];
     delete it.todos;
+  }
+  function hasLegacyItems(items){ return (items||[]).some(function(item){ return item&&(item.type==="script"||item.type==="todo"||!!serializedScriptSectionsForNote(item)); }); }
+  function rawStateBackupPayload(data){
+    data=data||{};
+    return {app:"second-brain",version:13,items:data.items||[],folders:data.folders||[],tags:data.tags||[],preferences:data.preferences||{},created:Date.now()};
   }
   function normalizeItem(it){
     if(!it||typeof it!=="object") return;
@@ -986,6 +1050,9 @@
   deviceBackups=(readKey(BACKUP_KEY)||[]).sort(function(a,b){ return (b.created||0)-(a.created||0); }).slice(0,BACKUP_LIMIT);
   documentBackups=readKey(DOCUMENT_BACKUP_KEY)||{};
   if(canPersist){ try{ localStorage.setItem(BACKUP_KEY,JSON.stringify(deviceBackups)); }catch(e){} }
+  /* Keep the untouched pre-chapter data before the migration mutates it. This
+     stays local so an interrupted or failed migration can always be exported. */
+  if(hasLegacyItems(state.items)) captureAutoBackup(true,"migration");
   state.items.forEach(normalizeItem);
   if(!state.items.length) state.items.push(newNoteItem());
   if(!state.currentId || !state.items.some(function(i){return i.id===state.currentId;})) state.currentId=state.items[0].id;
@@ -2777,6 +2844,7 @@
     lines.push("- You can use list_notes to see note titles and ids. Before reading any note that is not open, call request_note_access; the app will ask the user first. Only use read_notes after access is granted.");
     lines.push("- When the user asks you to create a new note, call create_note. The app asks the user for confirmation before saving it.");
     lines.push("- Only propose an edit when they asked for one, or when you offered and they agreed.");
+    lines.push("- You can create and edit the document's text blocks: paragraphs, headings, chapters, comments, prompts, collapsible groups, and code. Use propose_edits with insert_after and block_type to create one; use an existing target_id to edit one. File attachments cannot be created or changed by the assistant.");
     lines.push("- Keep normal replies to one to three short sentences. They are read aloud, so use no markdown, lists, headings, or emoji.");
     lines.push("- Exception: after proposing an edit, or when the user asks to hear, repeat, or recap a pending suggestion, read the proposed wording aloud verbatim before saying it is waiting for approval. Never tell them to look at the preview or say you cannot see it.");
     lines.push("- Write proposed text in the user's own voice and formatting. Do not introduce styling the document does not already use.");
@@ -2788,6 +2856,7 @@
       lines.push("- Every editable piece of the open document is listed below with a target_id. Use those ids exactly and never invent one.");
       lines.push('- "replace" needs the complete new text for that piece. "append" and "prepend" need only the new text. "insert_after" adds a new piece below the target_id you name, or below everything if you pass "end". For insert_after, set block_type to paragraph, heading, chapter, comment, prompt, group, or code when the new piece should not be a paragraph.');
       lines.push('- "title" is always a valid target_id.');
+      lines.push('- Chapters and groups each expose two editable targets: one for their content and one ending in ":title" for their label. Preserve the requested block type; do not flatten structured content into JSON or a plain paragraph.');
       lines.push("- Change the fewest pieces that answer the request. Do not silently rewrite parts the user did not mention.");
       lines.push("- If the document is empty and the user has just rambled at you, propose a title plus clean prose paragraphs that keep every point they made.");
     }
@@ -3687,13 +3756,15 @@
   });
 
   /* =================== export / import =================== */
-  function doExport(message){
-    var payload=backupPayload();
+  function downloadJson(payload,filename,message){
     var blob=new Blob([JSON.stringify(payload,null,2)],{type:"application/json"});
     var url=URL.createObjectURL(blob), a=document.createElement("a");
-    a.href=url; a.download="second-brain-"+new Date().toISOString().slice(0,10)+".json";
-    document.body.appendChild(a); a.click(); document.body.removeChild(a); URL.revokeObjectURL(url);
-    showToast(message||"Backup downloaded");
+    a.href=url; a.download=filename; document.body.appendChild(a); a.click(); document.body.removeChild(a);
+    setTimeout(function(){ URL.revokeObjectURL(url); },1000);
+    if(message) showToast(message);
+  }
+  function doExport(message){
+    downloadJson(backupPayload(),"second-brain-"+new Date().toISOString().slice(0,10)+".json",message||"Backup downloaded");
   }
   function doImport(file){
     var r=new FileReader();
@@ -4114,6 +4185,9 @@
     return result;
   }
   function useData(d){
+    /* A cloud or imported legacy script is normalized in-place below. Snapshot
+       it first so the original chapter schema remains recoverable. */
+    if(hasLegacyItems(d&&d.items)) captureAutoBackup(true,"migration",rawStateBackupPayload(d));
     state.items=(d.items&&d.items.length)?d.items:[newNoteItem()];
     state.items.forEach(normalizeItem);
     state.folders=d.folders||[]; state.tags=d.tags||[];
@@ -4377,18 +4451,17 @@
     if(!currentUser||!db) return Promise.resolve([]);
     var user=db.collection("users").doc(currentUser.uid);
     return Promise.all([user.collection("backups").orderBy("created","desc").limit(BACKUP_LIMIT).get(),user.get()]).then(function(results){
-      var entries=results[0].docs.map(function(doc){ var v=doc.data(); return {id:doc.id,kind:v.kind||"automatic",created:v.created||0,itemCount:v.itemCount,data:v.data||v}; });
+      var entries=results[0].docs.map(function(doc){ var v=doc.data(); return {id:doc.id,source:"cloud",kind:v.kind||"automatic",created:v.created||0,itemCount:v.itemCount,data:v.data||v}; });
       var legacy=results[1].exists?(results[1].data().backupSlots||{}):{};
-      Object.keys(legacy).forEach(function(id){ var v=legacy[id]; entries.push({id:"legacy-"+id,kind:"automatic",created:v.created||0,itemCount:(v.items||[]).length,data:v}); });
+      Object.keys(legacy).forEach(function(id){ var v=legacy[id]; entries.push({id:"legacy-"+id,source:"cloud",kind:"automatic",created:v.created||0,itemCount:(v.items||[]).length,data:v}); });
       return entries.sort(function(a,b){ return b.created-a.created; });
     });
   }
   function restoreBackup(entry){
     if(!entry||!entry.data) return;
-    if(!confirm("Restore this backup? Your current notes will be backed up first.")) return;
+    if(!confirm("Restore this backup? Your current notes will be saved as one recovery point on this device first.")) return;
     captureAutoBackup(true,"recovery");
-    var before=currentUser&&db?writeCloudBackup("manual"):Promise.resolve();
-    before.catch(function(){}).then(function(){ useData(entry.data); persist(); showToast("Backup restored"); if($("backupList")) renderBackupList(); });
+    useData(entry.data); persist(); showToast("Backup restored"); if($("backupList")) renderBackupList();
   }
   function restoreLatestCloudBackup(){ getCloudBackups().then(function(list){ if(!list.length){ showToast("No cloud backup yet",true); return; } restoreBackup(list[0]); }).catch(function(e){ console.warn(e); showToast("Cloud backups could not be loaded",true); }); }
   function saveCloudNow(){
@@ -4470,7 +4543,7 @@
     } else if(settingsPage==="themes"){
       content=settingsHeading("Themes",true)+'<p class="hint">Themes are separate from the rest of Settings so you can browse them without burying the backup and sync controls.</p><div class="themes" id="themeGrid"></div>';
     } else if(settingsPage==="backups"){
-      content=settingsHeading("Backups",true)+'<p class="hint">Every backup creates a recovery point on this device. Automatic backups wait at least one hour after the latest backup, and only the 10 newest backups are kept.</p><div class="btnrow"><button class="b2 primary" id="backupNowBtn">Back up now</button><button class="b2" id="expBtn">Export file</button><button class="b2" id="impBtn">Import file</button><input type="file" id="impFile" accept="application/json" hidden></div><div class="grp"><h4>Restore points</h4><div class="backup-list" id="backupList"></div></div>';
+      content=settingsHeading("Backups",true)+'<p class="hint">Automatic backups wait at least one hour after the latest backup, and only the 10 newest device backups are kept. Restore creates one local recovery point; it does not create another manual cloud backup.</p><div class="btnrow"><button class="b2 primary" id="backupNowBtn">Back up now</button><button class="b2" id="expBtn">Export current JSON</button><button class="b2" id="exportRestorePointsBtn">Download restore points JSON</button><button class="b2" id="impBtn">Import file</button><input type="file" id="impFile" accept="application/json" hidden></div><div class="grp"><h4>Restore points</h4><div class="backup-list" id="backupList"></div></div>';
     } else if(settingsPage==="account"){
       content=settingsHeading("Account &amp; sync",true)+'<div id="acctInner"></div>';
     } else if(settingsPage==="keys"){
@@ -4793,21 +4866,45 @@
     };
   }
   function backupDate(value){ try{ return new Date(value).toLocaleString([], {month:"short",day:"numeric",year:"numeric",hour:"numeric",minute:"2-digit"}); }catch(e){ return "Unknown date"; } }
+  function deviceBackupEntries(){ return autoBackups().map(function(entry,index){ return {id:"device-"+index,source:"device",kind:entry.kind||"automatic",created:entry.created,itemCount:(entry.data.items||[]).length,data:entry.data}; }); }
+  function loadBackupEntries(){
+    var deviceEntries=deviceBackupEntries();
+    return currentUser&&db?getCloudBackups().then(function(entries){ return entries.concat(deviceEntries).sort(function(a,b){ return b.created-a.created; }); },function(error){ console.warn("Cloud restore points unavailable:",error); return deviceEntries; }):Promise.resolve(deviceEntries);
+  }
+  function backupFilename(entry){
+    var timestamp=new Date(entry.created||Date.now()).toISOString().replace(/[:.]/g,"-");
+    return "second-brain-restore-"+(entry.source||"device")+"-"+(entry.kind||"backup")+"-"+timestamp+".json";
+  }
+  function downloadRestorePoint(entry){
+    if(!entry||!entry.data) return;
+    var payload=backupSnapshot(entry.data);
+    payload.exportType="restore-point";
+    payload.exported=Date.now();
+    payload.restorePointMetadata={source:entry.source||"device",kind:entry.kind||"automatic",created:entry.created||0,itemCount:entry.itemCount||0};
+    downloadJson(payload,backupFilename(entry),"Restore point JSON downloaded");
+  }
+  function downloadAllRestorePoints(){
+    loadBackupEntries().then(function(entries){
+      downloadJson({app:"second-brain",exportType:"restore-points",exported:Date.now(),restorePoints:entries.map(function(entry){ return {source:entry.source||"device",kind:entry.kind||"automatic",created:entry.created||0,itemCount:entry.itemCount||0,data:entry.data}; })},"second-brain-restore-points-"+new Date().toISOString().replace(/[:.]/g,"-")+".json","Restore points JSON downloaded");
+    }).catch(function(error){ console.warn(error); showToast("Restore points could not be downloaded",true); });
+  }
   function renderBackupList(){
     var el=$("backupList"); if(!el) return;
     el.innerHTML='<p class="hint">Loading restore points…</p>';
-    var deviceEntries=autoBackups().map(function(entry,index){ return {id:"device-"+index,kind:entry.kind||"automatic",created:entry.created,itemCount:(entry.data.items||[]).length,data:entry.data}; });
-    var load=currentUser&&db?getCloudBackups().then(function(entries){ return entries.concat(deviceEntries).sort(function(a,b){ return b.created-a.created; }); },function(error){ console.warn("Cloud restore points unavailable:",error); return deviceEntries; }):Promise.resolve(deviceEntries);
-    load.then(function(entries){
+    loadBackupEntries().then(function(entries){
       if(!el||!el.isConnected) return;
       if(!entries.length){ el.innerHTML='<p class="hint">No backups yet. Create one now, then automatic backups will appear here over time.</p>'; return; }
       el.innerHTML="";
       entries.forEach(function(entry){
         var row=document.createElement("div"); row.className="backup-entry";
-        row.innerHTML='<div class="bi"><b></b><small></small></div><button class="b2">Restore</button>';
+        row.innerHTML='<div class="bi"><b></b><small></small></div><div class="backup-actions"><button class="b2 backup-json">JSON</button><button class="b2 backup-restore">Restore</button></div>';
         row.querySelector("b").textContent=entry.kind==="manual"?"Manual backup":entry.kind==="recovery"?"Recovery point":entry.kind==="agent"?"Before agent session":"Automatic backup";
         row.querySelector("small").textContent=backupDate(entry.created)+" · "+(entry.itemCount||((entry.data.items||[]).length))+" items";
         row.querySelector("button").onclick=function(){ restoreBackup(entry); };
+        if(entry.kind==="migration") row.querySelector("b").textContent="Before chapter migration";
+        row.querySelector("small").textContent+=" · "+(entry.source==="cloud"?"Cloud":"This device");
+        row.querySelector(".backup-json").onclick=function(){ downloadRestorePoint(entry); };
+        row.querySelector(".backup-restore").onclick=function(){ restoreBackup(entry); };
         el.appendChild(row);
       });
     }).catch(function(e){ console.warn(e); if(el&&el.isConnected) el.innerHTML='<p class="hint">Cloud backups could not be loaded. Check that the updated Firestore rules have been deployed.</p>'; });
@@ -4825,6 +4922,7 @@
       }).then(function(){ button.disabled=false; });
     };
     $("expBtn").onclick=doExport;
+    $("exportRestorePointsBtn").onclick=downloadAllRestorePoints;
     $("impBtn").onclick=function(){ $("impFile").click(); };
     $("impFile").onchange=function(e){ var f=e.target.files[0]; if(f) doImport(f); e.target.value=""; };
     renderBackupList();
