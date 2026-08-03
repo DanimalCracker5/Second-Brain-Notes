@@ -27,7 +27,7 @@
   <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-storage-compat.js"></script>
 
 <!-- Video editor feature. Self-contained in video/ — see video/README.md. -->
-<link rel="stylesheet" href="./video/video-editor.css">
+<link rel="stylesheet" href="./video/video-editor.css?v=2">
 <!-- Code editor feature. Self-contained in code/ — see code/README.md. -->
 <link rel="stylesheet" href="./code/code-editor.css">
 
@@ -499,14 +499,6 @@
   .backup-entry{ display:flex; align-items:center; gap:12px; padding:11px 12px; border:1px solid var(--line); border-radius:12px; background:rgba(255,255,255,.025); }
   .backup-entry .bi{ flex:1; min-width:0; } .backup-entry b{ display:block; font-size:.84rem; } .backup-entry small{ display:block; margin-top:2px; color:var(--ink-faint); font:400 .67rem "DM Mono",monospace; }
   .backup-actions{ display:flex; gap:6px; flex:none; } .backup-actions button{ flex:none; }
-  .document-backups{ margin:2px 0 22px; padding:13px; border:1px solid var(--line); border-radius:14px; background:rgba(255,255,255,.018); }
-  .document-backups summary{ display:flex; align-items:center; gap:10px; cursor:pointer; list-style:none; }
-  .document-backups summary::-webkit-details-marker{ display:none; }
-  .document-backups summary::before{ content:"›"; flex:none; color:var(--accent); font-size:1.25rem; transition:transform .16s; }
-  .document-backups[open] summary::before{ transform:rotate(90deg); }
-  .document-backups summary b{ display:block; font-size:.86rem; } .document-backups summary small{ display:block; margin-top:2px; color:var(--ink-faint); font-size:.7rem; }
-  .document-backups-content{ padding-top:12px; }
-  .document-backups-head{ display:flex; align-items:center; justify-content:flex-end; gap:12px; margin-bottom:11px; }
   .agent-view{ max-width:920px; }
   .agent-hero{ display:flex; align-items:center; gap:14px; padding:18px; border:1px solid var(--line); border-radius:18px; background:linear-gradient(135deg,rgba(255,255,255,.07),rgba(255,255,255,.02)); }
   .agent-avatar{ width:46px; height:46px; display:grid; place-items:center; border-radius:16px; color:#09090b; background:var(--accent); font-weight:700; }
@@ -681,6 +673,7 @@
 <div class="modal" id="settingsModal"><div class="modal-box" id="settingsBox"></div></div>
 <div class="modal" id="syncConflictModal" role="dialog" aria-modal="true" aria-labelledby="syncConflictTitle"><div class="modal-box" id="syncConflictBox"></div></div>
 <div class="modal" id="accountMergeModal" role="dialog" aria-modal="true" aria-labelledby="accountMergeTitle"><div class="modal-box" id="accountMergeBox"></div></div>
+<div class="modal" id="documentBackupModal" role="dialog" aria-modal="true" aria-labelledby="documentBackupTitle"><div class="modal-box" id="documentBackupBox"></div></div>
 
 <!--
   AI collaborator dock. The header is static; the conversation below it is
@@ -703,10 +696,10 @@
   they run no code until the app below calls SecondBrainVideo.install(). Load
   order matters: timeline and media are used by player and editor.
 -->
-<script src="./video/timeline.js"></script>
-<script src="./video/media.js"></script>
-<script src="./video/player.js"></script>
-<script src="./video/editor.js"></script>
+<script src="./video/timeline.js?v=2"></script>
+<script src="./video/media.js?v=2"></script>
+<script src="./video/player.js?v=2"></script>
+<script src="./video/editor.js?v=2"></script>
 
 <!--
   Code editor feature. Attaches to window.SecondBrainCode and runs nothing
@@ -1534,18 +1527,19 @@
   function saveManualDocumentBackup(item,button){
     var entry=captureDocumentBackup(item,true,"manual");
     if(!entry){ showToast("Couldn’t save document backup",true); return; }
-    if(current()&&current().id===item.id&&$("documentBackupList")) renderDocumentBackupList(item,$("documentBackupList"));
+    if($("documentBackupModal").classList.contains("open")&&$("documentBackupList")) renderDocumentBackupList(item,$("documentBackupList"));
     if(!currentUser||!db){ showToast("Document backup saved on this device"); return; }
     if(button) button.disabled=true;
     writeCloudDocumentBackup(item,"manual",entry.created,entry.data).then(function(){
       showToast("Document backup saved");
-      if(current()&&current().id===item.id&&$("documentBackupList")) renderDocumentBackupList(item,$("documentBackupList"));
+      if($("documentBackupModal").classList.contains("open")&&$("documentBackupList")) renderDocumentBackupList(item,$("documentBackupList"));
     }).catch(function(error){ console.warn("Cloud document backup could not be saved:",error); showToast("Document backup saved on this device"); }).then(function(){ if(button&&button.isConnected) button.disabled=false; });
   }
   function restoreDocumentBackup(item,entry){
     var saved=entry&&entry.data&&entry.data.item;
     if(!saved){ showToast("That document backup is unavailable",true); return; }
     if(!confirm("Restore the "+documentBackupTitle(entry).toLowerCase()+" from "+backupDate(entry.created)+"? Your current document will be saved as a recovery point first.")) return;
+    $("documentBackupModal").classList.remove("open");
     var recovery=captureDocumentBackup(item,true,"recovery");
     if(recovery&&currentUser&&db) writeCloudDocumentBackup(item,"recovery",recovery.created,recovery.data).catch(function(error){ console.warn("Cloud recovery point could not be saved:",error); });
     var index=state.items.findIndex(function(currentItem){ return currentItem.id===item.id; });
@@ -1570,30 +1564,31 @@
       });
     }).catch(function(error){ console.warn("Document history could not be loaded:",error); if(el.isConnected) el.innerHTML='<p class="hint">Document history could not be loaded right now.</p>'; });
   }
-  function buildDocumentBackupPanel(item){
-    var panel=document.createElement("details"); panel.className="document-backups"; panel.id="documentBackupHistory";
-    var summary=document.createElement("summary"), copy=document.createElement("div"), title=document.createElement("b"), hint=document.createElement("small");
-    title.textContent="Document history"; hint.textContent="Browse and restore this document’s backups.";
-    copy.appendChild(title); copy.appendChild(hint); summary.appendChild(copy); panel.appendChild(summary);
-    var content=document.createElement("div"); content.className="document-backups-content";
-    var head=document.createElement("div"); head.className="document-backups-head";
-    var saveButton=document.createElement("button"); saveButton.type="button"; saveButton.className="b2"; saveButton.textContent="Save manual backup"; saveButton.onclick=function(){ saveManualDocumentBackup(item,saveButton); };
-    head.appendChild(saveButton); content.appendChild(head);
-    var list=document.createElement("div"); list.className="backup-list"; list.id="documentBackupList"; content.appendChild(list); panel.appendChild(content);
-    panel.ontoggle=function(){ if(panel.open) renderDocumentBackupList(item,list); };
-    return panel;
-  }
   function openDocumentBackupHistory(item){
     if(!item) return;
-    if(!current()||current().id!==item.id){ state.currentId=item.id; renderList(); renderMain(); }
-    setTimeout(function(){ var history=$("documentBackupHistory"); if(history){ history.open=true; history.scrollIntoView({behavior:"smooth",block:"start"}); var list=$("documentBackupList"); if(list) renderDocumentBackupList(current(),list); } },0);
+    var modal=$("documentBackupModal"), box=$("documentBackupBox");
+    box.innerHTML='';
+    var heading=document.createElement("div"); heading.className="mh";
+    var title=document.createElement("h3"); title.id="documentBackupTitle"; title.textContent="Restore from backup";
+    var close=document.createElement("button"); close.type="button"; close.className="x"; close.textContent="×"; close.title="Close"; close.setAttribute("aria-label","Close"); close.onclick=function(){ modal.classList.remove("open"); };
+    heading.appendChild(title); heading.appendChild(close); box.appendChild(heading);
+    var hint=document.createElement("p"); hint.className="hint"; hint.textContent="Choose the exact restore point for this document. Your current version is saved as a recovery point before restoring."; box.appendChild(hint);
+    var actions=document.createElement("div"); actions.className="btnrow";
+    var saveButton=document.createElement("button"); saveButton.type="button"; saveButton.className="b2"; saveButton.textContent="Save manual backup"; saveButton.onclick=function(){ saveManualDocumentBackup(item,saveButton); };
+    actions.appendChild(saveButton); box.appendChild(actions);
+    var group=document.createElement("div"); group.className="grp";
+    var label=document.createElement("h4"); label.textContent="Document restore points"; group.appendChild(label);
+    var list=document.createElement("div"); list.className="backup-list"; list.id="documentBackupList"; group.appendChild(list); box.appendChild(group);
+    modal.onclick=function(event){ if(event.target===modal) modal.classList.remove("open"); };
+    modal.classList.add("open");
+    renderDocumentBackupList(item,list);
   }
   function openItemActions(anchor,it){
     openMenu(anchor,function(m){
       var title=document.createElement("div"); title.className="mtitle"; title.textContent=itemLabel(it)+" actions"; m.appendChild(title);
        m.appendChild(mkItem(ICON_DUPLICATE,"Duplicate",false,function(){ closeMenu(); duplicateItem(it); }));
        m.appendChild(mkItem(ICON_DOWNLOAD,"Save manual document backup",false,function(){ closeMenu(); saveManualDocumentBackup(it); }));
-       m.appendChild(mkItem(ICON_NOTE,"View document history",false,function(){ closeMenu(); openDocumentBackupHistory(it); }));
+       m.appendChild(mkItem(ICON_NOTE,"Restore from backup",false,function(){ closeMenu(); openDocumentBackupHistory(it); }));
       if(runtimeApiKeys.elevenlabs&&it.type!=="agent"&&ttsTextForItem(it).trim()) m.appendChild(mkItem(ICON_DOWNLOAD,"Download as audio",false,function(){ closeMenu(); downloadTts(it); }));
       m.appendChild(mkItem(ICON_UP,"Move up",false,function(){ closeMenu(); moveItem(it,-1); }));
       m.appendChild(mkItem(ICON_DOWN,"Move down",false,function(){ closeMenu(); moveItem(it,1); }));
@@ -1680,7 +1675,6 @@
 
     if(it.type==="agent"){
       sheet.className="sheet agent-view";
-      sheet.appendChild(buildDocumentBackupPanel(it));
       sheet.appendChild(buildAgent(it));
       canvas.appendChild(sheet);
       syncCollabToCurrentItem();
@@ -1720,7 +1714,6 @@
 
     sheet.appendChild(buildAssign(it));
     var meta=document.createElement("div"); meta.className="meta"; meta.id="meta"; sheet.appendChild(meta);
-    sheet.appendChild(buildDocumentBackupPanel(it));
 
     if(it.type==="script"){
       (it.sections||[]).forEach(function(section,i){ sheet.appendChild(buildCh(it,section,i)); });

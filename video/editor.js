@@ -35,13 +35,54 @@
      than synced into the item. */
   var zoomByItem = {};
   var DEFAULT_ZOOM = 60; // pixels per second
-  var MIN_ZOOM = 6;
+  var MIN_ZOOM = 4;
   var MAX_ZOOM = 400;
 
-  var ICON_VIDEO =
-    '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="6" width="12" height="12" rx="2"/><path d="m15 11 6-3.5v9L15 13z"/></svg>';
+  /* How many timeline states the undo history keeps per open edit. */
+  var HISTORY_LIMIT = 80;
+
+  /* ---------------- icons ---------------- */
+
+  function stroked(paths, width) {
+    return (
+      '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="' +
+      (width || 1.8) +
+      '" stroke-linecap="round" stroke-linejoin="round">' +
+      paths +
+      "</svg>"
+    );
+  }
+
+  var I = {
+    play: '<svg viewBox="0 0 24 24" fill="currentColor"><path d="M8 5.5v13l11-6.5z"/></svg>',
+    pause: '<svg viewBox="0 0 24 24" fill="currentColor"><rect x="6" y="5" width="4" height="14" rx="1"/><rect x="14" y="5" width="4" height="14" rx="1"/></svg>',
+    skipStart: '<svg viewBox="0 0 24 24" fill="currentColor"><path d="M7 5h2.2v14H7z"/><path d="M19 5.5v13L9.8 12z"/></svg>',
+    undo: stroked('<path d="M9 14 4 9l5-5"/><path d="M4 9h10.5a5.5 5.5 0 0 1 0 11H11"/>', 2),
+    redo: stroked('<path d="m15 14 5-5-5-5"/><path d="M20 9H9.5a5.5 5.5 0 0 0 0 11H13"/>', 2),
+    scissors: stroked('<circle cx="6" cy="6" r="2.5"/><circle cx="6" cy="18" r="2.5"/><path d="M8.1 7.6 20 19M8.1 16.4 20 5"/>'),
+    zoomIn: stroked('<circle cx="11" cy="11" r="7"/><path d="m20.5 20.5-4.5-4.5M8 11h6M11 8v6"/>', 2),
+    zoomOut: stroked('<circle cx="11" cy="11" r="7"/><path d="m20.5 20.5-4.5-4.5M8 11h6"/>', 2),
+    fit: stroked('<path d="M9 4H4v5M15 4h5v5M9 20H4v-5M15 20h5v-5"/>', 2),
+    download: stroked('<path d="M12 4v10.5M7.5 10.5 12 15l4.5-4.5M5 19.5h14"/>', 2),
+    plus: stroked('<path d="M12 5v14M5 12h14"/>', 2.2),
+    film: stroked('<rect x="3" y="4.5" width="18" height="15" rx="2.5"/><path d="M8 4.5v15M16 4.5v15M3 9.5h5M3 14.5h5M16 9.5h5M16 14.5h5"/>', 1.6),
+    text: stroked('<path d="M5 6.5V4.5h14v2M12 4.5v15M9 19.5h6"/>', 2),
+    mic: stroked('<rect x="9" y="3" width="6" height="11" rx="3"/><path d="M5.5 11.5a6.5 6.5 0 0 0 13 0M12 18v3"/>'),
+    layers: stroked('<path d="m12 3.5 8.5 4.7L12 12.9 3.5 8.2z"/><path d="m3.5 13 8.5 4.7 8.5-4.7"/>'),
+    wave: stroked('<path d="M4 10v4M8 7.5v9M12 4.5v15M16 7.5v9M20 10v4"/>', 2),
+    volume: stroked('<path d="M11 5.5 6.8 9H4v6h2.8L11 18.5z"/><path d="M14.5 9.5a3.6 3.6 0 0 1 0 5M17 7a7 7 0 0 1 0 10"/>'),
+    volumeOff: stroked('<path d="M11 5.5 6.8 9H4v6h2.8L11 18.5z"/><path d="m15.5 9.5 5 5M20.5 9.5l-5 5"/>'),
+    eye: stroked('<path d="M2.5 12S6 5.8 12 5.8 21.5 12 21.5 12 18 18.2 12 18.2 2.5 12 2.5 12z"/><circle cx="12" cy="12" r="2.7"/>', 1.6),
+    eyeOff: stroked('<path d="m4 4.5 16 15M9.8 6.2A9.8 9.8 0 0 1 12 6c6 0 9.5 6 9.5 6a17 17 0 0 1-2.8 3.5M6.6 7.7C4 9.5 2.5 12 2.5 12S6 18 12 18a9 9 0 0 0 4.3-1.1"/>', 1.6),
+    trash: stroked('<path d="M4.5 7h15M9.5 7V5h5v2M6.5 7l1 12.5h9l1-12.5M10 10.5v6M14 10.5v6"/>', 1.6),
+    copy: stroked('<rect x="9" y="9" width="11" height="11" rx="2"/><path d="M5 14.5V6a2 2 0 0 1 2-2h8.5"/>', 1.8)
+  };
+
+  var ICON_VIDEO = I.film;
   var ICON_EDIT_VIDEO =
     '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="5" width="18" height="14" rx="2"/><path d="M3 10h18M8 5v14"/><path d="m12 12 4 2-4 2z"/></svg>';
+
+  var TRACK_ICONS = { video: I.film, audio: I.wave, text: I.text };
 
   /* ---------------- tiny DOM helpers ---------------- */
 
@@ -89,9 +130,11 @@
     return !!(focused && container.contains(focused) && /^(INPUT|TEXTAREA|SELECT)$/.test(focused.tagName));
   }
 
-  function slider(labelText, value, min, max, step, onInput, formatValue) {
+  /* onInput fires continuously while sliding; onSettle fires once on release,
+     which is where the undo history records the change. */
+  function slider(labelText, value, min, max, step, onInput, formatValue, onSettle) {
     var wrap = field(labelText),
-      row = el("div", "ve-slider-row"),
+      sliderRow = el("div", "ve-slider-row"),
       input = document.createElement("input"),
       readout = el("output", "ve-slider-value");
     input.type = "range";
@@ -105,9 +148,10 @@
       readout.textContent = formatValue ? formatValue(next) : next;
       onInput(next);
     };
-    row.appendChild(input);
-    row.appendChild(readout);
-    wrap.appendChild(row);
+    if (onSettle) input.onchange = onSettle;
+    sliderRow.appendChild(input);
+    sliderRow.appendChild(readout);
+    wrap.appendChild(sliderRow);
     return wrap;
   }
 
@@ -120,7 +164,7 @@
       return image;
     }
     var placeholder = el("div", (className || "ve-poster") + " ve-poster-empty");
-    placeholder.innerHTML = media.isAudioEntry(entry || {}) ? "♪" : ICON_VIDEO;
+    placeholder.innerHTML = media.isAudioEntry(entry || {}) ? I.wave : ICON_VIDEO;
     return placeholder;
   }
 
@@ -364,10 +408,68 @@
     root.setAttribute("data-item-editor", item.id);
     root.tabIndex = -1;
 
+    /* --- undo history ---
+
+       The whole timeline is a small JSON document, so history is just a stack
+       of serialized snapshots. `baseline` always holds the state as of the last
+       recorded step; commit() compares against it and pushes the difference. */
+
+    var undoStack = [],
+      redoStack = [],
+      baseline = JSON.stringify(item.project);
+
+    function markHistory() {
+      var now = JSON.stringify(item.project);
+      if (now === baseline) return;
+      undoStack.push(baseline);
+      if (undoStack.length > HISTORY_LIMIT) undoStack.shift();
+      redoStack.length = 0;
+      baseline = now;
+    }
+
+    /* Records slider-style changes once, on release. */
+    function settle() {
+      markHistory();
+      renderTransport();
+    }
+
+    function undo() {
+      if (!undoStack.length) return;
+      redoStack.push(JSON.stringify(item.project));
+      restoreProject(undoStack.pop());
+    }
+
+    function redo() {
+      if (!redoStack.length) return;
+      undoStack.push(JSON.stringify(item.project));
+      restoreProject(redoStack.pop());
+    }
+
+    function restoreProject(json) {
+      try {
+        item.project = JSON.parse(json);
+      } catch (error) {
+        return;
+      }
+      ensureEditItem(item);
+      project = item.project;
+      baseline = JSON.stringify(item.project);
+      if (selectedClipId && !timeline.findClip(project, selectedClipId)) selectedClipId = null;
+      host.touchItem(item);
+      host.persist();
+      problem.hidden = true;
+      playerInstance.clearErrors();
+      playerInstance.projectChanged();
+      renderTimeline();
+      renderInspector();
+      renderTransport();
+    }
+
     /* --- committing a change --- */
 
     function commit(options) {
       options = options || {};
+      markHistory();
       host.touchItem(item);
       host.persist();
       /* Give a failed clip another chance to report itself — the edit may have
@@ -382,7 +484,7 @@
       renderTransport();
     }
 
-    /* --- monitor and transport --- */
+    /* --- monitor --- */
 
     var stage = el("div", "ve-stage");
     var monitor = el("div", "ve-monitor");
@@ -410,6 +512,11 @@
       }
     });
     monitor.appendChild(playerInstance.canvas);
+
+    var monitorOverlay = el("div", "ve-monitor-overlay");
+    monitorOverlay.innerHTML = I.play;
+    monitor.appendChild(monitorOverlay);
+
     monitor.onclick = function () {
       playerInstance.toggle();
       renderTransport();
@@ -418,72 +525,44 @@
        project resolution. */
     playerInstance.setResolution(Math.min(project.width, 960), Math.round(Math.min(project.width, 960) * (project.height / project.width)));
 
-    var playButton, timeReadout;
-
-    function renderTransport() {
-      transport.innerHTML = "";
-      playButton = button(
-        playerInstance.isPlaying()
-          ? '<svg viewBox="0 0 24 24" fill="currentColor"><rect x="6" y="5" width="4" height="14" rx="1"/><rect x="14" y="5" width="4" height="14" rx="1"/></svg>'
-          : '<svg viewBox="0 0 24 24" fill="currentColor"><path d="M8 5.5v13l11-6.5z"/></svg>',
-        "ve-play",
-        function () {
-          playerInstance.toggle();
-          renderTransport();
-        },
-        playerInstance.isPlaying() ? "Pause" : "Play"
-      );
-      transport.appendChild(playButton);
-
-      timeReadout = el("div", "ve-time");
-      timeReadout.textContent = timeline.formatTime(playerInstance.time(), true, project.fps) + " / " + timeline.formatTime(timeline.duration(project));
-      transport.appendChild(timeReadout);
-
-      var tools = el("div", "ve-transport-tools");
-      tools.appendChild(
-        button("Split", "ve-btn", function () {
-          var cuts = timeline.splitAt(project, playerInstance.time());
-          if (!cuts) return host.showToast("Move the playhead over a clip to split it", true);
-          commit();
-          host.showToast(cuts + " clip" + (cuts === 1 ? "" : "s") + " split");
-        }, "Split every clip under the playhead")
-      );
-      tools.appendChild(
-        button("−", "ve-btn ve-btn-icon", function () {
-          setZoom(zoom() / 1.5);
-        }, "Zoom out")
-      );
-      tools.appendChild(
-        button("+", "ve-btn ve-btn-icon", function () {
-          setZoom(zoom() * 1.5);
-        }, "Zoom in")
-      );
-      tools.appendChild(
-        button("Export", "ve-btn ve-btn-primary", function () {
-          openExportDialog();
-        }, "Render this cut to a video file")
-      );
-      transport.appendChild(tools);
-    }
-
-    function updatePlayhead(time) {
-      if (timeReadout) timeReadout.textContent = timeline.formatTime(time, true, project.fps) + " / " + timeline.formatTime(timeline.duration(project));
-      if (playheadNode) playheadNode.style.transform = "translateX(" + time * zoom() + "px)";
-      if (playButton) {
-        var wantPause = playerInstance.isPlaying();
-        if (playButton.getAttribute("aria-label") === "Play" && wantPause) renderTransport();
-        else if (playButton.getAttribute("aria-label") === "Pause" && !wantPause) renderTransport();
-      }
-    }
-
     /* --- zoom --- */
 
     function zoom() {
       return zoomByItem[item.id] || DEFAULT_ZOOM;
     }
-    function setZoom(next) {
-      zoomByItem[item.id] = Math.max(MIN_ZOOM, Math.min(MAX_ZOOM, next));
+
+    function clampZoom(value) {
+      return Math.max(MIN_ZOOM, Math.min(MAX_ZOOM, value));
+    }
+
+    /* Zooms while keeping the time under `clientX` fixed on screen, so the
+       timeline grows around the point being looked at instead of drifting. */
+    function zoomAround(factor, clientX) {
+      if (dragging) return;
+      var previous = zoom(),
+        next = clampZoom(previous * factor);
+      if (Math.abs(next - previous) < 0.001) return;
+      var anchor = Math.max(0, (clientX - ruler.getBoundingClientRect().left) / previous);
+      zoomByItem[item.id] = next;
       renderTimeline();
+      var offset = clientX - scroller.getBoundingClientRect().left - headWidth;
+      scroller.scrollLeft = Math.max(0, anchor * next - offset);
+    }
+
+    function zoomStep(factor) {
+      var rect = scroller.getBoundingClientRect();
+      zoomAround(factor, rect.left + headWidth + (rect.width - headWidth) / 2);
+    }
+
+    function zoomToFit() {
+      if (dragging) return;
+      var total = timeline.duration(project);
+      if (total <= 0) return;
+      var available = scroller.clientWidth - headWidth - 28;
+      if (available < 60) return;
+      zoomByItem[item.id] = clampZoom(available / total);
+      renderTimeline();
+      scroller.scrollLeft = 0;
     }
 
     /* --- source resolution --- */
@@ -500,61 +579,163 @@
     var ruler = el("div", "ve-ruler");
     var lanes = el("div", "ve-lanes");
     var playheadNode = el("div", "ve-playhead");
+    var guideNode = el("div", "ve-snap-guide");
+    guideNode.hidden = true;
+    var cornerNode = el("div", "ve-corner");
     var scroller = el("div", "ve-scroller");
     var surface = el("div", "ve-surface");
     surface.appendChild(ruler);
     surface.appendChild(lanes);
+    surface.appendChild(guideNode);
     surface.appendChild(playheadNode);
+    surface.appendChild(cornerNode);
     scroller.appendChild(surface);
     timelineWrap.appendChild(scroller);
+
+    var emptyState = el("div", "ve-timeline-empty");
+    emptyState.hidden = true;
+    emptyState.appendChild(el("b", null, "This edit is empty"));
+    emptyState.appendChild(el("small", null, "Pull footage from your account to start cutting."));
+    emptyState.appendChild(
+      button(I.plus + "<span>Add media</span>", "ve-btn ve-btn-primary", function () {
+        openMediaPicker();
+      })
+    );
+    timelineWrap.appendChild(emptyState);
     root.appendChild(timelineWrap);
 
     var trackControls = el("div", "ve-track-actions");
     root.appendChild(trackControls);
 
-    function renderTrackControls() {
-      trackControls.innerHTML = "";
-      trackControls.appendChild(
-        button("+ Media", "ve-btn ve-btn-primary", function () {
-          openMediaPicker();
-        }, "Pull footage or audio from your account into this edit")
+    /* Track headers are emulated-sticky: they sit in the surface's left padding
+       and are pushed along by the scroll offset, so they never leave view. */
+    var headWidth = 118;
+    scroller.addEventListener(
+      "scroll",
+      function () {
+        surface.style.setProperty("--scroll-x", scroller.scrollLeft + "px");
+      },
+      { passive: true }
+    );
+
+    /* Ctrl+wheel (or pinch on a trackpad) zooms around the cursor. */
+    timelineWrap.addEventListener(
+      "wheel",
+      function (event) {
+        if (!event.ctrlKey && !event.metaKey) return;
+        event.preventDefault();
+        zoomAround(event.deltaY < 0 ? 1.25 : 0.8, event.clientX);
+      },
+      { passive: false }
+    );
+
+    /* --- transport --- */
+
+    var playBtn, timeNow, timeTotal, undoBtn, redoBtn, lastPlaying = false;
+
+    (function buildTransport() {
+      var main = el("div", "ve-transport-main");
+      main.appendChild(
+        button(I.skipStart, "ve-tbtn", function () {
+          playerInstance.pause();
+          playerInstance.seek(0);
+          scroller.scrollLeft = 0;
+          renderTransport();
+        }, "Back to start (Home)")
       );
-      trackControls.appendChild(
-        button("+ Text", "ve-btn", function () {
-          addTextClip();
-        })
-      );
-      trackControls.appendChild(
-        button("+ Voiceover", "ve-btn", function () {
-          toggleVoiceover();
-        }, "Record straight into this edit")
-      );
-      trackControls.appendChild(
-        button("+ Video track", "ve-btn", function () {
-          timeline.addTrack(project, "video");
+      playBtn = button(I.play, "ve-play", function () {
+        playerInstance.toggle();
+        renderTransport();
+      }, "Play");
+      main.appendChild(playBtn);
+      var time = el("div", "ve-time");
+      timeNow = el("span", "ve-time-now", "0:00.00");
+      timeTotal = el("span", "ve-time-total", "0:00");
+      time.appendChild(timeNow);
+      time.appendChild(el("span", "ve-time-sep", "/"));
+      time.appendChild(timeTotal);
+      main.appendChild(time);
+      transport.appendChild(main);
+
+      var tools = el("div", "ve-transport-tools");
+      undoBtn = button(I.undo, "ve-tbtn", undo, "Undo (Ctrl+Z)");
+      redoBtn = button(I.redo, "ve-tbtn", redo, "Redo (Ctrl+Shift+Z)");
+      tools.appendChild(undoBtn);
+      tools.appendChild(redoBtn);
+      tools.appendChild(el("span", "ve-tsep"));
+      tools.appendChild(
+        button(I.scissors + "<span>Split</span>", "ve-tbtn", function () {
+          var cuts = timeline.splitAt(project, playerInstance.time());
+          if (!cuts) return host.showToast("Move the playhead over a clip to split it", true);
           commit();
-        })
+          host.showToast(cuts + " clip" + (cuts === 1 ? "" : "s") + " split");
+        }, "Split every clip under the playhead (S)")
       );
-      trackControls.appendChild(
-        button("+ Audio track", "ve-btn", function () {
-          timeline.addTrack(project, "audio");
-          commit();
-        })
+      tools.appendChild(el("span", "ve-tsep"));
+      tools.appendChild(
+        button(I.zoomOut, "ve-tbtn", function () {
+          zoomStep(1 / 1.5);
+        }, "Zoom out")
       );
-      if (recorder) {
-        var live = el("span", "ve-recording", "Recording " + timeline.formatTime((Date.now() - recorder.started) / 1000) + " — tap +Voiceover to stop");
-        trackControls.appendChild(live);
-      }
+      tools.appendChild(button(I.fit, "ve-tbtn", zoomToFit, "Fit the whole edit on screen"));
+      tools.appendChild(
+        button(I.zoomIn, "ve-tbtn", function () {
+          zoomStep(1.5);
+        }, "Zoom in")
+      );
+      tools.appendChild(el("span", "ve-tsep"));
+      tools.appendChild(
+        button(I.download + "<span>Export</span>", "ve-btn ve-btn-primary ve-export", function () {
+          openExportDialog();
+        }, "Render this cut to a video file")
+      );
+      transport.appendChild(tools);
+    })();
+
+    function renderTransport() {
+      var playing = playerInstance.isPlaying();
+      lastPlaying = playing;
+      playBtn.innerHTML = playing ? I.pause : I.play;
+      playBtn.title = playing ? "Pause" : "Play";
+      playBtn.setAttribute("aria-label", playBtn.title);
+      monitor.classList.toggle("is-playing", playing);
+      timeNow.textContent = timeline.formatTime(playerInstance.time(), true, project.fps);
+      timeTotal.textContent = timeline.formatTime(timeline.duration(project));
+      undoBtn.disabled = !undoStack.length;
+      redoBtn.disabled = !redoStack.length;
     }
 
-    /* Rebuilds the whole timeline. Cheap at this scale and it keeps the DOM a
+    /* Keeps the playhead on screen while playing, parked about a third of the
+       way in so upcoming clips are visible. */
+    function ensurePlayheadVisible() {
+      var px = playerInstance.time() * zoom(),
+        view = scroller.clientWidth - headWidth;
+      if (view <= 40) return;
+      var left = scroller.scrollLeft;
+      if (px < left + 4) scroller.scrollLeft = Math.max(0, px - view * 0.3);
+      else if (px > left + view - 16) scroller.scrollLeft = Math.max(0, px - view * 0.3);
+    }
+
+    function updatePlayhead(time) {
+      if (timeNow) timeNow.textContent = timeline.formatTime(time, true, project.fps);
+      if (playheadNode) playheadNode.style.transform = "translateX(" + time * zoom() + "px)";
+      var playing = playerInstance.isPlaying();
+      if (playing && !dragging) ensurePlayheadVisible();
+      if (playing !== lastPlaying) renderTransport();
+    }
+
+    /* --- rendering the timeline ---
+
+       Rebuilds the whole thing. Cheap at this scale and it keeps the DOM a
        plain function of the project, which is much easier to reason about than
        incremental patching. Never called while a drag is in flight. */
+
     function renderTimeline() {
       if (dragging) return;
+      headWidth = parseFloat(getComputedStyle(surface).paddingLeft) || 118;
       var total = timeline.duration(project),
         pxPerSecond = zoom(),
-        width = Math.max(total * pxPerSecond + 240, scroller.clientWidth || 320);
+        width = Math.max(total * pxPerSecond + 240, scroller.clientWidth - headWidth || 320);
       surface.style.width = width + "px";
 
       /* --- ruler --- */
@@ -563,9 +744,13 @@
       for (var time = 0; time <= total + step; time += step) {
         var tick = el("div", "ve-tick");
         tick.style.left = time * pxPerSecond + "px";
-        tick.appendChild(el("span", null, timeline.formatTime(time)));
+        tick.appendChild(el("span", null, tickLabel(time, step)));
         ruler.appendChild(tick);
       }
+      var minorPx = (step * pxPerSecond) / 4;
+      ruler.style.backgroundImage =
+        minorPx >= 12 ? "repeating-linear-gradient(90deg, var(--line-soft) 0 1px, transparent 1px " + minorPx + "px)" : "none";
+      lanes.style.backgroundImage = "repeating-linear-gradient(90deg, var(--line-soft) 0 1px, transparent 1px " + step * pxPerSecond + "px)";
 
       /* --- tracks --- */
       lanes.innerHTML = "";
@@ -586,6 +771,11 @@
       });
 
       playheadNode.style.transform = "translateX(" + playerInstance.time() * pxPerSecond + "px)";
+
+      var empty = timeline.clipCount(project) === 0;
+      emptyState.hidden = !empty;
+      timelineWrap.classList.toggle("is-empty", empty);
+
       renderTrackControls();
     }
 
@@ -597,32 +787,42 @@
       return 600;
     }
 
+    function tickLabel(time, step) {
+      if (step >= 1) return timeline.formatTime(time);
+      var whole = Math.floor(time + 0.0001);
+      return timeline.formatTime(whole) + "." + Math.round((time - whole) * 10);
+    }
+
     function buildLane(track, pxPerSecond) {
       var laneRow = el("div", "ve-lane-row ve-lane-" + track.kind + (track.id === activeTrackId ? " is-active" : ""));
 
       var head = el("div", "ve-lane-head");
-      head.appendChild(el("b", null, track.name));
+      var title = el("div", "ve-lane-title");
+      title.innerHTML = TRACK_ICONS[track.kind] || "";
+      title.appendChild(el("b", null, track.name));
+      head.appendChild(title);
+
       var headTools = el("div", "ve-lane-tools");
       headTools.appendChild(
-        button(track.muted ? "Unmute" : "Mute", "ve-chip" + (track.muted ? " is-off" : ""), function () {
+        button(track.muted ? I.volumeOff : I.volume, "ve-ibtn" + (track.muted ? " is-off" : ""), function () {
           track.muted = !track.muted;
           commit();
-        })
+        }, track.muted ? "Unmute track" : "Mute track")
       );
       if (track.kind !== "audio") {
         headTools.appendChild(
-          button(track.hidden ? "Show" : "Hide", "ve-chip" + (track.hidden ? " is-off" : ""), function () {
+          button(track.hidden ? I.eyeOff : I.eye, "ve-ibtn" + (track.hidden ? " is-off" : ""), function () {
             track.hidden = !track.hidden;
             commit();
-          })
+          }, track.hidden ? "Show track" : "Hide track")
         );
       }
       headTools.appendChild(
-        button("Remove", "ve-chip ve-chip-danger", function () {
+        button(I.trash, "ve-ibtn ve-ibtn-danger", function () {
           if (track.clips.length && !confirm("Remove " + track.name + " and its " + track.clips.length + " clip(s) from this edit?")) return;
           if (!timeline.removeTrack(project, track.id)) return host.showToast("Keep at least one " + track.kind + " track", true);
           commit();
-        })
+        }, "Remove track")
       );
       head.appendChild(headTools);
       laneRow.appendChild(head);
@@ -632,6 +832,10 @@
       lane.onpointerdown = function (event) {
         if (event.target !== lane) return;
         activeTrackId = track.id;
+        if (selectedClipId) {
+          selectedClipId = null;
+          renderInspector();
+        }
         scrubTo(event);
         renderTimeline();
       };
@@ -648,10 +852,15 @@
 
       var block = el("div", "ve-clip ve-clip-" + track.kind + (clip.id === selectedClipId ? " is-selected" : "") + (missing ? " is-missing" : ""));
       block.style.left = clip.start * pxPerSecond + "px";
-      block.style.width = Math.max(10, timeline.clipLength(clip) * pxPerSecond) + "px";
+      block.style.width = Math.max(12, timeline.clipLength(clip) * pxPerSecond) + "px";
       block.setAttribute("data-clip-id", clip.id);
 
-      if (track.kind === "video" && source && source.entry.poster) block.style.backgroundImage = "url(" + source.entry.poster + ")";
+      /* Video clips show their poster repeated like a filmstrip. */
+      if (track.kind === "video" && source && source.entry.poster) {
+        var strip = el("div", "ve-clip-strip");
+        strip.style.backgroundImage = "url(" + source.entry.poster + ")";
+        block.appendChild(strip);
+      }
 
       var caption = el("span", "ve-clip-caption");
       caption.textContent = missing ? "Missing file" : track.kind === "text" ? clip.text.value.split("\n")[0] : source ? source.entry.name : "Clip";
@@ -661,14 +870,32 @@
         var handle = el("div", "ve-handle ve-handle-" + edge);
         handle.onpointerdown = function (event) {
           event.stopPropagation();
+          /* On touch, an unselected clip's edge is a tap target for selecting,
+             not trimming — same rule as the clip body below. */
+          if (event.pointerType === "touch" && selectedClipId !== clip.id) {
+            selectedClipId = clip.id;
+            activeTrackId = track.id;
+            renderTimeline();
+            renderInspector();
+            return;
+          }
           beginTrim(event, block, track, clip, edge, pxPerSecond);
         };
         block.appendChild(handle);
       });
 
       block.onpointerdown = function (event) {
+        var wasSelected = selectedClipId === clip.id;
         selectedClipId = clip.id;
         activeTrackId = track.id;
+        /* Touch is two-step, like every phone editor: the first tap selects
+           (and leaves the gesture free to scroll the timeline), dragging only
+           starts once the clip is already selected. Mouse drags immediately. */
+        if (event.pointerType === "touch" && !wasSelected) {
+          renderTimeline();
+          renderInspector();
+          return;
+        }
         beginMove(event, block, track, clip, pxPerSecond);
       };
       return block;
@@ -712,6 +939,19 @@
       ruler.addEventListener("pointerup", up);
       ruler.addEventListener("pointercancel", up);
     };
+
+    /* --- the snap guide ---
+
+       A vertical line that appears when a dragged edge locks onto another
+       clip's edge or the playhead, so it is obvious *why* the drag stuck. */
+
+    function showGuide(time) {
+      guideNode.hidden = false;
+      guideNode.style.transform = "translateX(" + time * zoom() + "px)";
+    }
+    function hideGuide() {
+      guideNode.hidden = true;
+    }
 
     /* --- dragging clips ---
 
@@ -758,10 +998,13 @@
         /* Snap either edge of the clip, whichever is closer to a marker. */
         var snappedStart = timeline.snapTime(wantedStart, points),
           snappedEnd = timeline.snapTime(wantedStart + length, points) - length;
-        var start = Math.abs(snappedStart - wantedStart) <= Math.abs(snappedEnd - wantedStart) ? snappedStart : snappedEnd;
-        start = Math.max(0, start);
+        var pickStart = Math.abs(snappedStart - wantedStart) <= Math.abs(snappedEnd - wantedStart);
+        var start = Math.max(0, pickStart ? snappedStart : snappedEnd);
         block.style.left = start * pxPerSecond + "px";
         block.dataset.pendingStart = start;
+
+        if (Math.abs(start - wantedStart) > 0.0008) showGuide(pickStart ? start : start + length);
+        else hideGuide();
 
         var overLane = laneUnder(moveEvent.clientY);
         if (overLane) targetTrack = overLane;
@@ -772,6 +1015,7 @@
         block.removeEventListener("pointerup", finish);
         block.removeEventListener("pointercancel", finish);
         block.classList.remove("is-dragging");
+        hideGuide();
         dragging = false;
         if (!moved) {
           renderTimeline();
@@ -801,13 +1045,16 @@
 
       function move(moveEvent) {
         var dx = (moveEvent.clientX - startX) / pxPerSecond;
-        pending = timeline.snapTime((edge === "start" ? originalStart : originalEnd) + dx, points);
+        var raw = (edge === "start" ? originalStart : originalEnd) + dx;
+        pending = timeline.snapTime(raw, points);
+        if (Math.abs(pending - raw) > 0.0008) showGuide(pending);
+        else hideGuide();
         /* Preview the trim without committing, so the model stays clean until
            the pointer is released. */
         var previewStart = edge === "start" ? Math.min(pending, originalEnd - timeline.MIN_CLIP) : originalStart,
           previewEnd = edge === "start" ? originalEnd : Math.max(pending, originalStart + timeline.MIN_CLIP);
         block.style.left = Math.max(0, previewStart) * pxPerSecond + "px";
-        block.style.width = Math.max(10, (previewEnd - previewStart) * pxPerSecond) + "px";
+        block.style.width = Math.max(12, (previewEnd - previewStart) * pxPerSecond) + "px";
       }
 
       function finish() {
@@ -815,6 +1062,7 @@
         block.removeEventListener("pointerup", finish);
         block.removeEventListener("pointercancel", finish);
         block.classList.remove("is-trimming");
+        hideGuide();
         dragging = false;
         timeline.trimClip(project, clip.id, edge, pending);
         commit();
@@ -823,6 +1071,53 @@
       block.addEventListener("pointermove", move);
       block.addEventListener("pointerup", finish);
       block.addEventListener("pointercancel", finish);
+    }
+
+    /* --- track controls --- */
+
+    function renderTrackControls() {
+      trackControls.innerHTML = "";
+      trackControls.appendChild(
+        button(I.plus + "<span>Media</span>", "ve-btn ve-btn-primary", function () {
+          openMediaPicker();
+        }, "Pull footage or audio from your account into this edit")
+      );
+      trackControls.appendChild(
+        button(I.text + "<span>Text</span>", "ve-btn", function () {
+          addTextClip();
+        }, "Add a title at the playhead")
+      );
+      if (recorder) {
+        trackControls.appendChild(
+          button(
+            '<span class="ve-rec-dot"></span><span>Stop · ' + timeline.formatTime((Date.now() - recorder.started) / 1000) + "</span>",
+            "ve-btn ve-btn-rec",
+            function () {
+              toggleVoiceover();
+            },
+            "Stop recording"
+          )
+        );
+      } else {
+        trackControls.appendChild(
+          button(I.mic + "<span>Voiceover</span>", "ve-btn", function () {
+            toggleVoiceover();
+          }, "Record straight into this edit")
+        );
+      }
+      trackControls.appendChild(el("span", "ve-flex-gap"));
+      trackControls.appendChild(
+        button(I.layers + "<span>Video track</span>", "ve-btn ve-btn-quiet", function () {
+          timeline.addTrack(project, "video");
+          commit();
+        }, "Add another video track")
+      );
+      trackControls.appendChild(
+        button(I.wave + "<span>Audio track</span>", "ve-btn ve-btn-quiet", function () {
+          timeline.addTrack(project, "audio");
+          commit();
+        }, "Add another audio track")
+      );
     }
 
     /* --- inspector --- */
@@ -834,7 +1129,17 @@
       inspector.innerHTML = "";
       var hit = selectedClipId ? timeline.findClip(project, selectedClipId) : null;
       if (!hit) {
-        inspector.appendChild(el("p", "ve-hint", "Tap a clip on the timeline to trim it, change its volume, or restyle its text. Drag a clip to move it, or drag its edges to trim."));
+        var empty = el("div", "ve-inspector-empty");
+        empty.appendChild(el("p", "ve-hint", "Select a clip to edit it — drag it to move, drag its edges to trim."));
+        var keys = el("div", "ve-keys");
+        [["Space", "Play"], ["S", "Split"], ["Del", "Delete"], ["Ctrl+Z", "Undo"]].forEach(function (pair) {
+          var key = el("span", "ve-key");
+          key.appendChild(el("kbd", null, pair[0]));
+          key.appendChild(el("small", null, pair[1]));
+          keys.appendChild(key);
+        });
+        empty.appendChild(keys);
+        inspector.appendChild(empty);
         renderMissingNotice();
         renderRenders();
         return;
@@ -845,7 +1150,10 @@
         source = clip.sourceItemId ? media.findSource(clip.sourceItemId, clip.sourceFileId) : null;
 
       var head = el("div", "ve-inspector-head");
-      head.appendChild(el("b", null, track.kind === "text" ? "Text clip" : source ? source.entry.name : "Missing file"));
+      var title = el("div", "ve-inspector-title");
+      title.appendChild(el("span", "ve-kind ve-kind-" + track.kind));
+      title.appendChild(el("b", null, track.kind === "text" ? "Text clip" : source ? source.entry.name : "Missing file"));
+      head.appendChild(title);
       head.appendChild(
         el(
           "small",
@@ -863,27 +1171,27 @@
 
       var actions = el("div", "ve-inspector-actions");
       actions.appendChild(
-        button("Split here", "ve-btn", function () {
+        button(I.scissors + "<span>Split here</span>", "ve-btn", function () {
           if (!timeline.splitAt(project, playerInstance.time(), clip.id)) return host.showToast("Put the playhead inside this clip first", true);
           commit();
         })
       );
       actions.appendChild(
-        button("Duplicate", "ve-btn", function () {
+        button(I.copy + "<span>Duplicate</span>", "ve-btn", function () {
           var copy = timeline.duplicateClip(project, clip.id);
           if (copy) selectedClipId = copy.id;
           commit();
         })
       );
       actions.appendChild(
-        button("Delete", "ve-btn", function () {
+        button(I.trash + "<span>Delete</span>", "ve-btn", function () {
           timeline.removeClip(project, clip.id);
           selectedClipId = null;
           commit();
         })
       );
       actions.appendChild(
-        button("Delete & close gap", "ve-btn ve-btn-danger", function () {
+        button(I.trash + "<span>Delete & close gap</span>", "ve-btn ve-btn-danger", function () {
           timeline.rippleDelete(project, clip.id);
           selectedClipId = null;
           commit();
@@ -901,7 +1209,7 @@
             host.save();
           }, function (value) {
             return value + "%";
-          })
+          }, settle)
         );
         var length = timeline.clipLength(clip);
         grid.appendChild(
@@ -911,7 +1219,7 @@
             host.save();
           }, function (value) {
             return Number(value).toFixed(2) + "s";
-          })
+          }, settle)
         );
         grid.appendChild(
           slider("Fade out", clip.fadeOut, 0, Math.max(0.5, Math.min(5, length)), 0.05, function (value) {
@@ -920,7 +1228,7 @@
             host.save();
           }, function (value) {
             return Number(value).toFixed(2) + "s";
-          })
+          }, settle)
         );
         var muteRow = row("Mute this clip");
         muteRow.appendChild(
@@ -949,7 +1257,7 @@
             playerInstance.projectChanged();
           }, function (value) {
             return value + "%";
-          })
+          }, settle)
         );
         grid.appendChild(
           slider("Nudge across", clip.offsetX, -50, 50, 1, function (value) {
@@ -959,7 +1267,7 @@
             playerInstance.projectChanged();
           }, function (value) {
             return value + "%";
-          })
+          }, settle)
         );
         grid.appendChild(
           slider("Nudge down", clip.offsetY, -50, 50, 1, function (value) {
@@ -969,7 +1277,7 @@
             playerInstance.projectChanged();
           }, function (value) {
             return value + "%";
-          })
+          }, settle)
         );
       }
 
@@ -986,6 +1294,7 @@
           host.save();
           playerInstance.projectChanged();
         };
+        area.onchange = settle;
         valueField.appendChild(area);
         grid.appendChild(valueField);
 
@@ -1000,6 +1309,7 @@
           host.save();
           playerInstance.projectChanged();
         };
+        color.onchange = settle;
         colorField.appendChild(color);
         grid.appendChild(colorField);
 
@@ -1011,7 +1321,7 @@
             playerInstance.projectChanged();
           }, function (value) {
             return Number(value).toFixed(1) + "%";
-          })
+          }, settle)
         );
         grid.appendChild(
           slider("Across", text.x, 0, 100, 1, function (value) {
@@ -1019,7 +1329,7 @@
             host.touchItem(item);
             host.save();
             playerInstance.projectChanged();
-          })
+          }, null, settle)
         );
         grid.appendChild(
           slider("Down", text.y, 0, 100, 1, function (value) {
@@ -1027,7 +1337,7 @@
             host.touchItem(item);
             host.save();
             playerInstance.projectChanged();
-          })
+          }, null, settle)
         );
 
         var alignRow = row("Alignment");
@@ -1081,22 +1391,22 @@
       var section = el("div", "ve-renders");
       section.appendChild(el("h4", null, "Exports"));
       item.renders.forEach(function (entry) {
-        var row = el("div", "ve-render-row");
-        row.appendChild(el("b", null, entry.name));
-        row.appendChild(el("small", null, media.entrySummary(item, entry)));
-        row.appendChild(
+        var renderRow = el("div", "ve-render-row");
+        renderRow.appendChild(el("b", null, entry.name));
+        renderRow.appendChild(el("small", null, media.entrySummary(item, entry)));
+        renderRow.appendChild(
           button("Download", "ve-btn", function () {
             downloadEntry(item, entry);
           })
         );
-        row.appendChild(
+        renderRow.appendChild(
           button("Remove", "ve-btn ve-btn-danger", function () {
             if (!confirm("Delete " + entry.name + " from your account?")) return;
             media.removeEntry(item, entry, "renders");
             renderInspector();
           })
         );
-        section.appendChild(row);
+        section.appendChild(renderRow);
       });
       inspector.appendChild(section);
     }
@@ -1207,14 +1517,17 @@
           entries.forEach(function (entry) {
             var card = el("button", "ve-picker-card");
             card.type = "button";
-            card.appendChild(posterNode(entry.entry, "ve-picker-poster"));
+            var thumb = el("div", "ve-picker-thumb");
+            thumb.appendChild(posterNode(entry.entry, "ve-picker-poster"));
+            if (entry.duration) thumb.appendChild(el("span", "ve-picker-length", timeline.formatTime(entry.duration)));
+            card.appendChild(thumb);
             var info = el("div", "ve-picker-info");
             info.appendChild(el("b", null, entry.name));
             info.appendChild(
               el(
                 "small",
                 null,
-                [entry.duration ? timeline.formatTime(entry.duration) : null, entry.itemTitle, entry.folderName, entry.kind === "audio" ? "Audio" : "Video"]
+                [entry.itemTitle, entry.folderName, entry.kind === "audio" ? "Audio" : "Video"]
                   .filter(Boolean)
                   .join(" · ")
               )
@@ -1336,6 +1649,7 @@
           )
         );
 
+        var sizeField = row("Resolution");
         var sizeRow = el("div", "ve-chip-row");
         sizes.forEach(function (size, index) {
           sizeRow.appendChild(
@@ -1348,7 +1662,8 @@
             })
           );
         });
-        body.appendChild(sizeRow);
+        sizeField.appendChild(sizeRow);
+        body.appendChild(sizeField);
 
         var status = el("p", "ve-hint", "");
         var bar = el("div", "ve-progress");
@@ -1358,7 +1673,7 @@
         body.appendChild(bar);
         body.appendChild(status);
 
-        var start = button("Start export", "ve-btn ve-btn-primary", function () {
+        var start = button(I.download + "<span>Start export</span>", "ve-btn ve-btn-primary ve-export-start", function () {
           start.disabled = true;
           bar.hidden = false;
           exportRunning = true;
@@ -1451,9 +1766,22 @@
       var target = event.target;
       if (target && target.closest && target.closest("input, textarea, select, [contenteditable='true']")) return;
       if (exportRunning) return;
-      /* Leave browser and app shortcuts alone (the core owns Ctrl+Enter). */
-      if (event.ctrlKey || event.metaKey || event.altKey) return;
       if (document.querySelector(".ve-modal") || document.querySelector(".modal.open")) return;
+
+      var meta = event.ctrlKey || event.metaKey;
+      if (meta && !event.altKey) {
+        var key = (event.key || "").toLowerCase();
+        if (key === "z" && !event.shiftKey) {
+          event.preventDefault();
+          undo();
+        } else if (key === "y" || (key === "z" && event.shiftKey)) {
+          event.preventDefault();
+          redo();
+        }
+        /* Every other browser and app shortcut stays untouched. */
+        return;
+      }
+      if (event.altKey) return;
 
       if (event.code === "Space") {
         event.preventDefault();
@@ -1466,10 +1794,24 @@
         timeline.removeClip(project, selectedClipId);
         selectedClipId = null;
         commit();
+      } else if (event.key === "Escape" && selectedClipId) {
+        selectedClipId = null;
+        renderTimeline();
+        renderInspector();
       } else if (event.key === "ArrowLeft") {
         playerInstance.seek(playerInstance.time() - (event.shiftKey ? 1 : 1 / project.fps));
+        ensurePlayheadVisible();
       } else if (event.key === "ArrowRight") {
         playerInstance.seek(playerInstance.time() + (event.shiftKey ? 1 : 1 / project.fps));
+        ensurePlayheadVisible();
+      } else if (event.key === "Home") {
+        event.preventDefault();
+        playerInstance.seek(0);
+        scroller.scrollLeft = 0;
+      } else if (event.key === "End") {
+        event.preventDefault();
+        playerInstance.seek(timeline.duration(project));
+        ensurePlayheadVisible();
       }
     }
     document.addEventListener("keydown", onKeyDown);
@@ -1485,6 +1827,7 @@
       sync: function () {
         ensureEditItem(item);
         project = item.project;
+        baseline = JSON.stringify(item.project);
         if (!dragging) {
           renderTimeline();
           renderInspector();

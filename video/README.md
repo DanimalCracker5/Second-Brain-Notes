@@ -172,3 +172,16 @@ it is going.
 | S | Split every clip under the playhead |
 | Delete / Backspace | Delete the selected clip |
 | ← / → | Nudge one frame (hold Shift for one second) |
+| Ctrl+Z / Ctrl+Shift+Z (or Ctrl+Y) | Undo / redo timeline changes |
+| Home / End | Jump to the start / end of the edit |
+| Esc | Deselect the current clip |
+| Ctrl + mouse wheel | Zoom the timeline around the cursor |
+
+Undo history lives in `editor.js` only — the timeline is a small JSON document,
+so history is a capped stack of serialized snapshots kept per open editor. It
+is not synced and resets when the item is closed.
+
+On touch screens a clip is selected with one tap and only drags once selected,
+so a finger on a full lane can still scroll the timeline. This is done purely
+with `touch-action` (see `.ve-clip` in the CSS) plus a pointerType check in
+`editor.js`.
