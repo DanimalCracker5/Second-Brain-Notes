@@ -4,7 +4,7 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
 <meta name="theme-color" content="#000000">
-<meta name="description" content="Second Brain Notes — a cloud-synced workspace for notes, tasks, scripts, media, and AI collaboration.">
+<meta name="description" content="Second Brain Notes — a cloud-synced workspace for notes, tasks, media, AI collaboration, and life planning.">
 <meta name="mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
@@ -30,6 +30,8 @@
 <link rel="stylesheet" href="./video/video-editor.css?v=2">
 <!-- Code editor feature. Self-contained in code/ — see code/README.md. -->
 <link rel="stylesheet" href="./code/code-editor.css">
+<!-- Life Paths feature. Keep financial plans together in life/. -->
+<link rel="stylesheet" href="./life/life-planner.css">
 
 <style>
   :root{
@@ -707,6 +709,12 @@
 -->
 <script src="./code/code-editor.js"></script>
 
+<!--
+  Life Paths feature. Attaches to window.SecondBrainLifePlanner and runs
+  nothing until the app below calls SecondBrainLifePlanner.install().
+-->
+<script src="./life/life-planner.js"></script>
+
 <script>
 (function(){
   "use strict";
@@ -1059,6 +1067,9 @@
   try{
     if(window.SecondBrainCode&&typeof window.SecondBrainCode.install==="function") registerItemTypes(window.SecondBrainCode.install(moduleHost()));
   }catch(e){ console.warn("Code editor could not be loaded:",e); }
+  try{
+    if(window.SecondBrainLifePlanner&&typeof window.SecondBrainLifePlanner.install==="function") registerItemTypes(window.SecondBrainLifePlanner.install(moduleHost()));
+  }catch(e){ console.warn("Life Paths could not be loaded:",e); }
 
   var state=loadLocal();
   if(!state||!state.items){ state={ items:[], folders:[], tags:[], currentId:null, motion:true, theme:"nebula", filterFolder:null, filterTag:null }; state.items.push(newNoteItem()); state.currentId=state.items[0].id; }
@@ -1074,7 +1085,7 @@
   if(typeof state.enabledTypes.agent!=="boolean") state.enabledTypes.agent=false;
   if(typeof state.enabledTypes.workout!=="boolean") state.enabledTypes.workout=false;
   if(typeof state.enabledTypes.audio!=="boolean") state.enabledTypes.audio=true;
-  typeModuleList().forEach(function(def){ if(typeof state.enabledTypes[def.type]!=="boolean") state.enabledTypes[def.type]=false; });
+  typeModuleList().forEach(function(def){ if(typeof state.enabledTypes[def.type]!=="boolean") state.enabledTypes[def.type]=!!def.defaultEnabled; });
   state.noteInsertOptions=state.noteInsertOptions||{};
   Object.keys(NOTE_INSERT_DEFAULTS).forEach(function(type){ if(typeof state.noteInsertOptions[type]!=="boolean") state.noteInsertOptions[type]=NOTE_INSERT_DEFAULTS[type]; });
   if(typeof state.tagsCollapsed!=="boolean") state.tagsCollapsed=false;
@@ -1101,7 +1112,7 @@
 
   function blankDeviceState(){
     var enabledTypes={script:false,note:true,todo:true,audio:true,agent:false,workout:false};
-    typeModuleList().forEach(function(def){ enabledTypes[def.type]=false; });
+    typeModuleList().forEach(function(def){ enabledTypes[def.type]=!!def.defaultEnabled; });
     return {items:[],folders:[],tags:[],currentId:null,motion:true,theme:"nebula",darkness:82,enabledTypes:enabledTypes,noteInsertOptions:{file:true,paragraph:true,comment:true,prompt:true,heading:true,chapter:true,group:true,code:true},tagsCollapsed:false,allNotesName:"All notes",readChapterNames:false,filterFolder:null,filterTag:null,listSort:"updated",agentSettings:defaultAgentSettings(),pendingCloudSync:false,syncBaseline:null};
   }
   function clearAttachmentStore(){
@@ -4380,7 +4391,9 @@
     if(typeof prefs.motion==="boolean") state.motion=prefs.motion;
     if(typeof prefs.darkness==="number") state.darkness=Math.max(0,Math.min(100,prefs.darkness));
     if(prefs.enabledTypes&&typeof prefs.enabledTypes==="object"){
-      ["script","note","todo","audio","agent","workout"].forEach(function(type){ if(typeof prefs.enabledTypes[type]==="boolean") state.enabledTypes[type]=prefs.enabledTypes[type]; });
+      var enabledTypeNames=["script","note","todo","audio","agent","workout"];
+      typeModuleList().forEach(function(def){ if(def&&def.type&&enabledTypeNames.indexOf(def.type)<0) enabledTypeNames.push(def.type); });
+      enabledTypeNames.forEach(function(type){ if(typeof prefs.enabledTypes[type]==="boolean") state.enabledTypes[type]=prefs.enabledTypes[type]; });
     }
     if(prefs.noteInsertOptions&&typeof prefs.noteInsertOptions==="object") Object.keys(NOTE_INSERT_DEFAULTS).forEach(function(type){ if(typeof prefs.noteInsertOptions[type]==="boolean") state.noteInsertOptions[type]=prefs.noteInsertOptions[type]; });
     if(typeof prefs.tagsCollapsed==="boolean") state.tagsCollapsed=prefs.tagsCollapsed;
