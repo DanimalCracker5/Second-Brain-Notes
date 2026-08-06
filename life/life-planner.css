@@ -5,7 +5,7 @@
 */
 .lp-root{
   display:grid;
-  gap:14px;
+  gap:18px;
   padding:6px 0 36px;
   color:var(--ink);
 }
@@ -141,23 +141,21 @@
 
 .lp-tabs{
   display:flex;
-  gap:3px;
+  gap:5px;
   overflow-x:auto;
-  padding:0;
-  border:0;
-  border-bottom:1px solid var(--line);
-  border-radius:0;
-  background:transparent;
+  padding:4px;
+  border:1px solid var(--line);
+  border-radius:14px;
+  background:rgba(0,0,0,.22);
   scrollbar-width:none;
 }
 .lp-tabs::-webkit-scrollbar{ display:none; }
 .lp-tab{
-  flex:0 0 auto;
-  min-height:37px;
-  padding:7px 11px;
+  flex:1 0 auto;
+  min-height:40px;
+  padding:8px 14px;
   border:0;
-  border-radius:0;
-  border-bottom:2px solid transparent;
+  border-radius:10px;
   color:var(--ink-dim);
   background:transparent;
   cursor:pointer;
@@ -165,13 +163,12 @@
   font-size:.78rem;
   transition:color .15s ease,background .15s ease,transform .12s ease;
 }
-.lp-tab:hover{ color:var(--ink); background:transparent; }
+.lp-tab:hover{ color:var(--ink); background:rgba(255,255,255,.06); }
 .lp-tab:active{ transform:scale(.98); }
 .lp-tab.on{
-  color:var(--accent);
-  border-bottom-color:var(--accent);
-  background:transparent;
-  box-shadow:none;
+  color:#08080a;
+  background:var(--accent);
+  box-shadow:0 6px 18px var(--accent-soft);
 }
 
 .lp-stage{ display:grid; gap:18px; }
@@ -280,10 +277,10 @@
 .lp-forecast{
   display:grid;
   gap:13px;
-  padding:2px 0 0;
-  border:0;
-  border-radius:0;
-  background:transparent;
+  padding:20px;
+  border:1px solid var(--line);
+  border-radius:19px;
+  background:rgba(0,0,0,.19);
 }
 .lp-forecast-title h3{
   margin:0;
@@ -302,14 +299,14 @@
   gap:7px;
 }
 .lp-metric{
-  min-height:96px;
+  min-height:109px;
   display:flex;
   flex-direction:column;
   justify-content:center;
   padding:13px;
   border:1px solid var(--line);
-  border-radius:10px;
-  background:rgba(255,255,255,.018);
+  border-radius:13px;
+  background:rgba(255,255,255,.032);
 }
 .lp-metric.accent{
   border-color:var(--accent-line);
@@ -460,10 +457,10 @@
 
 .lp-card-list{ display:grid; gap:11px; }
 .lp-path-card,.lp-goal-card,.lp-plan-editor{
-  padding:15px;
+  padding:17px;
   border:1px solid var(--line);
-  border-radius:12px;
-  background:rgba(255,255,255,.022);
+  border-radius:17px;
+  background:linear-gradient(145deg,rgba(255,255,255,.05),rgba(255,255,255,.018));
 }
 .lp-card-top{
   display:flex;

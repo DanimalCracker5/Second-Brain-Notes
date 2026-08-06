@@ -689,8 +689,51 @@
     var life = normalizeItem(item);
     var plan = activePlan(life);
     var wrap = makeNode("div", "lp-stage lp-overview");
-    wrap.appendChild(sectionHeading("Life planner", "One simple place for your numbers.", "Start with Income paths, then add Goals. Use Life plans only when you are ready to compare different mixes."));
-    wrap.appendChild(note("Income paths → Goals → Life plans. You only set up each path and goal once.", "plain"));
+    var actions = makeNode("div", "lp-actions");
+    actions.appendChild(button("+ Income path", "lp-button", function () {
+      life.paths.push(newIncomePath());
+      life.activeTab = "paths";
+      persist(item, root, false);
+      redraw(root, item, ".lp-path-name");
+    }));
+    actions.appendChild(button("+ Goal", "lp-button quiet", function () {
+      life.goals.push(newGoal());
+      life.activeTab = "goals";
+      persist(item, root, false);
+      redraw(root, item, ".lp-goal-name");
+    }));
+    actions.appendChild(button("+ Life plan", "lp-button quiet", function () {
+      var candidate = newPlan();
+      candidate.name = "Life plan " + (life.plans.length + 1);
+      life.plans.push(candidate);
+      life.activePlanId = candidate.id;
+      life.activeTab = "plans";
+      persist(item, root, false);
+      redraw(root, item, ".lp-plan-name");
+    }));
+    wrap.appendChild(sectionHeading("Start here", "Build a few possible lives.", "Each plan can combine the same work paths and goals differently, so you can compare a part-time mix against a full-time option without recreating anything.", actions));
+    if (!life.paths.length || !life.goals.length) {
+      var setup = makeNode("div", "lp-setup-grid");
+      var pathSetup = makeNode("article", "lp-setup-card" + (!life.paths.length ? " needs" : ""));
+      pathSetup.appendChild(makeNode("span", "lp-setup-step", "1"));
+      pathSetup.appendChild(makeNode("strong", "", "Add income paths"));
+      pathSetup.appendChild(makeNode("p", "", "A path can be window cleaning, a salary, or contractor work. Create each once."));
+      pathSetup.appendChild(makeNode("small", "", life.paths.length ? life.paths.length + " ready" : "No paths yet"));
+      setup.appendChild(pathSetup);
+      var goalSetup = makeNode("article", "lp-setup-card" + (!life.goals.length ? " needs" : ""));
+      goalSetup.appendChild(makeNode("span", "lp-setup-step", "2"));
+      goalSetup.appendChild(makeNode("strong", "", "Add goals"));
+      goalSetup.appendChild(makeNode("p", "", "For example: Buy a house, $250,000; Buy a Tesla, $15,000."));
+      goalSetup.appendChild(makeNode("small", "", life.goals.length ? life.goals.length + " ready" : "No goals yet"));
+      setup.appendChild(goalSetup);
+      var planSetup = makeNode("article", "lp-setup-card");
+      planSetup.appendChild(makeNode("span", "lp-setup-step", "3"));
+      planSetup.appendChild(makeNode("strong", "", "Mix them in a plan"));
+      planSetup.appendChild(makeNode("p", "", "Pick any paths and goals, then set living costs and retirement assumptions."));
+      planSetup.appendChild(makeNode("small", "", plan.name || "Current plan"));
+      setup.appendChild(planSetup);
+      wrap.appendChild(setup);
+    }
     wrap.appendChild(buildForecast(life, plan));
     return wrap;
   }
@@ -1172,6 +1215,7 @@
     var life = normalizeItem(item);
     var root = makeNode("section", "lp-root");
     root.setAttribute("data-item-editor", item.id);
+    root.appendChild(buildHero(item, root));
     root.appendChild(buildTabs(item, root));
     if (life.activeTab === "paths") root.appendChild(buildPaths(item, root));
     else if (life.activeTab === "goals") root.appendChild(buildGoals(item, root));
