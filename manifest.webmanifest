@@ -1,7 +1,7 @@
 {
   "name": "Second Brain Notes",
   "short_name": "Second Brain",
-  "description": "A cloud-synced workspace for notes, tasks, media, AI collaboration, and life planning.",
+  "description": "A cloud-synced workspace for notes, tasks, scripts, media, and AI collaboration.",
   "start_url": "/?source=pwa",
   "scope": "/",
   "display": "standalone",
