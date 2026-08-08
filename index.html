@@ -161,6 +161,8 @@
   .note-chapter-title::placeholder{ color:var(--ink-faint); }
   .note-chapter-listen{ flex:none; display:inline-flex; align-items:center; gap:5px; padding:6px 9px; border:1px solid var(--accent-line); border-radius:8px; color:var(--accent); background:var(--accent-soft); cursor:pointer; font:600 .7rem "DM Sans",sans-serif; }
   .note-chapter-listen.done{ color:#04120c; background:#34d399; border-color:#34d399; }
+  .note-chapter-audio-menu{ flex:none; width:29px; height:29px; display:grid; place-items:center; padding:0; border:1px solid var(--line); border-radius:8px; color:var(--ink-dim); background:rgba(255,255,255,.04); cursor:pointer; font:700 1rem/1 "DM Sans",sans-serif; }
+  .note-chapter-audio-menu:hover{ color:var(--accent); border-color:var(--accent-line); background:var(--accent-soft); }
   .note-chapter .note-paragraph-wrap{ margin:5px 0 0 25px; }
   .note-chapter .note-paragraph{ min-height:64px; font-size:1rem; }
   /* Code has a status line at its bottom. Keep its block controls below the
@@ -202,6 +204,8 @@
   .ch-actions{ display:flex; align-items:center; gap:8px; margin-left:auto; }
   .ch-copy,.ch-listen{ flex:none; display:inline-flex; align-items:center; justify-content:center; gap:5px; font-weight:600; font-size:.8rem; color:var(--accent); background:var(--accent-soft); cursor:pointer; border:1px solid var(--accent-line); border-radius:8px; padding:6px 13px; transition:.15s; }
   .ch-listen svg{ width:13px; height:13px; }
+  .ch-audio-menu{ flex:none; display:inline-grid; place-items:center; width:30px; padding:0; color:var(--accent); background:var(--accent-soft); cursor:pointer; border:1px solid var(--accent-line); border-radius:8px; font:700 1rem/1 "DM Sans",sans-serif; }
+  .ch-audio-menu:hover{ filter:brightness(1.15); }
   .ch-copy:hover{ filter:brightness(1.15); } .ch-copy:active{ transform:scale(.95); }
   .ch-listen:hover{ filter:brightness(1.15); } .ch-listen:active{ transform:scale(.95); }
   .ch-copy.done,.ch-listen.done{ color:#6ee7b7; border-color:rgba(110,231,183,.4); background:rgba(52,211,153,.16); }
@@ -1389,7 +1393,9 @@
   }
   function openFolder(folderId){
     state.filterFolder=folderId||null;
-    app.classList.remove("open");
+    /* A folder is a filter, not navigation away from the current view. Keep
+       the mobile drawer open so several folders can be browsed in one pass. */
+    if(!window.matchMedia("(max-width: 900px)").matches) app.classList.remove("open");
     persist(); renderAll();
   }
   function renderFolders(){
@@ -1589,6 +1595,7 @@
        m.appendChild(mkItem(ICON_DUPLICATE,"Duplicate",false,function(){ closeMenu(); duplicateItem(it); }));
        m.appendChild(mkItem(ICON_DOWNLOAD,"Save manual document backup",false,function(){ closeMenu(); saveManualDocumentBackup(it); }));
        m.appendChild(mkItem(ICON_NOTE,"Restore from backup",false,function(){ closeMenu(); openDocumentBackupHistory(it); }));
+      if(it.type==="note"||it.type==="todo") m.appendChild(mkItem(isTodoNote(it)||it.type==="todo"?ICON_NOTE:ICON_TODO,isTodoNote(it)||it.type==="todo"?"Convert to note":"Convert to todo",false,function(){ closeMenu(); convertNoteTodo(it); }));
       if(runtimeApiKeys.elevenlabs&&it.type!=="agent"&&ttsTextForItem(it).trim()) m.appendChild(mkItem(ICON_DOWNLOAD,"Download as audio",false,function(){ closeMenu(); downloadTts(it); }));
       m.appendChild(mkItem(ICON_UP,"Move up",false,function(){ closeMenu(); moveItem(it,-1); }));
       m.appendChild(mkItem(ICON_DOWN,"Move down",false,function(){ closeMenu(); moveItem(it,1); }));
@@ -1597,6 +1604,20 @@
       m.appendChild(mkItem(it.locked?ICON_UNLOCK:ICON_LOCK,it.locked?"Unlock deletion":"Lock from deletion",false,function(){ toggleItemLock(it); }));
       if(!it.locked){ var remove=mkItem(ICON_DELETE,"Delete",false,function(){ closeMenu(); delItem(it.id); }); remove.className+=" danger"; m.appendChild(remove); }
     });
+  }
+  function convertNoteTodo(it){
+    if(!it||!(it.type==="note"||it.type==="todo")) return;
+    if(it.type==="todo"){
+      migrateTodoToNote(it);
+      delete it.todo; delete it.done; delete it.completed;
+    } else if(it.todo){
+      delete it.todo; delete it.done; delete it.completed;
+    } else {
+      it.todo=true; it.done=false; it.completed=null;
+    }
+    it.updated=Date.now();
+    persist(); renderList(); renderMain();
+    showToast(isTodoNote(it)?"Converted to todo":"Converted to note");
   }
   function renderList(){
     var items=visibleItems();
@@ -2232,10 +2253,16 @@
     var listen=document.createElement("button"); listen.type="button"; listen.className="note-chapter-listen"; listen.textContent="Listen";
     listen.style.display=runtimeApiKeys.elevenlabs&&ttsTextForChapter(block).trim()?"inline-flex":"none";
     listen.onclick=function(){ playTts(ttsTextForChapter(block).trim(),listen,listen); };
-    head.appendChild(index); head.appendChild(title); head.appendChild(listen); wrap.appendChild(head);
+    var audioMenu=document.createElement("button"); audioMenu.type="button"; audioMenu.className="note-chapter-audio-menu"; audioMenu.textContent="…"; audioMenu.title="Section audio actions"; audioMenu.setAttribute("aria-label","Section audio actions");
+    audioMenu.style.display=runtimeApiKeys.elevenlabs&&ttsTextForChapter(block).trim()?"grid":"none";
+    audioMenu.onclick=function(){ openMenu(audioMenu,function(menu){
+      var menuTitle=document.createElement("div"); menuTitle.className="mtitle"; menuTitle.textContent="Section audio"; menu.appendChild(menuTitle);
+      menu.appendChild(mkItem(ICON_DOWNLOAD,"Download section as audio",false,function(){ closeMenu(); downloadTtsText(ttsTextForChapter(block).trim(),audioFilenameForSection(note,block)); }));
+    }); };
+    head.appendChild(index); head.appendChild(title); head.appendChild(listen); head.appendChild(audioMenu); wrap.appendChild(head);
     var bodyWrap=document.createElement("div"); bodyWrap.className="note-paragraph-wrap";
     var body=document.createElement("div"); body.className="note-paragraph"; body.contentEditable="true"; body.setAttribute("role","textbox"); body.setAttribute("aria-multiline","true"); body.setAttribute("data-note-block",block.id); body.setAttribute("data-placeholder","Write this chapter…"); body.innerHTML=block.html||"";
-    body.oninput=function(){ block.html=sanitizeRichHtml(body.innerHTML); block.text=richTextToPlain(block.html); listen.style.display=runtimeApiKeys.elevenlabs&&ttsTextForChapter(block).trim()?"inline-flex":"none"; saveNoteBlockChange(note,block,false); };
+    body.oninput=function(){ block.html=sanitizeRichHtml(body.innerHTML); block.text=richTextToPlain(block.html); var hasAudio=runtimeApiKeys.elevenlabs&&ttsTextForChapter(block).trim(); listen.style.display=hasAudio?"inline-flex":"none"; audioMenu.style.display=hasAudio?"grid":"none"; saveNoteBlockChange(note,block,false); };
     bodyWrap.appendChild(body); wrap.appendChild(bodyWrap); wrap.appendChild(buildNoteBlockActions(note,block,"note-chapter-actions")); return wrap;
   }
   function buildNoteCode(note,block){
@@ -2635,7 +2662,7 @@
     var top=document.createElement("div"); top.className="ch-top";
     if(isCue){ top.innerHTML='<span class="ch-idx">CUE</span>'; }
     else {
-      top.innerHTML='<span class="ch-idx">'+String(i+1).padStart(2,"0")+'</span><input class="ch-name" type="text" placeholder="Chapter name"><div class="ch-actions"><button class="ch-listen" type="button" aria-label="Listen to chapter"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M11 5 6 9H3v6h3l5 4z"/><path d="M15.5 8.5a5 5 0 0 1 0 7M18.5 5.5a9 9 0 0 1 0 13"/></svg><span>Listen</span></button><button class="ch-copy" type="button">Copy</button></div>';
+      top.innerHTML='<span class="ch-idx">'+String(i+1).padStart(2,"0")+'</span><input class="ch-name" type="text" placeholder="Chapter name"><div class="ch-actions"><button class="ch-listen" type="button" aria-label="Listen to chapter"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M11 5 6 9H3v6h3l5 4z"/><path d="M15.5 8.5a5 5 0 0 1 0 7M18.5 5.5a9 9 0 0 1 0 13"/></svg><span>Listen</span></button><button class="ch-audio-menu" type="button" title="Section audio actions" aria-label="Section audio actions">…</button><button class="ch-copy" type="button">Copy</button></div>';
       var name=top.querySelector(".ch-name"); name.value=section.title||"";
       name.oninput=function(){ section.title=name.value; it.updated=Date.now(); save(); };
       top.querySelector(".ch-copy").onclick=function(){ var b=this; copy(section.body||"",function(){ b.classList.add("done"); b.textContent="Copied"; showToast("Copied “"+(section.title||"chapter")+"”"); setTimeout(function(){ b.classList.remove("done"); b.textContent="Copy"; },1200); }); };
@@ -2652,8 +2679,14 @@
       var listen=top.querySelector(".ch-listen");
       updateChapterTtsButton(listen,section);
       listen.onclick=function(){ playTts(ttsTextForSection(section).trim(),listen,listen.querySelector("span")); };
+      var audioMenu=top.querySelector(".ch-audio-menu");
+      audioMenu.style.display=runtimeApiKeys.elevenlabs&&ttsTextForSection(section).trim()?"inline-grid":"none";
+      audioMenu.onclick=function(){ openMenu(audioMenu,function(menu){
+        var menuTitle=document.createElement("div"); menuTitle.className="mtitle"; menuTitle.textContent="Section audio"; menu.appendChild(menuTitle);
+        menu.appendChild(mkItem(ICON_DOWNLOAD,"Download section as audio",false,function(){ closeMenu(); downloadTtsText(ttsTextForSection(section).trim(),audioFilenameForSection(it,section)); }));
+      }); };
     }
-    body.oninput=function(){ section.body=body.value; it.updated=Date.now(); grow(body); count(); if(!isCue) updateChapterTtsButton(top.querySelector(".ch-listen"),section); updateMeta(); save(); refreshListMeta(); };
+    body.oninput=function(){ section.body=body.value; it.updated=Date.now(); grow(body); count(); if(!isCue){ updateChapterTtsButton(top.querySelector(".ch-listen"),section); top.querySelector(".ch-audio-menu").style.display=runtimeApiKeys.elevenlabs&&ttsTextForSection(section).trim()?"inline-grid":"none"; } updateMeta(); save(); refreshListMeta(); };
 
     var up=foot.querySelector(".up"), down=foot.querySelector(".down");
     if(i===0) up.disabled=true;
@@ -2738,16 +2771,23 @@
     var name=(it.title||itemLabel(it)||"second-brain-audio").replace(/[\\/:*?"<>|\u0000-\u001f]/g,"").replace(/\s+/g," ").trim().slice(0,80);
     return (name||"second-brain-audio")+".mp3";
   }
-  function downloadTts(it){
-    var text=ttsTextForItem(it).trim();
+  function audioFilenameForSection(note,block){
+    var section=cleanText(block.title)||"section", documentTitle=cleanText(note.title)||"note";
+    return audioFilenameForItem({title:documentTitle+" - "+section,type:"note"});
+  }
+  function downloadTtsText(text,filename){
     if(!runtimeApiKeys.elevenlabs||!text){ showToast("Add your ElevenLabs key in Settings first",true); return; }
     showToast("Preparing audio download...");
     requestTtsAudio(text).then(function(blob){
       var url=URL.createObjectURL(blob), link=document.createElement("a");
-      link.href=url; link.download=audioFilenameForItem(it); document.body.appendChild(link); link.click(); document.body.removeChild(link);
+      link.href=url; link.download=filename||"second-brain-audio.mp3"; document.body.appendChild(link); link.click(); document.body.removeChild(link);
       setTimeout(function(){ URL.revokeObjectURL(url); },1000);
       showToast("MP3 download started");
     }).catch(function(error){ console.warn("ElevenLabs audio download failed:",error); showToast("ElevenLabs could not create audio",true); });
+  }
+  function downloadTts(it){
+    var text=ttsTextForItem(it).trim();
+    downloadTtsText(text,audioFilenameForItem(it));
   }
   function playTts(text,button,label){
     if(runtimeApiKeys.ttsControl&&runtimeApiKeys.ttsControl.button===button){ stopTts(); return; }
