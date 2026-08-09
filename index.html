@@ -331,6 +331,11 @@
 
   .d-list{ padding:4px 10px 8px; }
   .d-item{ display:grid; grid-template-columns:15px minmax(0,1fr) auto; align-items:center; gap:9px; padding:10px 12px; border-radius:11px; cursor:pointer; transition:background .13s; }
+  .d-item.selecting{ grid-template-columns:18px 15px minmax(0,1fr) auto; }
+  .note-select{ width:18px; height:18px; margin:0; accent-color:var(--accent); cursor:pointer; }
+  .bulk-tags{ display:flex; align-items:center; gap:5px; }
+  .bulk-tags button{ border:0; border-radius:7px; padding:3px 6px; color:var(--ink-dim); background:rgba(255,255,255,.05); cursor:pointer; font:500 .68rem "DM Sans",sans-serif; }
+  .bulk-tags button:hover{ color:var(--ink); background:var(--accent-soft); }
   .d-item:hover{ background:rgba(255,255,255,.05); } .d-item.active{ background:var(--accent-soft); }
   .d-item .item-icon{ display:grid; place-items:center; width:15px; height:15px; color:var(--ink-dim); flex:none; }
   .d-item .item-icon svg{ width:15px; height:15px; }
@@ -346,6 +351,7 @@
   .d-item .dx{ width:30px; height:30px; display:grid; place-items:center; opacity:0; border:none; background:none; color:var(--ink-faint); cursor:pointer; padding:0; border-radius:7px; }
   .d-item .dx svg{ width:15px; height:15px; }
   .d-item:hover .dx,.d-item:focus-within .dx{ opacity:1; } .d-item .dx:hover,.d-item .dx:focus-visible{ color:var(--accent); background:var(--accent-soft); outline:none; }
+  .d-item.todo-done .dx{ opacity:1; color:#f87171; }
   .d-tasks{ grid-column:2 / 4; display:grid; gap:4px; padding-top:2px; }
   .side-task{ display:flex; align-items:center; gap:7px; width:100%; padding:3px 0; }
   .side-task-check{ width:14px; height:14px; padding:0; display:grid; place-items:center; flex:none; border:1px solid var(--accent-line); border-radius:4px; color:#07110c; background:var(--accent-soft); cursor:pointer; font-size:.62rem; font-weight:800; }
@@ -639,9 +645,7 @@
     <div class="d-scroll">
       <div class="sec-h"><button class="section-toggle" id="tagsToggleBtn" type="button" aria-controls="tags" aria-expanded="true" title="Collapse tags"><span>Tags</span><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m6 9 6 6 6-6"/></svg></button><button id="addTagBtn" title="New tag">＋</button></div>
       <div id="tags"></div>
-      <div class="sec-h"><span>Folders</span><button id="addFolderBtn" title="New folder">＋</button></div>
-      <div id="folders"></div>
-      <div class="sec-h"><span id="listLabel">All notes</span><div class="list-tools"><button id="listToolsBtn" title="Filter and sort" aria-label="Filter and sort notes">⇅</button></div></div>
+      <div class="sec-h"><span id="listLabel">All notes</span><div class="list-tools"><button id="selectNotesBtn" title="Select notes" aria-label="Select notes">✓</button><button id="listToolsBtn" title="Filter and sort" aria-label="Filter and sort notes">⇅</button></div></div>
       <div class="d-list" id="list"></div>
     </div>
     <div class="d-foot" id="dfoot"></div>
@@ -827,7 +831,7 @@
 
   function uid(){ return Date.now().toString(36)+Math.random().toString(36).slice(2,7); }
   function sec(t,b,kind){ return {id:uid(),title:t||"",body:b||"",kind:kind||"chapter"}; }
-  function baseItem(){ return { id:uid(), title:"", folderId:(state&&state.filterFolder)||null, tagIds:(state&&state.filterTag)?[state.filterTag]:[], updated:Date.now() }; }
+  function baseItem(){ return { id:uid(), title:"", tagIds:(state&&state.filterTag)?[state.filterTag]:[], updated:Date.now() }; }
   function chapterBlock(title,body){ var block={id:uid(),type:"chapter",title:title||"",text:body||""}; block.html=escapeHtml(block.text).replace(/\n/g,"<br>"); return block; }
   function newYoutubeScriptNote(){ var it=newNoteItem(); it.template="youtube-script"; it.blocks=[chapterBlock("Intro",""),chapterBlock("Main",""),chapterBlock("Outro","")]; syncNoteBody(it); return it; }
   function newNoteItem(){ var it=baseItem(); it.type="note"; it.body=""; it.attachments=[]; it.blocks=[{id:uid(),type:"text",text:""}]; return it; }
@@ -1040,7 +1044,7 @@
       showToast:showToast, escapeHtml:escapeHtml, fileSize:fileSize,
       items:function(){ return state.items; },
       folders:function(){ return state.folders; },
-      folderName:function(id){ var folder=folderById(id); return folder?folder.name:""; },
+      folderName:function(){ return ""; },
       currentItem:current,
       touchItem:touchContent,
       renderList:function(){ renderList(); },
@@ -1065,7 +1069,7 @@
   }catch(e){ console.warn("Code editor could not be loaded:",e); }
 
   var state=loadLocal();
-  if(!state||!state.items){ state={ items:[], folders:[], tags:[], currentId:null, motion:true, theme:"nebula", filterFolder:null, filterTag:null }; state.items.push(newNoteItem()); state.currentId=state.items[0].id; }
+  if(!state||!state.items){ state={ items:[], tags:[], currentId:null, motion:true, theme:"nebula", filterTag:null }; state.items.push(newNoteItem()); state.currentId=state.items[0].id; }
   state.folders=state.folders||[]; state.tags=state.tags||[]; state.items=state.items||[];
   if(typeof state.motion!=="boolean") state.motion=true;
   if(!state.theme) state.theme="nebula";
@@ -1085,7 +1089,7 @@
   state.allNotesName=typeof state.allNotesName==="string"&&state.allNotesName.trim()?state.allNotesName.trim():"All notes";
   if(state.mobileFolderFocus!==undefined) delete state.mobileFolderFocus;
   if(typeof state.readChapterNames!=="boolean") state.readChapterNames=false;
-  state.filterFolder=state.filterFolder||null; state.filterTag=state.filterTag||null;
+  state.filterTag=state.filterTag||null; state.selectedItemIds=Array.isArray(state.selectedItemIds)?state.selectedItemIds:[]; state.selectingNotes=!!state.selectingNotes;
   state.listSort=state.listSort||"updated";
   agentSettings();
   if(typeof state.pendingCloudSync!=="boolean") state.pendingCloudSync=false;
@@ -1100,13 +1104,14 @@
      stays local so an interrupted or failed migration can always be exported. */
   if(hasLegacyItems(state.items)) captureAutoBackup(true,"migration");
   state.items.forEach(normalizeItem);
+  migrateFoldersToTags(state);
   if(!state.items.length) state.items.push(newNoteItem());
   if(!state.currentId || !state.items.some(function(i){return i.id===state.currentId;})) state.currentId=state.items[0].id;
 
   function blankDeviceState(){
     var enabledTypes={script:false,note:true,todo:true,audio:true,agent:false,workout:false};
     typeModuleList().forEach(function(def){ enabledTypes[def.type]=false; });
-    return {items:[],folders:[],tags:[],currentId:null,motion:true,theme:"nebula",darkness:82,enabledTypes:enabledTypes,noteInsertOptions:{file:true,paragraph:true,comment:true,prompt:true,heading:true,chapter:true,group:true,code:true},tagsCollapsed:false,allNotesName:"All notes",readChapterNames:false,filterFolder:null,filterTag:null,listSort:"updated",agentSettings:defaultAgentSettings(),pendingCloudSync:false,syncBaseline:null};
+    return {items:[],folders:[],tags:[],currentId:null,motion:true,theme:"nebula",darkness:82,enabledTypes:enabledTypes,noteInsertOptions:{file:true,paragraph:true,comment:true,prompt:true,heading:true,chapter:true,group:true,code:true},tagsCollapsed:false,allNotesName:"All notes",readChapterNames:false,filterTag:null,listSort:"updated",agentSettings:defaultAgentSettings(),pendingCloudSync:false,syncBaseline:null};
   }
   function clearAttachmentStore(){
     if(!window.indexedDB) return;
@@ -1136,23 +1141,42 @@
   }
 
   function current(){ return state.items.find(function(s){return s.id===state.currentId;})||state.items[0]; }
+  /* Time is counted only while this app is the focused, visible tab. It is kept
+     separately from `updated` so opening a note does not change its recency. */
+  var timeTracker={itemId:null,lastAt:Date.now(),active:false};
+  function canTrackTime(){ return document.visibilityState==="visible"&&document.hasFocus(); }
+  function trackTimeSpent(){
+    var now=Date.now(), changed=false;
+    if(timeTracker.itemId&&timeTracker.active){
+      var item=state.items.find(function(entry){ return entry.id===timeTracker.itemId; }), elapsed=Math.max(0,now-timeTracker.lastAt);
+      if(item&&elapsed){ item.timeSpentMs=(Number(item.timeSpentMs)||0)+elapsed; changed=true; }
+    }
+    timeTracker.itemId=state.currentId;
+    timeTracker.lastAt=now;
+    timeTracker.active=canTrackTime();
+    return changed;
+  }
+  function saveTrackedTime(){
+    var changed=trackTimeSpent();
+    if(changed){ persist(); if(state.listSort==="timeSpent") renderList(); }
+  }
+  document.addEventListener("visibilitychange",saveTrackedTime);
+  ["focus","blur","pagehide"].forEach(function(eventName){ window.addEventListener(eventName,saveTrackedTime); });
+  setInterval(saveTrackedTime,30000);
   function themeDef(){ return THEMES.find(function(t){return t.id===state.theme;})||THEMES[0]; }
-  function folderById(id){ return state.folders.find(function(f){return f.id===id;}); }
   function tagById(id){ return state.tags.find(function(t){return t.id===id;}); }
   function cleanIconColor(value){ return typeof value==="string"&&/^#[0-9a-f]{6}$/i.test(value)?value.toLowerCase():""; }
-  function folderColor(folder){ return cleanIconColor(folder&&folder.color); }
+  function tagColor(tag){ return tag?(cleanIconColor(tag.color)||"hsl("+tag.hue+",65%,62%)"):""; }
   function itemIconColor(item){
     var custom=cleanIconColor(item&&item.iconColor);
     if(custom) return custom;
     if(!item||["note","script","todo"].indexOf(item.type)<0) return "";
-    return folderColor(folderById(item.folderId));
+    return tagColor(tagById((item.tagIds||[])[0]));
   }
   function allNotesTitle(){ return state.allNotesName||"All notes"; }
   function firstTagName(it){ var names=(it.tagIds||[]).map(function(id){ var t=tagById(id); return t?t.name.toLowerCase():""; }).filter(Boolean).sort(); return names[0]||"\uffff"; }
   function visibleItems(){
     var items=state.items.filter(function(it){
-      if(state.filterFolder && it.folderId!==state.filterFolder) return false;
-      if(!state.filterFolder&&it.folderId&&((folderById(it.folderId)||{}).hiddenFromAll)) return false;
       if(state.filterTag && (it.tagIds||[]).indexOf(state.filterTag)<0) return false;
       return true;
     });
@@ -1160,14 +1184,15 @@
       if(state.listSort==="manual") return (typeof a.manualOrder==="number"?a.manualOrder:state.items.indexOf(a))-(typeof b.manualOrder==="number"?b.manualOrder:state.items.indexOf(b));
       if(state.listSort==="title") return (a.title||"").localeCompare(b.title||"");
       if(state.listSort==="tag"){ var byTag=firstTagName(a).localeCompare(firstTagName(b)); return byTag||((b.updated||0)-(a.updated||0)); }
+      if(state.listSort==="timeSpent") return (Number(b.timeSpentMs)||0)-(Number(a.timeSpentMs)||0)||((b.updated||0)-(a.updated||0));
       return (b.updated||0)-(a.updated||0);
     });
   }
 
   var $=function(id){ return document.getElementById(id); };
   var app=$("app"), ambient=$("ambient"), canvas=$("canvas"), listEl=$("list"), toast=$("toast"),
-      menuBtn=$("menuBtn"), scrim=$("scrim"), foldersEl=$("folders"), tagsEl=$("tags"),
-      listLabel=$("listLabel"), dfoot=$("dfoot"), listToolsBtn=$("listToolsBtn");
+      menuBtn=$("menuBtn"), scrim=$("scrim"), tagsEl=$("tags"),
+      listLabel=$("listLabel"), dfoot=$("dfoot"), listToolsBtn=$("listToolsBtn"), selectNotesBtn=$("selectNotesBtn");
 
   /* =================== theme apply =================== */
   var rootS=document.documentElement.style, phase=0, motionTimer=null;
@@ -1353,75 +1378,17 @@
   function sep(){ var s=document.createElement("div"); s.className="sep"; return s; }
 
   /* =================== sidebar =================== */
-  function openRenameFolder(anchor,folder){
-    var isAll=folder===null, previous=isAll?allNotesTitle():folder.name;
-    openMenu(anchor,function(m){
-      var title=document.createElement("div"); title.className="mtitle"; title.textContent=isAll?"Rename All notes":"Rename folder"; m.appendChild(title);
-      var row=document.createElement("div"); row.className="mrow";
-      var input=document.createElement("input"); input.value=previous; input.placeholder="Folder name…";
-      input.onkeydown=function(e){
-        if(e.key!=="Enter") return;
-        var name=input.value.trim();
-        if(!name){ showToast("Folder names can’t be empty",true); return; }
-        if(isAll) state.allNotesName=name; else folder.name=name;
-        closeMenu(); persist(); renderAll(); showToast(isAll?"All notes renamed":"Folder renamed");
-      };
-      row.appendChild(input); m.appendChild(row);
-      if(!isAll){
-        var colorRow=document.createElement("div"); colorRow.className="mrow color-row";
-        var colorLabel=document.createElement("span"); colorLabel.textContent="Folder icon color";
-        var colorInput=document.createElement("input"); colorInput.type="color"; colorInput.className="color-picker"; colorInput.value=folderColor(folder)||"#c4a5ff"; colorInput.title="Choose folder color"; colorInput.setAttribute("aria-label","Choose folder color");
-        colorInput.onchange=function(){ folder.color=cleanIconColor(colorInput.value); closeMenu(); persist(); renderAll(); showToast("Folder color updated"); };
-        colorRow.appendChild(colorLabel); colorRow.appendChild(colorInput); m.appendChild(colorRow);
-        if(folderColor(folder)){
-          var reset=document.createElement("button"); reset.type="button"; reset.className="color-reset"; reset.textContent="Use default folder color";
-          reset.onclick=function(){ delete folder.color; closeMenu(); persist(); renderAll(); showToast("Folder color reset"); };
-          m.appendChild(reset);
-        }
-      }
-      setTimeout(function(){ input.select(); },0);
+  function migrateFoldersToTags(data){
+    data=data||state; var folders=Array.isArray(data.folders)?data.folders:[], tags=Array.isArray(data.tags)?data.tags:[];
+    var mapped={}; folders.forEach(function(folder,index){
+      if(!folder||!folder.id) return;
+      var tag=tags.find(function(entry){ return entry&&entry.name===folder.name; });
+      if(!tag){ tag={id:uid(),name:folder.name||"Untitled",hue:TAG_HUES[tags.length%TAG_HUES.length]}; tags.push(tag); }
+      if(folder.color&&/^#[0-9a-f]{6}$/i.test(folder.color)) tag.color=folder.color.toLowerCase();
+      mapped[folder.id]=tag.id;
     });
-  }
-  var draggedFolderId=null;
-  function moveFolder(folderId,targetId){
-    if(!folderId||folderId===targetId) return;
-    var from=state.folders.findIndex(function(folder){ return folder.id===folderId; }), to=state.folders.findIndex(function(folder){ return folder.id===targetId; });
-    if(from<0||to<0) return;
-    var folder=state.folders.splice(from,1)[0];
-    if(from<to) to--;
-    state.folders.splice(to,0,folder); persist(); renderFolders();
-  }
-  function openFolder(folderId){
-    state.filterFolder=folderId||null;
-    /* A folder is a filter, not navigation away from the current view. Keep
-       the mobile drawer open so several folders can be browsed in one pass. */
-    if(!window.matchMedia("(max-width: 900px)").matches) app.classList.remove("open");
-    persist(); renderAll();
-  }
-  function renderFolders(){
-    foldersEl.innerHTML="";
-    var all=document.createElement("div"); all.className="folder-row"+(state.filterFolder===null?" active":"");
-    all.innerHTML='<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><path d="M4 6h16M4 12h16M4 18h16"/></svg><span class="fn"></span><button class="fx rename" type="button" title="Rename All notes" aria-label="Rename All notes">'+ICON_EDIT+'</button>';
-    all.querySelector(".fn").textContent=allNotesTitle();
-    all.onclick=function(e){ if(e.target.closest(".fx")) return; openFolder(null); };
-    all.querySelector(".rename").onclick=function(e){ e.stopPropagation(); openRenameFolder(e.currentTarget,null); };
-    foldersEl.appendChild(all);
-    state.folders.forEach(function(f){
-      var row=document.createElement("div"); row.className="folder-row"+(state.filterFolder===f.id?" active":""); row.draggable=true; row.setAttribute("data-folder-id",f.id);
-      row.innerHTML='<span class="folder-grip" title="Drag to reorder">⋮⋮</span>'+ICON_FOLDER+'<span class="fn"></span><button class="fx rename" type="button" title="Rename folder" aria-label="Rename folder">'+ICON_EDIT+'</button><button class="fx delete" type="button" title="Delete folder" aria-label="Delete folder">'+ICON_DELETE+'</button><button class="fx visibility" type="button" title="'+(f.hiddenFromAll?"Show in "+allNotesTitle():"Hide from "+allNotesTitle())+'" aria-label="'+(f.hiddenFromAll?"Show in "+allNotesTitle():"Hide from "+allNotesTitle())+'">'+(f.hiddenFromAll?ICON_EYE_OFF:ICON_EYE)+'</button>';
-      row.querySelector(".fn").textContent=f.name;
-      var folderIcon=row.querySelector("svg"), color=folderColor(f); if(folderIcon&&color) folderIcon.style.color=color;
-      row.onclick=function(e){ if(e.target.closest(".fx")) return; openFolder(f.id); };
-      row.ondragstart=function(event){ draggedFolderId=f.id; row.classList.add("dragging"); event.dataTransfer.effectAllowed="move"; event.dataTransfer.setData("text/plain",f.id); };
-      row.ondragover=function(event){ if(!draggedFolderId||draggedFolderId===f.id) return; event.preventDefault(); row.classList.add("drop-target"); };
-      row.ondragleave=function(){ row.classList.remove("drop-target"); };
-      row.ondrop=function(event){ event.preventDefault(); row.classList.remove("drop-target"); moveFolder(draggedFolderId,f.id); draggedFolderId=null; };
-      row.ondragend=function(){ draggedFolderId=null; row.classList.remove("dragging","drop-target"); };
-      row.querySelector(".visibility").onclick=function(e){ e.stopPropagation(); f.hiddenFromAll=!f.hiddenFromAll; persist(); renderAll(); showToast(f.hiddenFromAll?"Folder hidden from "+allNotesTitle():"Folder shown in "+allNotesTitle()); };
-      row.querySelector(".rename").onclick=function(e){ e.stopPropagation(); openRenameFolder(e.currentTarget,f); };
-      row.querySelector(".delete").onclick=function(e){ e.stopPropagation(); if(!confirm('Delete folder "'+f.name+'"? Notes inside are kept and moved to '+allNotesTitle()+'.')) return; state.items.forEach(function(it){ if(it.folderId===f.id) it.folderId=null; }); state.folders=state.folders.filter(function(x){ return x.id!==f.id; }); if(state.filterFolder===f.id) state.filterFolder=null; persist(); renderAll(); };
-      foldersEl.appendChild(row);
-    });
+    (data.items||[]).forEach(function(item){ if(item&&item.folderId&&mapped[item.folderId]){ item.tagIds=item.tagIds||[]; if(item.tagIds.indexOf(mapped[item.folderId])<0) item.tagIds.push(mapped[item.folderId]); } if(item) delete item.folderId; });
+    data.tags=tags; data.folders=[]; delete data.filterFolder;
   }
   function renderTags(){
     tagsEl.innerHTML="";
@@ -1431,7 +1398,7 @@
     if(state.tagsCollapsed) return;
     if(!state.tags.length){ var e=document.createElement("div"); e.className="tag-empty"; e.textContent="No tags yet — tap ＋"; tagsEl.appendChild(e); return; }
     var cloud=document.createElement("div"); cloud.className="tagcloud";
-    state.tags.forEach(function(t){
+    state.tags.slice().sort(function(a,b){ return tagUseCount(b.id)-tagUseCount(a.id)||a.name.localeCompare(b.name); }).forEach(function(t){
       var chip=document.createElement("span"); chip.className="tg"+(state.filterTag===t.id?" active":"");
       chip.innerHTML='<span class="dot" style="background:hsl('+t.hue+',65%,62%)"></span>'+escapeHtml(t.name)+'<span class="tx" title="Delete tag">✕</span>';
       chip.onclick=function(e){
@@ -1439,24 +1406,25 @@
           state.items.forEach(function(it){ it.tagIds=(it.tagIds||[]).filter(function(x){ return x!==t.id; }); });
           state.tags=state.tags.filter(function(x){ return x.id!==t.id; });
           if(state.filterTag===t.id) state.filterTag=null; persist(); renderAll(); return; }
-        state.filterTag = state.filterTag===t.id ? null : t.id; app.classList.remove("open"); persist(); renderAll();
+        state.filterTag = state.filterTag===t.id ? null : t.id; persist(); renderAll();
       };
       cloud.appendChild(chip);
     });
     tagsEl.appendChild(cloud);
   }
+  function tagUseCount(tagId){ return state.items.reduce(function(total,item){ return total+((item.tagIds||[]).indexOf(tagId)>=0?1:0); },0); }
   function openListTools(anchor){
     openMenu(anchor,function(m){
       var ft=document.createElement("div"); ft.className="mtitle"; ft.textContent="Filter by tag"; m.appendChild(ft);
       m.appendChild(mkItem(ICON_NOTE,"All tags",state.filterTag===null,function(){ state.filterTag=null; closeMenu(); persist(); renderAll(); }));
       var tagBox=document.createElement("div"); tagBox.className="maxscroll";
-      state.tags.slice().sort(function(a,b){return a.name.localeCompare(b.name);}).forEach(function(tag){
+      state.tags.slice().sort(function(a,b){return tagUseCount(b.id)-tagUseCount(a.id)||a.name.localeCompare(b.name);}).forEach(function(tag){
         tagBox.appendChild(mkItem('<span style="width:9px;height:9px;border-radius:50%;background:hsl('+tag.hue+',65%,62%);display:inline-block"></span>',tag.name,state.filterTag===tag.id,function(){ state.filterTag=tag.id; closeMenu(); persist(); renderAll(); }));
       });
       m.appendChild(tagBox); m.appendChild(sep());
       var st=document.createElement("div"); st.className="mtitle"; st.textContent="Sort notes"; m.appendChild(st);
       m.appendChild(mkItem("","Custom order",state.listSort==="manual",function(){ state.listSort="manual"; closeMenu(); persist(); renderList(); }));
-      [["updated","Recently updated"],["title","Title A–Z"],["tag","Tag A–Z"]].forEach(function(opt){
+      [["updated","Recently updated"],["timeSpent","Most time spent"],["title","Title A–Z"],["tag","Tag A–Z"]].forEach(function(opt){
         m.appendChild(mkItem("",opt[1],state.listSort===opt[0],function(){ state.listSort=opt[0]; closeMenu(); persist(); renderList(); }));
       });
     });
@@ -1599,7 +1567,6 @@
       if(runtimeApiKeys.elevenlabs&&it.type!=="agent"&&ttsTextForItem(it).trim()) m.appendChild(mkItem(ICON_DOWNLOAD,"Download as audio",false,function(){ closeMenu(); downloadTts(it); }));
       m.appendChild(mkItem(ICON_UP,"Move up",false,function(){ closeMenu(); moveItem(it,-1); }));
       m.appendChild(mkItem(ICON_DOWN,"Move down",false,function(){ closeMenu(); moveItem(it,1); }));
-      m.appendChild(mkItem(ICON_FOLDER,"Move to another folder",false,function(){ openFolderPick(anchor,it); }));
       m.appendChild(sep());
       m.appendChild(mkItem(it.locked?ICON_UNLOCK:ICON_LOCK,it.locked?"Unlock deletion":"Lock from deletion",false,function(){ toggleItemLock(it); }));
       if(!it.locked){ var remove=mkItem(ICON_DELETE,"Delete",false,function(){ closeMenu(); delItem(it.id); }); remove.className+=" danger"; m.appendChild(remove); }
@@ -1620,14 +1587,18 @@
     showToast(isTodoNote(it)?"Converted to todo":"Converted to note");
   }
   function renderList(){
+    trackTimeSpent();
     var items=visibleItems();
-    var lbl = state.filterTag ? ((tagById(state.filterTag)||{}).name||"Tag") : state.filterFolder ? ((folderById(state.filterFolder)||{}).name||"Folder") : allNotesTitle();
+    state.selectedItemIds=state.selectedItemIds.filter(function(id){ return state.items.some(function(item){ return item.id===id; }); });
+    if(selectNotesBtn){ selectNotesBtn.textContent=state.selectingNotes?(state.selectedItemIds.length?"Tag "+state.selectedItemIds.length:"Cancel"):"✓"; selectNotesBtn.title=state.selectingNotes?(state.selectedItemIds.length?"Tag selected notes":"Cancel selection"):"Select notes"; }
+    var lbl = state.filterTag ? ((tagById(state.filterTag)||{}).name||"Tag") : allNotesTitle();
     listLabel.textContent=lbl+"  ·  "+items.length;
     listEl.innerHTML="";
     if(!items.length){ var e=document.createElement("div"); e.className="tag-empty"; e.style.padding="10px 12px"; e.textContent="Nothing here yet."; listEl.appendChild(e); return; }
     items.forEach(function(it){
       var todoItem=isTodoNote(it)||it.type==="todo";
-      var el=document.createElement("div"); el.className="d-item"+(it.id===state.currentId?" active":"")+(todoItem&&it.done?" todo-done":"");
+      var selected=state.selectedItemIds.indexOf(it.id)>=0;
+      var el=document.createElement("div"); el.className="d-item"+(it.id===state.currentId?" active":"")+(todoItem&&it.done?" todo-done":"")+(state.selectingNotes?" selecting":"");
       el.setAttribute("data-item-id",it.id);
       var dots=(it.tagIds||[]).map(function(id){ var t=tagById(id); return t?'<span class="dot" style="background:hsl('+t.hue+',65%,62%)"></span>':""; }).join("");
       var todoOpen=it.type==="todo"?(it.todos||[]).filter(function(x){return !x.done;}).length:null;
@@ -1638,9 +1609,11 @@
       var leading=todoItem?'<button class="side-todo-check'+(it.done?" done":"")+'"'+todoStyle+' aria-label="'+(it.done?"Mark incomplete":"Mark complete")+'">'+(it.done?"✓":"")+'</button>':'<span class="item-icon"'+iconStyle+'>'+icon+'</span>';
       var deleteLabel=todoItem&&it.done?"Delete?":"✕";
       var lockStatus=it.locked?'<span class="item-lock" title="Deletion locked" aria-label="Deletion locked">'+ICON_LOCK+'</span>':"";
-      el.innerHTML=leading+'<div class="dt"><div class="dt-title"></div><div class="dt-meta"><span class="m">'+metaText+'</span>'+dots+lockStatus+'</div></div><button class="dx" type="button" title="Item actions" aria-label="Item actions">'+ICON_EDIT+'</button>';
+      var selectControl=state.selectingNotes?'<input class="note-select" type="checkbox" aria-label="Select note" '+(selected?'checked':'')+'>':'';
+      el.innerHTML=selectControl+leading+'<div class="dt"><div class="dt-title"></div><div class="dt-meta"><span class="m">'+metaText+'</span>'+dots+lockStatus+'</div></div><button class="dx" type="button" title="'+(todoItem&&it.done?"Delete completed todo":"Item actions")+'" aria-label="'+(todoItem&&it.done?"Delete completed todo":"Item actions")+'">'+(todoItem&&it.done?ICON_DELETE:ICON_EDIT)+'</button>';
       el.querySelector(".dt-title").textContent=it.title||("Untitled "+itemLabel(it).toLowerCase());
       if(todoItem) el.querySelector(".side-todo-check").onclick=function(e){ e.stopPropagation(); setTodoDone(it); };
+      if(state.selectingNotes) el.querySelector(".note-select").onclick=function(e){ e.stopPropagation(); toggleNoteSelection(it.id,e.currentTarget.checked); };
       if(it.type==="todo" && (it.todos||[]).length){
         var taskBox=document.createElement("div"); taskBox.className="d-tasks";
         it.todos.forEach(function(task){
@@ -1653,12 +1626,12 @@
         });
         el.appendChild(taskBox);
       }
-      el.onclick=function(e){ if(e.target.closest(".dx")||e.target.closest(".side-task")||e.target.closest(".side-todo-check")) return; if(activeAudioRecorder&&activeAudioRecorder.itemId!==it.id){ showToast("Finish the current recording before leaving it",true); return; } state.currentId=it.id; app.classList.remove("open"); renderList(); renderMain(); };
-      el.querySelector(".dx").onclick=function(e){ e.stopPropagation(); openItemActions(e.currentTarget,it); };
+      el.onclick=function(e){ if(e.target.closest(".dx")||e.target.closest(".side-task")||e.target.closest(".side-todo-check")||e.target.closest(".note-select")) return; if(state.selectingNotes){ toggleNoteSelection(it.id,!selected); return; } if(activeAudioRecorder&&activeAudioRecorder.itemId!==it.id){ showToast("Finish the current recording before leaving it",true); return; } state.currentId=it.id; app.classList.remove("open"); renderList(); renderMain(); };
+      el.querySelector(".dx").onclick=function(e){ e.stopPropagation(); if(todoItem&&it.done) delItem(it.id,"Delete this completed todo? This can't be undone."); else openItemActions(e.currentTarget,it); };
       listEl.appendChild(el);
     });
   }
-  function renderAll(){ renderFolders(); renderTags(); renderList(); renderMain(); }
+  function renderAll(){ renderTags(); renderList(); renderMain(); }
   function delItem(id,message){
     var item=state.items.find(function(s){ return s.id===id; });
     if(activeAudioRecorder&&activeAudioRecorder.itemId===id){ showToast("Stop the recording before deleting this audio entry",true); return; }
@@ -2577,12 +2550,6 @@
 
   function buildAssign(it){
     var wrap=document.createElement("div"); wrap.className="assign";
-    var fbtn=document.createElement("button"); fbtn.className="pickbtn";
-    var f=folderById(it.folderId);
-    fbtn.innerHTML=ICON_FOLDER+'<span>'+escapeHtml(f?f.name:"Folder")+'</span>';
-    var assignedFolderColor=folderColor(f), assignedFolderIcon=fbtn.querySelector("svg"); if(assignedFolderColor&&assignedFolderIcon) assignedFolderIcon.style.color=assignedFolderColor;
-    fbtn.onclick=function(){ openFolderPick(fbtn,it); };
-    wrap.appendChild(fbtn);
 
     if(["note","script","todo"].indexOf(it.type)>=0){
       var colorButton=document.createElement("button"); colorButton.type="button"; colorButton.className="pickbtn"; colorButton.innerHTML='<span class="color-swatch"></span><span>Icon color</span>';
@@ -2612,7 +2579,7 @@
       input.onchange=function(){ it.iconColor=cleanIconColor(input.value); it.updated=Date.now(); closeMenu(); persist(); renderAll(); showToast("Note icon color updated"); };
       row.appendChild(label); row.appendChild(input); m.appendChild(row);
       if(cleanIconColor(it.iconColor)){
-        var reset=document.createElement("button"); reset.type="button"; reset.className="color-reset"; reset.textContent=folderColor(folderById(it.folderId))?"Use folder color":"Use default icon color";
+        var reset=document.createElement("button"); reset.type="button"; reset.className="color-reset"; reset.textContent=(it.tagIds||[]).length?"Use first tag color":"Use default icon color";
         reset.onclick=function(){ delete it.iconColor; it.updated=Date.now(); closeMenu(); persist(); renderAll(); showToast("Note icon color reset"); };
         m.appendChild(reset);
       }
@@ -2770,6 +2737,31 @@
   function audioFilenameForItem(it){
     var name=(it.title||itemLabel(it)||"second-brain-audio").replace(/[\\/:*?"<>|\u0000-\u001f]/g,"").replace(/\s+/g," ").trim().slice(0,80);
     return (name||"second-brain-audio")+".mp3";
+  }
+  function toggleNoteSelection(id,selected){
+    var index=state.selectedItemIds.indexOf(id);
+    if(selected&&index<0) state.selectedItemIds.push(id);
+    if(!selected&&index>=0) state.selectedItemIds.splice(index,1);
+    renderList();
+  }
+  function openBulkTagPick(anchor){
+    var selected=state.items.filter(function(item){ return state.selectedItemIds.indexOf(item.id)>=0; });
+    if(!selected.length){ showToast("Select one or more notes first",true); return; }
+    openMenu(anchor,function(m){
+      var title=document.createElement("div"); title.className="mtitle"; title.textContent="Tag "+selected.length+" note"+(selected.length===1?"":"s"); m.appendChild(title);
+      var box=document.createElement("div"); box.className="maxscroll";
+      state.tags.slice().sort(function(a,b){ return tagUseCount(b.id)-tagUseCount(a.id)||a.name.localeCompare(b.name); }).forEach(function(tag){
+        var every=selected.every(function(item){ return (item.tagIds||[]).indexOf(tag.id)>=0; });
+        box.appendChild(mkItem('<span style="width:9px;height:9px;border-radius:50%;background:'+tagColor(tag)+';display:inline-block"></span>',tag.name,every,function(){
+          selected.forEach(function(item){ item.tagIds=item.tagIds||[]; var index=item.tagIds.indexOf(tag.id); if(every&&index>=0) item.tagIds.splice(index,1); else if(!every&&index<0) item.tagIds.push(tag.id); item.updated=Date.now(); });
+          closeMenu(); persist(); renderAll(); showToast(every?"Tag removed":"Tag applied");
+        }));
+      });
+      m.appendChild(box); m.appendChild(sep());
+      var row=document.createElement("div"); row.className="mrow"; var input=document.createElement("input"); input.placeholder="Create and apply tag…";
+      input.onkeydown=function(e){ if(e.key==="Enter"&&input.value.trim()){ var tag={id:uid(),name:input.value.trim().replace(/^#+/,""),hue:TAG_HUES[state.tags.length%TAG_HUES.length]}; state.tags.push(tag); selected.forEach(function(item){ item.tagIds=item.tagIds||[]; if(item.tagIds.indexOf(tag.id)<0) item.tagIds.push(tag.id); item.updated=Date.now(); }); closeMenu(); persist(); renderAll(); showToast("Tag created and applied"); } };
+      row.appendChild(input); m.appendChild(row);
+    });
   }
   function audioFilenameForSection(note,block){
     var section=cleanText(block.title)||"section", documentTitle=cleanText(note.title)||"note";
@@ -3843,7 +3835,6 @@
        if(state.enabledTypes.agent) m.appendChild(mkItem(ICON_AGENT,"Agent",false,function(){ closeMenu(); createItem(newAgentItem()); }));
        if(state.enabledTypes.workout) m.appendChild(mkItem(ICON_TODO,"Workout Routine",false,function(){ closeMenu(); createItem(newWorkoutRoutine()); }));
       m.appendChild(sep());
-      m.appendChild(mkItem(ICON_FOLDER,"New folder",false,function(){ closeMenu(); openNewFolder(self); }));
       m.appendChild(mkItem("<span style=\"font-size:1rem\">⚙</span>","Manage",false,function(){ closeMenu(); openSettings("manage"); }));
     });
   };
@@ -3857,7 +3848,6 @@
       row.appendChild(inp); m.appendChild(row);
     });
   }
-  $("addFolderBtn").onclick=function(){ openNewFolder(this); };
   $("addTagBtn").onclick=function(){
     openMenu(this,function(m){
       var t=document.createElement("div"); t.className="mtitle"; t.textContent="New tag"; m.appendChild(t);
@@ -3868,6 +3858,12 @@
     });
   };
   $("tagsToggleBtn").onclick=function(){ state.tagsCollapsed=!state.tagsCollapsed; persist(); renderTags(); };
+  selectNotesBtn.onclick=function(){
+    if(state.selectingNotes&&state.selectedItemIds.length) return openBulkTagPick(this);
+    state.selectingNotes=!state.selectingNotes;
+    if(!state.selectingNotes) state.selectedItemIds=[];
+    renderList();
+  };
   listToolsBtn.onclick=function(){ if(openMenuEl){ closeMenu(); return; } openListTools(this); };
   function usesOverlaySidebar(){ return window.matchMedia&&window.matchMedia("(max-width: 900px)").matches; }
   function setOverlaySidebarOpen(open){
@@ -4341,7 +4337,8 @@
     state.items=(d.items&&d.items.length)?d.items:[newNoteItem()];
     state.items.forEach(normalizeItem);
     state.folders=d.folders||[]; state.tags=d.tags||[];
-    state.currentId=state.items[0].id; state.filterFolder=null; state.filterTag=null;
+    migrateFoldersToTags(state);
+    state.currentId=state.items[0].id; state.filterTag=null; state.selectedItemIds=[]; state.selectingNotes=false;
     state.pendingCloudSync=false; state.lastCloudSync=d.updated||Date.now();
     applyAccountPreferences(d);
     recordSyncBaseline({items:state.items},state.lastCloudSync);
@@ -5192,7 +5189,7 @@
   $("settingsModal").onclick=function(e){ if(e.target===$("settingsModal")) $("settingsModal").classList.remove("open"); };
 
   /* =================== boot =================== */
-  captureAutoBackup(false); applyTheme(0); syncMotion(); renderAll(); renderFoot(); initFirebase();
+  trackTimeSpent(); captureAutoBackup(false); applyTheme(0); syncMotion(); renderAll(); renderFoot(); initFirebase();
   window.__astral={ state:state, render:renderAll, api:runtimeApiKeys };
 })();
 </script>
