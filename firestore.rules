@@ -35,6 +35,30 @@ service cloud.firestore {
                     && resource.data.ownerId == request.auth.uid;
     }
 
+    // A live editing session for one "Edited Video" item. It is addressed by its
+    // unguessable document ID, is never listable, and only the person who
+    // started it can rename it away from themselves or delete it. Everyone else
+    // who has the link and is signed in may read it and write the timeline —
+    // that is the whole point of the feature.
+    //
+    // The document holds the timeline as JSON plus a map of Cloud Storage
+    // download URLs for the footage it uses, so invited editors can play clips
+    // that live in the owner's storage.
+    match /editSessions/{sessionId} {
+      allow get: if request.auth != null;
+      allow create: if request.auth != null
+                    && request.resource.data.ownerId == request.auth.uid;
+      allow update: if request.auth != null
+                    && request.resource.data.ownerId == resource.data.ownerId;
+      allow delete: if request.auth != null
+                    && resource.data.ownerId == request.auth.uid;
+
+      // Presence: one small document per device, refreshed on a heartbeat.
+      match /peers/{peerId} {
+        allow read, write: if request.auth != null;
+      }
+    }
+
     match /{document=**} {
       allow read, write: if false;
     }

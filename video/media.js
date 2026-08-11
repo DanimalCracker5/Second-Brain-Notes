@@ -1,11 +1,11 @@
 /*
   Second Brain — video/media.js
 
-  Everything about video and audio *files*: importing them, uploading them to
-  the account's Cloud Storage, caching them on the device, resolving a playable
-  URL, and listing everything available to pull into an edit.
+  Everything about media *files*: importing them, uploading them to the
+  account's Cloud Storage, caching them on the device, resolving a playable URL,
+  and listing everything available to pull into an edit.
 
-  The rest of the video feature talks to files only through this file, so if the
+  The rest of the feature talks to files only through this file, so if the
   storage backend ever changes this is the only place that has to change.
 
   Host bridge
@@ -18,6 +18,8 @@
   Settings → Account counts it):
 
     users/{uid}/videos/{itemId}/clips/{clipId}          source footage
+    users/{uid}/files/{itemId}/{fileId}                 File item attachments
+    users/{uid}/edits/{itemId}/pool/{fileId}            an edit's own media pool
     users/{uid}/edits/{itemId}/voiceovers/{clipId}      voiceovers recorded in an edit
     users/{uid}/edits/{itemId}/renders/{renderId}       exported cuts
 */
@@ -37,6 +39,9 @@
   var POSTER_MAX_BYTES = 11 * 1024;
   /* An upload that transfers nothing for this long is treated as dead. */
   var UPLOAD_STALL_MS = 90 * 1000;
+  /* A still image behaves like a clip you can stretch as far as you like. */
+  var STILL_SOURCE_SECONDS = (media.STILL_SOURCE_SECONDS = 3600);
+  var STILL_DEFAULT_SECONDS = (media.STILL_DEFAULT_SECONDS = 5);
 
   var host = null;
 
@@ -54,20 +59,39 @@
   }
   media.newVideoItem = newVideoItem;
 
+  function newFileItem() {
+    var item = host.baseItem();
+    item.type = "file";
+    item.files = [];
+    return item;
+  }
+  media.newFileItem = newFileItem;
+
   /* Defensive normalising: this data round-trips through Firestore and older
      app versions, so never trust a field's type. */
-  function ensureVideoItem(item) {
-    item.clips = Array.isArray(item.clips) ? item.clips : [];
-    item.clips = item.clips.filter(function (clip) {
-      return clip && typeof clip === "object";
+  function ensureList(item, listName) {
+    item[listName] = Array.isArray(item[listName]) ? item[listName] : [];
+    item[listName] = item[listName].filter(function (entry) {
+      return entry && typeof entry === "object";
     });
-    item.clips.forEach(ensureFileEntry);
+    item[listName].forEach(ensureFileEntry);
+    return item[listName];
+  }
+  media.ensureList = ensureList;
+
+  function ensureVideoItem(item) {
+    ensureList(item, "clips");
   }
   media.ensureVideoItem = ensureVideoItem;
 
+  function ensureFileItem(item) {
+    ensureList(item, "files");
+  }
+  media.ensureFileItem = ensureFileItem;
+
   function ensureFileEntry(entry) {
     if (!entry.id) entry.id = host.uid();
-    if (typeof entry.name !== "string" || !entry.name.trim()) entry.name = "Clip";
+    if (typeof entry.name !== "string" || !entry.name.trim()) entry.name = "File";
     if (typeof entry.type !== "string") entry.type = "";
     if (typeof entry.size !== "number") entry.size = 0;
     if (typeof entry.added !== "number") entry.added = Date.now();
@@ -79,18 +103,92 @@
   }
   media.ensureFileEntry = ensureFileEntry;
 
+  /* ---------------- what kind of file is this ---------------- */
+
+  function matches(entry, mimePrefix, extensions) {
+    var type = entry.type || "",
+      name = entry.name || "";
+    return new RegExp("^" + mimePrefix + "/").test(type) || new RegExp("\\.(" + extensions + ")$", "i").test(name);
+  }
+
   function isAudioEntry(entry) {
-    return /^audio\//.test(entry.type || "") || /\.(m4a|mp3|wav|ogg|weba)$/i.test(entry.name || "");
+    return matches(entry || {}, "audio", "m4a|mp3|wav|ogg|weba|aac|flac");
   }
   media.isAudioEntry = isAudioEntry;
 
+  function isVideoEntry(entry) {
+    return matches(entry || {}, "video", "mp4|mov|m4v|webm|mkv|avi");
+  }
+  media.isVideoEntry = isVideoEntry;
+
+  function isImageEntry(entry) {
+    return matches(entry || {}, "image", "png|jpg|jpeg|gif|webp|avif|bmp");
+  }
+  media.isImageEntry = isImageEntry;
+
+  /* The three kinds the timeline understands. Everything else in a File item is
+     storage only and never appears in the media picker. */
+  function timelineKind(entry) {
+    if (isAudioEntry(entry)) return "audio";
+    if (isVideoEntry(entry)) return "video";
+    if (isImageEntry(entry)) return "image";
+    return "";
+  }
+  media.timelineKind = timelineKind;
+
+  /* A rough family used by the File item's list for its icon and preview. */
+  function fileFamily(entry) {
+    var kind = timelineKind(entry);
+    if (kind) return kind;
+    var type = entry.type || "",
+      name = entry.name || "";
+    if (/pdf/.test(type) || /\.pdf$/i.test(name)) return "pdf";
+    if (/^text\//.test(type) || /(json|xml|csv|javascript)/.test(type) || /\.(txt|md|json|csv|log|js|ts|css|html|xml|yml|yaml)$/i.test(name)) return "text";
+    if (/zip|compressed|tar|rar|7z/.test(type) || /\.(zip|rar|7z|tar|gz)$/i.test(name)) return "archive";
+    return "other";
+  }
+  media.fileFamily = fileFamily;
+
   /* ---------------- probing a file for metadata and a poster ---------------- */
+
+  function probeImage(file) {
+    return new Promise(function (resolve) {
+      var url = URL.createObjectURL(file),
+        image = new Image(),
+        settled = false;
+
+      function finish(result) {
+        if (settled) return;
+        settled = true;
+        clearTimeout(timer);
+        URL.revokeObjectURL(url);
+        resolve(result);
+      }
+      var timer = setTimeout(function () {
+        finish({ duration: 0, width: 0, height: 0, poster: "" });
+      }, 15000);
+
+      image.onload = function () {
+        var info = { duration: 0, width: image.naturalWidth || 0, height: image.naturalHeight || 0, poster: "" };
+        if (info.width) info.poster = grabPoster(image, info.width, info.height);
+        finish(info);
+      };
+      image.onerror = function () {
+        finish({ duration: 0, width: 0, height: 0, poster: "" });
+      };
+      image.src = url;
+    });
+  }
 
   /* Reads duration and dimensions out of a file the browser can already decode,
      and grabs a small poster frame. Resolves with zeros rather than rejecting
      so an odd codec never blocks an import. */
   function probeFile(file) {
-    var audioOnly = /^audio\//.test(file.type || "");
+    var entry = { type: file.type || "", name: file.name || "" };
+    if (isImageEntry(entry)) return probeImage(file);
+    if (!isAudioEntry(entry) && !isVideoEntry(entry)) return Promise.resolve({ duration: 0, width: 0, height: 0, poster: "" });
+
+    var audioOnly = isAudioEntry(entry);
     return new Promise(function (resolve) {
       var url = URL.createObjectURL(file),
         element = document.createElement(audioOnly ? "audio" : "video"),
@@ -164,7 +262,9 @@
     var uid = host.getUser() && host.getUser().uid;
     if (!uid) return "";
     if (ownerItem.type === "video") return "users/" + uid + "/videos/" + ownerItem.id + "/clips/" + entry.id;
+    if (ownerItem.type === "file") return "users/" + uid + "/files/" + ownerItem.id + "/" + entry.id;
     if (entry.kind === "render") return "users/" + uid + "/edits/" + ownerItem.id + "/renders/" + entry.id;
+    if (entry.kind === "pool") return "users/" + uid + "/edits/" + ownerItem.id + "/pool/" + entry.id;
     return "users/" + uid + "/edits/" + ownerItem.id + "/voiceovers/" + entry.id;
   }
   media.storagePathFor = storagePathFor;
@@ -304,25 +404,32 @@
         return true;
       })
       .catch(function (error) {
-        console.warn("Video could not be cached on this device:", error);
+        console.warn("Media could not be cached on this device:", error);
         entry.cached = false;
         return false;
       });
   }
 
-  /* Adds files to a Video item. Returns a promise that settles when every file
-     has finished importing, but the UI updates continuously as it goes. */
+  /*
+    Adds files to an item. Returns a promise that settles when every file has
+    finished importing, but the UI updates continuously as it goes.
+
+      options.list    which array on the item to append to ("clips" by default)
+      options.kind    stamped onto the entry; decides the storage path
+      options.accept  "media" (video/audio/image, the default) or "any"
+  */
   function addFiles(item, files, options) {
     options = options || {};
+    var anyType = options.accept === "any";
     var accepted = Array.prototype.slice.call(files || []).filter(function (file) {
       if (!file || !file.size) return false;
       if (file.size > MAX_FILE_BYTES) {
         host.showToast(file.name + " is larger than the 2 GB limit", true);
         return false;
       }
-      var looksRight = /^(video|audio)\//.test(file.type || "") || /\.(mp4|mov|m4v|webm|mkv|avi|m4a|mp3|wav|ogg)$/i.test(file.name || "");
-      if (!looksRight) {
-        host.showToast(file.name + " is not a video or audio file", true);
+      if (anyType) return true;
+      if (!timelineKind({ type: file.type || "", name: file.name || "" })) {
+        host.showToast(file.name + " is not a video, audio or image file", true);
         return false;
       }
       return true;
@@ -335,7 +442,7 @@
     var jobs = accepted.map(function (file) {
       var entry = {
         id: host.uid(),
-        name: file.name || "Clip",
+        name: file.name || "File",
         type: file.type || "",
         size: file.size || 0,
         added: Date.now(),
@@ -374,7 +481,7 @@
           return entry;
         })
         .catch(function (error) {
-          console.warn("Video import failed:", error);
+          console.warn("Import failed:", error);
           if (entry.syncState === "saving") {
             item[list] = item[list].filter(function (other) {
               return other.id !== entry.id;
@@ -493,7 +600,8 @@
   };
 
   function resolveEntry(ownerItem, entry) {
-    var key = resolveKey(ownerItem.id, entry.id);
+    var key = resolveKey(ownerItem.id, entry.id),
+      still = isImageEntry(entry);
     if (resolved[key]) return Promise.resolve(resolved[key]);
 
     return host
@@ -503,7 +611,7 @@
       })
       .then(function (file) {
         if (file) {
-          resolved[key] = { url: URL.createObjectURL(file), local: true, revoke: true, crossOrigin: false };
+          resolved[key] = { url: URL.createObjectURL(file), local: true, revoke: true, crossOrigin: false, still: still };
           return resolved[key];
         }
         var storage = host.getStorage();
@@ -512,12 +620,22 @@
           .ref(entry.storagePath)
           .getDownloadURL()
           .then(function (url) {
-            resolved[key] = { url: url, local: false, revoke: false, crossOrigin: true };
+            resolved[key] = { url: url, local: false, revoke: false, crossOrigin: true, still: still };
             return resolved[key];
           });
       });
   }
   media.resolveEntry = resolveEntry;
+
+  /* A long-lived, token-bearing URL for an object in the account's bucket. Used
+     by the collaboration session to let an invited editor play footage that
+     lives in someone else's storage. */
+  function downloadUrl(entry) {
+    var storage = host.getStorage();
+    if (!storage || !entry || !entry.storagePath) return Promise.reject(new Error("Not in the cloud yet"));
+    return storage.ref(entry.storagePath).getDownloadURL();
+  }
+  media.downloadUrl = downloadUrl;
 
   /* Pulls a cloud file into the local cache so scrubbing is smooth and export
      is guaranteed to work. Needs bucket CORS — see video/README.md. */
@@ -570,21 +688,43 @@
 
   /* ---------------- the library ---------------- */
 
+  /* Every list in the account that can hold something the timeline understands,
+     as [item, listName, entryKind] triples. One place to change when a new
+     item type starts carrying media. */
+  function mediaListsOf(item) {
+    if (item.type === "video") return [["clips", ""]];
+    if (item.type === "file") return [["files", ""]];
+    if (item.type === "audio") return [["recordings", "audio"]];
+    if (item.type === "edit") return [["pool", "pool"], ["voiceovers", "audio"]];
+    return [];
+  }
+  media.mediaListsOf = mediaListsOf;
+
   /*
-    Everything in the account an edit can pull from, flattened into one list:
-    clips on Video items, recordings on Audio items, and voiceovers recorded
-    into edits. Each entry is what timeline.createMediaClip() expects.
+    Everything an edit can pull from, flattened into one list. Each entry is
+    what timeline.createMediaClip() expects, plus enough context for the picker
+    to group and label it.
+
+      options.kind      "video" | "audio" | "image" filter
+      options.query     free text over file, item and folder names
+      options.itemId    only files owned by this item (an edit's own pool)
+      options.exclude   skip files owned by this item
   */
   function libraryEntries(options) {
     options = options || {};
     var entries = [];
 
-    function push(item, entry, kind) {
+    function push(item, entry, listName) {
+      var kind = timelineKind(entry);
+      if (!kind) return;
       entries.push({
         kind: kind,
+        still: kind === "image",
         itemId: item.id,
-        itemTitle: item.title || "Untitled " + (kind === "audio" ? "audio" : "video"),
+        itemTitle: item.title || "Untitled " + (item.type === "edit" ? "edit" : item.type === "file" ? "files" : item.type),
         itemType: item.type,
+        list: listName,
+        own: !!(options.itemId && item.id === options.itemId),
         folderId: item.folderId || null,
         folderName: host.folderName(item.folderId),
         fileId: entry.id,
@@ -601,19 +741,13 @@
     }
 
     host.items().forEach(function (item) {
-      if (item.type === "video") {
-        (item.clips || []).forEach(function (entry) {
-          push(item, entry, isAudioEntry(entry) ? "audio" : "video");
+      if (options.itemId && item.id !== options.itemId) return;
+      if (options.exclude && item.id === options.exclude) return;
+      mediaListsOf(item).forEach(function (pair) {
+        (item[pair[0]] || []).forEach(function (entry) {
+          push(item, entry, pair[0]);
         });
-      } else if (item.type === "audio") {
-        (item.recordings || []).forEach(function (entry) {
-          push(item, entry, "audio");
-        });
-      } else if (item.type === "edit") {
-        (item.voiceovers || []).forEach(function (entry) {
-          push(item, entry, "audio");
-        });
-      }
+      });
     });
 
     if (options.kind) {
@@ -643,11 +777,10 @@
   function findSource(itemId, fileId) {
     var found = null;
     host.items().forEach(function (item) {
-      if (found) return;
-      var lists = item.type === "video" ? [item.clips] : item.type === "audio" ? [item.recordings] : item.type === "edit" ? [item.voiceovers] : [];
-      lists.forEach(function (list) {
-        (list || []).forEach(function (entry) {
-          if (item.id === itemId && entry.id === fileId) found = { item: item, entry: entry };
+      if (found || item.id !== itemId) return;
+      mediaListsOf(item).forEach(function (pair) {
+        (item[pair[0]] || []).forEach(function (entry) {
+          if (entry.id === fileId) found = { item: item, entry: entry, list: pair[0] };
         });
       });
     });

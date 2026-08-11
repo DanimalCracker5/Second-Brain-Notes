@@ -160,40 +160,66 @@
       onError(message);
     }
 
+    /*
+      The element is only built once the source has resolved, because a still
+      image needs an <img> and everything else needs a media element — and the
+      difference is not known until media.js has looked the file up.
+    */
     function createEntry(clip, kind) {
-      var element = document.createElement(kind === "audio" ? "audio" : "video");
-      element.preload = "auto";
-      element.playsInline = true;
-      element.setAttribute("playsinline", "");
-      element.muted = false;
-      element.volume = 1;
-      element.loop = false;
-      /* Kept out of the layout; the picture is only ever read via drawImage. */
-      element.style.display = "none";
-
-      var entry = { element: element, clip: clip, state: "loading", routed: false, gainNode: null, kind: kind };
+      var entry = { element: null, clip: clip, state: "loading", routed: false, gainNode: null, kind: kind, still: false };
       pool[clip.id] = entry;
+
+      function loadFailed(source) {
+        entry.state = "failed";
+        reportOnce(
+          source.crossOrigin ? "cors" : "load",
+          source.crossOrigin
+            ? "This clip is only in the cloud and the browser blocked it. Cache it on this device, or set up Cloud Storage CORS — see video/README.md."
+            : "A clip could not be decoded in this browser."
+        );
+      }
 
       resolve(clip)
         .then(function (source) {
           if (destroyed || pool[clip.id] !== entry) return;
-          /* crossOrigin has to be set before src or the canvas gets tainted. */
+
+          if (source.still) {
+            var image = new Image();
+            entry.still = true;
+            /* crossOrigin has to be set before src or the canvas gets tainted. */
+            if (source.crossOrigin) image.crossOrigin = "anonymous";
+            image.onload = function () {
+              entry.state = "ready";
+              wake();
+            };
+            image.onerror = function () {
+              loadFailed(source);
+            };
+            entry.element = image;
+            image.src = source.url;
+            return;
+          }
+
+          var element = document.createElement(kind === "audio" ? "audio" : "video");
+          element.preload = "auto";
+          element.playsInline = true;
+          element.setAttribute("playsinline", "");
+          element.muted = false;
+          element.volume = 1;
+          element.loop = false;
+          /* Kept out of the layout; the picture is only ever read via drawImage. */
+          element.style.display = "none";
           if (source.crossOrigin) element.crossOrigin = "anonymous";
-          element.src = source.url;
           element.onloadeddata = function () {
             entry.state = "ready";
             routeAudio(entry);
             wake();
           };
           element.onerror = function () {
-            entry.state = "failed";
-            reportOnce(
-              source.crossOrigin ? "cors" : "load",
-              source.crossOrigin
-                ? "This clip is only in the cloud and the browser blocked it. Cache it on this device, or set up Cloud Storage CORS — see video/README.md."
-                : "A clip could not be decoded in this browser."
-            );
+            loadFailed(source);
           };
+          entry.element = element;
+          element.src = source.url;
           try {
             element.load();
           } catch (e) {}
@@ -211,14 +237,19 @@
       var entry = pool[clipId];
       if (!entry) return;
       delete pool[clipId];
-      try {
-        entry.element.pause();
-      } catch (e) {}
       if (entry.gainNode) {
         try {
           entry.gainNode.disconnect();
         } catch (e) {}
       }
+      if (!entry.element) return;
+      if (entry.still) {
+        entry.element.src = "";
+        return;
+      }
+      try {
+        entry.element.pause();
+      } catch (e) {}
       entry.element.removeAttribute("src");
       try {
         entry.element.load();
@@ -253,13 +284,46 @@
 
     /* ---------------- drawing ---------------- */
 
-    function drawVideoClip(entry, clip) {
+    /*
+      Runs `draw` with the frame transformed the way the clip's animations ask
+      for. Rotation and scale happen around the centre of the frame, then the
+      whole thing is offset — that is what makes "slide in from the right" and
+      "zoom in" compose sensibly when both are set.
+    */
+    function withTransform(transform, opacity, draw) {
+      var alpha = Math.max(0, Math.min(1, transform.opacity * opacity));
+      if (alpha <= 0.002) return;
+      var moved = transform.dx !== 0 || transform.dy !== 0 || transform.rotate !== 0 || transform.scale !== 1;
+      if (alpha >= 0.999 && !moved) return draw();
+
+      context.save();
+      context.globalAlpha = alpha;
+      if (moved) {
+        context.translate(canvas.width / 2 + transform.dx * canvas.width, canvas.height / 2 + transform.dy * canvas.height);
+        if (transform.rotate) context.rotate(transform.rotate);
+        if (transform.scale !== 1) context.scale(transform.scale, transform.scale);
+        context.translate(-canvas.width / 2, -canvas.height / 2);
+      }
+      draw();
+      context.restore();
+    }
+
+    function sourceSize(entry) {
       var element = entry.element;
-      if (entry.state !== "ready" || !element.videoWidth) return;
+      if (!element) return null;
+      var width = entry.still ? element.naturalWidth : element.videoWidth,
+        height = entry.still ? element.naturalHeight : element.videoHeight;
+      return width && height ? { width: width, height: height } : null;
+    }
+
+    function drawVideoClip(entry, clip) {
+      var element = entry.element,
+        size = entry.state === "ready" && sourceSize(entry);
+      if (!size) return;
 
       var frameWidth = canvas.width,
         frameHeight = canvas.height,
-        sourceRatio = element.videoWidth / element.videoHeight,
+        sourceRatio = size.width / size.height,
         frameRatio = frameWidth / frameHeight,
         width,
         height;
@@ -284,10 +348,18 @@
       }
     }
 
+    /* The backing plate is drawn at a fixed transparency so the text stays
+       readable over any footage; only its hue is the user's choice. */
+    function plateColor(value) {
+      var match = /^#([0-9a-f]{2})([0-9a-f]{2})([0-9a-f]{2})$/i.exec(value || "");
+      if (!match) return "rgba(0,0,0,.55)";
+      return "rgba(" + parseInt(match[1], 16) + "," + parseInt(match[2], 16) + "," + parseInt(match[3], 16) + ",.62)";
+    }
+
     function drawTextClip(clip) {
       var text = clip.text;
       if (!text || !text.value) return;
-      var fontSize = (text.size / 100) * canvas.height,
+      var fontSize = (text.size / 100) * canvas.height * (clip.scale || 1),
         lines = String(text.value).split("\n"),
         lineHeight = fontSize * 1.25,
         x = (text.x / 100) * canvas.width,
@@ -307,7 +379,7 @@
           boxWidth = widest + padding * 2,
           boxHeight = lines.length * lineHeight + padding,
           boxX = text.align === "left" ? x - padding : text.align === "right" ? x - boxWidth + padding : x - boxWidth / 2;
-        context.fillStyle = "rgba(0,0,0,.55)";
+        context.fillStyle = plateColor(text.backgroundColor);
         context.fillRect(boxX, top - lineHeight / 2 - padding / 2, boxWidth, boxHeight);
       }
       if (text.shadow) {
@@ -330,12 +402,20 @@
         if (track.hidden) return;
         var clip = ns.timeline.clipAt(track, playhead);
         if (!clip) return;
-        if (track.kind === "video") {
-          var entry = pool[clip.id];
-          if (entry) drawVideoClip(entry, clip);
-        } else if (track.kind === "text") {
-          drawTextClip(clip);
-        }
+        if (track.kind !== "video" && track.kind !== "text") return;
+
+        var length = ns.timeline.clipLength(clip),
+          local = playhead - clip.start,
+          transform = ns.animations ? ns.animations.transformFor(clip, local, length) : { opacity: 1, scale: 1, dx: 0, dy: 0, rotate: 0 };
+
+        withTransform(transform, typeof clip.opacity === "number" ? clip.opacity : 1, function () {
+          if (track.kind === "video") {
+            var entry = pool[clip.id];
+            if (entry) drawVideoClip(entry, clip);
+          } else {
+            drawTextClip(clip);
+          }
+        });
       });
     }
 
@@ -349,7 +429,7 @@
         if (!clip) return;
         activeIds[clip.id] = true;
         var entry = pool[clip.id];
-        if (!entry || entry.state !== "ready") return;
+        if (!entry || entry.state !== "ready" || !entry.element || entry.still) return;
 
         var element = entry.element,
           target = ns.timeline.sourceTimeAt(clip, playhead);
@@ -372,8 +452,9 @@
       /* Anything not on screen right now must be silent. */
       Object.keys(pool).forEach(function (clipId) {
         if (activeIds[clipId]) return;
-        var element = pool[clipId].element;
-        if (!element.paused) element.pause();
+        var entry = pool[clipId];
+        if (!entry.element || entry.still) return;
+        if (!entry.element.paused) entry.element.pause();
       });
     }
 

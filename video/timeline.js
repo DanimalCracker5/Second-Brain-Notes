@@ -16,7 +16,8 @@
 
     track = {
       id, kind: "video" | "audio" | "text",
-      name, muted, hidden,
+      name, muted, hidden, locked,
+      color,                           // "" = follow the app theme, or "#rrggbb"
       clips: [ clip, ... ]             // always sorted by clip.start, never overlapping
     }
 
@@ -28,8 +29,15 @@
       in, out,                         // slice taken from the source, in seconds
       volume, muted, fadeIn, fadeOut,
       fit, scale, offsetX, offsetY,    // video framing
+      opacity, color,                  // opacity 0..1, color "" = follow the track
+      anim: { in:{id,d}, out:{id,d}, loop:{id,d} },
       text                             // text clips only, see textDefaults()
     }
+
+  Animation ids are stored as plain strings and are *never* validated here — the
+  registry lives in video/animations.js and the player treats an unknown id as
+  "no animation". That is what makes adding a new animation a one-line change
+  later on: a project saved on a newer build still opens on an older one.
 
   Invariant maintained by every mutator here: clips on one track are sorted by
   start and never overlap. Moves and trims clamp against their neighbours
@@ -44,6 +52,16 @@
   var MIN_CLIP = (timeline.MIN_CLIP = 0.1);
   var SNAP_WINDOW = (timeline.SNAP_WINDOW = 0.09);
   var TRACK_KINDS = (timeline.TRACK_KINDS = ["video", "audio", "text"]);
+
+  /* Frame sizes offered in the editor. Height is derived so a switch never
+     invents a resolution the encoder cannot record. */
+  var ASPECTS = (timeline.ASPECTS = [
+    { id: "16:9", label: "16:9", hint: "YouTube", width: 1920, height: 1080 },
+    { id: "9:16", label: "9:16", hint: "Shorts · Reels · TikTok", width: 1080, height: 1920 },
+    { id: "1:1", label: "1:1", hint: "Square", width: 1080, height: 1080 },
+    { id: "4:5", label: "4:5", hint: "Feed", width: 1080, height: 1350 },
+    { id: "4:3", label: "4:3", hint: "Classic", width: 1440, height: 1080 }
+  ]);
 
   var idCounter = 0;
   function newId() {
@@ -67,6 +85,11 @@
     return Math.round(num(seconds, 0) * 1000) / 1000;
   }
   timeline.tidy = tidy;
+
+  function hex(value) {
+    return typeof value === "string" && /^#[0-9a-f]{6}$/i.test(value) ? value.toLowerCase() : "";
+  }
+  timeline.hex = hex;
 
   function clipLength(clip) {
     return Math.max(MIN_CLIP, tidy(num(clip.out, 0) - num(clip.in, 0)));
@@ -95,10 +118,16 @@
       y: 82, // percent of frame height
       weight: 700,
       shadow: true,
-      background: false
+      background: false,
+      backgroundColor: "#000000"
     };
   }
   timeline.textDefaults = textDefaults;
+
+  function animDefaults() {
+    return { in: { id: "", d: 0.5 }, out: { id: "", d: 0.5 }, loop: { id: "", d: 2 } };
+  }
+  timeline.animDefaults = animDefaults;
 
   function createTrack(kind, name) {
     return {
@@ -107,19 +136,20 @@
       name: name || "",
       muted: false,
       hidden: false,
+      locked: false,
+      color: "",
       clips: []
     };
   }
   timeline.createTrack = createTrack;
 
   function createProject() {
-    var project = {
+    return {
       width: DEFAULTS.width,
       height: DEFAULTS.height,
       fps: DEFAULTS.fps,
       tracks: [createTrack("video", "Video 1"), createTrack("audio", "Audio 1")]
     };
-    return project;
   }
   timeline.createProject = createProject;
 
@@ -128,11 +158,14 @@
   function createMediaClip(source, options) {
     options = options || {};
     var duration = Math.max(MIN_CLIP, num(source.duration, 0) || 5);
+    /* A still has no natural length, so it gets a very long source and a short
+       default slice — trimming it out is then just an ordinary edge drag. */
+    var srcDuration = source.still ? num(source.srcDuration, 3600) : duration;
     return {
       id: newId(),
       sourceItemId: source.itemId,
       sourceFileId: source.fileId,
-      srcDuration: tidy(duration),
+      srcDuration: tidy(srcDuration),
       start: tidy(options.start || 0),
       in: 0,
       out: tidy(duration),
@@ -144,6 +177,9 @@
       scale: 1,
       offsetX: 0,
       offsetY: 0,
+      opacity: 1,
+      color: "",
+      anim: animDefaults(),
       text: null
     };
   }
@@ -152,7 +188,7 @@
   function createTextClip(options) {
     options = options || {};
     var length = Math.max(MIN_CLIP, num(options.length, 3));
-    return {
+    var clip = {
       id: newId(),
       sourceItemId: null,
       sourceFileId: null,
@@ -168,10 +204,29 @@
       scale: 1,
       offsetX: 0,
       offsetY: 0,
+      opacity: 1,
+      color: "",
+      anim: animDefaults(),
       text: textDefaults()
     };
+    if (options.value) clip.text.value = options.value;
+    return clip;
   }
   timeline.createTextClip = createTextClip;
+
+  function normalizeAnim(clip) {
+    var defaults = animDefaults(),
+      source = clip.anim && typeof clip.anim === "object" ? clip.anim : {};
+    var out = {};
+    ["in", "out", "loop"].forEach(function (slot) {
+      var value = source[slot] && typeof source[slot] === "object" ? source[slot] : {};
+      out[slot] = {
+        id: typeof value.id === "string" ? value.id : "",
+        d: clamp(num(value.d, defaults[slot].d), 0.05, 10)
+      };
+    });
+    clip.anim = out;
+  }
 
   function normalizeClip(clip, kind) {
     if (!clip || typeof clip !== "object") return null;
@@ -204,6 +259,9 @@
     clip.scale = clamp(num(clip.scale, 1), 0.1, 4);
     clip.offsetX = clamp(num(clip.offsetX, 0), -100, 100);
     clip.offsetY = clamp(num(clip.offsetY, 0), -100, 100);
+    clip.opacity = clamp(num(clip.opacity, 1), 0, 1);
+    clip.color = hex(clip.color);
+    normalizeAnim(clip);
 
     if (isText) {
       var defaults = textDefaults(),
@@ -216,7 +274,10 @@
       text.size = clamp(text.size, 1, 40);
       text.x = clamp(text.x, 0, 100);
       text.y = clamp(text.y, 0, 100);
+      text.weight = clamp(Math.round(text.weight / 100) * 100, 300, 900);
       if (["left", "center", "right"].indexOf(text.align) < 0) text.align = "center";
+      if (!hex(text.color)) text.color = "#ffffff";
+      if (!hex(text.backgroundColor)) text.backgroundColor = "#000000";
       clip.text = text;
     } else {
       clip.text = null;
@@ -251,6 +312,8 @@
       if (typeof track.name !== "string" || !track.name) track.name = trackKindLabel(track.kind) + " " + (index + 1);
       track.muted = track.muted === true;
       track.hidden = track.hidden === true;
+      track.locked = track.locked === true;
+      track.color = hex(track.color);
       if (!Array.isArray(track.clips)) track.clips = [];
       track.clips = track.clips
         .map(function (clip) {
@@ -473,6 +536,25 @@
   }
   timeline.removeTrack = removeTrack;
 
+  /* Moves a track one place through the stack, staying inside its own kind so
+     the lane order the editor draws never has to reshuffle categories. */
+  function moveTrack(project, trackId, direction) {
+    var tracks = project.tracks || [],
+      index = tracks.findIndex(function (track) {
+        return track.id === trackId;
+      });
+    if (index < 0) return false;
+    var kind = tracks[index].kind,
+      step = direction < 0 ? -1 : 1,
+      target = index + step;
+    while (target >= 0 && target < tracks.length && tracks[target].kind !== kind) target += step;
+    if (target < 0 || target >= tracks.length) return false;
+    var moved = tracks.splice(index, 1)[0];
+    tracks.splice(target, 0, moved);
+    return true;
+  }
+  timeline.moveTrack = moveTrack;
+
   /* Places `clip` on `track` at the first free slot at or after `start`. */
   function addClip(project, trackId, clip, start) {
     var track = findTrack(project, trackId);
@@ -492,7 +574,7 @@
 
   function removeClip(project, clipId) {
     var hit = findClip(project, clipId);
-    if (!hit) return false;
+    if (!hit || hit.track.locked) return false;
     hit.track.clips.splice(hit.index, 1);
     return true;
   }
@@ -502,7 +584,7 @@
      close the gap — CapCut's delete behaviour. */
   function rippleDelete(project, clipId) {
     var hit = findClip(project, clipId);
-    if (!hit) return false;
+    if (!hit || hit.track.locked) return false;
     var length = clipLength(hit.clip),
       from = hit.clip.start;
     hit.track.clips.splice(hit.index, 1);
@@ -516,7 +598,7 @@
 
   function duplicateClip(project, clipId) {
     var hit = findClip(project, clipId);
-    if (!hit) return null;
+    if (!hit || hit.track.locked) return null;
     var copy = JSON.parse(JSON.stringify(hit.clip));
     copy.id = newId();
     return addClip(project, hit.track.id, copy, clipEnd(hit.clip));
@@ -527,9 +609,9 @@
      start it actually landed on, clamped to the free space it fits in. */
   function moveClip(project, clipId, targetTrackId, start) {
     var hit = findClip(project, clipId);
-    if (!hit) return null;
+    if (!hit || hit.track.locked) return null;
     var target = targetTrackId ? findTrack(project, targetTrackId) : hit.track;
-    if (!target || target.kind !== hit.track.kind) target = hit.track;
+    if (!target || target.kind !== hit.track.kind || target.locked) target = hit.track;
 
     var clip = hit.clip,
       length = clipLength(clip),
@@ -557,7 +639,7 @@
      neighbouring clips limit how far it can go. */
   function trimClip(project, clipId, edge, time) {
     var hit = findClip(project, clipId);
-    if (!hit) return null;
+    if (!hit || hit.track.locked) return null;
     var clip = hit.clip,
       isText = hit.track.kind === "text",
       around = neighbours(hit.track, clip),
@@ -595,6 +677,7 @@
     var at = tidy(time),
       cuts = 0;
     (project.tracks || []).forEach(function (track) {
+      if (track.locked) return;
       track.clips.slice().forEach(function (clip) {
         if (clipId && clip.id !== clipId) return;
         if (at <= clip.start + MIN_CLIP || at >= clipEnd(clip) - MIN_CLIP) return;
@@ -604,6 +687,10 @@
         tail.start = at;
         tail.in = tidy(clip.in + tailStart);
         tail.fadeIn = 0;
+        /* An entrance belongs to the head and an exit to the tail, otherwise a
+           split makes the animation fire twice in the middle of the cut. */
+        tail.anim.in = { id: "", d: tail.anim.in.d };
+        clip.anim.out = { id: "", d: clip.anim.out.d };
 
         clip.out = tidy(clip.in + tailStart);
         clip.fadeOut = 0;
@@ -651,6 +738,34 @@
     return list;
   }
   timeline.usedSources = usedSources;
+
+  /* ---------------- frame size ---------------- */
+
+  function aspectOf(project) {
+    var ratio = project.width / project.height,
+      best = null,
+      bestGap = Infinity;
+    ASPECTS.forEach(function (aspect) {
+      var gap = Math.abs(aspect.width / aspect.height - ratio);
+      if (gap < bestGap) {
+        bestGap = gap;
+        best = aspect;
+      }
+    });
+    return bestGap < 0.02 ? best : null;
+  }
+  timeline.aspectOf = aspectOf;
+
+  function setAspect(project, aspectId) {
+    var aspect = ASPECTS.filter(function (candidate) {
+      return candidate.id === aspectId;
+    })[0];
+    if (!aspect) return false;
+    project.width = aspect.width;
+    project.height = aspect.height;
+    return true;
+  }
+  timeline.setAspect = setAspect;
 
   function formatTime(seconds, withFrames, fps) {
     seconds = Math.max(0, num(seconds, 0));
