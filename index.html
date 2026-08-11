@@ -74,9 +74,14 @@
   .icon.hide-wide{ display:grid; }
   .spacer{ flex:1; }
   .bar-actions{ display:flex; align-items:center; justify-content:flex-end; gap:6px; min-width:0; }
-  .copy-all{ display:inline-flex; align-items:center; gap:8px; flex:none; white-space:nowrap; font-weight:600; font-size:.9rem; color:#08080a; background:var(--accent); cursor:pointer; border:none; border-radius:999px; padding:9px 16px; transition:transform .06s, filter .15s; }
-  .copy-all:hover{ filter:brightness(1.08); } .copy-all:active{ transform:scale(.97); } .copy-all svg{ width:16px; height:16px; }
-  .copy-all.done{ background:#34d399; color:#04120c; }
+  /* Top-bar actions are secondary chrome, so they read as quiet outline chips.
+     The one filled accent control in the app is ＋ New in the sidebar; add
+     .primary here if a bar action ever needs to outrank it. */
+  .copy-all{ display:inline-flex; align-items:center; gap:7px; flex:none; white-space:nowrap; font-weight:600; font-size:.82rem; color:var(--ink-dim); background:rgba(255,255,255,.045); cursor:pointer; border:1px solid var(--line); border-radius:10px; padding:8px 13px; transition:transform .06s, background .15s, border-color .15s, color .15s; }
+  .copy-all:hover{ color:var(--ink); background:rgba(255,255,255,.085); border-color:var(--accent-line); } .copy-all:active{ transform:scale(.97); } .copy-all svg{ width:15px; height:15px; }
+  .copy-all.primary{ color:#08080a; background:var(--accent); border-color:transparent; }
+  .copy-all.primary:hover{ color:#08080a; background:var(--accent); filter:brightness(1.08); }
+  .copy-all.done{ color:var(--accent); background:var(--accent-soft); border-color:var(--accent-line); }
   .save-state{ margin-right:8px; font-family:"DM Mono",monospace; font-size:.68rem; color:var(--ink-faint); white-space:nowrap; transition:color .16s; }
   .save-state.saving{ color:var(--accent); }
   .save-state.cloud{ color:#6ee7b7; }
@@ -292,7 +297,10 @@
   .d-head small{ display:block; margin-top:3px; font-family:"DM Mono",monospace; font-size:.49rem; letter-spacing:.06em; color:var(--ink-faint); }
   .sidebar-fullscreen{ width:31px; height:31px; display:grid; place-items:center; flex:none; border:1px solid var(--line); border-radius:9px; color:var(--ink-dim); background:rgba(255,255,255,.035); cursor:pointer; }.sidebar-fullscreen:hover{ color:var(--ink); border-color:var(--accent-line); background:var(--accent-soft); }.sidebar-fullscreen svg{ width:16px; height:16px; }
   .d-new{ margin:6px 14px; padding:11px; display:flex; align-items:center; justify-content:center; gap:8px; cursor:pointer; font-weight:600; font-size:.88rem; color:#08080a; background:var(--accent); border:none; border-radius:12px; }
-  .d-scroll{ flex:1; overflow-y:auto; min-height:0; }
+  /* overflow-x is pinned shut: with overflow-y set, the other axis computes to
+     auto, so one mis-sized child would otherwise let the whole sidebar scroll
+     sideways. */
+  .d-scroll{ flex:1; overflow-y:auto; overflow-x:hidden; min-width:0; min-height:0; }
   .d-scroll::-webkit-scrollbar{ width:8px; } .d-scroll::-webkit-scrollbar-thumb{ background:rgba(255,255,255,.08); border-radius:8px; }
 
   .sec-h{ display:flex; align-items:center; justify-content:space-between; padding:14px 18px 6px; }
@@ -327,7 +335,9 @@
   .tg .dot{ width:8px; height:8px; border-radius:50%; flex:none; }.tg .tag-name{ min-width:0; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; font-weight:600; font-size:.78rem; }.tg .tag-count{ color:var(--ink-faint); font:500 .62rem "DM Mono",monospace; }.tg .tag-action{ width:25px; height:25px; display:grid; place-items:center; border:0; border-radius:7px; padding:0; color:var(--ink-faint); background:transparent; cursor:pointer; }.tg .tag-action:hover{ color:var(--ink); background:rgba(255,255,255,.08); }.tg .tag-action svg{ width:14px; height:14px; }.tg .tag-action.visibility:hover{ color:var(--accent); }
   .tag-empty{ padding:0 18px 8px; font-size:.76rem; color:var(--ink-faint); }
 
-  .note-search{ position:relative; margin:2px 14px 4px; }.note-search svg{ position:absolute; top:50%; left:10px; width:15px; height:15px; color:var(--ink-faint); transform:translateY(-50%); pointer-events:none; }.note-search input{ width:100%; height:34px; padding:0 30px 0 32px; border:1px solid var(--line); border-radius:10px; outline:none; color:var(--ink); background:rgba(255,255,255,.035); font:.77rem "DM Sans",sans-serif; }.note-search input::placeholder{ color:var(--ink-faint); }.note-search input:focus{ border-color:var(--accent-line); background:rgba(255,255,255,.055); }.note-search button{ position:absolute; right:4px; top:4px; width:26px; height:26px; display:none; place-items:center; border:0; border-radius:7px; color:var(--ink-faint); background:transparent; cursor:pointer; font-size:1rem; }.note-search button:hover{ color:var(--ink); background:rgba(255,255,255,.08); }.note-search.has-value button{ display:grid; }
+  /* display:block matters — a <label> is inline by default, so the input's
+     width:100% would resolve against the sidebar instead of this box. */
+  .note-search{ display:block; position:relative; margin:2px 14px 4px; }.note-search svg{ position:absolute; top:50%; left:10px; width:15px; height:15px; color:var(--ink-faint); transform:translateY(-50%); pointer-events:none; }.note-search input{ width:100%; height:34px; padding:0 30px 0 32px; border:1px solid var(--line); border-radius:10px; outline:none; color:var(--ink); background:rgba(255,255,255,.035); font:.77rem "DM Sans",sans-serif; }.note-search input::placeholder{ color:var(--ink-faint); }.note-search input:focus{ border-color:var(--accent-line); background:rgba(255,255,255,.055); }.note-search button{ position:absolute; right:4px; top:4px; width:26px; height:26px; display:none; place-items:center; border:0; border-radius:7px; color:var(--ink-faint); background:transparent; cursor:pointer; font-size:1rem; }.note-search button:hover{ color:var(--ink); background:rgba(255,255,255,.08); }.note-search.has-value button{ display:grid; }
 
   .d-list{ padding:4px 10px 8px; }
   .d-item{ display:grid; grid-template-columns:15px minmax(0,1fr) auto; align-items:center; gap:9px; padding:10px 12px; border-radius:11px; cursor:pointer; transition:background .13s; }
@@ -625,7 +635,7 @@
     .bar-actions{ gap:4px; overflow-x:auto; scrollbar-width:none; }
     .bar-actions::-webkit-scrollbar{ display:none; }
     .bar .save-state{ flex:none; margin:0 2px 0 0; font-size:.57rem; }
-    .bar .copy-all{ gap:4px; padding:7px 9px; font-size:.72rem; }
+    .bar .copy-all{ gap:5px; padding:7px 10px; font-size:.74rem; border-radius:9px; }
     .bar .copy-all svg{ width:13px; height:13px; }
     .modal-box{ padding:20px; }
     .themes{ grid-template-columns:1fr; }
@@ -1179,6 +1189,10 @@
   function cleanIconColor(value){ return typeof value==="string"&&/^#[0-9a-f]{6}$/i.test(value)?value.toLowerCase():""; }
   function tagColor(tag){ return tag?(cleanIconColor(tag.color)||"hsl("+tag.hue+",65%,62%)"):""; }
   function itemIconColor(item){
+    /* An explicit per-note colour wins; otherwise the icon borrows the colour of
+       the note's first tag. */
+    var custom=cleanIconColor(item&&item.iconColor);
+    if(custom) return custom;
     if(!item||["note","script","todo"].indexOf(item.type)<0) return "";
     return tagColor(tagById((item.tagIds||[])[0]));
   }
@@ -1432,27 +1446,6 @@
       chip.onclick=function(event){ if(event.target.closest(".tag-action")) return; state.filterTag=state.filterTag===tag.id?null:tag.id; persist(); renderAll(); };
       chip.querySelector(".visibility").onclick=function(event){ event.stopPropagation(); tag.hidden=!tag.hidden; persist(); renderAll(); showToast(tag.hidden?"Tag hidden from note labels":"Tag shown in note labels"); };
       chip.querySelector(".edit").onclick=function(event){ event.stopPropagation(); openTagEditor(event.currentTarget,tag); };
-      cloud.appendChild(chip);
-    });
-    tagsEl.appendChild(cloud);
-    return;
-    tagsEl.innerHTML="";
-    tagsEl.classList.toggle("is-collapsed",state.tagsCollapsed);
-    var toggle=$("tagsToggleBtn");
-    if(toggle){ toggle.setAttribute("aria-expanded",state.tagsCollapsed?"false":"true"); toggle.title=state.tagsCollapsed?"Expand tags":"Collapse tags"; }
-    if(state.tagsCollapsed) return;
-    if(!state.tags.length){ var e=document.createElement("div"); e.className="tag-empty"; e.textContent="No tags yet — tap ＋"; tagsEl.appendChild(e); return; }
-    var cloud=document.createElement("div"); cloud.className="tagcloud";
-    state.tags.slice().sort(function(a,b){ return tagUseCount(b.id)-tagUseCount(a.id)||a.name.localeCompare(b.name); }).forEach(function(t){
-      var chip=document.createElement("span"); chip.className="tg"+(state.filterTag===t.id?" active":"");
-      chip.innerHTML='<span class="dot" style="background:hsl('+t.hue+',65%,62%)"></span>'+escapeHtml(t.name)+'<span class="tx" title="Delete tag">✕</span>';
-      chip.onclick=function(e){
-        if(e.target.classList.contains("tx")){ e.stopPropagation(); if(!confirm('Delete tag "'+t.name+'"?')) return;
-          state.items.forEach(function(it){ it.tagIds=(it.tagIds||[]).filter(function(x){ return x!==t.id; }); });
-          state.tags=state.tags.filter(function(x){ return x.id!==t.id; });
-          if(state.filterTag===t.id) state.filterTag=null; persist(); renderAll(); return; }
-        state.filterTag = state.filterTag===t.id ? null : t.id; persist(); renderAll();
-      };
       cloud.appendChild(chip);
     });
     tagsEl.appendChild(cloud);
@@ -2609,10 +2602,17 @@
   function buildAssign(it){
     var wrap=document.createElement("div"); wrap.className="assign";
 
+    if(["note","script","todo"].indexOf(it.type)>=0){
+      var colorButton=document.createElement("button"); colorButton.type="button"; colorButton.className="pickbtn"; colorButton.innerHTML='<span class="color-swatch"></span><span>Icon color</span>';
+      var swatch=colorButton.querySelector(".color-swatch"), noteColor=itemIconColor(it); if(noteColor) swatch.style.background=noteColor;
+      colorButton.onclick=function(){ openNoteColorPicker(colorButton,it); };
+      wrap.appendChild(colorButton);
+    }
+
     (it.tagIds||[]).forEach(function(id){
       var t=tagById(id); if(!t) return;
       var chip=document.createElement("span"); chip.className="chip";
-      chip.innerHTML='<span class="dot" style="background:hsl('+t.hue+',65%,62%)"></span>'+escapeHtml(t.name)+'<span class="cx">×</span>';
+      chip.innerHTML='<span class="dot" style="background:'+tagColor(t)+'"></span>'+escapeHtml(t.name)+'<span class="cx">×</span>';
       chip.querySelector(".cx").onclick=function(){ it.tagIds=it.tagIds.filter(function(x){ return x!==id; }); it.updated=Date.now(); persist(); renderMain(); renderList(); };
       wrap.appendChild(chip);
     });
@@ -3916,9 +3916,49 @@
     noteSearch.oninput=function(){ state.noteSearch=noteSearch.value; noteSearchWrap.classList.toggle("has-value",!!noteSearch.value); renderList(); };
     $("clearNoteSearch").onclick=function(){ noteSearch.value=""; state.noteSearch=""; noteSearchWrap.classList.remove("has-value"); noteSearch.focus(); renderList(); };
   }
+  /* =================== full screen ===================
+     Safari still only exposes the webkit-prefixed API, and iPhone Safari has no
+     Fullscreen API at all for anything that is not a <video>. Rather than a
+     button that silently does nothing there, the control hides itself when the
+     browser cannot do it and points at the route that actually works on iOS:
+     installing the app to the Home Screen, which opens it without browser
+     chrome because the manifest asks for display:standalone. */
   var fullscreenButton=$("sidebarFullscreenBtn");
-  function syncFullscreenButton(){ if(!fullscreenButton) return; var active=!!document.fullscreenElement; fullscreenButton.title=active?"Exit full screen":"Enter full screen"; fullscreenButton.setAttribute("aria-label",fullscreenButton.title); }
-  if(fullscreenButton){ fullscreenButton.onclick=function(){ if(document.fullscreenElement){ document.exitFullscreen(); } else if(document.documentElement.requestFullscreen){ document.documentElement.requestFullscreen().catch(function(){ showToast("Full screen is not available here",true); }); } }; document.addEventListener("fullscreenchange",syncFullscreenButton); syncFullscreenButton(); }
+  var ICON_FULLSCREEN_ON='<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M8 3H3v5M16 3h5v5M21 16v5h-5M3 16v5h5"/></svg>';
+  var ICON_FULLSCREEN_OFF='<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M3 8h5V3M21 8h-5V3M16 21v-5h5M8 21v-5H3"/></svg>';
+  var docEl=document.documentElement;
+  function fullscreenElement(){ return document.fullscreenElement||document.webkitFullscreenElement||null; }
+  function canFullscreen(){ return !!(docEl.requestFullscreen||docEl.webkitRequestFullscreen); }
+  function isStandalone(){ return !!(window.matchMedia&&window.matchMedia("(display-mode: standalone)").matches)||navigator.standalone===true; }
+  function syncFullscreenButton(){
+    if(!fullscreenButton) return;
+    var active=!!fullscreenElement();
+    fullscreenButton.innerHTML=active?ICON_FULLSCREEN_OFF:ICON_FULLSCREEN_ON;
+    fullscreenButton.title=active?"Exit full screen":"Enter full screen";
+    fullscreenButton.setAttribute("aria-label",fullscreenButton.title);
+  }
+  if(fullscreenButton){
+    /* Already chromeless as an installed app, or no API to call — either way the
+       button has nothing useful to do. */
+    if(!canFullscreen()||isStandalone()){
+      fullscreenButton.style.display="none";
+    } else {
+      fullscreenButton.onclick=function(){
+        if(fullscreenElement()){
+          var exit=document.exitFullscreen||document.webkitExitFullscreen;
+          if(exit) try{ exit.call(document); }catch(e){}
+          return;
+        }
+        var request=docEl.requestFullscreen||docEl.webkitRequestFullscreen;
+        try{
+          var result=request.call(docEl);
+          if(result&&result.catch) result.catch(function(){ showToast("This browser blocked full screen",true); });
+        }catch(e){ showToast("This browser blocked full screen",true); }
+      };
+      ["fullscreenchange","webkitfullscreenchange"].forEach(function(name){ document.addEventListener(name,syncFullscreenButton); });
+      syncFullscreenButton();
+    }
+  }
   selectNotesBtn.onclick=function(){
     if(state.selectingNotes&&state.selectedItemIds.length) return openBulkTagPick(this);
     state.selectingNotes=!state.selectingNotes;
