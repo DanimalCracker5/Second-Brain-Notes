@@ -1328,6 +1328,9 @@
     var query=(state.noteSearch||"").trim().toLowerCase();
     var items=state.items.filter(function(it){
       if(state.filterTag && (it.tagIds||[]).indexOf(state.filterTag)<0) return false;
+      /* Hidden tags act like an archive from the All notes view. Selecting a
+         specific tag still lets the user inspect it and make it visible again. */
+      if(!state.filterTag && (it.tagIds||[]).some(function(id){ var tag=tagById(id); return tag&&tag.hidden; })) return false;
       if(query){
         var tagNames=(it.tagIds||[]).map(function(id){ var tag=tagById(id); return tag?tag.name:""; }).join(" ");
         if(([it.title||"",itemText(it),tagNames].join(" ")).toLowerCase().indexOf(query)<0) return false;
@@ -1574,7 +1577,7 @@
     /* The collapsed state is a 0fr grid row, not display:none, so the markup
        still has to be built for the section to slide shut over real content. */
     if(!state.tags.length){ var empty=document.createElement("div"); empty.className="tag-empty"; empty.textContent="No tags yet — tap +"; tagsEl.appendChild(empty); lastTagSignature=null; return; }
-    var sorted=state.tags.slice().sort(function(a,b){ return tagUseCount(b.id)-tagUseCount(a.id)||a.name.localeCompare(b.name); });
+    var sorted=state.tags.slice();
     var signature=sorted.map(function(tag){ return tag.id+":"+(tag.hidden?1:0); }).join("|")+"@"+(state.filterTag||"");
     var cloud=document.createElement("div"); cloud.className="tagcloud"+(signature===lastTagSignature||state.tagsCollapsed?"":" enter");
     lastTagSignature=signature;
@@ -1585,7 +1588,7 @@
       chip.innerHTML='<span class="dot" style="background:'+tagColor(tag)+'"></span><span class="tag-name"></span><span class="tag-count">'+tagUseCount(tag.id)+'</span><button class="tag-action visibility" type="button" title="'+(tag.hidden?"Show tag":"Hide tag")+'" aria-label="'+(tag.hidden?"Show tag":"Hide tag")+'">'+(tag.hidden?ICON_EYE_OFF:ICON_EYE)+'</button><button class="tag-action edit" type="button" title="Edit tag" aria-label="Edit tag">'+ICON_EDIT+'</button>';
       chip.querySelector(".tag-name").textContent=tag.name;
       chip.onclick=function(event){ if(event.target.closest(".tag-action")) return; state.filterTag=state.filterTag===tag.id?null:tag.id; persist(); renderAll(); };
-      chip.querySelector(".visibility").onclick=function(event){ event.stopPropagation(); tag.hidden=!tag.hidden; persist(); renderAll(); showToast(tag.hidden?"Tag hidden from note labels":"Tag shown in note labels"); };
+      chip.querySelector(".visibility").onclick=function(event){ event.stopPropagation(); tag.hidden=!tag.hidden; persist(); renderAll(); showToast(tag.hidden?"Tagged notes hidden from All notes":"Tagged notes shown in All notes"); };
       chip.querySelector(".edit").onclick=function(event){ event.stopPropagation(); openTagEditor(event.currentTarget,tag); };
       cloud.appendChild(chip);
     });
@@ -1593,6 +1596,15 @@
   }
   function tagUseCount(tagId){ return state.items.reduce(function(total,item){ return total+((item.tagIds||[]).indexOf(tagId)>=0?1:0); },0); }
   function tagDefaultHex(hue){ var h=((Number(hue)||0)%360+360)%360, c=.65*.62, x=c*(1-Math.abs((h/60)%2-1)), m=.62-c, rgb=h<60?[c,x,0]:h<120?[x,c,0]:h<180?[0,c,x]:h<240?[0,x,c]:h<300?[x,0,c]:[c,0,x]; return "#"+rgb.map(function(v){ return Math.round((v+m)*255).toString(16).padStart(2,"0"); }).join(""); }
+  function moveTag(tag,offset){ var index=state.tags.indexOf(tag), target=index+offset; if(index<0||target<0||target>=state.tags.length) return; state.tags.splice(index,1); state.tags.splice(target,0,tag); persist(); renderAll(); showToast("Tag moved "+(offset<0?"up":"down")); }
+  function openTagMergeMenu(anchor,tag){
+    openMenu(anchor,function(menu){
+      var title=document.createElement("div"); title.className="mtitle"; title.textContent="Merge “"+tag.name+"” into"; menu.appendChild(title);
+      var targets=document.createElement("div"); targets.className="maxscroll";
+      state.tags.filter(function(other){ return other.id!==tag.id; }).forEach(function(other){ targets.appendChild(mkItem("",other.name,false,function(){ if(!confirm('Merge "'+tag.name+'" into "'+other.name+'"?')) return; state.items.forEach(function(item){ if((item.tagIds||[]).indexOf(tag.id)<0) return; item.tagIds=item.tagIds.filter(function(id){ return id!==tag.id; }); if(item.tagIds.indexOf(other.id)<0) item.tagIds.push(other.id); item.updated=Date.now(); }); state.tags=state.tags.filter(function(entry){ return entry.id!==tag.id; }); if(state.filterTag===tag.id) state.filterTag=other.id; closeMenu(); persist(); renderAll(); showToast("Tags merged"); })); });
+      menu.appendChild(targets);
+    });
+  }
   function openTagEditor(anchor,tag){
     openMenu(anchor,function(menu){
       var title=document.createElement("div"); title.className="mtitle"; title.textContent="Edit tag"; menu.appendChild(title);
@@ -1600,8 +1612,9 @@
       function saveName(){ var value=name.value.trim().replace(/^#+/,""); if(!value||value===tag.name) return; tag.name=value; persist(); renderAll(); showToast("Tag renamed"); }
       name.onkeydown=function(event){ if(event.key==="Enter"){ saveName(); closeMenu(); } }; name.onblur=saveName; nameRow.appendChild(name); menu.appendChild(nameRow);
       var colorRow=document.createElement("div"); colorRow.className="mrow color-row"; var colorLabel=document.createElement("span"); colorLabel.textContent="Tag color"; var color=document.createElement("input"); color.type="color"; color.className="color-picker"; color.value=cleanIconColor(tag.color)||tagDefaultHex(tag.hue); color.setAttribute("aria-label","Choose tag color"); color.oninput=function(){ tag.color=cleanIconColor(color.value); persist(); renderAll(); }; colorRow.appendChild(colorLabel); colorRow.appendChild(color); menu.appendChild(colorRow);
-      menu.appendChild(mkItem(tag.hidden?ICON_EYE:ICON_EYE_OFF,tag.hidden?"Show in note labels":"Hide from note labels",false,function(){ tag.hidden=!tag.hidden; closeMenu(); persist(); renderAll(); }));
-      if(state.tags.length>1){ menu.appendChild(sep()); var mergeTitle=document.createElement("div"); mergeTitle.className="mtitle"; mergeTitle.textContent="Merge into"; menu.appendChild(mergeTitle); var targets=document.createElement("div"); targets.className="maxscroll"; state.tags.filter(function(other){ return other.id!==tag.id; }).forEach(function(other){ targets.appendChild(mkItem("",other.name,false,function(){ if(!confirm('Merge "'+tag.name+'" into "'+other.name+'"?')) return; state.items.forEach(function(item){ if((item.tagIds||[]).indexOf(tag.id)<0) return; item.tagIds=item.tagIds.filter(function(id){ return id!==tag.id; }); if(item.tagIds.indexOf(other.id)<0) item.tagIds.push(other.id); item.updated=Date.now(); }); state.tags=state.tags.filter(function(entry){ return entry.id!==tag.id; }); if(state.filterTag===tag.id) state.filterTag=other.id; closeMenu(); persist(); renderAll(); showToast("Tags merged"); })); }); menu.appendChild(targets); }
+      menu.appendChild(mkItem(tag.hidden?ICON_EYE:ICON_EYE_OFF,tag.hidden?"Show tagged notes in All notes":"Hide tagged notes from All notes",false,function(){ tag.hidden=!tag.hidden; closeMenu(); persist(); renderAll(); }));
+      var index=state.tags.indexOf(tag); menu.appendChild(sep()); if(index>0) menu.appendChild(mkItem(ICON_UP,"Move up",false,function(){ closeMenu(); moveTag(tag,-1); })); if(index>=0&&index<state.tags.length-1) menu.appendChild(mkItem(ICON_DOWN,"Move down",false,function(){ closeMenu(); moveTag(tag,1); }));
+      if(state.tags.length>1){ menu.appendChild(sep()); menu.appendChild(mkItem(ICON_DUPLICATE,"Merge into…",false,function(){ openTagMergeMenu(anchor,tag); })); }
       menu.appendChild(sep()); var remove=mkItem(ICON_DELETE,"Delete tag",false,function(){ if(!confirm('Delete tag "'+tag.name+'"? It will be removed from its notes.')) return; state.items.forEach(function(item){ item.tagIds=(item.tagIds||[]).filter(function(id){ return id!==tag.id; }); }); state.tags=state.tags.filter(function(entry){ return entry.id!==tag.id; }); if(state.filterTag===tag.id) state.filterTag=null; closeMenu(); persist(); renderAll(); showToast("Tag deleted"); }); remove.className+=" danger"; menu.appendChild(remove);
     });
   }
