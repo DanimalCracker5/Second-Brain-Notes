@@ -70,7 +70,9 @@
   .bar{ display:flex; align-items:center; gap:6px; padding:calc(var(--safe-t) + 12px) 18px 12px; flex:none; }
   .icon{ width:40px; height:40px; flex:none; display:grid; place-items:center; border:none; background:none; color:var(--ink-dim); cursor:pointer; border-radius:12px; transition:.15s; }
   #settingsBtn{ display:none; }
-  .icon:hover{ color:var(--ink); background:rgba(255,255,255,.05); } .icon svg{ width:20px; height:20px; }
+  .icon:hover{ color:var(--ink); background:rgba(255,255,255,.05); } .icon svg{ width:20px; height:20px; transition:transform .24s cubic-bezier(.2,.9,.3,1.4); }
+  .icon:hover svg{ transform:scale(1.1); } .icon:active{ transform:scale(.92); }
+  #settingsBtn:hover svg,.settings-gear:hover svg{ transform:rotate(65deg); }
   .icon.hide-wide{ display:grid; }
   .spacer{ flex:1; }
   .bar-actions{ display:flex; align-items:center; justify-content:flex-end; gap:6px; min-width:0; }
@@ -108,8 +110,10 @@
   .todo-title-row.done .title{ color:var(--ink-dim); text-decoration:line-through; }
 
   .assign{ display:flex; flex-wrap:wrap; align-items:center; gap:7px; margin:14px 0 12px; }
-  .pickbtn{ display:inline-flex; align-items:center; gap:7px; font-size:.78rem; font-weight:500; color:var(--ink-dim); background:rgba(255,255,255,.04); border:1px solid var(--line); border-radius:8px; padding:5px 10px; cursor:pointer; transition:.14s; }
-  .pickbtn:hover{ color:var(--ink); background:rgba(255,255,255,.08); }
+  .pickbtn{ display:inline-flex; align-items:center; gap:7px; font-size:.78rem; font-weight:500; color:var(--ink-dim); background:rgba(255,255,255,.04); border:1px solid var(--line); border-radius:8px; padding:5px 10px; cursor:pointer; transition:color .14s,background .14s,border-color .14s,transform .16s cubic-bezier(.2,.9,.3,1.3); }
+  .pickbtn:hover{ color:var(--ink); background:rgba(255,255,255,.08); border-color:var(--accent-line); transform:translateY(-1px); }
+  .pickbtn:active{ transform:translateY(0) scale(.96); }
+  .chip{ animation:popIn .28s cubic-bezier(.2,1.1,.35,1) both; }
   .pickbtn svg{ width:13px; height:13px; }
   .color-swatch{ width:10px; height:10px; border:1px solid rgba(255,255,255,.28); border-radius:50%; background:var(--ink-dim); }
   .chip{ display:inline-flex; align-items:center; gap:7px; font-size:.78rem; font-weight:500; color:var(--ink-dim); padding:5px 9px 5px 8px; border-radius:8px; background:rgba(255,255,255,.04); border:1px solid var(--line); }
@@ -227,8 +231,9 @@
   .ch-foot .g:hover{ color:var(--ink); background:rgba(255,255,255,.06); } .ch-foot .g:disabled{ opacity:.3; cursor:default; }
   .ch-foot .g.del:hover{ color:#f87171; background:rgba(248,113,113,.12); } .ch-foot .g svg{ width:16px; height:16px; }
   .ch-foot .cc{ margin-left:auto; font-family:"DM Mono",monospace; font-size:.68rem; color:var(--ink-faint); }
-  .add{ width:100%; margin-top:6px; padding:14px; display:flex; align-items:center; justify-content:center; gap:8px; font-weight:500; font-size:.9rem; color:var(--ink-dim); background:none; border:1px solid var(--line); border-radius:14px; cursor:pointer; transition:.15s; }
-  .add:hover{ color:var(--ink); border-color:var(--accent-line); background:var(--accent-soft); }
+  .add{ width:100%; margin-top:6px; padding:14px; display:flex; align-items:center; justify-content:center; gap:8px; font-weight:500; font-size:.9rem; color:var(--ink-dim); background:none; border:1px solid var(--line); border-radius:14px; cursor:pointer; transition:color .15s,border-color .15s,background .15s,transform .16s cubic-bezier(.2,.9,.3,1.3); }
+  .add:hover{ color:var(--ink); border-color:var(--accent-line); background:var(--accent-soft); transform:translateY(-1px); }
+  .add:active{ transform:translateY(0) scale(.99); }
   .todo-list{ display:flex; flex-direction:column; gap:8px; margin-top:6px; }
   .todo-row{ display:grid; grid-template-columns:25px minmax(0,1fr); align-items:start; gap:8px 10px; min-height:48px; padding:10px; border:1px solid var(--line); border-radius:12px; background:rgba(255,255,255,.025); }
   .todo-check{ width:25px; height:25px; flex:none; border:1px solid var(--accent-line); border-radius:8px; background:var(--accent-soft); color:var(--accent); cursor:pointer; font-weight:800; }
@@ -296,7 +301,17 @@
   .d-head{ display:flex; align-items:flex-start; justify-content:space-between; gap:10px; padding:20px 18px 8px; } .d-head h2{ font-weight:700; font-size:1.2rem; letter-spacing:-.01em; margin:0; } .d-head h2 span{ color:var(--accent); }
   .d-head small{ display:block; margin-top:3px; font-family:"DM Mono",monospace; font-size:.49rem; letter-spacing:.06em; color:var(--ink-faint); }
   .sidebar-fullscreen{ width:31px; height:31px; display:grid; place-items:center; flex:none; border:1px solid var(--line); border-radius:9px; color:var(--ink-dim); background:rgba(255,255,255,.035); cursor:pointer; }.sidebar-fullscreen:hover{ color:var(--ink); border-color:var(--accent-line); background:var(--accent-soft); }.sidebar-fullscreen svg{ width:16px; height:16px; }
-  .d-new{ margin:6px 14px; padding:11px; display:flex; align-items:center; justify-content:center; gap:8px; cursor:pointer; font-weight:600; font-size:.88rem; color:#08080a; background:var(--accent); border:none; border-radius:12px; }
+  .d-new{ position:relative; overflow:hidden; margin:6px 14px; padding:11px; display:flex; align-items:center; justify-content:center; gap:8px; cursor:pointer; font-weight:600; font-size:.88rem; color:#08080a; background:var(--accent); border:none; border-radius:12px; box-shadow:0 6px 18px -6px var(--accent-line); transition:transform .18s cubic-bezier(.2,.9,.3,1.4),box-shadow .2s ease,filter .2s ease; }
+  /* A highlight sweep rather than a second background, so the button keeps
+     whatever colour the active theme hands it. */
+  .d-new::before{ content:""; position:absolute; inset:0; background:linear-gradient(135deg,rgba(255,255,255,.26),rgba(255,255,255,0) 58%); pointer-events:none; }
+  .d-new::after{ content:""; position:absolute; top:0; bottom:0; left:0; width:38%; background:linear-gradient(100deg,transparent,rgba(255,255,255,.42),transparent); transform:translateX(-160%); pointer-events:none; }
+  .d-new:hover{ filter:brightness(1.06); box-shadow:0 10px 26px -6px var(--accent-line); transform:translateY(-1px); }
+  .d-new:hover::after{ animation:sheen .7s cubic-bezier(.35,0,.2,1); }
+  .d-new:active{ transform:translateY(0) scale(.975); box-shadow:0 4px 12px -6px var(--accent-line); }
+  .d-new .plus{ display:inline-block; font-size:1.02rem; line-height:1; transition:transform .3s cubic-bezier(.2,.9,.3,1.5); }
+  .d-new.menu-open .plus{ transform:rotate(135deg); }
+  .d-new.menu-open{ transform:translateY(-1px); box-shadow:0 10px 26px -6px var(--accent-line); }
   /* overflow-x is pinned shut: with overflow-y set, the other axis computes to
      auto, so one mis-sized child would otherwise let the whole sidebar scroll
      sideways. */
@@ -305,8 +320,11 @@
 
   .sec-h{ display:flex; align-items:center; justify-content:space-between; padding:14px 18px 6px; }
   .sec-h span{ font-family:"DM Mono",monospace; font-size:.58rem; letter-spacing:.22em; text-transform:uppercase; color:var(--ink-faint); }
-  .sec-h button{ width:22px; height:22px; display:grid; place-items:center; border:none; background:none; color:var(--ink-faint); cursor:pointer; border-radius:6px; font-size:1rem; }
+  .sec-h button{ width:22px; height:22px; display:grid; place-items:center; border:none; background:none; color:var(--ink-faint); cursor:pointer; border-radius:6px; font-size:1rem; transition:color .14s,background .14s,transform .18s cubic-bezier(.2,.9,.3,1.4); }
   .sec-h button:hover{ color:var(--ink); background:rgba(255,255,255,.06); }
+  .sec-h button:active{ transform:scale(.88); }
+  #addTagBtn{ transition:color .14s,background .14s,transform .3s cubic-bezier(.2,.9,.3,1.5); }
+  #addTagBtn:hover{ transform:rotate(90deg) scale(1.1); } #addTagBtn.menu-open{ color:var(--accent); background:var(--accent-soft); transform:rotate(135deg); }
   .sec-h .section-toggle{ width:auto; min-width:0; padding:0; display:flex; align-items:center; gap:5px; }
   .sec-h .section-toggle svg{ width:13px; height:13px; transition:transform .16s ease; }
   .sec-h .section-toggle[aria-expanded="false"] svg{ transform:rotate(-90deg); }
@@ -327,27 +345,65 @@
   .folder-row .folder-grip{ color:var(--ink-faint); font:700 .74rem "DM Mono",monospace; letter-spacing:-.18em; cursor:grab; user-select:none; opacity:.45; }
   .folder-row.dragging{ opacity:.42; } .folder-row.drop-target{ outline:1px dashed var(--accent-line); background:var(--accent-soft); }
 
-  #tags.is-collapsed{ display:none; }
+  /* The tag list collapses by animating grid rows rather than display:none, so
+     the section slides shut instead of snapping. The child needs min-height:0 +
+     overflow:hidden or a 0fr row still renders at its content height. */
+  #tags{ display:grid; grid-template-rows:1fr; transition:grid-template-rows .28s cubic-bezier(.4,0,.2,1),opacity .2s ease; }
+  #tags > *{ min-height:0; overflow:hidden; transition:padding .28s cubic-bezier(.4,0,.2,1); }
+  #tags.is-collapsed{ grid-template-rows:0fr; opacity:0; pointer-events:none; }
+  /* overflow:hidden clips the content but not the box's own padding, which
+     would otherwise leave a dead gap under a collapsed section. */
+  #tags.is-collapsed > *{ padding-top:0; padding-bottom:0; }
 
-  .tagcloud{ display:grid; gap:6px; padding:3px 12px 10px; }
-  .tg{ display:grid; grid-template-columns:10px minmax(0,1fr) auto auto; align-items:center; gap:8px; width:100%; min-height:34px; padding:6px 7px 6px 10px; border-radius:10px; color:var(--ink-dim); background:linear-gradient(90deg,rgba(255,255,255,.055),rgba(255,255,255,.018)); border:1px solid transparent; cursor:pointer; transition:.13s; }
-  .tg:hover{ background:rgba(255,255,255,.075); color:var(--ink); }.tg.active{ background:var(--accent-soft); color:var(--ink); border-color:var(--accent-line); }.tg.hidden{ opacity:.58; }
-  .tg .dot{ width:8px; height:8px; border-radius:50%; flex:none; }.tg .tag-name{ min-width:0; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; font-weight:600; font-size:.78rem; }.tg .tag-count{ color:var(--ink-faint); font:500 .62rem "DM Mono",monospace; }.tg .tag-action{ width:25px; height:25px; display:grid; place-items:center; border:0; border-radius:7px; padding:0; color:var(--ink-faint); background:transparent; cursor:pointer; }.tg .tag-action:hover{ color:var(--ink); background:rgba(255,255,255,.08); }.tg .tag-action svg{ width:14px; height:14px; }.tg .tag-action.visibility:hover{ color:var(--accent); }
-  .tag-empty{ padding:0 18px 8px; font-size:.76rem; color:var(--ink-faint); }
+  /* Five children (dot, name, count, hide, edit) need five columns — with four
+     the edit button wrapped onto a second row and doubled the chip's height. */
+  .tagcloud{ display:grid; gap:2px; padding:2px 10px 10px; }
+  .tg{ position:relative; display:grid; grid-template-columns:auto minmax(0,1fr) auto auto auto; align-items:center; gap:8px; width:100%; min-height:31px; padding:0 3px 0 9px; border-radius:9px; color:var(--ink-dim); background:transparent; border:1px solid transparent; cursor:pointer; isolation:isolate; transition:color .16s ease,border-color .16s ease,transform .16s cubic-bezier(.2,.9,.3,1.2); }
+  /* Each row tints itself with its own tag colour instead of the theme accent,
+     so the list reads as a legend for the dots beside every note. */
+  .tg::before{ content:""; position:absolute; z-index:-1; inset:0; border-radius:inherit; background:var(--tg,var(--accent)); opacity:.07; transition:opacity .16s ease; }
+  .tg::after{ content:""; position:absolute; z-index:-1; left:0; top:50%; width:2px; height:0; border-radius:2px; background:var(--tg,var(--accent)); transform:translateY(-50%); transition:height .2s cubic-bezier(.2,.9,.3,1.2); }
+  .tg:hover{ color:var(--ink); }.tg:hover::before{ opacity:.14; }.tg:hover::after{ height:38%; }
+  .tg:active{ transform:scale(.985); }
+  .tg.active{ color:var(--ink); border-color:var(--tg,var(--accent-line)); }.tg.active::before{ opacity:.2; }.tg.active::after{ height:58%; }
+  .tg.hidden{ opacity:.5; }
+  .tg > *{ position:relative; }
+  .tg .dot{ width:7px; height:7px; border-radius:50%; flex:none; box-shadow:0 0 0 3px rgba(255,255,255,.05); transition:transform .16s cubic-bezier(.2,.9,.3,1.4),box-shadow .16s; }
+  .tg:hover .dot,.tg.active .dot{ transform:scale(1.25); box-shadow:0 0 9px var(--tg,var(--accent)); }
+  .tg .tag-name{ min-width:0; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; font-weight:600; font-size:.79rem; letter-spacing:-.005em; }
+  .tg .tag-count{ min-width:19px; padding:2px 5px; border-radius:6px; color:var(--ink-faint); background:rgba(255,255,255,.055); font:500 .58rem "DM Mono",monospace; text-align:center; transition:color .16s,background .16s; }
+  .tg.active .tag-count{ color:var(--ink); background:rgba(255,255,255,.12); }
+  .tg .tag-action{ width:23px; height:23px; display:grid; place-items:center; border:0; border-radius:7px; padding:0; color:var(--ink-faint); background:transparent; cursor:pointer; opacity:.4; transition:opacity .16s,color .14s,background .14s,transform .14s; }
+  .tg:hover .tag-action,.tg:focus-within .tag-action{ opacity:1; }
+  .tg .tag-action:hover{ color:var(--ink); background:rgba(255,255,255,.1); transform:scale(1.12); }
+  .tg .tag-action:active{ transform:scale(.9); }
+  .tg .tag-action svg{ width:13px; height:13px; }.tg .tag-action.visibility:hover{ color:var(--accent); }
+  /* Touch has no hover, so the row actions have to stay legible without one —
+     and the invisible ::after widens the tap target to ~35x29 without growing
+     the button or its grid column. */
+  @media (hover:none){
+    .tg .tag-action{ opacity:.62; }
+    .tg .tag-action::after{ content:""; position:absolute; inset:-6px -3px; }
+  }
+  .tag-empty{ padding:0 18px 9px; font-size:.76rem; color:var(--ink-faint); }
 
   /* display:block matters — a <label> is inline by default, so the input's
      width:100% would resolve against the sidebar instead of this box. */
-  .note-search{ display:block; position:relative; margin:2px 14px 4px; }.note-search svg{ position:absolute; top:50%; left:10px; width:15px; height:15px; color:var(--ink-faint); transform:translateY(-50%); pointer-events:none; }.note-search input{ width:100%; height:34px; padding:0 30px 0 32px; border:1px solid var(--line); border-radius:10px; outline:none; color:var(--ink); background:rgba(255,255,255,.035); font:.77rem "DM Sans",sans-serif; }.note-search input::placeholder{ color:var(--ink-faint); }.note-search input:focus{ border-color:var(--accent-line); background:rgba(255,255,255,.055); }.note-search button{ position:absolute; right:4px; top:4px; width:26px; height:26px; display:none; place-items:center; border:0; border-radius:7px; color:var(--ink-faint); background:transparent; cursor:pointer; font-size:1rem; }.note-search button:hover{ color:var(--ink); background:rgba(255,255,255,.08); }.note-search.has-value button{ display:grid; }
+  .note-search{ display:block; position:relative; margin:2px 14px 4px; }.note-search svg{ position:absolute; top:50%; left:10px; width:15px; height:15px; color:var(--ink-faint); transform:translateY(-50%); pointer-events:none; }.note-search input{ width:100%; height:34px; padding:0 30px 0 32px; border:1px solid var(--line); border-radius:10px; outline:none; color:var(--ink); background:rgba(255,255,255,.035); font:.77rem "DM Sans",sans-serif; }.note-search input::placeholder{ color:var(--ink-faint); }.note-search input{ transition:border-color .16s,background .16s,box-shadow .2s; }.note-search input:focus{ border-color:var(--accent-line); background:rgba(255,255,255,.055); box-shadow:0 0 0 3px var(--accent-soft); }.note-search svg{ transition:color .16s; }.note-search:focus-within svg{ color:var(--accent); }.note-search button{ position:absolute; right:4px; top:4px; width:26px; height:26px; display:none; place-items:center; border:0; border-radius:7px; color:var(--ink-faint); background:transparent; cursor:pointer; font-size:1rem; }.note-search button:hover{ color:var(--ink); background:rgba(255,255,255,.08); }.note-search.has-value button{ display:grid; }
 
   .d-list{ padding:4px 10px 8px; }
-  .d-item{ display:grid; grid-template-columns:15px minmax(0,1fr) auto; align-items:center; gap:9px; padding:10px 12px; border-radius:11px; cursor:pointer; transition:background .13s; }
+  .d-item{ position:relative; display:grid; grid-template-columns:15px minmax(0,1fr) auto; align-items:center; gap:9px; padding:10px 12px; border-radius:11px; cursor:pointer; transition:background .16s ease,transform .16s cubic-bezier(.2,.9,.3,1.2); }
+  .d-item::before{ content:""; position:absolute; left:3px; top:50%; width:2px; height:0; border-radius:2px; background:var(--accent); transform:translateY(-50%); transition:height .22s cubic-bezier(.2,.9,.3,1.3); }
+  .d-item.active::before{ height:46%; }
+  .d-item:active{ transform:scale(.985); }
   .d-item.selecting{ grid-template-columns:18px 15px minmax(0,1fr) auto; }
   .note-select{ width:18px; height:18px; margin:0; accent-color:var(--accent); cursor:pointer; }
   .bulk-tags{ display:flex; align-items:center; gap:5px; }
   .bulk-tags button{ border:0; border-radius:7px; padding:3px 6px; color:var(--ink-dim); background:rgba(255,255,255,.05); cursor:pointer; font:500 .68rem "DM Sans",sans-serif; }
   .bulk-tags button:hover{ color:var(--ink); background:var(--accent-soft); }
   .d-item:hover{ background:rgba(255,255,255,.05); } .d-item.active{ background:var(--accent-soft); }
-  .d-item .item-icon{ display:grid; place-items:center; width:15px; height:15px; color:var(--ink-dim); flex:none; }
+  .d-item .item-icon{ display:grid; place-items:center; width:15px; height:15px; color:var(--ink-dim); flex:none; transition:transform .2s cubic-bezier(.2,.9,.3,1.5); }
+  .d-item:hover .item-icon{ transform:scale(1.15); }
   .d-item .item-icon svg{ width:15px; height:15px; }
   .side-todo-check{ width:15px; height:15px; padding:0; display:grid; place-items:center; border:1px solid var(--accent-line); border-radius:4px; color:#07110c; background:var(--accent-soft); cursor:pointer; font-size:.62rem; font-weight:800; }
   .side-todo-check.done{ background:#6ee7b7; border-color:#6ee7b7; }
@@ -369,9 +425,10 @@
   .side-task.done .side-task-open{ color:var(--ink-faint); text-decoration:line-through; } .side-task.done .side-task-check{ background:#6ee7b7; border-color:#6ee7b7; }
 
   .d-foot{ display:flex; align-items:center; gap:8px; padding:11px 14px; border-top:1px solid var(--line); }
-  .d-foot .sbtn{ flex:1; display:flex; align-items:center; justify-content:center; gap:7px; padding:9px; font-size:.8rem; font-weight:500; color:var(--ink-dim); background:rgba(255,255,255,.04); border:1px solid var(--line); border-radius:10px; cursor:pointer; }
-  .d-foot .sbtn:hover{ color:var(--ink); background:rgba(255,255,255,.08); }
-  .d-foot .sbtn svg{ width:15px; height:15px; }
+  .d-foot .sbtn{ flex:1; display:flex; align-items:center; justify-content:center; gap:7px; padding:9px; font-size:.8rem; font-weight:500; color:var(--ink-dim); background:rgba(255,255,255,.04); border:1px solid var(--line); border-radius:10px; cursor:pointer; transition:color .15s,background .15s,border-color .15s,transform .16s cubic-bezier(.2,.9,.3,1.3); }
+  .d-foot .sbtn:hover{ color:var(--ink); background:rgba(255,255,255,.08); border-color:var(--accent-line); transform:translateY(-1px); }
+  .d-foot .sbtn:active{ transform:translateY(0) scale(.95); }
+  .d-foot .sbtn svg{ width:15px; height:15px; transition:transform .24s cubic-bezier(.2,.9,.3,1.4); }
   .d-foot .account-summary{ display:grid; gap:8px; flex:1; min-width:0; }
   .d-foot .who{ display:flex; align-items:center; gap:8px; min-width:0; }
   .d-foot .who img{ width:26px; height:26px; border-radius:50%; flex:none; }
@@ -416,12 +473,19 @@
   .cloud-storage-file.unlinked{ border-color:rgba(248,113,113,.35); background:rgba(248,113,113,.055); }
 
   /* ---------- floating menu ---------- */
-  .menu{ position:fixed; z-index:70; background:#0b0b0f; border:1px solid var(--line); border-radius:12px; padding:6px; box-shadow:0 18px 55px rgba(0,0,0,.7); min-width:200px; max-width:270px; }
+  /* --menu-origin is set from openMenu so the pop scales out of the corner the
+     menu is actually anchored to, not always the top-left. */
+  .menu{ position:fixed; z-index:70; background:#0b0b0f; border:1px solid var(--line); border-radius:12px; padding:6px; box-shadow:0 18px 55px rgba(0,0,0,.7); min-width:200px; max-width:270px; transform-origin:var(--menu-origin,top left); animation:menuIn .19s cubic-bezier(.2,.95,.3,1.25) both; }
+  .menu > *{ animation:menuRow .26s cubic-bezier(.2,.9,.3,1) both; }
+  .menu > :nth-child(1){ animation-delay:.03s } .menu > :nth-child(2){ animation-delay:.05s } .menu > :nth-child(3){ animation-delay:.07s }
+  .menu > :nth-child(4){ animation-delay:.09s } .menu > :nth-child(5){ animation-delay:.105s } .menu > :nth-child(6){ animation-delay:.12s }
+  .menu > :nth-child(7){ animation-delay:.135s } .menu > :nth-child(n+8){ animation-delay:.15s }
   .menu .mtitle{ font-family:"DM Mono",monospace; font-size:.56rem; letter-spacing:.2em; text-transform:uppercase; color:var(--ink-faint); padding:6px 10px 4px; }
-  .menu button.mi{ display:flex; align-items:center; gap:10px; width:100%; text-align:left; padding:9px 11px; background:none; border:none; color:var(--ink); font-size:.86rem; border-radius:8px; cursor:pointer; }
-  .menu button.mi:hover{ background:rgba(255,255,255,.06); } .menu button.mi svg{ width:16px; height:16px; color:var(--ink-dim); flex:none; }
+  .menu button.mi{ display:flex; align-items:center; gap:10px; width:100%; text-align:left; padding:9px 11px; background:none; border:none; color:var(--ink); font-size:.86rem; border-radius:8px; cursor:pointer; transition:background .14s,transform .14s,padding-left .14s; }
+  .menu button.mi:hover{ background:rgba(255,255,255,.06); padding-left:14px; } .menu button.mi:active{ transform:scale(.98); } .menu button.mi svg{ width:16px; height:16px; color:var(--ink-dim); flex:none; transition:color .14s,transform .18s cubic-bezier(.2,.9,.3,1.4); }
+  .menu button.mi:hover svg{ color:var(--accent); transform:scale(1.12); }
   .menu button.mi.danger{ color:#fca5a5; } .menu button.mi.danger svg{ color:#f87171; } .menu button.mi.danger:hover{ background:rgba(248,113,113,.12); }
-  .menu button.mi .chk{ margin-left:auto; color:var(--accent); opacity:0; } .menu button.mi.on .chk{ opacity:1; }
+  .menu button.mi .chk{ margin-left:auto; color:var(--accent); opacity:0; transform:scale(.6); transition:opacity .16s,transform .22s cubic-bezier(.2,1.4,.4,1); } .menu button.mi.on .chk{ opacity:1; transform:scale(1); }
   .menu .sep{ height:1px; background:var(--line); margin:5px 4px; }
   .menu .mrow{ padding:6px; } .menu .mrow input{ width:100%; background:rgba(255,255,255,.05); border:1px solid var(--line); border-radius:8px; color:var(--ink); padding:9px 10px; font-family:inherit; font-size:.85rem; outline:none; }
   .menu .mrow input:focus{ border-color:var(--accent-line); }
@@ -432,8 +496,9 @@
   .menu .maxscroll{ max-height:230px; overflow-y:auto; }
 
   /* ---------- toast ---------- */
-  .toast{ position:fixed; left:50%; bottom:calc(24px + var(--safe-b)); transform:translate(-50%,16px); z-index:120; padding:10px 18px; border-radius:12px; background:#141418; border:1px solid var(--line); font-size:.82rem; color:var(--ink); opacity:0; pointer-events:none; transition:.2s; max-width:88vw; }
-  .toast.show{ opacity:1; transform:translate(-50%,0); } .toast .tk{ color:#6ee7b7; } .toast.bad .tk{ color:#f87171; }
+  .toast{ position:fixed; left:50%; bottom:calc(24px + var(--safe-b)); transform:translate(-50%,20px) scale(.94); z-index:120; padding:10px 18px; border-radius:12px; background:#141418; border:1px solid var(--line); box-shadow:0 16px 40px rgba(0,0,0,.5); font-size:.82rem; color:var(--ink); opacity:0; pointer-events:none; transition:opacity .18s ease,transform .36s cubic-bezier(.2,1.15,.35,1); max-width:88vw; }
+  .toast.show{ opacity:1; transform:translate(-50%,0) scale(1); } .toast .tk{ display:inline-block; color:#6ee7b7; } .toast.bad .tk{ color:#f87171; }
+  .toast.show .tk{ animation:tickPop .42s cubic-bezier(.2,1.5,.4,1) .06s both; }
 
   /* ---------- required sign-in gate ---------- */
   .auth-locked .app{ filter:blur(13px) saturate(.62); transform:scale(1.018); pointer-events:none; user-select:none; transition:filter .45s ease,transform .45s ease; }
@@ -457,8 +522,9 @@
 
   /* ---------- modals ---------- */
   .modal{ position:fixed; inset:0; z-index:100; display:none; align-items:center; justify-content:center; background:rgba(0,0,0,.72); padding:18px; }
-  .modal.open{ display:flex; }
+  .modal.open{ display:flex; animation:fadeIn .2s ease both; backdrop-filter:blur(3px); }
   .modal-box{ width:100%; max-width:560px; max-height:88vh; overflow-y:auto; background:#0a0a0e; border:1px solid var(--line); border-radius:22px; padding:24px; box-shadow:0 28px 90px rgba(0,0,0,.58); }
+  .modal.open .modal-box{ animation:modalIn .34s cubic-bezier(.2,.95,.3,1.08) both; }
   .modal-box::-webkit-scrollbar{ width:8px; } .modal-box::-webkit-scrollbar-thumb{ background:rgba(255,255,255,.09); border-radius:8px; }
   .mh{ display:flex; align-items:center; justify-content:space-between; margin-bottom:4px; }
   .mh h3{ font-weight:700; font-size:1.2rem; margin:0; letter-spacing:-.01em; }
@@ -469,9 +535,12 @@
   .hint{ font-size:.8rem; color:var(--ink-dim); line-height:1.55; margin:0 0 12px; }
   .hint a{ color:var(--accent); }
   .settings-nav{ display:grid; gap:8px; margin-top:20px; }
-  .settings-nav button{ display:flex; align-items:center; justify-content:space-between; gap:16px; width:100%; padding:13px 14px; cursor:pointer; text-align:left; color:var(--ink); background:rgba(255,255,255,.035); border:1px solid var(--line); border-radius:13px; }
-  .settings-nav button:hover{ border-color:var(--accent-line); background:var(--accent-soft); }
-  .settings-nav b{ display:block; font-size:.9rem; } .settings-nav small{ display:block; margin-top:3px; color:var(--ink-faint); font-size:.74rem; } .settings-nav .arrow{ color:var(--accent); font-size:1.1rem; }
+  .settings-nav button{ display:flex; align-items:center; justify-content:space-between; gap:16px; width:100%; padding:13px 14px; cursor:pointer; text-align:left; color:var(--ink); background:rgba(255,255,255,.035); border:1px solid var(--line); border-radius:13px; transition:background .16s,border-color .16s,transform .16s cubic-bezier(.2,.9,.3,1.2); }
+  .settings-nav button:hover{ border-color:var(--accent-line); background:var(--accent-soft); transform:translateX(3px); }
+  .settings-nav button:active{ transform:translateX(3px) scale(.99); }
+  .settings-nav b{ display:block; font-size:.9rem; } .settings-nav small{ display:block; margin-top:3px; color:var(--ink-faint); font-size:.74rem; } .settings-nav .arrow{ color:var(--accent); font-size:1.1rem; transition:transform .2s cubic-bezier(.2,.9,.3,1.4); }
+  .settings-nav button:hover .arrow{ transform:translateX(4px); }
+  .settings-back{ transition:transform .16s; } .settings-back:hover{ transform:translateX(-3px); }
   .settings-back{ display:inline-flex; align-items:center; gap:5px; border:0; margin:0 0 12px; padding:3px 0; color:var(--accent); background:transparent; cursor:pointer; font:500 .78rem "DM Sans",sans-serif; }
 
   .themes{ display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:9px; }
@@ -486,9 +555,12 @@
   .srow{ display:flex; align-items:center; justify-content:space-between; gap:14px; padding:11px 0; border-top:1px solid var(--line); }
   .srow:first-of-type{ border-top:none; }
   .srow .sl{ font-size:.9rem; } .srow .sl small{ display:block; color:var(--ink-faint); font-size:.74rem; margin-top:2px; }
-  .toggle{ width:44px; height:26px; flex:none; border-radius:999px; background:rgba(255,255,255,.12); border:none; cursor:pointer; position:relative; transition:.15s; }
-  .toggle.on{ background:var(--accent); }
-  .toggle b{ position:absolute; top:3px; left:3px; width:20px; height:20px; border-radius:50%; background:#fff; transition:left .16s; } .toggle.on b{ left:21px; }
+  .toggle{ width:44px; height:26px; flex:none; border-radius:999px; background:rgba(255,255,255,.12); border:none; cursor:pointer; position:relative; transition:background .22s ease,box-shadow .22s ease; }
+  .toggle.on{ background:var(--accent); box-shadow:0 0 0 4px var(--accent-soft); }
+  /* The knob widens while held, then springs to the far side — the squash is
+     what makes the switch feel physical rather than teleported. */
+  .toggle b{ position:absolute; top:3px; left:3px; width:20px; height:20px; border-radius:999px; background:#fff; transition:left .26s cubic-bezier(.2,1.25,.4,1),width .16s ease; } .toggle.on b{ left:21px; }
+  .toggle:active b{ width:25px; } .toggle.on:active b{ left:16px; }
   .range-row{ display:grid; gap:8px; } .range-row label{ display:flex; align-items:center; justify-content:space-between; color:var(--ink-dim); font-size:.82rem; }
   .range-row output{ color:var(--accent); font-family:"DM Mono",monospace; font-size:.75rem; }
   input[type="range"]{ width:100%; accent-color:var(--accent); }
@@ -496,9 +568,9 @@
   .ta{ width:100%; min-height:120px; resize:vertical; background:rgba(255,255,255,.04); border:1px solid var(--line); border-radius:12px; color:var(--ink); padding:12px; font-family:"DM Mono",monospace; font-size:.76rem; line-height:1.5; outline:none; }
   .ta:focus{ border-color:var(--accent-line); }
   .btnrow{ display:flex; gap:8px; margin-top:10px; flex-wrap:wrap; }
-  .b2{ padding:10px 15px; font-size:.84rem; font-weight:600; border-radius:10px; cursor:pointer; border:1px solid var(--line); background:rgba(255,255,255,.05); color:var(--ink); }
-  .b2:hover{ background:rgba(255,255,255,.1); }
-  .b2.primary{ background:var(--accent); color:#08080a; border-color:transparent; } .b2.primary:hover{ filter:brightness(1.08); }
+  .b2{ padding:10px 15px; font-size:.84rem; font-weight:600; border-radius:10px; cursor:pointer; border:1px solid var(--line); background:rgba(255,255,255,.05); color:var(--ink); transition:background .15s,border-color .15s,transform .14s cubic-bezier(.2,.9,.3,1.3),filter .15s; }
+  .b2:hover{ background:rgba(255,255,255,.1); transform:translateY(-1px); } .b2:active{ transform:translateY(0) scale(.97); }
+  .b2.primary{ background:var(--accent); color:#08080a; border-color:transparent; } .b2.primary:hover{ filter:brightness(1.08); box-shadow:0 8px 20px -8px var(--accent-line); }
   .b2.danger{ color:#f87171; } .b2.danger:hover{ background:rgba(248,113,113,.12); }
   .gsign{ width:100%; display:flex; align-items:center; justify-content:center; gap:9px; padding:12px; cursor:pointer; font-weight:600; font-size:.88rem; color:#1f1f1f; background:#fff; border:none; border-radius:12px; }
   .gsign:hover{ filter:brightness(.94); } .gsign svg{ width:18px; height:18px; }
@@ -618,6 +690,43 @@
   .voice-choice-mark{ flex:none; color:var(--accent); font-size:.68rem; font-weight:700; } .voice-choice.custom .voice-choice-mark{ color:var(--ink-dim); font-size:1rem; }
   .voice-empty{ padding:18px 10px; color:var(--ink-faint); text-align:center; font-size:.78rem; }
 
+  /* ---------- motion system ----------
+     Entrance animations are opt-in per render: JS adds .enter (or a --i stagger
+     index) only when the thing on screen actually changed, so routine
+     re-renders — a keystroke, a checkbox — never replay them.
+     Everything here is switched off by Settings → Motion and by the OS
+     reduced-motion preference, both of which land on body.reduce-fx. */
+  @keyframes fadeIn{ from{ opacity:0 } to{ opacity:1 } }
+  @keyframes fadeUp{ from{ opacity:0; transform:translateY(9px) } to{ opacity:1; transform:none } }
+  @keyframes popIn{ 0%{ opacity:0; transform:translateY(6px) scale(.96) } 62%{ opacity:1; transform:translateY(-1px) scale(1.012) } 100%{ opacity:1; transform:none } }
+  @keyframes menuIn{ from{ opacity:0; transform:translateY(-5px) scale(.94) } to{ opacity:1; transform:none } }
+  @keyframes menuRow{ from{ opacity:0; transform:translateX(-6px) } to{ opacity:1; transform:none } }
+  @keyframes modalIn{ from{ opacity:0; transform:translateY(16px) scale(.96) } to{ opacity:1; transform:none } }
+  @keyframes sheetIn{ from{ opacity:0; transform:translateY(12px) } to{ opacity:1; transform:none } }
+  @keyframes tickPop{ 0%{ transform:scale(.3) rotate(-25deg) } 60%{ transform:scale(1.28) rotate(6deg) } 100%{ transform:none } }
+  @keyframes sheen{ to{ transform:translateX(420%) } }
+  @keyframes justAdded{
+    0%{ opacity:0; transform:translateY(-9px) scale(.97); box-shadow:0 0 0 2px var(--accent-line) }
+    55%{ opacity:1; transform:none; box-shadow:0 0 0 2px var(--accent-line) }
+    100%{ opacity:1; transform:none; box-shadow:0 0 0 8px transparent }
+  }
+
+  /* The stagger index is capped in JS, so a 400-note list never waits seconds
+     for its last row to arrive. */
+  .d-list.enter .d-item{ animation:fadeUp .34s cubic-bezier(.2,.9,.3,1) both; animation-delay:calc(var(--i,0) * 26ms); }
+  .tagcloud.enter .tg{ animation:popIn .34s cubic-bezier(.2,.9,.3,1.1) both; animation-delay:calc(var(--i,0) * 30ms); }
+  /* Scoped through .d-list so it outranks the stagger rule above — a brand new
+     row should flash, not queue up behind the others. */
+  .d-list .d-item.just-added{ animation:justAdded .55s cubic-bezier(.2,.9,.3,1.1) both; animation-delay:0s; }
+  .sheet.enter{ animation:sheetIn .34s cubic-bezier(.2,.9,.3,1) both; }
+  .tag-empty{ animation:fadeIn .25s ease both; }
+
+  body.reduce-fx *,body.reduce-fx *::before,body.reduce-fx *::after{ animation-duration:.001s !important; animation-delay:0s !important; transition-duration:.001s !important; }
+  @media (prefers-reduced-motion: reduce){
+    *,*::before,*::after{ animation-duration:.001s !important; animation-delay:0s !important; transition-duration:.001s !important; }
+    .glow{ animation-duration:240s !important; }
+  }
+
   @media (max-width: 900px){
     .app{ grid-template-columns:1fr; }
     .drawer{ position:fixed; z-index:30; top:0; bottom:0; left:0; width:min(82vw,300px); transform:translateX(-102%); transition:transform .26s cubic-bezier(.4,0,.2,1); box-shadow:0 0 60px rgba(0,0,0,.6); }
@@ -651,7 +760,7 @@
 
   <aside class="drawer">
     <div class="d-head"><div><h2>Second Brain Notes</h2><small>by Astral Studios LLC</small></div><button class="sidebar-fullscreen" id="sidebarFullscreenBtn" type="button" title="Enter full screen" aria-label="Enter full screen"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M8 3H3v5M16 3h5v5M21 16v5h-5M3 16v5h5"/></svg></button></div>
-    <button class="d-new" id="newBtn">＋  New</button>
+    <button class="d-new" id="newBtn"><span class="plus" aria-hidden="true">＋</span><span>New</span></button>
     <div class="d-scroll">
       <div class="sec-h"><button class="section-toggle" id="tagsToggleBtn" type="button" aria-controls="tags" aria-expanded="true" title="Collapse tags"><span>Tags</span><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m6 9 6 6 6-6"/></svg></button><button id="addTagBtn" title="New tag">＋</button></div>
       <div id="tags"></div>
@@ -782,7 +891,7 @@
   }
   function loadLocal(){ var v=readKey(KEY); if(v&&v.items) return v; if(!canPersist&&mem) return mem; return migrate(); }
   function setSaveState(label,kind){ var el=$("saveState"); if(!el) return; el.textContent=label; el.className="save-state"+(kind?" "+kind:""); }
-  function backupPayload(){ return { app:"second-brain", version:14, items:state.items, folders:state.folders, tags:state.tags, preferences:{theme:state.theme,motion:state.motion,darkness:state.darkness,enabledTypes:state.enabledTypes,noteInsertOptions:state.noteInsertOptions,tagsCollapsed:state.tagsCollapsed,allNotesName:state.allNotesName,readChapterNames:state.readChapterNames,agentSettings:agentSettings()}, created:Date.now() }; }
+  function backupPayload(){ return { app:"second-brain", version:14, items:state.items, folders:state.folders, tags:state.tags, preferences:{theme:state.theme,motion:state.motion,darkness:state.darkness,enabledTypes:state.enabledTypes,typeDefaults:state.typeDefaults,noteInsertOptions:state.noteInsertOptions,tagsCollapsed:state.tagsCollapsed,allNotesName:state.allNotesName,readChapterNames:state.readChapterNames,agentSettings:agentSettings()}, created:Date.now() }; }
   function autoBackups(){ return deviceBackups; }
   function backupSnapshot(data){
     try{ return JSON.parse(JSON.stringify(data)); }catch(e){ console.warn("Backup snapshot could not be copied:",e); return data; }
@@ -1088,6 +1197,15 @@
     if(window.SecondBrainCode&&typeof window.SecondBrainCode.install==="function") registerItemTypes(window.SecondBrainCode.install(moduleHost()));
   }catch(e){ console.warn("Code editor could not be loaded:",e); }
 
+  /* Bump this when the shipped set of enabled types changes; every device then
+     picks the new baseline up once. */
+  var TYPE_DEFAULTS_VERSION=2;
+  function defaultEnabledTypes(){
+    var enabled={script:false,note:true,todo:true,audio:false,agent:false,workout:false};
+    typeModuleList().forEach(function(def){ enabled[def.type]=def.defaultEnabled===true; });
+    return enabled;
+  }
+
   var state=loadLocal();
   if(!state||!state.items){ state={ items:[], tags:[], currentId:null, motion:true, theme:"nebula", filterTag:null }; state.items.push(newNoteItem()); state.currentId=state.items[0].id; }
   state.folders=state.folders||[]; state.tags=state.tags||[]; state.items=state.items||[];
@@ -1096,13 +1214,23 @@
   if(typeof state.darkness!=="number") state.darkness=82;
   state.darkness=Math.max(0,Math.min(100,state.darkness));
   state.enabledTypes=state.enabledTypes||{};
+  /* New menu starts at Note, Todo and File. Everything else is opt-in from
+     Settings → Manage; turning a type off only hides its New entry, so no
+     existing item is ever lost by these defaults. */
   if(typeof state.enabledTypes.script!=="boolean") state.enabledTypes.script=false;
   if(typeof state.enabledTypes.note!=="boolean") state.enabledTypes.note=true;
   if(typeof state.enabledTypes.todo!=="boolean") state.enabledTypes.todo=true;
   if(typeof state.enabledTypes.agent!=="boolean") state.enabledTypes.agent=false;
   if(typeof state.enabledTypes.workout!=="boolean") state.enabledTypes.workout=false;
-  if(typeof state.enabledTypes.audio!=="boolean") state.enabledTypes.audio=true;
+  if(typeof state.enabledTypes.audio!=="boolean") state.enabledTypes.audio=false;
   typeModuleList().forEach(function(def){ if(typeof state.enabledTypes[def.type]!=="boolean") state.enabledTypes[def.type]=def.defaultEnabled===true; });
+  /* Devices that already stored the old, broader set are brought to the new
+     baseline once. The stamp stops it from overriding the user's own toggles on
+     every later load. */
+  if(state.typeDefaults!==TYPE_DEFAULTS_VERSION){
+    state.enabledTypes=defaultEnabledTypes();
+    state.typeDefaults=TYPE_DEFAULTS_VERSION;
+  }
   state.noteInsertOptions=state.noteInsertOptions||{};
   Object.keys(NOTE_INSERT_DEFAULTS).forEach(function(type){ if(typeof state.noteInsertOptions[type]!=="boolean") state.noteInsertOptions[type]=NOTE_INSERT_DEFAULTS[type]; });
   if(typeof state.tagsCollapsed!=="boolean") state.tagsCollapsed=false;
@@ -1130,9 +1258,7 @@
   if(!state.currentId || !state.items.some(function(i){return i.id===state.currentId;})) state.currentId=state.items[0].id;
 
   function blankDeviceState(){
-    var enabledTypes={script:false,note:true,todo:true,audio:true,agent:false,workout:false};
-    typeModuleList().forEach(function(def){ enabledTypes[def.type]=def.defaultEnabled===true; });
-    return {items:[],folders:[],tags:[],currentId:null,motion:true,theme:"nebula",darkness:82,enabledTypes:enabledTypes,noteInsertOptions:{file:true,paragraph:true,comment:true,prompt:true,heading:true,chapter:true,group:true,code:true},tagsCollapsed:false,allNotesName:"All notes",readChapterNames:false,filterTag:null,noteSearch:"",listSort:"updated",agentSettings:defaultAgentSettings(),pendingCloudSync:false,syncBaseline:null};
+    return {items:[],folders:[],tags:[],currentId:null,motion:true,theme:"nebula",darkness:82,enabledTypes:defaultEnabledTypes(),typeDefaults:TYPE_DEFAULTS_VERSION,noteInsertOptions:{file:true,paragraph:true,comment:true,prompt:true,heading:true,chapter:true,group:true,code:true},tagsCollapsed:false,allNotesName:"All notes",readChapterNames:false,filterTag:null,noteSearch:"",listSort:"updated",agentSettings:defaultAgentSettings(),pendingCloudSync:false,syncBaseline:null};
   }
   function clearAttachmentStore(){
     if(!window.indexedDB) return;
@@ -1241,7 +1367,7 @@
   }
   function startMotion(){ stopMotion(); motionTimer=setInterval(function(){ phase+=0.02; applyTheme(Math.sin(phase)*14); },130); }
   function stopMotion(){ if(motionTimer){ clearInterval(motionTimer); motionTimer=null; } applyTheme(0); }
-  function syncMotion(){ ambient.classList.toggle("still",!state.motion); if(state.motion) startMotion(); else stopMotion(); }
+  function syncMotion(){ ambient.classList.toggle("still",!state.motion); document.body.classList.toggle("reduce-fx",!state.motion); if(state.motion) startMotion(); else stopMotion(); }
 
   /* =================== helpers =================== */
   function words(s){ var t=(s||"").trim(); return t?t.split(/\s+/).length:0; }
@@ -1401,16 +1527,21 @@
 
   /* =================== floating menu =================== */
   var openMenuEl=null, openMenuAnchor=null;
-  function closeMenu(){ if(openMenuEl){ if(openMenuEl.parentNode) openMenuEl.parentNode.removeChild(openMenuEl); openMenuEl=null; openMenuAnchor=null; document.removeEventListener("mousedown",menuOutside,true); } }
+  function closeMenu(){ if(openMenuEl){ if(openMenuEl.parentNode) openMenuEl.parentNode.removeChild(openMenuEl); openMenuEl=null; if(openMenuAnchor) openMenuAnchor.classList.remove("menu-open"); openMenuAnchor=null; document.removeEventListener("mousedown",menuOutside,true); } }
   function menuOutside(e){ if(openMenuEl && openMenuAnchor && openMenuAnchor.contains(e.target)) return; if(openMenuEl && !openMenuEl.contains(e.target)) closeMenu(); }
   function openMenu(anchor,build){
     closeMenu();
     var m=document.createElement("div"); m.className="menu"; build(m); document.body.appendChild(m);
     var r=anchor.getBoundingClientRect(), mw=m.offsetWidth||210, mh=m.offsetHeight||160;
     var left=Math.min(r.left, window.innerWidth-mw-10); if(left<10) left=10;
-    var top=r.bottom+6; if(top+mh>window.innerHeight-10) top=Math.max(10,r.top-mh-6);
+    var top=r.bottom+6, flipped=false;
+    if(top+mh>window.innerHeight-10){ top=Math.max(10,r.top-mh-6); flipped=true; }
     m.style.left=left+"px"; m.style.top=top+"px";
+    /* Scale the pop out of the corner nearest the button that opened it, so the
+       menu reads as coming from the control rather than appearing at random. */
+    m.style.setProperty("--menu-origin",(flipped?"bottom ":"top ")+(left+mw/2>r.left+r.width/2?"left":"right"));
      openMenuEl=m; openMenuAnchor=anchor;
+    anchor.classList.add("menu-open");
     setTimeout(function(){ document.addEventListener("mousedown",menuOutside,true); },0);
     var inp=m.querySelector("input"); if(inp) inp.focus();
     return m;
@@ -1431,16 +1562,26 @@
     (data.items||[]).forEach(function(item){ if(item&&item.folderId&&mapped[item.folderId]){ item.tagIds=item.tagIds||[]; if(item.tagIds.indexOf(mapped[item.folderId])<0) item.tagIds.push(mapped[item.folderId]); } if(item) delete item.folderId; });
     data.tags=tags; data.folders=[]; delete data.filterFolder;
   }
+  /* Signature of what the last render put on screen. Entrance animations only
+     replay when this changes, so editing a note title doesn't make the whole
+     sidebar flutter on every keystroke. */
+  var lastTagSignature=null;
   function renderTags(){
     tagsEl.innerHTML="";
     tagsEl.classList.toggle("is-collapsed",state.tagsCollapsed);
     var tagToggle=$("tagsToggleBtn");
     if(tagToggle){ tagToggle.setAttribute("aria-expanded",state.tagsCollapsed?"false":"true"); tagToggle.title=state.tagsCollapsed?"Expand tags":"Collapse tags"; }
-    if(state.tagsCollapsed) return;
-    if(!state.tags.length){ var empty=document.createElement("div"); empty.className="tag-empty"; empty.textContent="No tags yet — tap +"; tagsEl.appendChild(empty); return; }
-    var cloud=document.createElement("div"); cloud.className="tagcloud";
-    state.tags.slice().sort(function(a,b){ return tagUseCount(b.id)-tagUseCount(a.id)||a.name.localeCompare(b.name); }).forEach(function(tag){
+    /* The collapsed state is a 0fr grid row, not display:none, so the markup
+       still has to be built for the section to slide shut over real content. */
+    if(!state.tags.length){ var empty=document.createElement("div"); empty.className="tag-empty"; empty.textContent="No tags yet — tap +"; tagsEl.appendChild(empty); lastTagSignature=null; return; }
+    var sorted=state.tags.slice().sort(function(a,b){ return tagUseCount(b.id)-tagUseCount(a.id)||a.name.localeCompare(b.name); });
+    var signature=sorted.map(function(tag){ return tag.id+":"+(tag.hidden?1:0); }).join("|")+"@"+(state.filterTag||"");
+    var cloud=document.createElement("div"); cloud.className="tagcloud"+(signature===lastTagSignature||state.tagsCollapsed?"":" enter");
+    lastTagSignature=signature;
+    sorted.forEach(function(tag,index){
       var chip=document.createElement("div"); chip.className="tg"+(state.filterTag===tag.id?" active":"")+(tag.hidden?" hidden":"");
+      chip.style.setProperty("--i",Math.min(index,9));
+      chip.style.setProperty("--tg",tagColor(tag));
       chip.innerHTML='<span class="dot" style="background:'+tagColor(tag)+'"></span><span class="tag-name"></span><span class="tag-count">'+tagUseCount(tag.id)+'</span><button class="tag-action visibility" type="button" title="'+(tag.hidden?"Show tag":"Hide tag")+'" aria-label="'+(tag.hidden?"Show tag":"Hide tag")+'">'+(tag.hidden?ICON_EYE_OFF:ICON_EYE)+'</button><button class="tag-action edit" type="button" title="Edit tag" aria-label="Edit tag">'+ICON_EDIT+'</button>';
       chip.querySelector(".tag-name").textContent=tag.name;
       chip.onclick=function(event){ if(event.target.closest(".tag-action")) return; state.filterTag=state.filterTag===tag.id?null:tag.id; persist(); renderAll(); };
@@ -1637,6 +1778,7 @@
     persist(); renderList(); renderMain();
     showToast(isTodoNote(it)?"Converted to todo":"Converted to note");
   }
+  var lastListSignature=null, justAddedId=null, justAddedTimer=null;
   function renderList(){
     trackTimeSpent();
     var items=visibleItems();
@@ -1645,12 +1787,16 @@
     var lbl = state.filterTag ? ((tagById(state.filterTag)||{}).name||"Tag") : allNotesTitle();
     listLabel.textContent=lbl+"  ·  "+items.length;
     listEl.innerHTML="";
+    var signature=items.map(function(it){ return it.id; }).join("|");
+    listEl.classList.toggle("enter",signature!==lastListSignature);
+    lastListSignature=signature;
     if(!items.length){ var e=document.createElement("div"); e.className="tag-empty"; e.style.padding="10px 12px"; e.textContent="Nothing here yet."; listEl.appendChild(e); return; }
-    items.forEach(function(it){
+    items.forEach(function(it,index){
       var todoItem=isTodoNote(it)||it.type==="todo";
       var selected=state.selectedItemIds.indexOf(it.id)>=0;
-      var el=document.createElement("div"); el.className="d-item"+(it.id===state.currentId?" active":"")+(todoItem&&it.done?" todo-done":"")+(state.selectingNotes?" selecting":"");
+      var el=document.createElement("div"); el.className="d-item"+(it.id===state.currentId?" active":"")+(todoItem&&it.done?" todo-done":"")+(state.selectingNotes?" selecting":"")+(it.id===justAddedId?" just-added":"");
       el.setAttribute("data-item-id",it.id);
+      el.style.setProperty("--i",Math.min(index,11));
       var dots=(it.tagIds||[]).map(function(id){ var t=tagById(id); return t&&!t.hidden?'<span class="dot" style="background:'+tagColor(t)+'"></span>':""; }).join("");
       var todoOpen=it.type==="todo"?(it.todos||[]).filter(function(x){return !x.done;}).length:null;
       var mod=itemModule(it);
@@ -1700,6 +1846,7 @@
 
   /* =================== editor =================== */
   function grow(el){ el.style.height="auto"; el.style.height=el.scrollHeight+"px"; }
+  var lastMainId=null;
   function renderMain(){
     var it=current();
     /* Let a registered type tear down timers, media elements, and listeners
@@ -1715,11 +1862,14 @@
     updateShareButton(it);
     updateTtsButton(it);
     var mod=itemModule(it);
-    var sheet=document.createElement("div"); sheet.className="sheet";
+    /* Only a genuine change of document slides in. renderMain also reruns for
+       in-place edits, and animating those would fight the caret. */
+    var entering=it.id!==lastMainId?" enter":""; lastMainId=it.id;
+    var sheet=document.createElement("div"); sheet.className="sheet"+entering;
     $("copyAll").style.display=(mod&&mod.hideCopy)||it.type==="agent"||it.type==="audio"?"none":"";
 
     if(it.type==="agent"){
-      sheet.className="sheet agent-view";
+      sheet.className="sheet agent-view"+entering;
       sheet.appendChild(buildAgent(it));
       canvas.appendChild(sheet);
       syncCollabToCurrentItem();
@@ -3890,7 +4040,15 @@
       m.appendChild(mkItem("<span style=\"font-size:1rem\">⚙</span>","Manage",false,function(){ closeMenu(); openSettings("manage"); }));
     });
   };
-  function createItem(it){ if(activeAudioRecorder){ showToast("Finish the current recording before creating another item",true); return; } state.items.unshift(it); state.currentId=it.id; app.classList.remove("open"); persist(); renderAll(); var t=canvas.querySelector(".title"); if(t) t.focus(); }
+  function createItem(it){
+    if(activeAudioRecorder){ showToast("Finish the current recording before creating another item",true); return; }
+    state.items.unshift(it); state.currentId=it.id; app.classList.remove("open");
+    /* Flagged only for the render that follows, so the new row gets its accent
+       flash once instead of on every later re-render. */
+    justAddedId=it.id; clearTimeout(justAddedTimer); justAddedTimer=setTimeout(function(){ justAddedId=null; },700);
+    persist(); renderAll();
+    var t=canvas.querySelector(".title"); if(t) t.focus();
+  }
   function openNewFolder(anchor){
     openMenu(anchor,function(m){
       var t=document.createElement("div"); t.className="mtitle"; t.textContent="New folder"; m.appendChild(t);
@@ -4518,7 +4676,9 @@
     if(prefs.theme&&THEMES.some(function(t){ return t.id===prefs.theme; })) state.theme=prefs.theme;
     if(typeof prefs.motion==="boolean") state.motion=prefs.motion;
     if(typeof prefs.darkness==="number") state.darkness=Math.max(0,Math.min(100,prefs.darkness));
-    if(prefs.enabledTypes&&typeof prefs.enabledTypes==="object"){
+    /* An account saved before the Note/Todo/File baseline would otherwise push
+       the old, broader set straight back over the migration on next sign-in. */
+    if(prefs.enabledTypes&&typeof prefs.enabledTypes==="object"&&prefs.typeDefaults===TYPE_DEFAULTS_VERSION){
       ["script","note","todo","audio","agent","workout"].forEach(function(type){ if(typeof prefs.enabledTypes[type]==="boolean") state.enabledTypes[type]=prefs.enabledTypes[type]; });
     }
     if(prefs.noteInsertOptions&&typeof prefs.noteInsertOptions==="object") Object.keys(NOTE_INSERT_DEFAULTS).forEach(function(type){ if(typeof prefs.noteInsertOptions[type]==="boolean") state.noteInsertOptions[type]=prefs.noteInsertOptions[type]; });
@@ -4748,7 +4908,7 @@
   function saveCloudNow(){
     if(!currentUser||!db||cloudSyncPaused||cloudSyncLoading) return;
     var sentAt=Date.now();
-    db.collection("users").doc(currentUser.uid).set({ items:state.items, folders:state.folders, tags:state.tags, preferences:{theme:state.theme,motion:state.motion,darkness:state.darkness,enabledTypes:state.enabledTypes,noteInsertOptions:state.noteInsertOptions,tagsCollapsed:state.tagsCollapsed,allNotesName:state.allNotesName,readChapterNames:state.readChapterNames,agentSettings:agentSettings()}, theme:state.theme, motion:state.motion, updated:sentAt },{merge:true}).then(function(){
+    db.collection("users").doc(currentUser.uid).set({ items:state.items, folders:state.folders, tags:state.tags, preferences:{theme:state.theme,motion:state.motion,darkness:state.darkness,enabledTypes:state.enabledTypes,typeDefaults:state.typeDefaults,noteInsertOptions:state.noteInsertOptions,tagsCollapsed:state.tagsCollapsed,allNotesName:state.allNotesName,readChapterNames:state.readChapterNames,agentSettings:agentSettings()}, theme:state.theme, motion:state.motion, updated:sentAt },{merge:true}).then(function(){
       state.lastCloudSync=sentAt;
       if((state.lastLocalChange||0)<=sentAt){ state.pendingCloudSync=false; recordSyncBaseline({items:state.items},sentAt); if(canPersist){ try{ localStorage.setItem(KEY,JSON.stringify(state)); }catch(e){} } }
       setSaveState("Saved to cloud","cloud"); syncPublicShares(); maybeCloudBackup(); scheduleAccountUsageRefresh(0);
