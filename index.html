@@ -245,6 +245,10 @@
   .todo-text::placeholder{ color:var(--ink-faint); }
   .todo-row.done .todo-text{ color:var(--ink-faint); text-decoration:line-through; }
   .todo-row.done .todo-check{ color:#07110c; background:#6ee7b7; border-color:#6ee7b7; }
+  .todo-due{ display:inline-flex; align-items:center; gap:6px; margin-top:4px; padding:4px 7px; border:1px solid var(--line); border-radius:7px; color:var(--ink-faint); background:rgba(255,255,255,.035); cursor:pointer; font:500 .67rem "DM Mono",monospace; }
+  .todo-due:hover,.todo-due.overdue{ color:#fca5a5; border-color:rgba(248,113,113,.34); background:rgba(248,113,113,.08); }
+  .todo-due.today{ color:var(--accent); border-color:var(--accent-line); background:var(--accent-soft); }
+  .todo-due svg{ width:13px; height:13px; }
   .todo-details{ grid-column:2; min-width:0; margin-top:1px; border-top:1px solid transparent; }
   .todo-details[open]{ border-color:var(--line-soft); padding-top:9px; }
   .todo-details summary{ display:flex; align-items:center; gap:6px; width:max-content; color:var(--ink-faint); cursor:pointer; list-style:none; font:500 .7rem "DM Mono",monospace; letter-spacing:.06em; text-transform:uppercase; }
@@ -393,7 +397,7 @@
 
   /* display:block matters — a <label> is inline by default, so the input's
      width:100% would resolve against the sidebar instead of this box. */
-  .note-search{ display:block; position:relative; margin:2px 14px 4px; }.note-search svg{ position:absolute; top:50%; left:10px; width:15px; height:15px; color:var(--ink-faint); transform:translateY(-50%); pointer-events:none; }.note-search input{ width:100%; height:34px; padding:0 30px 0 32px; border:1px solid var(--line); border-radius:10px; outline:none; color:var(--ink); background:rgba(255,255,255,.035); font:.77rem "DM Sans",sans-serif; }.note-search input::placeholder{ color:var(--ink-faint); }.note-search input{ transition:border-color .16s,background .16s,box-shadow .2s; }.note-search input:focus{ border-color:var(--accent-line); background:rgba(255,255,255,.055); box-shadow:0 0 0 3px var(--accent-soft); }.note-search svg{ transition:color .16s; }.note-search:focus-within svg{ color:var(--accent); }.note-search button{ position:absolute; right:4px; top:4px; width:26px; height:26px; display:none; place-items:center; border:0; border-radius:7px; color:var(--ink-faint); background:transparent; cursor:pointer; font-size:1rem; }.note-search button:hover{ color:var(--ink); background:rgba(255,255,255,.08); }.note-search.has-value button{ display:grid; }
+  .note-search{ display:block; position:relative; margin:2px 14px 4px; }.note-search svg{ position:absolute; top:50%; left:10px; width:15px; height:15px; color:var(--ink-faint); transform:translateY(-50%); pointer-events:none; }.note-search input{ width:100%; height:34px; padding:0 62px 0 32px; border:1px solid var(--line); border-radius:10px; outline:none; color:var(--ink); background:rgba(255,255,255,.035); font:.77rem "DM Sans",sans-serif; }.note-search input::placeholder{ color:var(--ink-faint); }.note-search input{ transition:border-color .16s,background .16s,box-shadow .2s; }.note-search input:focus{ border-color:var(--accent-line); background:rgba(255,255,255,.055); box-shadow:0 0 0 3px var(--accent-soft); }.note-search svg{ transition:color .16s; }.note-search:focus-within svg{ color:var(--accent); }.note-search button{ position:absolute; right:4px; top:4px; width:26px; height:26px; display:none; place-items:center; border:0; border-radius:7px; color:var(--ink-faint); background:transparent; cursor:pointer; font-size:1rem; }.note-search button:hover{ color:var(--ink); background:rgba(255,255,255,.08); }.note-search .quick-add-note{ right:31px; display:grid; color:var(--accent); font-size:1.05rem; font-weight:700; }.note-search .quick-add-note:hover{ color:var(--ink); background:var(--accent-soft); }.note-search.has-value #clearNoteSearch{ display:grid; }
 
   .d-list{ padding:4px 10px 8px; }
   .d-item{ position:relative; display:grid; grid-template-columns:15px minmax(0,1fr) auto; align-items:center; gap:9px; padding:10px 12px; border-radius:11px; cursor:pointer; transition:background .16s ease,transform .16s cubic-bezier(.2,.9,.3,1.2); }
@@ -439,12 +443,14 @@
   .d-foot .who b{ font-size:.8rem; font-weight:600; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
   .d-foot .icon-sbtn{ flex:0 0 auto; width:38px; height:38px; padding:0; }
   .d-foot .agent-mic.on{ color:var(--accent); border-color:var(--accent-line); background:var(--accent-soft); }
-  .d-foot.has-account{ display:grid; grid-template-columns:minmax(0,1fr) 42px 42px; align-items:center; gap:10px; padding:12px 14px; }
+  .d-foot.has-account{ display:grid; grid-template-columns:minmax(0,1fr) 42px 42px 42px; align-items:center; gap:10px; padding:12px 14px; }
   .d-foot.has-account .account-summary{ display:contents; }
   .d-foot.has-account .who{ grid-column:1; grid-row:1; min-height:42px; }
   .d-foot.has-account > .sbtn{ grid-row:1; width:42px; height:42px; padding:0; }
   .d-foot.has-account > .agent-mic{ grid-column:2; }
-  .d-foot.has-account > .settings-gear{ grid-column:3; }
+  .d-foot.has-account > .upcoming-button{ grid-column:3; }
+  .d-foot.has-account > .settings-gear{ grid-column:4; }
+  .upcoming-button.on{ color:var(--accent) !important; border-color:var(--accent-line) !important; background:var(--accent-soft) !important; box-shadow:0 0 0 3px rgba(255,255,255,.02); }
   .storage-usage{ position:relative; display:grid; grid-template-columns:16px minmax(0,1fr) max-content; align-items:center; gap:8px; width:100%; min-height:38px; padding:9px 10px; border:1px solid var(--line); border-radius:10px; color:var(--ink-dim); background:linear-gradient(135deg,rgba(255,255,255,.045),rgba(255,255,255,.018)); line-height:1; cursor:pointer; outline:none; transition:border-color .14s,background .14s; }
   .d-foot.has-account .storage-usage{ grid-column:1 / -1; grid-row:2; grid-template-columns:18px minmax(0,1fr) max-content; gap:10px; min-height:44px; padding:6px 12px; border-radius:12px; }
   .storage-usage:hover,.storage-usage:focus{ border-color:var(--accent-line); background:linear-gradient(135deg,var(--accent-soft),rgba(255,255,255,.035)); }
@@ -774,7 +780,7 @@
       <div class="sec-h"><button class="section-toggle" id="tagsToggleBtn" type="button" aria-controls="tags" aria-expanded="true" title="Collapse tags"><span>Tags</span><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m6 9 6 6 6-6"/></svg></button><button id="addTagBtn" title="New tag">＋</button></div>
       <div id="tags"></div>
       <div class="sec-h"><span id="listLabel">All notes</span><div class="list-tools"><button id="selectNotesBtn" title="Select notes" aria-label="Select notes">✓</button><button id="listToolsBtn" title="Filter and sort" aria-label="Filter and sort notes">⇅</button></div></div>
-      <label class="note-search" id="noteSearchWrap"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="11" cy="11" r="6"/><path d="m16 16 4 4"/></svg><input id="noteSearch" type="search" autocomplete="off" placeholder="Search notes…" aria-label="Search notes"><button id="clearNoteSearch" type="button" aria-label="Clear note search">×</button></label>
+      <label class="note-search" id="noteSearchWrap"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="11" cy="11" r="6"/><path d="m16 16 4 4"/></svg><input id="noteSearch" type="search" autocomplete="off" placeholder="Search notes…" aria-label="Search notes"><button class="quick-add-note" id="quickAddNoteBtn" type="button" title="Add note from search" aria-label="Add note from search">＋</button><button id="clearNoteSearch" type="button" aria-label="Clear note search">×</button></label>
       <div class="d-list" id="list"></div>
     </div>
     <div class="d-foot" id="dfoot"></div>
@@ -918,7 +924,7 @@
     var snapshot=backupSnapshot(item||{});
     /* `updated` changes on every keystroke, but it is not document content.
        Ignoring it keeps automatic history tied to real edits. */
-    delete snapshot.updated;
+    delete snapshot.updated; delete snapshot.version; delete snapshot.versionChangedAt;
     return JSON.stringify(snapshot);
   }
   function documentChangeSize(before,after){
@@ -953,7 +959,39 @@
     try{ localStorage.setItem(DOCUMENT_BACKUP_KEY,JSON.stringify(documentBackups)); return entry; }catch(e){ list.shift(); console.warn("Document backup could not be saved:",e); return null; }
   }
   function documentBackupList(item){ return item&&documentBackups[item.id]||[]; }
+  function revisionPayload(item){ var copy=cloneData(item||{}); delete copy.updated; delete copy.version; delete copy.versionChangedAt; return stableStringify(copy); }
+  function revisionWeight(before,after){ return Math.max(1,Math.ceil(documentChangeSize(revisionPayload(before),revisionPayload(after))/120)); }
+  function syncStateSignature(data){
+    var copy=cloneData(data||{});
+    ["version","versionChangedAt","lastLocalChange","lastCloudSync","pendingCloudSync","syncBaseline","selectedItemIds","selectingNotes","tagAssignMode","noteSearch","sidebarView"].forEach(function(key){ delete copy[key]; });
+    var itemFingerprints={};
+    (copy.items||[]).forEach(function(item){ if(item&&item.id) itemFingerprints[item.id]=itemSyncSignature(item); });
+    copy.items=itemFingerprints;
+    return stableStringify(copy);
+  }
+  function bumpLocalVersions(previous){
+    previous=previous&&typeof previous==="object"?previous:{};
+    var beforeById={}, changedWeight=0, currentIds={};
+    (previous.items||[]).forEach(function(item){ if(item&&item.id) beforeById[item.id]=item; });
+    (state.items||[]).forEach(function(item){
+      if(!item||!item.id) return;
+      ensureItemRevision(item); currentIds[item.id]=true;
+      var before=beforeById[item.id];
+      if(!before||itemSyncSignature(item)!==itemSyncSignature(before)){
+        var delta=revisionWeight(before,item), previousVersion=before?Math.max(1,Number(before.version)||Number(before.updated)||1):0;
+        item.version=Math.max(1,Number(item.version)||1,previousVersion)+delta;
+        item.versionChangedAt=Number(item.updated)||Date.now();
+        changedWeight+=delta;
+      }
+    });
+    (previous.items||[]).forEach(function(item){ if(item&&item.id&&!currentIds[item.id]) changedWeight+=1; });
+    if(syncStateSignature(previous)!==syncStateSignature(state)){
+      state.version=Math.max(1,Number(state.version)||1,Number(previous.version)||0)+Math.max(1,changedWeight);
+      state.versionChangedAt=Date.now();
+    }
+  }
   function persist(){
+    var previous=readKey(KEY); bumpLocalVersions(previous);
     captureAutoBackup(false);
     var activeDocument=current(), documentEntry=captureDocumentBackup(activeDocument,false,"automatic");
     if(documentEntry&&currentUser&&db) writeCloudDocumentBackup(activeDocument,documentEntry.kind,documentEntry.created,documentEntry.data).catch(function(error){ console.warn("Automatic document backup could not reach the cloud:",error); });
@@ -966,9 +1004,9 @@
   function chapterBlock(title,body){ var block={id:uid(),type:"chapter",title:title||"",text:body||""}; block.html=escapeHtml(block.text).replace(/\n/g,"<br>"); return block; }
   function newYoutubeScriptNote(){ var it=newNoteItem(); it.template="youtube-script"; it.blocks=[chapterBlock("Intro",""),chapterBlock("Main",""),chapterBlock("Outro","")]; syncNoteBody(it); return it; }
   function newNoteItem(){ var it=baseItem(); it.type="note"; it.body=""; it.attachments=[]; it.blocks=[{id:uid(),type:"text",text:""}]; return it; }
-  function newTodoItem(){ var it=newNoteItem(); it.todo=true; it.done=false; it.completed=null; return it; }
+  function newTodoItem(){ var it=newNoteItem(); it.todo=true; it.done=false; it.completed=null; it.dueDate=""; return it; }
   function newAudioItem(){ var it=baseItem(); it.type="audio"; it.recordings=[]; return it; }
-  function newTask(){ return {id:uid(),text:"",description:"",body:"",attachments:[],blocks:[textBlock("")],subtasks:[],done:false,completed:null,detailsCollapsed:true}; }
+  function newTask(){ return {id:uid(),text:"",description:"",body:"",attachments:[],blocks:[textBlock("")],subtasks:[],done:false,completed:null,dueDate:"",detailsCollapsed:true}; }
   function newAgentItem(){ var it=baseItem(); it.type="agent"; it.title="New Agent"; it.agent={tab:"chat"}; normalizeAgent(it); return it; }
   function newWorkoutRoutine(){ var it=baseItem(); it.type="workout"; it.title="New Workout Routine"; it.workout={sessions:[],lastCompleted:null}; it.blocks=[textBlock("")]; it.body=""; return it; }
   var NOTE_INSERT_DEFAULTS={file:true,paragraph:true,comment:true,prompt:true,heading:true,chapter:true,group:true,code:true};
@@ -1074,6 +1112,7 @@
   function ensureTodoTaskDetails(task){
     if(!task.id) task.id=uid();
     if(typeof task.text!=="string") task.text=task.title||"";
+    if(typeof task.dueDate!=="string") task.dueDate="";
     if(typeof task.description!=="string") task.description="";
     if(!Array.isArray(task.subtasks)) task.subtasks=[];
     if(!Array.isArray(task.blocks)||!task.blocks.length){ task.body=task.body||task.description||""; }
@@ -1110,15 +1149,23 @@
     delete it.todos;
   }
   function hasLegacyItems(items){ return (items||[]).some(function(item){ return item&&(item.type==="script"||item.type==="todo"||!!serializedScriptSectionsForNote(item)); }); }
+  function ensureItemRevision(it){
+    if(!it||typeof it!=="object") return;
+    it.version=Math.max(1,Number(it.version)||Number(it.updated)||1);
+    it.versionChangedAt=Number(it.versionChangedAt)||Number(it.updated)||Date.now();
+    if(it.todo&&typeof it.dueDate!=="string") it.dueDate="";
+  }
   function rawStateBackupPayload(data){
     data=data||{};
     return {app:"second-brain",version:13,items:data.items||[],folders:data.folders||[],tags:data.tags||[],preferences:data.preferences||{},created:Date.now()};
   }
   function normalizeItem(it){
     if(!it||typeof it!=="object") return;
+    ensureItemRevision(it);
     if(it.iconColor&&!cleanIconColor(it.iconColor)) delete it.iconColor;
     if(it.type==="script") migrateScriptToNote(it);
     if(it.type==="todo") migrateTodoToNote(it);
+    if(it.todo&&typeof it.dueDate!=="string") it.dueDate="";
     if(it.type==="note"){ ensureNoteBlocks(it); if(it.todo){ it.done=!!it.done; if(!it.done) it.completed=null; } }
     if(it.type==="audio") ensureAudioItem(it);
     if(it.type==="agent") normalizeAgent(it);
@@ -1190,7 +1237,7 @@
       createItem:function(item){ createItem(item); },
       openItem:function(id){
         if(!state.items.some(function(entry){ return entry.id===id; })) return false;
-        state.currentId=id; app.classList.remove("open"); persist(); renderAll(); return true;
+        state.currentId=id; exitSidebarFocus(); app.classList.remove("open"); persist(); renderAll(); return true;
       },
       scheduleUsageRefresh:function(delay){ scheduleAccountUsageRefresh(delay); },
       forEachOwnedFile:function(handler){ forEachContentDocument(function(doc,item){ contentFiles(doc).forEach(function(file){ handler(file,doc,item); }); }); }
@@ -1216,7 +1263,7 @@
   }
 
   var state=loadLocal();
-  if(!state||!state.items){ state={ items:[], tags:[], currentId:null, motion:true, theme:"nebula", filterTag:null }; state.items.push(newNoteItem()); state.currentId=state.items[0].id; }
+  if(!state||!state.items){ state={ items:[], tags:[], currentId:null, motion:true, theme:"nebula", filterTag:null, sidebarView:"all", version:1 }; state.items.push(newNoteItem()); state.currentId=state.items[0].id; }
   state.folders=state.folders||[]; state.tags=state.tags||[]; state.items=state.items||[];
   if(typeof state.motion!=="boolean") state.motion=true;
   if(!state.theme) state.theme="nebula";
@@ -1247,6 +1294,8 @@
   if(state.mobileFolderFocus!==undefined) delete state.mobileFolderFocus;
   if(typeof state.readChapterNames!=="boolean") state.readChapterNames=false;
   state.filterTag=state.filterTag||null; state.selectedItemIds=Array.isArray(state.selectedItemIds)?state.selectedItemIds:[]; state.selectingNotes=!!state.selectingNotes; state.tagAssignMode=!!state.tagAssignMode;
+  state.sidebarView=state.sidebarView==="upcoming"?"upcoming":"all";
+  state.version=Math.max(1,Number(state.version)||Number(state.updated)||1);
   state.noteSearch=typeof state.noteSearch==="string"?state.noteSearch:"";
   state.listSort=state.listSort||"updated";
   agentSettings();
@@ -1267,7 +1316,7 @@
   if(!state.currentId || !state.items.some(function(i){return i.id===state.currentId;})) state.currentId=state.items[0].id;
 
   function blankDeviceState(){
-    return {items:[],folders:[],tags:[],currentId:null,motion:true,theme:"nebula",darkness:82,enabledTypes:defaultEnabledTypes(),typeDefaults:TYPE_DEFAULTS_VERSION,noteInsertOptions:{file:true,paragraph:true,comment:true,prompt:true,heading:true,chapter:true,group:true,code:true},tagsCollapsed:false,allNotesName:"All notes",readChapterNames:false,filterTag:null,tagAssignMode:false,noteSearch:"",listSort:"updated",agentSettings:defaultAgentSettings(),pendingCloudSync:false,syncBaseline:null};
+    return {items:[],folders:[],tags:[],currentId:null,motion:true,theme:"nebula",darkness:82,enabledTypes:defaultEnabledTypes(),typeDefaults:TYPE_DEFAULTS_VERSION,noteInsertOptions:{file:true,paragraph:true,comment:true,prompt:true,heading:true,chapter:true,group:true,code:true},tagsCollapsed:false,allNotesName:"All notes",readChapterNames:false,filterTag:null,sidebarView:"all",tagAssignMode:false,noteSearch:"",listSort:"updated",version:1,agentSettings:defaultAgentSettings(),pendingCloudSync:false,syncBaseline:null};
   }
   function clearAttachmentStore(){
     if(!window.indexedDB) return;
@@ -1398,6 +1447,50 @@
   function itemText(it){ var mod=itemModule(it); if(mod&&mod.text) return mod.text(it); if(it.type==="workout") return (it.blocks||[]).map(blockPlainText).filter(Boolean).join("\n"); if(it.type==="script") return (it.sections||[]).map(function(x){return x.body;}).join(" "); if(it.type==="todo") return (it.todos||[]).map(function(task){ return [task.text,taskDetailsText(task),(task.subtasks||[]).map(function(subtask){ return subtask.text||""; }).join(" ")].filter(Boolean).join(" "); }).join(" "); if(it.type==="audio") return (it.recordings||[]).map(function(recording){ return recording.name||""; }).join(" "); if(it.type==="agent") return [it.title,(it.agent||{}).longTermMemory,(it.agent||{}).shortTermMemory,(it.agent||{}).instructions].join(" "); if(it.type==="note"&&Array.isArray(it.blocks)) return it.blocks.map(blockPlainText).filter(Boolean).join("\n"); return it.body||""; }
   function itemWords(it){ return words(itemText(it)); }
   function itemLabel(it){ var mod=itemModule(it); if(mod&&mod.label) return mod.label; return isTodoNote(it)||it.type==="todo"?"Todo":(it.type==="script"?"YouTube Script":(it.type==="audio"?"Audio":(it.type==="agent"?"Agent":(it.type==="workout"?"Workout Routine":"Note")))); }
+  function dateKey(date){ var d=date instanceof Date?date:new Date(date); if(isNaN(d.getTime())) return ""; return d.getFullYear()+"-"+String(d.getMonth()+1).padStart(2,"0")+"-"+String(d.getDate()).padStart(2,"0"); }
+  function dateFromKey(value){ if(!/^\d{4}-\d{2}-\d{2}$/.test(value||"")) return null; var d=new Date(value+"T00:00:00"); return isNaN(d.getTime())?null:d; }
+  function dueDateLabel(value){
+    var d=dateFromKey(value); if(!d) return "";
+    var today=dateFromKey(dateKey(new Date())), diff=Math.round((d-today)/86400000);
+    if(diff<0) return "Overdue · "+d.toLocaleDateString(undefined,{month:"short",day:"numeric"});
+    if(diff===0) return "Today";
+    if(diff===1) return "Tomorrow";
+    if(diff<7) return d.toLocaleDateString(undefined,{weekday:"short"});
+    return d.toLocaleDateString(undefined,{month:"short",day:"numeric"});
+  }
+  function dueDateClass(value){ var d=dateFromKey(value), today=dateFromKey(dateKey(new Date())); if(!d||!today) return ""; var diff=Math.round((d-today)/86400000); return diff<0?"overdue":diff===0?"today":""; }
+  function parseDueDateText(text){
+    var raw=String(text||""), lower=raw.toLowerCase(), base=new Date(), target=null, match;
+    match=lower.match(/\bin\s+(?:a\s+)?(\d+)\s+(day|days|week|weeks|month|months)\b/);
+    if(match){ target=new Date(base); var amount=Number(match[1])||0; if(/^week/.test(match[2])) amount*=7; if(/^month/.test(match[2])) target.setMonth(target.getMonth()+Number(match[1]||0)); else target.setDate(target.getDate()+amount); return dateKey(target); }
+    if(/\bin\s+a\s+day\b/.test(lower)){ target=new Date(base); target.setDate(target.getDate()+1); return dateKey(target); }
+    if(/\bin\s+a\s+week\b/.test(lower)){ target=new Date(base); target.setDate(target.getDate()+7); return dateKey(target); }
+    if(/\btomorrow\b/.test(lower)){ target=new Date(base); target.setDate(target.getDate()+1); return dateKey(target); }
+    if(/\btoday\b|\btonight\b/.test(lower)) return dateKey(base);
+    match=lower.match(/\bnext\s+(monday|tuesday|wednesday|thursday|friday|saturday|sunday)\b/);
+    if(match){ var days={sunday:0,monday:1,tuesday:2,wednesday:3,thursday:4,friday:5,saturday:6}, delta=(days[match[1]]-base.getDay()+7)%7||7; target=new Date(base); target.setDate(target.getDate()+delta); return dateKey(target); }
+    match=lower.match(/\b(?:on|by)\s+([a-z]{3,9})\s+(\d{1,2})(?:st|nd|rd|th)?\b/);
+    if(match){ var months={january:0,jan:0,february:1,feb:1,march:2,mar:2,april:3,apr:3,may:4,june:5,jun:5,july:6,jul:6,august:7,aug:7,september:8,sep:8,october:9,oct:9,november:10,nov:10,december:11,dec:11}; if(months[match[1]]!==undefined){ target=new Date(base.getFullYear(),months[match[1]],Number(match[2])); if(target<new Date(base.getFullYear(),base.getMonth(),base.getDate())) target.setFullYear(target.getFullYear()+1); return dateKey(target); } }
+    match=raw.match(/\b(20\d{2})-(\d{2})-(\d{2})\b/); if(match){ target=new Date(Number(match[1]),Number(match[2])-1,Number(match[3])); return dateKey(target); }
+    return "";
+  }
+  function itemDueDate(it){
+    if(!it) return "";
+    if(it.dueDate&&!it.done) return it.dueDate;
+    var dates=(it.todos||[]).filter(function(task){ return task&&!task.done&&task.dueDate; }).map(function(task){ return task.dueDate; }).filter(function(value){ return dateFromKey(value); }).sort();
+    return dates[0]||"";
+  }
+  function todoMetaText(it){
+    var due=itemDueDate(it);
+    if(isTodoNote(it)) return it.done?"Completed":(due?"Due "+dueDateLabel(due):"Open");
+    var tasks=it.todos||[], remaining=tasks.filter(function(task){ return !task.done; }).length;
+    return remaining+" left"+(due?" · "+dueDateLabel(due):"");
+  }
+  function upcomingItems(){
+    return state.items.filter(function(it){ return !!itemDueDate(it); }).sort(function(a,b){ return itemDueDate(a).localeCompare(itemDueDate(b))||((b.updated||0)-(a.updated||0)); });
+  }
+  function updateUpcomingButton(){ var button=$("upcomingBtn"); if(button) button.classList.toggle("on",state.sidebarView==="upcoming"); }
+  function setSidebarView(view){ state.sidebarView=view==="upcoming"?"upcoming":"all"; if(state.sidebarView==="upcoming") state.filterTag=null; persist(); renderTags(); renderList(); updateUpcomingButton(); }
   function setTodoDone(it,done){
     it.done=typeof done==="boolean"?done:!it.done;
     it.completed=it.done?Date.now():null;
@@ -1524,12 +1617,14 @@
   var ICON_NOTE='<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M5 3h9l5 5v13a1 1 0 0 1-1 1H5a1 1 0 0 1-1-1V4a1 1 0 0 1 1-1z"/><path d="M14 3v5h5"/></svg>';
   var ICON_EDIT='<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 20h9"/><path d="M16.5 3.5a2.12 2.12 0 0 1 3 3L7 19l-4 1 1-4Z"/></svg>';
   var ICON_DOWNLOAD='<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 3v12"/><path d="m7 10 5 5 5-5"/><path d="M5 21h14"/></svg>';
+  var ICON_COPY='<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="9" y="9" width="12" height="12" rx="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg>';
   var ICON_DUPLICATE='<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="9" y="9" width="11" height="11" rx="2"/><path d="M5 15V5a2 2 0 0 1 2-2h10"/></svg>';
   var ICON_UP='<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m6 15 6-6 6 6"/></svg>';
   var ICON_DOWN='<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m6 9 6 6 6-6"/></svg>';
   var ICON_LOCK='<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="5" y="10" width="14" height="11" rx="2"/><path d="M8 10V7a4 4 0 0 1 8 0v3"/></svg>';
   var ICON_UNLOCK='<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="5" y="10" width="14" height="11" rx="2"/><path d="M8 10V7a4 4 0 0 1 7.2-2.4"/></svg>';
   var ICON_DELETE='<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 6h18M8 6V4h8v2M19 6l-1 14H6L5 6"/></svg>';
+  var ICON_CALENDAR='<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="5" width="18" height="16" rx="2"/><path d="M16 3v4M8 3v4M3 10h18"/><path d="M8 14h.01M12 14h.01M16 14h.01M8 18h.01M12 18h.01"/></svg>';
   var ICON_TODO='<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="4" y="4" width="16" height="16" rx="3"/><path d="M8 12l2.5 2.5L16 9"/></svg>';
   var ICON_AUDIO='<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3v11a4 4 0 1 1-3-3.87V6l9-2v9a4 4 0 1 1-3-3.87V4.78z"/></svg>';
   var ICON_AGENT='<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="8" r="3.5"/><path d="M5 21c.8-4 3.2-6 7-6s6.2 2 7 6"/><path d="M19 5v4M17 7h4"/></svg>';
@@ -1816,21 +1911,21 @@
   var lastListSignature=null, justAddedId=null, justAddedTimer=null;
   function renderList(){
     trackTimeSpent();
-    var items=visibleItems(!!state.tagAssignMode);
+    var items=state.sidebarView==="upcoming"?upcomingItems():visibleItems(!!state.tagAssignMode);
     state.selectedItemIds=state.selectedItemIds.filter(function(id){ return state.items.some(function(item){ return item.id===id; }); });
     if(selectNotesBtn){
       var assignLabel=state.filterTag&&state.tagAssignMode?((state.selectedItemIds.length?"Add "+state.selectedItemIds.length:"Add notes")):"";
       selectNotesBtn.textContent=state.selectingNotes?(state.selectedItemIds.length?(state.tagAssignMode?assignLabel:"Tag "+state.selectedItemIds.length):"Cancel"):(state.filterTag?"＋":"✓");
       selectNotesBtn.title=state.selectingNotes?(state.selectedItemIds.length?(state.tagAssignMode?"Add selected notes to this tag":"Tag selected notes"):"Cancel selection"):(state.filterTag?"Add notes to this tag":"Select notes");
     }
-    var lbl = state.filterTag ? ((tagById(state.filterTag)||{}).name||"Tag") : allNotesTitle();
+    var lbl = state.sidebarView==="upcoming"?"Upcoming":(state.filterTag ? ((tagById(state.filterTag)||{}).name||"Tag") : allNotesTitle());
     if(state.tagAssignMode&&state.filterTag) lbl="Add to "+((tagById(state.filterTag)||{}).name||"tag");
     listLabel.textContent=lbl+"  ·  "+items.length;
     listEl.innerHTML="";
     var signature=items.map(function(it){ return it.id; }).join("|");
     listEl.classList.toggle("enter",signature!==lastListSignature);
     lastListSignature=signature;
-    if(!items.length){ var e=document.createElement("div"); e.className="tag-empty"; e.style.padding="10px 12px"; e.textContent="Nothing here yet."; listEl.appendChild(e); return; }
+    if(!items.length){ var e=document.createElement("div"); e.className="tag-empty"; e.style.padding="10px 12px"; e.textContent=state.sidebarView==="upcoming"?"Nothing due yet.":"Nothing here yet."; listEl.appendChild(e); updateUpcomingButton(); return; }
     items.forEach(function(it,index){
       var todoItem=isTodoNote(it)||it.type==="todo";
       var selected=state.selectedItemIds.indexOf(it.id)>=0;
@@ -1841,7 +1936,7 @@
       var todoOpen=it.type==="todo"?(it.todos||[]).filter(function(x){return !x.done;}).length:null;
       var mod=itemModule(it);
       var icon=mod&&mod.icon?mod.icon:(it.type==="script"?ICON_SCRIPT:(todoItem?ICON_TODO:(it.type==="audio"?ICON_AUDIO:(it.type==="agent"?ICON_AGENT:ICON_NOTE))));
-      var metaText=mod&&mod.meta?mod.meta(it):(it.type==="script"?((it.sections||[]).filter(function(s){return s.kind!=="cue";}).length+" ch · "+itemWords(it)+" words"):(todoItem?(it.done?"Completed":"Open"):(it.type==="audio"?audioMetaText(it):(it.type==="agent"?agentMetaText(it):itemWords(it)+" words"))));
+      var metaText=mod&&mod.meta?mod.meta(it):(it.type==="script"?((it.sections||[]).filter(function(s){return s.kind!=="cue";}).length+" ch · "+itemWords(it)+" words"):(todoItem?todoMetaText(it):(it.type==="audio"?audioMetaText(it):(it.type==="agent"?agentMetaText(it):itemWords(it)+" words"))));
       var iconColor=itemIconColor(it), iconStyle=iconColor?' style="color:'+iconColor+'"':"", todoStyle=iconColor?' style="border-color:'+iconColor+';'+(it.done?'background:'+iconColor+';color:#08080b;':'color:'+iconColor+';')+'"':"";
       var leading=todoItem?'<button class="side-todo-check'+(it.done?" done":"")+'"'+todoStyle+' aria-label="'+(it.done?"Mark incomplete":"Mark complete")+'">'+(it.done?"✓":"")+'</button>':'<span class="item-icon"'+iconStyle+'>'+icon+'</span>';
       var deleteLabel=todoItem&&it.done?"Delete?":"✕";
@@ -1858,15 +1953,16 @@
           taskRow.innerHTML='<button class="side-task-check" aria-label="'+(task.done?"Mark incomplete":"Mark complete")+'">'+(task.done?"✓":"")+'</button><button class="side-task-open"></button>';
           taskRow.querySelector(".side-task-open").textContent=task.text||"Untitled task";
           taskRow.querySelector(".side-task-check").onclick=function(e){ e.stopPropagation(); task.done=!task.done; task.completed=task.done?Date.now():null; it.updated=Date.now(); persist(); renderList(); if(current().id===it.id) renderMain(); };
-          taskRow.querySelector(".side-task-open").onclick=function(e){ e.stopPropagation(); if(activeAudioRecorder&&activeAudioRecorder.itemId!==it.id){ showToast("Finish the current recording before leaving it",true); return; } state.currentId=it.id; app.classList.remove("open"); renderList(); renderMain(); };
+          taskRow.querySelector(".side-task-open").onclick=function(e){ e.stopPropagation(); if(activeAudioRecorder&&activeAudioRecorder.itemId!==it.id){ showToast("Finish the current recording before leaving it",true); return; } state.currentId=it.id; exitSidebarFocus(); app.classList.remove("open"); renderList(); renderMain(); };
           taskBox.appendChild(taskRow);
         });
         el.appendChild(taskBox);
       }
-      el.onclick=function(e){ if(e.target.closest(".dx")||e.target.closest(".side-task")||e.target.closest(".side-todo-check")||e.target.closest(".note-select")) return; if(state.selectingNotes){ toggleNoteSelection(it.id,!selected); return; } if(activeAudioRecorder&&activeAudioRecorder.itemId!==it.id){ showToast("Finish the current recording before leaving it",true); return; } state.currentId=it.id; app.classList.remove("open"); renderList(); renderMain(); };
+      el.onclick=function(e){ if(e.target.closest(".dx")||e.target.closest(".side-task")||e.target.closest(".side-todo-check")||e.target.closest(".note-select")) return; if(state.selectingNotes){ toggleNoteSelection(it.id,!selected); return; } if(activeAudioRecorder&&activeAudioRecorder.itemId!==it.id){ showToast("Finish the current recording before leaving it",true); return; } state.currentId=it.id; exitSidebarFocus(); app.classList.remove("open"); renderList(); renderMain(); };
       el.querySelector(".dx").onclick=function(e){ e.stopPropagation(); if(todoItem&&it.done) delItem(it.id,"Delete this completed todo? This can't be undone."); else openItemActions(e.currentTarget,it); };
       listEl.appendChild(el);
     });
+    updateUpcomingButton();
   }
   function renderAll(){ renderTags(); renderList(); renderMain(); }
   function addSelectedNotesToTag(){
@@ -2478,9 +2574,11 @@
     var audioMenu=document.createElement("button"); audioMenu.type="button"; audioMenu.className="note-chapter-audio-menu"; audioMenu.textContent="…"; audioMenu.title="Section audio actions"; audioMenu.setAttribute("aria-label","Section audio actions");
     audioMenu.style.display=runtimeApiKeys.elevenlabs&&ttsTextForChapter(block).trim()?"grid":"none";
     audioMenu.onclick=function(){ openMenu(audioMenu,function(menu){
-      var menuTitle=document.createElement("div"); menuTitle.className="mtitle"; menuTitle.textContent="Section audio"; menu.appendChild(menuTitle);
-      menu.appendChild(mkItem(ICON_DOWNLOAD,"Download section as audio",false,function(){ closeMenu(); downloadTtsText(ttsTextForChapter(block).trim(),audioFilenameForSection(note,block)); }));
-    }); };
+       var menuTitle=document.createElement("div"); menuTitle.className="mtitle"; menuTitle.textContent="Section audio"; menu.appendChild(menuTitle);
+       menu.appendChild(mkItem(ICON_DOWNLOAD,"Download section as audio",false,function(){ closeMenu(); downloadTtsText(ttsTextForChapter(block).trim(),audioFilenameForSection(note,block)); }));
+       menu.appendChild(mkItem(ICON_COPY,"Copy section text",false,function(){ closeMenu(); copy(block.text||richTextToPlain(block.html||""),function(){ showToast("Copied section text"); }); }));
+       var remove=mkItem(ICON_DELETE,"Delete section",false,function(){ if(!confirm('Delete section "'+(block.title||"this section")+'"?')) return; var index=note.blocks.indexOf(block); if(index<0) return; note.blocks.splice(index,1); if(!note.blocks.length) note.blocks.push(chapterBlock("","")); syncNoteBody(note); touchContent(note); closeMenu(); persist(); renderMain(); renderList(); showToast("Section deleted"); }); remove.className+=" danger"; menu.appendChild(remove);
+     }); };
     head.appendChild(index); head.appendChild(title); head.appendChild(listen); head.appendChild(audioMenu); wrap.appendChild(head);
     var bodyWrap=document.createElement("div"); bodyWrap.className="note-paragraph-wrap";
     var body=document.createElement("div"); body.className="note-paragraph"; body.contentEditable="true"; body.setAttribute("role","textbox"); body.setAttribute("aria-multiline","true"); body.setAttribute("data-note-block",block.id); body.setAttribute("data-placeholder","Write this chapter…"); body.innerHTML=block.html||"";
@@ -2563,6 +2661,9 @@
       var input=row.querySelector(".todo-text"); input.value=task.text||"";
       input.oninput=function(){ task.text=input.value; it.updated=Date.now(); save(); refreshListMeta(); };
       row.querySelector(".todo-check").onclick=function(){ task.done=!task.done; task.completed=task.done?Date.now():null; it.updated=Date.now(); persist(); renderMain(); renderList(); };
+      var dueButton=document.createElement("button"); dueButton.type="button"; dueButton.className="todo-due"+(dueDateClass(task.dueDate)?" "+dueDateClass(task.dueDate):""); dueButton.style.gridColumn="2"; dueButton.innerHTML=ICON_CALENDAR+"<span>"+(task.dueDate?dueDateLabel(task.dueDate):"Add due date")+"</span>"; dueButton.title=task.dueDate?"Change due date":"Add due date";
+      dueButton.onclick=function(){ openTodoDueDatePicker(dueButton,task); };
+      row.appendChild(dueButton);
 
       var details=document.createElement("details"); details.className="todo-details"; details.open=!task.detailsCollapsed;
       var detailSummary=document.createElement("summary"); detailSummary.textContent="Details"; details.appendChild(detailSummary);
@@ -2794,6 +2895,7 @@
     var node=listNodeFor(it.id); if(!node) return;
     var m=node.querySelector(".dt-meta .m");
     var mod=itemModule(it);
+    if(m&&isTodoNote(it)){ m.textContent=todoMetaText(it); return; }
     if(m) m.textContent=mod&&mod.meta?mod.meta(it):(isTodoNote(it)?(it.done?"Completed":"Open"):(it.type==="script"?((it.sections||[]).filter(function(s){return s.kind!=="cue";}).length+" ch · "+itemWords(it)+" words"):(it.type==="todo"?((it.todos||[]).filter(function(x){return !x.done;}).length+" left"):(it.type==="audio"?audioMetaText(it):(it.type==="agent"?agentMetaText(it):itemWords(it)+" words")))));
   }
 
@@ -2807,6 +2909,12 @@
       wrap.appendChild(colorButton);
     }
 
+    if(isTodoNote(it)||it.type==="todo"){
+      var dueButton=document.createElement("button"); dueButton.type="button"; dueButton.className="todo-due"+(dueDateClass(it.dueDate)?" "+dueDateClass(it.dueDate):""); dueButton.innerHTML=ICON_CALENDAR+'<span>'+(it.dueDate?dueDateLabel(it.dueDate):"Add due date")+'</span>'; dueButton.title=it.dueDate?"Change due date":"Add due date";
+      dueButton.onclick=function(){ openTodoDueDatePicker(dueButton,it); };
+      wrap.appendChild(dueButton);
+    }
+
     (it.tagIds||[]).forEach(function(id){
       var t=tagById(id); if(!t) return;
       var chip=document.createElement("span"); chip.className="chip";
@@ -2818,6 +2926,16 @@
     addTag.onclick=function(){ openTagPick(addTag,it); };
     wrap.appendChild(addTag);
     return wrap;
+  }
+  function openTodoDueDatePicker(anchor,it){
+    openMenu(anchor,function(menu){
+      var title=document.createElement("div"); title.className="mtitle"; title.textContent="Due date"; menu.appendChild(title);
+      var row=document.createElement("div"); row.className="mrow";
+      var input=document.createElement("input"); input.type="date"; input.value=it.dueDate||""; input.setAttribute("aria-label","Due date");
+      input.onchange=function(){ it.dueDate=input.value; it.updated=Date.now(); closeMenu(); persist(); renderAll(); showToast(input.value?"Due date updated":"Due date cleared"); };
+      row.appendChild(input); menu.appendChild(row);
+      if(it.dueDate){ var clear=document.createElement("button"); clear.type="button"; clear.className="color-reset"; clear.textContent="Clear due date"; clear.onclick=function(){ it.dueDate=""; it.updated=Date.now(); closeMenu(); persist(); renderAll(); showToast("Due date cleared"); }; menu.appendChild(clear); }
+    });
   }
   function openNoteColorPicker(anchor,it){
     openMenu(anchor,function(m){
@@ -2898,9 +3016,11 @@
       var audioMenu=top.querySelector(".ch-audio-menu");
       audioMenu.style.display=runtimeApiKeys.elevenlabs&&ttsTextForSection(section).trim()?"inline-grid":"none";
       audioMenu.onclick=function(){ openMenu(audioMenu,function(menu){
-        var menuTitle=document.createElement("div"); menuTitle.className="mtitle"; menuTitle.textContent="Section audio"; menu.appendChild(menuTitle);
-        menu.appendChild(mkItem(ICON_DOWNLOAD,"Download section as audio",false,function(){ closeMenu(); downloadTtsText(ttsTextForSection(section).trim(),audioFilenameForSection(it,section)); }));
-      }); };
+         var menuTitle=document.createElement("div"); menuTitle.className="mtitle"; menuTitle.textContent="Section audio"; menu.appendChild(menuTitle);
+         menu.appendChild(mkItem(ICON_DOWNLOAD,"Download section as audio",false,function(){ closeMenu(); downloadTtsText(ttsTextForSection(section).trim(),audioFilenameForSection(it,section)); }));
+         menu.appendChild(mkItem(ICON_COPY,"Copy section text",false,function(){ closeMenu(); copy(section.body||"",function(){ showToast("Copied section text"); }); }));
+         var remove=mkItem(ICON_DELETE,"Delete section",false,function(){ if(!confirm('Delete section "'+(section.title||"this section")+'"?')) return; if(it.sections.length<=1){ section.title=""; section.body=""; } else it.sections.splice(i,1); it.updated=Date.now(); closeMenu(); persist(); renderMain(); renderList(); showToast("Section deleted"); }); remove.className+=" danger"; menu.appendChild(remove);
+       }); };
     }
     body.oninput=function(){ section.body=body.value; it.updated=Date.now(); grow(body); count(); if(!isCue){ updateChapterTtsButton(top.querySelector(".ch-listen"),section); top.querySelector(".ch-audio-menu").style.display=runtimeApiKeys.elevenlabs&&ttsTextForSection(section).trim()?"inline-grid":"none"; } updateMeta(); save(); refreshListMeta(); };
 
@@ -3354,6 +3474,25 @@
       var raw=cleanText(result&&result.choices&&result.choices[0]&&result.choices[0].message&&result.choices[0].message.content).replace(/^['\"`]+|['\"`]+$/g,"").replace(/[.!?]+$/g,"").trim();
       return raw.split(/\s+/).slice(0,6).join(" ");
     });
+  }
+  function quickNoteFallbackTitle(text){
+    var value=String(text||"").replace(/\bin\s+(?:a\s+)?\d+\s+(?:day|days|week|weeks|month|months)\b/ig,"").replace(/\b(?:today|tomorrow|tonight|next\s+(?:monday|tuesday|wednesday|thursday|friday|saturday|sunday))\b/ig,"").replace(/\s+/g," ").trim();
+    if(!value) value=String(text||"").trim();
+    value=value.split(/\s+/).slice(0,6).join(" ");
+    return value?value.charAt(0).toUpperCase()+value.slice(1):"Quick note";
+  }
+  function addQuickNoteFromSearch(){
+    var raw=cleanText(noteSearch&&noteSearch.value);
+    if(!raw){ showToast("Type something to add first",true); if(noteSearch) noteSearch.focus(); return; }
+    var note=newNoteItem(); note.todo=true; note.done=false; note.completed=null; note.dueDate=parseDueDateText(raw); note.blocks=[textBlock(raw)]; syncNoteBody(note); note.title=quickNoteFallbackTitle(raw); note.updated=Date.now();
+    state.items.unshift(note); state.currentId=note.id; state.sidebarView="all"; state.filterTag=null; state.selectingNotes=false; state.selectedItemIds=[]; state.tagAssignMode=false;
+    noteSearch.value=""; state.noteSearch=""; noteSearchWrap.classList.remove("has-value");
+    persist(); renderAll(); exitSidebarFocus(); app.classList.remove("open");
+    var titleTarget=canvas.querySelector(".title"); if(titleTarget) titleTarget.focus();
+    if(runtimeApiKeys.openai){
+      showToast(note.dueDate?"Added with due date — generating a title":"Generating a title");
+      generateNoteTitle(note).then(function(title){ if(title){ note.title=title; note.updated=Date.now(); persist(); renderMain(); renderList(); showToast("Title generated"); } }).catch(function(error){ console.warn("Quick note title generation failed:",error); showToast("Added note with a quick title",true); });
+    } else showToast(note.dueDate?"Added todo with due date":"Added note");
   }
   /* Reasoning models reject temperature outright. Rather than track which ones,
      retry once without it whenever the API names it in the error. */
@@ -4090,7 +4229,7 @@
   };
   function createItem(it){
     if(activeAudioRecorder){ showToast("Finish the current recording before creating another item",true); return; }
-    state.items.unshift(it); state.currentId=it.id; app.classList.remove("open");
+    state.items.unshift(it); state.currentId=it.id; exitSidebarFocus(); app.classList.remove("open");
     /* Flagged only for the render that follows, so the new row gets its accent
        flash once instead of on every later re-render. */
     justAddedId=it.id; clearTimeout(justAddedTimer); justAddedTimer=setTimeout(function(){ justAddedId=null; },700);
@@ -4121,6 +4260,7 @@
     noteSearchWrap.classList.toggle("has-value",!!noteSearch.value);
     noteSearch.oninput=function(){ state.noteSearch=noteSearch.value; noteSearchWrap.classList.toggle("has-value",!!noteSearch.value); renderList(); };
     $("clearNoteSearch").onclick=function(){ noteSearch.value=""; state.noteSearch=""; noteSearchWrap.classList.remove("has-value"); noteSearch.focus(); renderList(); };
+    $("quickAddNoteBtn").onclick=addQuickNoteFromSearch;
   }
   /* =================== sidebar focus ===================
      This is intentionally an in-app focus view, not the browser Fullscreen API.
@@ -4137,6 +4277,7 @@
     fullscreenButton.setAttribute("aria-label",fullscreenButton.title);
     fullscreenButton.classList.toggle("is-active",active);
   }
+  function exitSidebarFocus(){ if(app.classList.contains("sidebar-focus")){ app.classList.remove("sidebar-focus"); syncSidebarFocus(); } }
   if(fullscreenButton){
     fullscreenButton.onclick=function(){
       var active=app.classList.contains("sidebar-focus");
@@ -4176,11 +4317,16 @@
   function setOverlaySidebarOpen(open){
     if(!usesOverlaySidebar()) return;
     app.classList.remove("sidebar-collapsed");
+    if(open&&state.tagsCollapsed){ state.tagsCollapsed=false; persist(); renderTags(); }
     app.classList.toggle("open",open);
   }
   menuBtn.onclick=function(){
     if(usesOverlaySidebar()) setOverlaySidebarOpen(!app.classList.contains("open"));
-    else app.classList.toggle("sidebar-collapsed");
+    else {
+      var opening=app.classList.contains("sidebar-collapsed");
+      if(opening&&state.tagsCollapsed){ state.tagsCollapsed=false; persist(); renderTags(); }
+      app.classList.toggle("sidebar-collapsed");
+    }
   };
   scrim.onclick=function(){ setOverlaySidebarOpen(false); };
 
@@ -4563,7 +4709,7 @@
   }
   function itemSyncSignature(item){
     var copy=cloneData(item);
-    delete copy.updated;
+    delete copy.updated; delete copy.version; delete copy.versionChangedAt;
     /* Persist a compact fingerprint instead of duplicating every note body in
        localStorage as part of the sync baseline. Two independent 32-bit
        hashes make an accidental content collision exceptionally unlikely. */
@@ -4622,6 +4768,14 @@
     if(index>=0) items[index]=copy; else items.push(copy);
     includeLocalReferences(data,copy);
   }
+  function localChangeIsNewer(local,remote){
+    if(!local||!remote||local.kind==="delete"||remote.kind==="delete") return false;
+    var localVersion=Number(local.item&&local.item.version)||0, remoteVersion=Number(remote.item&&remote.item.version)||0;
+    if(localVersion!==remoteVersion) return localVersion>remoteVersion;
+    var localChangedAt=Number(local.item&&local.item.versionChangedAt)||Number(local.item&&local.item.updated)||0;
+    var remoteChangedAt=Number(remote.item&&remote.item.versionChangedAt)||Number(remote.item&&remote.item.updated)||0;
+    return localChangedAt>remoteChangedAt;
+  }
   function reconcileWithCloud(cloud){
     var result={cloud:cloneData(cloud),data:cloneData(cloud),conflicts:[],needsCloudWrite:false};
     if(!hasUsableSyncBaseline()) return result;
@@ -4630,12 +4784,20 @@
     Object.keys(localChanges).forEach(function(id){
       var local=localChanges[id], remote=cloudChanges[id];
       if(remote){
-        if(!sameChange(local,remote)) result.conflicts.push({id:id,local:local,cloud:remote});
+        if(sameChange(local,remote)) return;
+        /* Conflict resolution is automatic: a higher per-note revision wins;
+           equal revisions use the more recent edit timestamp. Cloud wins a
+           tie, including a delete, so a stale device cannot resurrect notes. */
+        if(localChangeIsNewer(local,remote)){ applyItemChange(result.data,local); result.needsCloudWrite=true; }
         return;
       }
       applyItemChange(result.data,local);
       result.needsCloudWrite=true;
     });
+    if(result.needsCloudWrite){
+      result.data.version=Math.max(1,Number(cloud.version)||0,Number(state.version)||0)+1;
+      result.data.versionChangedAt=Date.now();
+    }
     return result;
   }
   function useData(d){
@@ -4646,6 +4808,9 @@
     state.items.forEach(normalizeItem);
     state.folders=d.folders||[]; state.tags=d.tags||[];
     migrateFoldersToTags(state);
+    var highestItemVersion=state.items.reduce(function(highest,item){ return Math.max(highest,Number(item&&item.version)||Number(item&&item.updated)||1); },1);
+    state.version=Math.max(1,Number(d.version)||highestItemVersion);
+    state.versionChangedAt=Number(d.versionChangedAt)||Number(d.updated)||Date.now();
     state.currentId=state.items[0].id; state.filterTag=null; state.selectedItemIds=[]; state.selectingNotes=false; state.tagAssignMode=false;
     state.pendingCloudSync=false; state.lastCloudSync=d.updated||Date.now();
     applyAccountPreferences(d);
@@ -4653,7 +4818,7 @@
     if(canPersist){ try{ localStorage.setItem(KEY,JSON.stringify(state)); }catch(e){} }
     renderAll();
   }
-  function syncDataFromState(){ return {items:cloneData(state.items),folders:cloneData(state.folders),tags:cloneData(state.tags)}; }
+  function syncDataFromState(){ return {items:cloneData(state.items),folders:cloneData(state.folders),tags:cloneData(state.tags),version:Number(state.version)||1,versionChangedAt:Number(state.versionChangedAt)||Date.now()}; }
   function countContentItems(items){ return (items||[]).filter(function(item){ return hasContent([item]); }).length; }
   function mergeDeviceDataIntoCloud(cloud,device){
     var merged=cloneData(cloud||{}), usedItemIds={}, usedFolderIds={}, usedTagIds={}, folderIds={}, tagIds={};
@@ -4683,6 +4848,8 @@
       usedItemIds[copy.id]=copy; merged.items.push(copy);
     });
     merged.updated=Date.now();
+    merged.version=Math.max(1,Number(merged.version)||0,Number(device&&device.version)||0)+1;
+    merged.versionChangedAt=merged.updated;
     return merged;
   }
   var accountMergeChoice=null;
@@ -4955,12 +5122,38 @@
   function restoreLatestCloudBackup(){ getCloudBackups().then(function(list){ if(!list.length){ showToast("No cloud backup yet",true); return; } restoreBackup(list[0]); }).catch(function(e){ console.warn(e); showToast("Cloud backups could not be loaded",true); }); }
   function saveCloudNow(){
     if(!currentUser||!db||cloudSyncPaused||cloudSyncLoading) return;
+    return saveCloudNowVersioned();
     var sentAt=Date.now();
     db.collection("users").doc(currentUser.uid).set({ items:state.items, folders:state.folders, tags:state.tags, preferences:{theme:state.theme,motion:state.motion,darkness:state.darkness,enabledTypes:state.enabledTypes,typeDefaults:state.typeDefaults,noteInsertOptions:state.noteInsertOptions,tagsCollapsed:state.tagsCollapsed,allNotesName:state.allNotesName,readChapterNames:state.readChapterNames,agentSettings:agentSettings()}, theme:state.theme, motion:state.motion, updated:sentAt },{merge:true}).then(function(){
       state.lastCloudSync=sentAt;
       if((state.lastLocalChange||0)<=sentAt){ state.pendingCloudSync=false; recordSyncBaseline({items:state.items},sentAt); if(canPersist){ try{ localStorage.setItem(KEY,JSON.stringify(state)); }catch(e){} } }
       setSaveState("Saved to cloud","cloud"); syncPublicShares(); maybeCloudBackup(); scheduleAccountUsageRefresh(0);
     }).catch(function(e){ console.warn(e); setSaveState("Cloud sync failed — recovery copy kept","bad"); });
+  }
+  function saveCloudNowVersioned(){
+    var sentAt=Date.now(), ref=db.collection("users").doc(currentUser.uid), payload={ items:state.items, folders:state.folders, tags:state.tags, version:Number(state.version)||1, versionChangedAt:Number(state.versionChangedAt)||sentAt, preferences:{theme:state.theme,motion:state.motion,darkness:state.darkness,enabledTypes:state.enabledTypes,typeDefaults:state.typeDefaults,noteInsertOptions:state.noteInsertOptions,tagsCollapsed:state.tagsCollapsed,allNotesName:state.allNotesName,readChapterNames:state.readChapterNames,agentSettings:agentSettings()}, theme:state.theme, motion:state.motion, updated:sentAt };
+    var writePromise;
+    if(typeof db.runTransaction==="function"){
+      writePromise=db.runTransaction(function(transaction){
+        return transaction.get(ref).then(function(snapshot){
+          var remote=snapshot.exists?snapshot.data():null, remoteVersion=Number(remote&&remote.version)||0;
+          if(remote&&Array.isArray(remote.items)&&remoteVersion>=payload.version) return {skipped:true,remote:remote};
+          transaction.set(ref,payload,{merge:true});
+          return {skipped:false};
+        });
+      });
+    } else writePromise=ref.set(payload,{merge:true}).then(function(){ return {skipped:false}; });
+    return writePromise.then(function(result){
+      if(result&&result.skipped&&result.remote){
+        useData(result.remote);
+        state.pendingCloudSync=false; state.lastCloudSync=Number(result.remote.updated)||sentAt;
+        setSaveState("Updated from cloud","cloud"); syncStoredAttachments();
+        return;
+      }
+      state.lastCloudSync=sentAt;
+      if((state.lastLocalChange||0)<=sentAt){ state.pendingCloudSync=false; recordSyncBaseline({items:state.items},sentAt); if(canPersist){ try{ localStorage.setItem(KEY,JSON.stringify(state)); }catch(e){} } }
+      setSaveState("Saved to cloud","cloud"); syncPublicShares(); maybeCloudBackup(); scheduleAccountUsageRefresh(0);
+    }).catch(function(e){ console.warn(e); setSaveState("Cloud sync failed","bad"); });
   }
   window.addEventListener("beforeunload",saveCloudNow);
 
@@ -5004,6 +5197,9 @@
     mic.title="Talk to your AI collaborator"; mic.setAttribute("aria-label","Talk to your AI collaborator");
     mic.onclick=function(){ toggleCollabPanel(); };
     dfoot.appendChild(mic);
+    var upcoming=document.createElement("button"); upcoming.className="sbtn icon-sbtn upcoming-button"; upcoming.id="upcomingBtn"; upcoming.type="button"; upcoming.innerHTML=ICON_CALENDAR; upcoming.title="Upcoming todos"; upcoming.setAttribute("aria-label","Upcoming todos");
+    upcoming.onclick=function(){ setSidebarView(state.sidebarView==="upcoming"?"all":"upcoming"); };
+    dfoot.appendChild(upcoming);
     var g=document.createElement("button"); g.className="sbtn icon-sbtn settings-gear"; g.type="button";
     g.innerHTML='<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.7 1.7 0 0 0 .3 1.9 2 2 0 1 1-2.8 2.8 1.7 1.7 0 0 0-2.9 1.2 2 2 0 1 1-4 0 1.7 1.7 0 0 0-2.9-1.2 2 2 0 1 1-2.8-2.8A1.7 1.7 0 0 0 3.3 15a2 2 0 1 1 0-4 1.7 1.7 0 0 0 1.2-2.9 2 2 0 1 1 2.8-2.8A1.7 1.7 0 0 0 10.2 4a2 2 0 1 1 4 0 1.7 1.7 0 0 0 2.9 1.2 2 2 0 1 1 2.8 2.8A1.7 1.7 0 0 0 21 11a2 2 0 1 1 0 4z"/></svg>';
     g.title="Settings"; g.setAttribute("aria-label","Settings"); g.onclick=function(){ openSettings(); };
