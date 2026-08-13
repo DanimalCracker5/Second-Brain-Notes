@@ -61,10 +61,14 @@
   @keyframes float3{ 0%,100%{transform:translate(-50%,0) scale(1)} 50%{transform:translate(-38%,-9vh) scale(1.14)} }
   @media (prefers-reduced-motion: reduce){ .glow{ animation-duration:240s !important; } }
 
-  .app{ position:relative; z-index:1; height:100dvh; display:grid; grid-template-columns:300px 1fr; transition:grid-template-columns .24s ease; }
+  .app{ position:relative; z-index:1; height:100dvh; display:grid; grid-template-columns:300px 1fr; transition:grid-template-columns .42s cubic-bezier(.2,.8,.2,1); }
   .app.sidebar-collapsed{ grid-template-columns:0 1fr; }
   .app.sidebar-collapsed .drawer{ min-width:0; overflow:hidden; opacity:0; pointer-events:none; }
-  .main{ display:flex; flex-direction:column; min-width:0; min-height:0; }
+  .app.sidebar-focus{ grid-template-columns:minmax(0,1fr); grid-template-rows:1fr; }
+  .app.sidebar-focus .drawer,.app.sidebar-focus .main{ grid-column:1; grid-row:1; }
+  .app.sidebar-focus .drawer{ z-index:1; width:min(100%,760px); justify-self:center; border-right:0; background:linear-gradient(135deg,rgba(8,8,12,.94),rgba(0,0,0,.88)); box-shadow:0 0 80px rgba(0,0,0,.34),0 0 120px var(--accent-soft); animation:sidebarFocusIn .48s cubic-bezier(.2,.9,.25,1.05) both; }
+  .app.sidebar-focus .main{ opacity:0; transform:translateX(22px) scale(.985); pointer-events:none; }
+  .main{ display:flex; flex-direction:column; min-width:0; min-height:0; transition:opacity .28s ease,transform .42s cubic-bezier(.2,.8,.2,1); }
 
   /* ---------- top bar ---------- */
   .bar{ display:flex; align-items:center; gap:6px; padding:calc(var(--safe-t) + 12px) 18px 12px; flex:none; }
@@ -705,6 +709,8 @@
   @keyframes sheetIn{ from{ opacity:0; transform:translateY(12px) } to{ opacity:1; transform:none } }
   @keyframes tickPop{ 0%{ transform:scale(.3) rotate(-25deg) } 60%{ transform:scale(1.28) rotate(6deg) } 100%{ transform:none } }
   @keyframes sheen{ to{ transform:translateX(420%) } }
+  @keyframes sidebarFocusIn{ from{ opacity:0; transform:translateY(18px) scale(.965); filter:blur(5px) } to{ opacity:1; transform:none; filter:none } }
+  @keyframes eyeWink{ 0%,100%{ transform:scale(1) rotate(0); } 28%{ transform:scale(1.28) rotate(-10deg); } 55%{ transform:scale(.88) rotate(5deg); } 78%{ transform:scale(1.1) rotate(0); } }
   @keyframes justAdded{
     0%{ opacity:0; transform:translateY(-9px) scale(.97); box-shadow:0 0 0 2px var(--accent-line) }
     55%{ opacity:1; transform:none; box-shadow:0 0 0 2px var(--accent-line) }
@@ -715,6 +721,7 @@
      for its last row to arrive. */
   .d-list.enter .d-item{ animation:fadeUp .34s cubic-bezier(.2,.9,.3,1) both; animation-delay:calc(var(--i,0) * 26ms); }
   .tagcloud.enter .tg{ animation:popIn .34s cubic-bezier(.2,.9,.3,1.1) both; animation-delay:calc(var(--i,0) * 30ms); }
+  .tg.tag-pick .visibility{ color:var(--accent); opacity:1; animation:eyeWink .56s cubic-bezier(.2,.9,.3,1.2) both; }
   /* Scoped through .d-list so it outranks the stagger rule above — a brand new
      row should flash, not queue up behind the others. */
   .d-list .d-item.just-added{ animation:justAdded .55s cubic-bezier(.2,.9,.3,1.1) both; animation-delay:0s; }
@@ -731,6 +738,8 @@
     .app{ grid-template-columns:1fr; }
     .drawer{ position:fixed; z-index:30; top:0; bottom:0; left:0; width:min(82vw,300px); transform:translateX(-102%); transition:transform .26s cubic-bezier(.4,0,.2,1); box-shadow:0 0 60px rgba(0,0,0,.6); }
     .app.open .drawer{ transform:translateX(0); } .app.open .scrim{ opacity:1; pointer-events:auto; }
+    .app.sidebar-focus .drawer{ position:relative; width:100%; max-width:none; transform:none; border-right:0; box-shadow:none; }
+    .app.sidebar-focus .main{ display:none; }
     .icon.hide-wide{ display:grid; }
     .canvas{ padding-left:20px; padding-right:20px; }
     .themes{ grid-template-columns:repeat(2,minmax(0,1fr)); }
@@ -759,7 +768,7 @@
   <div class="scrim" id="scrim"></div>
 
   <aside class="drawer">
-    <div class="d-head"><div><h2>Second Brain Notes</h2><small>by Astral Studios LLC</small></div><button class="sidebar-fullscreen" id="sidebarFullscreenBtn" type="button" title="Enter full screen" aria-label="Enter full screen"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M8 3H3v5M16 3h5v5M21 16v5h-5M3 16v5h5"/></svg></button></div>
+    <div class="d-head"><div><h2>Second Brain Notes</h2><small>by Astral Studios LLC</small></div><button class="sidebar-fullscreen" id="sidebarFullscreenBtn" type="button" title="Open sidebar focus" aria-label="Open sidebar focus"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M8 3H3v5M16 3h5v5M21 16v5h-5M3 16v5h5"/></svg></button></div>
     <button class="d-new" id="newBtn"><span class="plus" aria-hidden="true">＋</span><span>New</span></button>
     <div class="d-scroll">
       <div class="sec-h"><button class="section-toggle" id="tagsToggleBtn" type="button" aria-controls="tags" aria-expanded="true" title="Collapse tags"><span>Tags</span><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m6 9 6 6 6-6"/></svg></button><button id="addTagBtn" title="New tag">＋</button></div>
@@ -1237,7 +1246,7 @@
   state.allNotesName=typeof state.allNotesName==="string"&&state.allNotesName.trim()?state.allNotesName.trim():"All notes";
   if(state.mobileFolderFocus!==undefined) delete state.mobileFolderFocus;
   if(typeof state.readChapterNames!=="boolean") state.readChapterNames=false;
-  state.filterTag=state.filterTag||null; state.selectedItemIds=Array.isArray(state.selectedItemIds)?state.selectedItemIds:[]; state.selectingNotes=!!state.selectingNotes;
+  state.filterTag=state.filterTag||null; state.selectedItemIds=Array.isArray(state.selectedItemIds)?state.selectedItemIds:[]; state.selectingNotes=!!state.selectingNotes; state.tagAssignMode=!!state.tagAssignMode;
   state.noteSearch=typeof state.noteSearch==="string"?state.noteSearch:"";
   state.listSort=state.listSort||"updated";
   agentSettings();
@@ -1258,7 +1267,7 @@
   if(!state.currentId || !state.items.some(function(i){return i.id===state.currentId;})) state.currentId=state.items[0].id;
 
   function blankDeviceState(){
-    return {items:[],folders:[],tags:[],currentId:null,motion:true,theme:"nebula",darkness:82,enabledTypes:defaultEnabledTypes(),typeDefaults:TYPE_DEFAULTS_VERSION,noteInsertOptions:{file:true,paragraph:true,comment:true,prompt:true,heading:true,chapter:true,group:true,code:true},tagsCollapsed:false,allNotesName:"All notes",readChapterNames:false,filterTag:null,noteSearch:"",listSort:"updated",agentSettings:defaultAgentSettings(),pendingCloudSync:false,syncBaseline:null};
+    return {items:[],folders:[],tags:[],currentId:null,motion:true,theme:"nebula",darkness:82,enabledTypes:defaultEnabledTypes(),typeDefaults:TYPE_DEFAULTS_VERSION,noteInsertOptions:{file:true,paragraph:true,comment:true,prompt:true,heading:true,chapter:true,group:true,code:true},tagsCollapsed:false,allNotesName:"All notes",readChapterNames:false,filterTag:null,tagAssignMode:false,noteSearch:"",listSort:"updated",agentSettings:defaultAgentSettings(),pendingCloudSync:false,syncBaseline:null};
   }
   function clearAttachmentStore(){
     if(!window.indexedDB) return;
@@ -1324,13 +1333,13 @@
   }
   function allNotesTitle(){ return state.allNotesName||"All notes"; }
   function firstTagName(it){ var names=(it.tagIds||[]).map(function(id){ var t=tagById(id); return t?t.name.toLowerCase():""; }).filter(Boolean).sort(); return names[0]||"\uffff"; }
-  function visibleItems(){
+  function visibleItems(ignoreTagFilter){
     var query=(state.noteSearch||"").trim().toLowerCase();
     var items=state.items.filter(function(it){
-      if(state.filterTag && (it.tagIds||[]).indexOf(state.filterTag)<0) return false;
+      if(!ignoreTagFilter && state.filterTag && (it.tagIds||[]).indexOf(state.filterTag)<0) return false;
       /* Hidden tags act like an archive from the All notes view. Selecting a
          specific tag still lets the user inspect it and make it visible again. */
-      if(!state.filterTag && (it.tagIds||[]).some(function(id){ var tag=tagById(id); return tag&&tag.hidden; })) return false;
+      if(!ignoreTagFilter && !state.filterTag && (it.tagIds||[]).some(function(id){ var tag=tagById(id); return tag&&tag.hidden; })) return false;
       if(query){
         var tagNames=(it.tagIds||[]).map(function(id){ var tag=tagById(id); return tag?tag.name:""; }).join(" ");
         if(([it.title||"",itemText(it),tagNames].join(" ")).toLowerCase().indexOf(query)<0) return false;
@@ -1568,7 +1577,7 @@
   /* Signature of what the last render put on screen. Entrance animations only
      replay when this changes, so editing a note title doesn't make the whole
      sidebar flutter on every keystroke. */
-  var lastTagSignature=null;
+  var lastTagSignature=null, tagCloseTimer=null;
   function renderTags(){
     tagsEl.innerHTML="";
     tagsEl.classList.toggle("is-collapsed",state.tagsCollapsed);
@@ -1587,7 +1596,20 @@
       chip.style.setProperty("--tg",tagColor(tag));
       chip.innerHTML='<span class="dot" style="background:'+tagColor(tag)+'"></span><span class="tag-name"></span><span class="tag-count">'+tagUseCount(tag.id)+'</span><button class="tag-action visibility" type="button" title="'+(tag.hidden?"Show tag":"Hide tag")+'" aria-label="'+(tag.hidden?"Show tag":"Hide tag")+'">'+(tag.hidden?ICON_EYE_OFF:ICON_EYE)+'</button><button class="tag-action edit" type="button" title="Edit tag" aria-label="Edit tag">'+ICON_EDIT+'</button>';
       chip.querySelector(".tag-name").textContent=tag.name;
-      chip.onclick=function(event){ if(event.target.closest(".tag-action")) return; state.filterTag=state.filterTag===tag.id?null:tag.id; persist(); renderAll(); };
+      chip.onclick=function(event){
+        if(event.target.closest(".tag-action")) return;
+        clearTimeout(tagCloseTimer);
+        state.filterTag=state.filterTag===tag.id?null:tag.id;
+        state.tagsCollapsed=false;
+        persist(); renderAll();
+        var picked=tagsEl.querySelector('.tg.active');
+        if(picked) picked.classList.add("tag-pick");
+        tagCloseTimer=setTimeout(function(){
+          state.tagsCollapsed=true;
+          persist();
+          renderTags();
+        },560);
+      };
       chip.querySelector(".visibility").onclick=function(event){ event.stopPropagation(); tag.hidden=!tag.hidden; persist(); renderAll(); showToast(tag.hidden?"Tagged notes hidden from All notes":"Tagged notes shown in All notes"); };
       chip.querySelector(".edit").onclick=function(event){ event.stopPropagation(); openTagEditor(event.currentTarget,tag); };
       cloud.appendChild(chip);
@@ -1794,10 +1816,15 @@
   var lastListSignature=null, justAddedId=null, justAddedTimer=null;
   function renderList(){
     trackTimeSpent();
-    var items=visibleItems();
+    var items=visibleItems(!!state.tagAssignMode);
     state.selectedItemIds=state.selectedItemIds.filter(function(id){ return state.items.some(function(item){ return item.id===id; }); });
-    if(selectNotesBtn){ selectNotesBtn.textContent=state.selectingNotes?(state.selectedItemIds.length?"Tag "+state.selectedItemIds.length:"Cancel"):"✓"; selectNotesBtn.title=state.selectingNotes?(state.selectedItemIds.length?"Tag selected notes":"Cancel selection"):"Select notes"; }
+    if(selectNotesBtn){
+      var assignLabel=state.filterTag&&state.tagAssignMode?((state.selectedItemIds.length?"Add "+state.selectedItemIds.length:"Add notes")):"";
+      selectNotesBtn.textContent=state.selectingNotes?(state.selectedItemIds.length?(state.tagAssignMode?assignLabel:"Tag "+state.selectedItemIds.length):"Cancel"):(state.filterTag?"＋":"✓");
+      selectNotesBtn.title=state.selectingNotes?(state.selectedItemIds.length?(state.tagAssignMode?"Add selected notes to this tag":"Tag selected notes"):"Cancel selection"):(state.filterTag?"Add notes to this tag":"Select notes");
+    }
     var lbl = state.filterTag ? ((tagById(state.filterTag)||{}).name||"Tag") : allNotesTitle();
+    if(state.tagAssignMode&&state.filterTag) lbl="Add to "+((tagById(state.filterTag)||{}).name||"tag");
     listLabel.textContent=lbl+"  ·  "+items.length;
     listEl.innerHTML="";
     var signature=items.map(function(it){ return it.id; }).join("|");
@@ -1842,6 +1869,14 @@
     });
   }
   function renderAll(){ renderTags(); renderList(); renderMain(); }
+  function addSelectedNotesToTag(){
+    var tag=tagById(state.filterTag), selected=state.items.filter(function(item){ return state.selectedItemIds.indexOf(item.id)>=0; });
+    if(!tag||!selected.length) return;
+    selected.forEach(function(item){ item.tagIds=item.tagIds||[]; if(item.tagIds.indexOf(tag.id)<0) item.tagIds.push(tag.id); item.updated=Date.now(); });
+    var count=selected.length;
+    state.selectedItemIds=[]; state.selectingNotes=false; state.tagAssignMode=false;
+    persist(); renderAll(); showToast("Added "+count+" note"+(count===1?"":"s")+" to "+tag.name);
+  }
   function delItem(id,message){
     var item=state.items.find(function(s){ return s.id===id; });
     if(activeAudioRecorder&&activeAudioRecorder.itemId===id){ showToast("Stop the recording before deleting this audio entry",true); return; }
@@ -4087,53 +4122,53 @@
     noteSearch.oninput=function(){ state.noteSearch=noteSearch.value; noteSearchWrap.classList.toggle("has-value",!!noteSearch.value); renderList(); };
     $("clearNoteSearch").onclick=function(){ noteSearch.value=""; state.noteSearch=""; noteSearchWrap.classList.remove("has-value"); noteSearch.focus(); renderList(); };
   }
-  /* =================== full screen ===================
-     Safari still only exposes the webkit-prefixed API, and iPhone Safari has no
-     Fullscreen API at all for anything that is not a <video>. Rather than a
-     button that silently does nothing there, the control hides itself when the
-     browser cannot do it and points at the route that actually works on iOS:
-     installing the app to the Home Screen, which opens it without browser
-     chrome because the manifest asks for display:standalone. */
+  /* =================== sidebar focus ===================
+     This is intentionally an in-app focus view, not the browser Fullscreen API.
+     It gives the sidebar the whole canvas, keeps the current note safe, and
+     makes the control useful on every browser and device. */
   var fullscreenButton=$("sidebarFullscreenBtn");
-  var ICON_FULLSCREEN_ON='<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M8 3H3v5M16 3h5v5M21 16v5h-5M3 16v5h5"/></svg>';
-  var ICON_FULLSCREEN_OFF='<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M3 8h5V3M21 8h-5V3M16 21v-5h5M8 21v-5H3"/></svg>';
-  var docEl=document.documentElement;
-  function fullscreenElement(){ return document.fullscreenElement||document.webkitFullscreenElement||null; }
-  function canFullscreen(){ return !!(docEl.requestFullscreen||docEl.webkitRequestFullscreen); }
-  function isStandalone(){ return !!(window.matchMedia&&window.matchMedia("(display-mode: standalone)").matches)||navigator.standalone===true; }
-  function syncFullscreenButton(){
+  var ICON_FOCUS_ON='<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M8 3H3v5M16 3h5v5M21 16v5h-5M3 16v5h5"/></svg>';
+  var ICON_FOCUS_OFF='<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="m9 3-6 6M15 3l6 6M21 15l-6 6M3 15l6 6"/></svg>';
+  function syncSidebarFocus(){
     if(!fullscreenButton) return;
-    var active=!!fullscreenElement();
-    fullscreenButton.innerHTML=active?ICON_FULLSCREEN_OFF:ICON_FULLSCREEN_ON;
-    fullscreenButton.title=active?"Exit full screen":"Enter full screen";
+    var active=app.classList.contains("sidebar-focus");
+    fullscreenButton.innerHTML=active?ICON_FOCUS_OFF:ICON_FOCUS_ON;
+    fullscreenButton.title=active?"Exit sidebar focus":"Open sidebar focus";
     fullscreenButton.setAttribute("aria-label",fullscreenButton.title);
+    fullscreenButton.classList.toggle("is-active",active);
   }
   if(fullscreenButton){
-    /* Already chromeless as an installed app, or no API to call — either way the
-       button has nothing useful to do. */
-    if(!canFullscreen()||isStandalone()){
-      fullscreenButton.style.display="none";
-    } else {
-      fullscreenButton.onclick=function(){
-        if(fullscreenElement()){
-          var exit=document.exitFullscreen||document.webkitExitFullscreen;
-          if(exit) try{ exit.call(document); }catch(e){}
-          return;
-        }
-        var request=docEl.requestFullscreen||docEl.webkitRequestFullscreen;
-        try{
-          var result=request.call(docEl);
-          if(result&&result.catch) result.catch(function(){ showToast("This browser blocked full screen",true); });
-        }catch(e){ showToast("This browser blocked full screen",true); }
-      };
-      ["fullscreenchange","webkitfullscreenchange"].forEach(function(name){ document.addEventListener(name,syncFullscreenButton); });
-      syncFullscreenButton();
-    }
+    fullscreenButton.onclick=function(){
+      var active=app.classList.contains("sidebar-focus");
+      if(active){
+        app.classList.remove("sidebar-focus");
+      } else {
+        clearTimeout(tagCloseTimer);
+        state.filterTag=null;
+        state.tagsCollapsed=false;
+        state.selectingNotes=false;
+        state.selectedItemIds=[];
+        state.tagAssignMode=false;
+        persist();
+        renderAll();
+        app.classList.remove("open","sidebar-collapsed");
+        app.classList.add("sidebar-focus");
+      }
+      syncSidebarFocus();
+    };
+    syncSidebarFocus();
   }
+  document.addEventListener("keydown",function(event){
+    if(event.key==="Escape"&&app.classList.contains("sidebar-focus")){
+      app.classList.remove("sidebar-focus");
+      syncSidebarFocus();
+    }
+  });
   selectNotesBtn.onclick=function(){
-    if(state.selectingNotes&&state.selectedItemIds.length) return openBulkTagPick(this);
+    if(state.selectingNotes&&state.selectedItemIds.length) return state.tagAssignMode?addSelectedNotesToTag():openBulkTagPick(this);
     state.selectingNotes=!state.selectingNotes;
-    if(!state.selectingNotes) state.selectedItemIds=[];
+    if(state.selectingNotes){ state.tagAssignMode=!!state.filterTag; }
+    else { state.selectedItemIds=[]; state.tagAssignMode=false; }
     renderList();
   };
   listToolsBtn.onclick=function(){ if(openMenuEl){ closeMenu(); return; } openListTools(this); };
@@ -4611,7 +4646,7 @@
     state.items.forEach(normalizeItem);
     state.folders=d.folders||[]; state.tags=d.tags||[];
     migrateFoldersToTags(state);
-    state.currentId=state.items[0].id; state.filterTag=null; state.selectedItemIds=[]; state.selectingNotes=false;
+    state.currentId=state.items[0].id; state.filterTag=null; state.selectedItemIds=[]; state.selectingNotes=false; state.tagAssignMode=false;
     state.pendingCloudSync=false; state.lastCloudSync=d.updated||Date.now();
     applyAccountPreferences(d);
     recordSyncBaseline({items:state.items},state.lastCloudSync);
