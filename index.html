@@ -338,6 +338,10 @@
   .sec-h .section-toggle[aria-expanded="false"] svg{ transform:rotate(-90deg); }
   .list-tools{ display:flex; align-items:center; gap:4px; }
   .list-tools button{ width:auto; min-width:22px; padding:0 5px; font-size:.72rem; }
+  /* A filtered Upcoming list looks the same as a short one, so the tools button
+     wears a dot whenever something is being held back. */
+  .list-tools button.filtered{ position:relative; color:var(--accent); }
+  .list-tools button.filtered::after{ content:""; position:absolute; top:1px; right:0; width:5px; height:5px; border-radius:50%; background:var(--accent); animation:popIn .3s cubic-bezier(.2,1.1,.35,1) both; }
 
   .folder-row{ display:flex; align-items:center; gap:9px; padding:8px 12px; margin:1px 10px; border-radius:9px; cursor:pointer; font-size:.88rem; color:var(--ink); }
   .folder-row:hover{ background:rgba(255,255,255,.05); } .folder-row.active{ background:var(--accent-soft); }
@@ -400,6 +404,19 @@
   .note-search{ display:block; position:relative; margin:2px 14px 4px; }.note-search svg{ position:absolute; top:50%; left:10px; width:15px; height:15px; color:var(--ink-faint); transform:translateY(-50%); pointer-events:none; }.note-search input{ width:100%; height:34px; padding:0 62px 0 32px; border:1px solid var(--line); border-radius:10px; outline:none; color:var(--ink); background:rgba(255,255,255,.035); font:.77rem "DM Sans",sans-serif; }.note-search input::placeholder{ color:var(--ink-faint); }.note-search input{ transition:border-color .16s,background .16s,box-shadow .2s; }.note-search input:focus{ border-color:var(--accent-line); background:rgba(255,255,255,.055); box-shadow:0 0 0 3px var(--accent-soft); }.note-search svg{ transition:color .16s; }.note-search:focus-within svg{ color:var(--accent); }.note-search button{ position:absolute; right:4px; top:4px; width:26px; height:26px; display:none; place-items:center; border:0; border-radius:7px; color:var(--ink-faint); background:transparent; cursor:pointer; font-size:1rem; }.note-search button:hover{ color:var(--ink); background:rgba(255,255,255,.08); }.note-search .quick-add-note{ right:31px; display:grid; color:var(--accent); font-size:1.05rem; font-weight:700; }.note-search .quick-add-note:hover{ color:var(--ink); background:var(--accent-soft); }.note-search.has-value #clearNoteSearch{ display:grid; }
 
   .d-list{ padding:4px 10px 8px; }
+  /* Upcoming headings. They stick to the top of the scroller so the month you
+     are looking at is always named, and the left rule ties the rows under a
+     heading together as one block. */
+  .d-group{ position:sticky; top:0; z-index:2; display:flex; align-items:center; gap:8px; margin:12px 2px 3px; padding:6px 10px; border-radius:9px; background:linear-gradient(180deg,rgba(0,0,0,.94) 58%,rgba(0,0,0,.55) 100%); backdrop-filter:blur(7px); -webkit-backdrop-filter:blur(7px); }
+  .d-group:first-child{ margin-top:2px; }
+  .d-group .d-group-label{ font-family:"DM Mono",monospace; font-size:.6rem; letter-spacing:.2em; text-transform:uppercase; color:var(--ink-dim); white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+  .d-group .d-group-count{ margin-left:auto; font-family:"DM Mono",monospace; font-size:.58rem; color:var(--ink-faint); padding:1px 6px; border:1px solid var(--line); border-radius:99px; flex:none; }
+  .d-group::before{ content:""; width:3px; align-self:stretch; border-radius:2px; background:var(--line); flex:none; }
+  .d-group.overdue .d-group-label{ color:#fca5a5; } .d-group.overdue::before{ background:#f87171; }
+  .d-group.overdue .d-group-count{ color:#fca5a5; border-color:rgba(248,113,113,.34); }
+  .d-group.today .d-group-label{ color:var(--accent); } .d-group.today::before{ background:var(--accent); }
+  .d-group.today .d-group-count{ color:var(--accent); border-color:var(--accent-line); }
+  .d-group.soon::before{ background:var(--accent-line); }
   .d-item{ position:relative; display:grid; grid-template-columns:15px minmax(0,1fr) auto; align-items:center; gap:9px; padding:10px 12px; border-radius:11px; cursor:pointer; transition:background .16s ease,transform .16s cubic-bezier(.2,.9,.3,1.2); }
   .d-item::before{ content:""; position:absolute; left:3px; top:50%; width:2px; height:0; border-radius:2px; background:var(--accent); transform:translateY(-50%); transition:height .22s cubic-bezier(.2,.9,.3,1.3); }
   .d-item.active::before{ height:46%; }
@@ -504,6 +521,43 @@
   .menu .color-reset{ width:100%; margin-top:2px; border:0; border-radius:8px; padding:8px 10px; color:var(--ink-dim); background:transparent; cursor:pointer; font:500 .76rem "DM Sans",sans-serif; }
   .menu .color-reset:hover{ color:var(--ink); background:rgba(255,255,255,.06); }
   .menu .maxscroll{ max-height:230px; overflow-y:auto; }
+
+  /* ---------- due-date calendar ---------- */
+  .menu.calendar-menu{ min-width:272px; max-width:288px; }
+  /* Seven columns inside the standard menu width leaves ~34px days. On a phone
+     that is a mean target for a thumb, so the calendar is allowed to take the
+     screen width it needs. openMenu() clamps it back inside the viewport. */
+  @media (max-width:560px){ .menu.calendar-menu{ min-width:min(348px,calc(100vw - 24px)); max-width:calc(100vw - 24px); } }
+  .cal-quick{ display:flex; gap:5px; padding:4px 6px 7px; }
+  .cal-quick-btn{ flex:1; padding:7px 4px; border:1px solid var(--line); border-radius:8px; background:rgba(255,255,255,.04); color:var(--ink-dim); cursor:pointer; font:500 .7rem "DM Sans",sans-serif; transition:color .14s,background .14s,border-color .14s,transform .16s cubic-bezier(.2,.9,.3,1.4); }
+  .cal-quick-btn:hover,.cal-quick-btn.on{ color:var(--accent); border-color:var(--accent-line); background:var(--accent-soft); }
+  .cal-quick-btn:active{ transform:scale(.94); }
+  .cal-head{ display:flex; align-items:center; gap:4px; padding:2px 4px 6px; }
+  .cal-head .cal-month{ flex:1; text-align:center; font:600 .82rem "DM Sans",sans-serif; color:var(--ink); }
+  .cal-nav{ width:30px; height:30px; display:grid; place-items:center; border:0; border-radius:8px; background:none; color:var(--ink-faint); cursor:pointer; transition:color .14s,background .14s,transform .18s cubic-bezier(.2,.9,.3,1.5); }
+  .cal-nav svg{ width:16px; height:16px; }
+  .cal-nav:hover{ color:var(--accent); background:var(--accent-soft); }
+  .cal-nav:active{ transform:scale(.86); }
+  .cal-dow{ display:grid; grid-template-columns:repeat(7,1fr); gap:2px; padding:0 4px 4px; }
+  .cal-dow span{ text-align:center; font-family:"DM Mono",monospace; font-size:.56rem; letter-spacing:.1em; color:var(--ink-faint); }
+  /* Specific enough to beat the generic .menu > :nth-child() row delays, which
+     would otherwise stall the grid every time the month changes. */
+  .menu.calendar-menu > .cal-grid{ display:grid; grid-template-columns:repeat(7,1fr); gap:2px; padding:0 4px 4px; animation:calSwap .26s cubic-bezier(.2,.9,.3,1) both; animation-delay:0s; }
+  .cal-cell{ aspect-ratio:1; min-height:32px; display:grid; place-items:center; border:1px solid transparent; border-radius:9px; background:none; color:var(--ink); cursor:pointer; font:500 .78rem "DM Sans",sans-serif; transition:background .14s,color .14s,border-color .14s; animation:dayIn .26s cubic-bezier(.2,.9,.3,1.15) both; animation-delay:calc(var(--d,0) * 7ms); }
+  .cal-cell.blank{ animation:none; pointer-events:none; }
+  .cal-cell.is-past{ color:var(--ink-faint); }
+  .cal-cell:hover{ background:rgba(255,255,255,.07); }
+  .cal-cell.is-today{ border-color:var(--accent-line); color:var(--accent); }
+  .cal-cell.is-selected{ background:var(--accent); border-color:var(--accent); color:#08080b; font-weight:700; }
+  /* The pick animation has to outrank the entrance one, so it is declared after. */
+  .cal-cell.picking{ background:var(--accent); border-color:var(--accent); color:#08080b; animation:dayPick .28s cubic-bezier(.2,.9,.3,1.3) both; }
+
+  /* ---------- multi-select tag picker ---------- */
+  .menu.tag-pick-menu .mtitle:first-child{ text-transform:none; letter-spacing:.02em; font-size:.62rem; }
+  .menu button.mi.on .chk{ animation:chipTick .34s cubic-bezier(.2,.9,.3,1.4) both; }
+  .tag-save{ width:100%; border:1px solid var(--line); border-radius:9px; padding:9px 10px; color:var(--ink-dim); background:rgba(255,255,255,.04); cursor:pointer; font:600 .8rem "DM Sans",sans-serif; transition:color .16s,background .16s,border-color .16s,transform .16s cubic-bezier(.2,.9,.3,1.4); }
+  .tag-save:active{ transform:scale(.97); }
+  .tag-save.ready{ color:#08080b; background:var(--accent); border-color:var(--accent); box-shadow:0 6px 18px var(--accent-soft); }
 
   /* ---------- toast ---------- */
   .toast{ position:fixed; left:50%; bottom:calc(24px + var(--safe-b)); transform:translate(-50%,20px) scale(.94); z-index:120; padding:10px 18px; border-radius:12px; background:#141418; border:1px solid var(--line); box-shadow:0 16px 40px rgba(0,0,0,.5); font-size:.82rem; color:var(--ink); opacity:0; pointer-events:none; transition:opacity .18s ease,transform .36s cubic-bezier(.2,1.15,.35,1); max-width:88vw; }
@@ -717,6 +771,12 @@
   @keyframes sheen{ to{ transform:translateX(420%) } }
   @keyframes sidebarFocusIn{ from{ opacity:0; transform:translateY(18px) scale(.965); filter:blur(5px) } to{ opacity:1; transform:none; filter:none } }
   @keyframes eyeWink{ 0%,100%{ transform:scale(1) rotate(0); } 28%{ transform:scale(1.28) rotate(-10deg); } 55%{ transform:scale(.88) rotate(5deg); } 78%{ transform:scale(1.1) rotate(0); } }
+  @keyframes groupIn{ from{ opacity:0; transform:translateY(7px) } to{ opacity:1; transform:none } }
+  @keyframes groupRule{ from{ transform:scaleY(0); opacity:0 } to{ transform:none; opacity:1 } }
+  @keyframes dayIn{ from{ opacity:0; transform:scale(.72) } to{ opacity:1; transform:none } }
+  @keyframes dayPick{ 0%{ transform:scale(1) } 45%{ transform:scale(1.22) } 100%{ transform:scale(1) } }
+  @keyframes calSwap{ from{ opacity:0; transform:translateX(var(--cal-slide,8px)) } to{ opacity:1; transform:none } }
+  @keyframes chipTick{ 0%{ transform:scale(.4) rotate(-18deg) } 60%{ transform:scale(1.3) rotate(8deg) } 100%{ transform:none } }
   @keyframes justAdded{
     0%{ opacity:0; transform:translateY(-9px) scale(.97); box-shadow:0 0 0 2px var(--accent-line) }
     55%{ opacity:1; transform:none; box-shadow:0 0 0 2px var(--accent-line) }
@@ -726,6 +786,10 @@
   /* The stagger index is capped in JS, so a 400-note list never waits seconds
      for its last row to arrive. */
   .d-list.enter .d-item{ animation:fadeUp .34s cubic-bezier(.2,.9,.3,1) both; animation-delay:calc(var(--i,0) * 26ms); }
+  /* Headings share the row stagger so a regrouped list unfurls top to bottom
+     instead of headings and rows arriving as two separate waves. */
+  .d-list.enter .d-group{ animation:groupIn .42s cubic-bezier(.2,.9,.3,1.05) both; animation-delay:calc(var(--i,0) * 26ms); }
+  .d-list.enter .d-group::before{ animation:groupRule .5s cubic-bezier(.2,.9,.3,1.2) both; animation-delay:calc(var(--i,0) * 26ms + 90ms); }
   .tagcloud.enter .tg{ animation:popIn .34s cubic-bezier(.2,.9,.3,1.1) both; animation-delay:calc(var(--i,0) * 30ms); }
   .tg.tag-pick .visibility{ color:var(--accent); opacity:1; animation:eyeWink .56s cubic-bezier(.2,.9,.3,1.2) both; }
   /* Scoped through .d-list so it outranks the stagger rule above — a brand new
@@ -885,6 +949,10 @@
     {id:"starlight",name:"Starlight",glows:[[214,34,68],[260,28,58],[190,30,62]],o:[.11,.08,.05],accent:[214,42,82]}
   ];
   var TAG_HUES=[265,320,15,42,158,205,95,340,180,55];
+  /* Upcoming-view options. They live up here with the other constants because
+     the state normalizers below run before the view code is reached. */
+  var UPCOMING_RANGES=[["all","Everything"],["overdue","Overdue only"],["today","Due today"],["week","Through this week"],["nextweek","Through next week"],["month","Through this month"],["quarter","Next 3 months"]];
+  var UPCOMING_SORTS=[["due","Due date · soonest"],["dueDesc","Due date · latest"],["title","Title A–Z"],["updated","Recently updated"],["tag","Tag A–Z"]];
 
   /* =================== storage =================== */
   var KEY="astral-notes-v5", OLDS=["astral-notes-v4","astral-notes-v3"], CFGKEY="astral-fb-config", BACKUP_KEY="second-brain-auto-backups-v1", DOCUMENT_BACKUP_KEY="second-brain-document-backups-v1", DOCUMENT_BACKUP_ACTIVITY_KEY="second-brain-document-backup-activity-v1", BACKUP_LIMIT=10, DOCUMENT_BACKUP_LIMIT=25, AUTO_BACKUP_COOLDOWN=60*60*1000, DOCUMENT_AUTO_BACKUP_EDIT_LIMIT=20, DOCUMENT_AUTO_BACKUP_CHAR_LIMIT=750, DOCUMENT_AUTO_BACKUP_MAX_WAIT=15*60*1000, mem=null;
@@ -963,7 +1031,7 @@
   function revisionWeight(before,after){ return Math.max(1,Math.ceil(documentChangeSize(revisionPayload(before),revisionPayload(after))/120)); }
   function syncStateSignature(data){
     var copy=cloneData(data||{});
-    ["version","versionChangedAt","lastLocalChange","lastCloudSync","pendingCloudSync","syncBaseline","selectedItemIds","selectingNotes","tagAssignMode","noteSearch","sidebarView"].forEach(function(key){ delete copy[key]; });
+    ["version","versionChangedAt","lastLocalChange","lastCloudSync","pendingCloudSync","syncBaseline","selectedItemIds","selectingNotes","tagAssignMode","noteSearch","sidebarView","upcomingFilter","upcomingSort"].forEach(function(key){ delete copy[key]; });
     var itemFingerprints={};
     (copy.items||[]).forEach(function(item){ if(item&&item.id) itemFingerprints[item.id]=itemSyncSignature(item); });
     copy.items=itemFingerprints;
@@ -989,13 +1057,14 @@
       state.version=Math.max(1,Number(state.version)||1,Number(previous.version)||0)+Math.max(1,changedWeight);
       state.versionChangedAt=Date.now();
     }
+    return changedWeight;
   }
   function persist(){
-    var previous=readKey(KEY); bumpLocalVersions(previous);
+    var previous=readKey(KEY), changedWeight=bumpLocalVersions(previous);
     captureAutoBackup(false);
     var activeDocument=current(), documentEntry=captureDocumentBackup(activeDocument,false,"automatic");
     if(documentEntry&&currentUser&&db) writeCloudDocumentBackup(activeDocument,documentEntry.kind,documentEntry.created,documentEntry.data).catch(function(error){ console.warn("Automatic document backup could not reach the cloud:",error); });
-    state.lastLocalChange=Date.now(); if(currentUser) state.pendingCloudSync=true; var d=JSON.stringify(state); if(canPersist){ try{ localStorage.setItem(KEY,d); }catch(e){ mem=JSON.parse(d); } } else mem=JSON.parse(d); setSaveState(currentUser?"Saving to cloud":"Sign in to sync"); if(!cloudSyncPaused&&!cloudSyncLoading) saveCloud();
+    state.lastLocalChange=Date.now(); if(currentUser) state.pendingCloudSync=true; var d=JSON.stringify(state); if(canPersist){ try{ localStorage.setItem(KEY,d); }catch(e){ mem=JSON.parse(d); } } else mem=JSON.parse(d); setSaveState(currentUser?"Saving to cloud":"Sign in to sync",currentUser?"saving":""); if(!cloudSyncPaused&&!cloudSyncLoading) saveCloud(changedWeight);
   }
 
   function uid(){ return Date.now().toString(36)+Math.random().toString(36).slice(2,7); }
@@ -1298,6 +1367,8 @@
   state.version=Math.max(1,Number(state.version)||Number(state.updated)||1);
   state.noteSearch=typeof state.noteSearch==="string"?state.noteSearch:"";
   state.listSort=state.listSort||"updated";
+  state.upcomingSort=normalizeUpcomingSort(state.upcomingSort);
+  state.upcomingFilter=normalizeUpcomingFilter(state.upcomingFilter);
   agentSettings();
   if(typeof state.pendingCloudSync!=="boolean") state.pendingCloudSync=false;
   deviceBackups=(readKey(BACKUP_KEY)||[]).sort(function(a,b){ return (b.created||0)-(a.created||0); }).slice(0,BACKUP_LIMIT);
@@ -1316,7 +1387,7 @@
   if(!state.currentId || !state.items.some(function(i){return i.id===state.currentId;})) state.currentId=state.items[0].id;
 
   function blankDeviceState(){
-    return {items:[],folders:[],tags:[],currentId:null,motion:true,theme:"nebula",darkness:82,enabledTypes:defaultEnabledTypes(),typeDefaults:TYPE_DEFAULTS_VERSION,noteInsertOptions:{file:true,paragraph:true,comment:true,prompt:true,heading:true,chapter:true,group:true,code:true},tagsCollapsed:false,allNotesName:"All notes",readChapterNames:false,filterTag:null,sidebarView:"all",tagAssignMode:false,noteSearch:"",listSort:"updated",version:1,agentSettings:defaultAgentSettings(),pendingCloudSync:false,syncBaseline:null};
+    return {items:[],folders:[],tags:[],currentId:null,motion:true,theme:"nebula",darkness:82,enabledTypes:defaultEnabledTypes(),typeDefaults:TYPE_DEFAULTS_VERSION,noteInsertOptions:{file:true,paragraph:true,comment:true,prompt:true,heading:true,chapter:true,group:true,code:true},tagsCollapsed:false,allNotesName:"All notes",readChapterNames:false,filterTag:null,sidebarView:"all",tagAssignMode:false,noteSearch:"",listSort:"updated",upcomingSort:"due",upcomingFilter:{range:"all",tagId:null,showDone:false},version:1,agentSettings:defaultAgentSettings(),pendingCloudSync:false,syncBaseline:null};
   }
   function clearAttachmentStore(){
     if(!window.indexedDB) return;
@@ -1486,8 +1557,105 @@
     var tasks=it.todos||[], remaining=tasks.filter(function(task){ return !task.done; }).length;
     return remaining+" left"+(due?" · "+dueDateLabel(due):"");
   }
+  /* =================== upcoming view ===================
+     The list is always grouped chronologically — Overdue, Today, this week, next
+     week, the rest of this month, then one heading per month — so "next month"
+     never has to be worked out from a row of bare dates. The chosen sort orders
+     rows *inside* each heading, which keeps the headings meaningful no matter
+     how the user sorts. */
+  function normalizeUpcomingSort(value){ return UPCOMING_SORTS.some(function(opt){ return opt[0]===value; })?value:"due"; }
+  function normalizeUpcomingFilter(value){
+    value=value&&typeof value==="object"?value:{};
+    return {
+      range:UPCOMING_RANGES.some(function(opt){ return opt[0]===value.range; })?value.range:"all",
+      tagId:typeof value.tagId==="string"?value.tagId:null,
+      showDone:!!value.showDone
+    };
+  }
+  function upcomingFilter(){ return (state.upcomingFilter=normalizeUpcomingFilter(state.upcomingFilter)); }
+  function upcomingFilterCount(){ var f=upcomingFilter(); return (f.range!=="all"?1:0)+(f.tagId?1:0)+(f.showDone?1:0); }
+  function startOfDay(date){ var d=new Date(date); d.setHours(0,0,0,0); return d; }
+  function addDays(date,count){ var d=new Date(date); d.setDate(d.getDate()+count); return d; }
+  function endOfMonth(date,monthsAhead){ return new Date(date.getFullYear(),date.getMonth()+1+(monthsAhead||0),0,0,0,0,0); }
+  /* Locales disagree about which day starts a week, and the answer decides
+     whether a Saturday task reads as "this week" or "next week". */
+  function weekStartDay(){
+    try{
+      var locale=new Intl.Locale(navigator.language||"en-US");
+      var info=locale.weekInfo||(typeof locale.getWeekInfo==="function"?locale.getWeekInfo():null);
+      if(info&&info.firstDay) return info.firstDay%7;
+    }catch(e){}
+    return 1;
+  }
+  function endOfWeek(today){ return addDays(today,6-((today.getDay()-weekStartDay()+7)%7)); }
+  function upcomingMonthLabel(date,today){
+    return date.toLocaleDateString(undefined,date.getFullYear()===today.getFullYear()?{month:"long"}:{month:"long",year:"numeric"});
+  }
+  function upcomingBucket(date,today){
+    var diff=Math.round((startOfDay(date)-today)/86400000);
+    if(diff<0) return {key:"overdue",label:"Overdue",tone:"overdue",order:0};
+    if(diff===0) return {key:"today",label:"Today",tone:"today",order:1};
+    var weekEnd=endOfWeek(today);
+    if(date<=weekEnd) return {key:"week",label:"Rest of this week",tone:"soon",order:1e3};
+    if(date<=addDays(weekEnd,7)) return {key:"nextweek",label:"Next week",tone:"soon",order:2e3};
+    if(date<=endOfMonth(today)) return {key:"month",label:"Later this month",tone:"",order:3e3};
+    return {key:"m"+date.getFullYear()+"-"+date.getMonth(),label:upcomingMonthLabel(date,today),tone:"",order:4e3+date.getFullYear()*12+date.getMonth()};
+  }
+  function upcomingRangeBounds(range,today){
+    if(range==="overdue") return {to:addDays(today,-1)};
+    if(range==="today") return {from:today,to:today};
+    if(range==="week") return {to:endOfWeek(today)};
+    if(range==="nextweek") return {to:addDays(endOfWeek(today),7)};
+    if(range==="month") return {to:endOfMonth(today)};
+    if(range==="quarter") return {to:endOfMonth(today,2)};
+    return {};
+  }
+  /* itemDueDate() deliberately ignores finished work; "Include completed" needs
+     the date back, so this is the same lookup without the done checks. */
+  function upcomingDueDate(it,includeDone){
+    if(!includeDone) return itemDueDate(it);
+    if(!it) return "";
+    if(it.dueDate) return it.dueDate;
+    var dates=(it.todos||[]).filter(function(task){ return task&&task.dueDate&&dateFromKey(task.dueDate); }).map(function(task){ return task.dueDate; }).sort();
+    return dates[0]||"";
+  }
   function upcomingItems(){
-    return state.items.filter(function(it){ return !!itemDueDate(it); }).sort(function(a,b){ return itemDueDate(a).localeCompare(itemDueDate(b))||((b.updated||0)-(a.updated||0)); });
+    var filter=upcomingFilter(), today=startOfDay(new Date()), bounds=upcomingRangeBounds(filter.range,today);
+    var query=(state.noteSearch||"").trim().toLowerCase();
+    var matches=state.items.filter(function(it){
+      var due=upcomingDueDate(it,filter.showDone), date=due&&dateFromKey(due);
+      if(!date) return false;
+      if(bounds.from&&date<bounds.from) return false;
+      if(bounds.to&&date>bounds.to) return false;
+      if(filter.tagId){ if((it.tagIds||[]).indexOf(filter.tagId)<0) return false; }
+      else if((it.tagIds||[]).some(function(id){ var tag=tagById(id); return tag&&tag.hidden; })) return false;
+      if(query){
+        var tagNames=(it.tagIds||[]).map(function(id){ var tag=tagById(id); return tag?tag.name:""; }).join(" ");
+        if(([it.title||"",itemText(it),tagNames].join(" ")).toLowerCase().indexOf(query)<0) return false;
+      }
+      return true;
+    });
+    var sort=normalizeUpcomingSort(state.upcomingSort);
+    return matches.sort(function(a,b){
+      var left=upcomingDueDate(a,filter.showDone), right=upcomingDueDate(b,filter.showDone);
+      if(sort==="dueDesc") return right.localeCompare(left)||((b.updated||0)-(a.updated||0));
+      if(sort==="title") return (a.title||"").localeCompare(b.title||"")||left.localeCompare(right);
+      if(sort==="updated") return (b.updated||0)-(a.updated||0);
+      if(sort==="tag") return firstTagName(a).localeCompare(firstTagName(b))||left.localeCompare(right);
+      return left.localeCompare(right)||((b.updated||0)-(a.updated||0));
+    });
+  }
+  function upcomingGroups(items){
+    var filter=upcomingFilter(), today=startOfDay(new Date()), order=[], byKey={};
+    items.forEach(function(it){
+      var date=dateFromKey(upcomingDueDate(it,filter.showDone)); if(!date) return;
+      var bucket=upcomingBucket(date,today), group=byKey[bucket.key];
+      if(!group){ group=byKey[bucket.key]={label:bucket.label,tone:bucket.tone,order:bucket.order,items:[]}; order.push(group); }
+      group.items.push(it);
+    });
+    order.sort(function(a,b){ return a.order-b.order; });
+    if(normalizeUpcomingSort(state.upcomingSort)==="dueDesc") order.reverse();
+    return order;
   }
   function updateUpcomingButton(){ var button=$("upcomingBtn"); if(button) button.classList.toggle("on",state.sidebarView==="upcoming"); }
   function setSidebarView(view){ state.sidebarView=view==="upcoming"?"upcoming":"all"; if(state.sidebarView==="upcoming") state.filterTag=null; persist(); renderTags(); renderList(); updateUpcomingButton(); }
@@ -1611,7 +1779,16 @@
   }
   var toastTimer=null;
   function showToast(m,bad){ toast.className="toast show"+(bad?" bad":""); toast.innerHTML='<span class="tk">'+(bad?"!":"✓")+'</span> '+m; clearTimeout(toastTimer); toastTimer=setTimeout(function(){ toast.classList.remove("show"); },2200); }
-  var saveTimer=null; function save(){ setSaveState("Saving…","saving"); clearTimeout(saveTimer); saveTimer=setTimeout(persist,400); }
+  /* Typing coalesces into one write, but a long unbroken burst would otherwise
+     keep pushing the debounce out and never reach localStorage at all, so the
+     total wait is capped at SAVE_MAX_WAIT from the first unsaved keystroke. */
+  var saveTimer=null, savePendingSince=0, SAVE_DEBOUNCE=400, SAVE_MAX_WAIT=2200;
+  function save(){
+    setSaveState("Saving…","saving");
+    if(!savePendingSince) savePendingSince=Date.now();
+    clearTimeout(saveTimer);
+    saveTimer=setTimeout(function(){ savePendingSince=0; persist(); },Math.max(0,Math.min(SAVE_DEBOUNCE,savePendingSince+SAVE_MAX_WAIT-Date.now())));
+  }
 
   var ICON_SCRIPT='<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><rect x="4" y="4" width="16" height="5" rx="1.5"/><rect x="4" y="12" width="16" height="8" rx="1.5"/></svg>';
   var ICON_NOTE='<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M5 3h9l5 5v13a1 1 0 0 1-1 1H5a1 1 0 0 1-1-1V4a1 1 0 0 1 1-1z"/><path d="M14 3v5h5"/></svg>';
@@ -1621,6 +1798,8 @@
   var ICON_DUPLICATE='<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="9" y="9" width="11" height="11" rx="2"/><path d="M5 15V5a2 2 0 0 1 2-2h10"/></svg>';
   var ICON_UP='<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m6 15 6-6 6 6"/></svg>';
   var ICON_DOWN='<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m6 9 6 6 6-6"/></svg>';
+  var ICON_CHEV_LEFT='<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m15 6-6 6 6 6"/></svg>';
+  var ICON_CHEV_RIGHT='<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m9 6 6 6-6 6"/></svg>';
   var ICON_LOCK='<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="5" y="10" width="14" height="11" rx="2"/><path d="M8 10V7a4 4 0 0 1 8 0v3"/></svg>';
   var ICON_UNLOCK='<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="5" y="10" width="14" height="11" rx="2"/><path d="M8 10V7a4 4 0 0 1 7.2-2.4"/></svg>';
   var ICON_DELETE='<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 6h18M8 6V4h8v2M19 6l-1 14H6L5 6"/></svg>';
@@ -1634,7 +1813,17 @@
 
   /* =================== floating menu =================== */
   var openMenuEl=null, openMenuAnchor=null;
-  function closeMenu(){ if(openMenuEl){ if(openMenuEl.parentNode) openMenuEl.parentNode.removeChild(openMenuEl); openMenuEl=null; if(openMenuAnchor) openMenuAnchor.classList.remove("menu-open"); openMenuAnchor=null; document.removeEventListener("mousedown",menuOutside,true); } }
+  /* Menus that gather up several choices before writing anything hang a callback
+     on __onClose, so dismissing one commits the same as its own save button
+     does — a stray tap outside should never throw the picks away. */
+  function closeMenu(){
+    if(!openMenuEl) return;
+    var onClose=openMenuEl.__onClose;
+    if(openMenuEl.parentNode) openMenuEl.parentNode.removeChild(openMenuEl);
+    openMenuEl=null; if(openMenuAnchor) openMenuAnchor.classList.remove("menu-open"); openMenuAnchor=null;
+    document.removeEventListener("mousedown",menuOutside,true);
+    if(typeof onClose==="function") onClose();
+  }
   function menuOutside(e){ if(openMenuEl && openMenuAnchor && openMenuAnchor.contains(e.target)) return; if(openMenuEl && !openMenuEl.contains(e.target)) closeMenu(); }
   function openMenu(anchor,build){
     closeMenu();
@@ -1650,7 +1839,9 @@
      openMenuEl=m; openMenuAnchor=anchor;
     anchor.classList.add("menu-open");
     setTimeout(function(){ document.addEventListener("mousedown",menuOutside,true); },0);
-    var inp=m.querySelector("input"); if(inp) inp.focus();
+    /* Menus whose first input is secondary (a "create new tag" box, say) opt out
+       — auto-focusing it only throws the phone keyboard over the choices. */
+    if(!m.hasAttribute("data-noautofocus")){ var inp=m.querySelector("input"); if(inp) inp.focus(); }
     return m;
   }
   function mkItem(iconHtml,label,on,onclick){ var b=document.createElement("button"); b.className="mi"+(on?" on":""); b.innerHTML=iconHtml+'<span>'+escapeHtml(label)+'</span><span class="chk">✓</span>'; b.onclick=onclick; return b; }
@@ -1735,7 +1926,38 @@
       menu.appendChild(sep()); var remove=mkItem(ICON_DELETE,"Delete tag",false,function(){ if(!confirm('Delete tag "'+tag.name+'"? It will be removed from its notes.')) return; state.items.forEach(function(item){ item.tagIds=(item.tagIds||[]).filter(function(id){ return id!==tag.id; }); }); state.tags=state.tags.filter(function(entry){ return entry.id!==tag.id; }); if(state.filterTag===tag.id) state.filterTag=null; closeMenu(); persist(); renderAll(); showToast("Tag deleted"); }); remove.className+=" danger"; menu.appendChild(remove);
     });
   }
+  function openUpcomingTools(anchor){
+    openMenu(anchor,function(m){
+      var filter=upcomingFilter();
+      function apply(change){ state.upcomingFilter=normalizeUpcomingFilter(Object.assign({},filter,change)); closeMenu(); persist(); renderList(); }
+      var rangeTitle=document.createElement("div"); rangeTitle.className="mtitle"; rangeTitle.textContent="Show"; m.appendChild(rangeTitle);
+      var rangeBox=document.createElement("div"); rangeBox.className="maxscroll";
+      UPCOMING_RANGES.forEach(function(opt){ rangeBox.appendChild(mkItem("",opt[1],filter.range===opt[0],function(){ apply({range:opt[0]}); })); });
+      m.appendChild(rangeBox);
+      m.appendChild(mkItem(ICON_TODO,"Include completed",filter.showDone,function(){ apply({showDone:!filter.showDone}); }));
+      if(state.tags.length){
+        m.appendChild(sep());
+        var tagTitle=document.createElement("div"); tagTitle.className="mtitle"; tagTitle.textContent="Filter by tag"; m.appendChild(tagTitle);
+        m.appendChild(mkItem(ICON_NOTE,"Any tag",!filter.tagId,function(){ apply({tagId:null}); }));
+        var tagBox=document.createElement("div"); tagBox.className="maxscroll";
+        state.tags.forEach(function(tag){
+          tagBox.appendChild(mkItem('<span style="width:9px;height:9px;border-radius:50%;background:'+tagColor(tag)+';display:inline-block"></span>',tag.name,filter.tagId===tag.id,function(){ apply({tagId:filter.tagId===tag.id?null:tag.id}); }));
+        });
+        m.appendChild(tagBox);
+      }
+      m.appendChild(sep());
+      var sortTitle=document.createElement("div"); sortTitle.className="mtitle"; sortTitle.textContent="Sort within each heading"; m.appendChild(sortTitle);
+      UPCOMING_SORTS.forEach(function(opt){
+        m.appendChild(mkItem("",opt[1],normalizeUpcomingSort(state.upcomingSort)===opt[0],function(){ state.upcomingSort=opt[0]; closeMenu(); persist(); renderList(); }));
+      });
+      if(upcomingFilterCount()){
+        m.appendChild(sep());
+        m.appendChild(mkItem("","Reset filters",false,function(){ state.upcomingFilter=normalizeUpcomingFilter(null); closeMenu(); persist(); renderList(); showToast("Upcoming filters reset"); }));
+      }
+    });
+  }
   function openListTools(anchor){
+    if(state.sidebarView==="upcoming") return openUpcomingTools(anchor);
     openMenu(anchor,function(m){
       var ft=document.createElement("div"); ft.className="mtitle"; ft.textContent="Filter by tag"; m.appendChild(ft);
       m.appendChild(mkItem(ICON_NOTE,"All tags",state.filterTag===null,function(){ state.filterTag=null; closeMenu(); persist(); renderAll(); }));
@@ -1921,12 +2143,29 @@
     var lbl = state.sidebarView==="upcoming"?"Upcoming":(state.filterTag ? ((tagById(state.filterTag)||{}).name||"Tag") : allNotesTitle());
     if(state.tagAssignMode&&state.filterTag) lbl="Add to "+((tagById(state.filterTag)||{}).name||"tag");
     listLabel.textContent=lbl+"  ·  "+items.length;
+    var upcoming=state.sidebarView==="upcoming", activeFilters=upcoming?upcomingFilterCount():0;
+    if(listToolsBtn) listToolsBtn.classList.toggle("filtered",activeFilters>0);
     listEl.innerHTML="";
-    var signature=items.map(function(it){ return it.id; }).join("|");
+    /* Sort and filter changes rearrange the same rows, so they belong in the
+       signature — otherwise the list would quietly re-order with no animation. */
+    var signature=(upcoming?state.upcomingSort+":"+JSON.stringify(upcomingFilter())+"|":"")+items.map(function(it){ return it.id; }).join("|");
     listEl.classList.toggle("enter",signature!==lastListSignature);
     lastListSignature=signature;
-    if(!items.length){ var e=document.createElement("div"); e.className="tag-empty"; e.style.padding="10px 12px"; e.textContent=state.sidebarView==="upcoming"?"Nothing due yet.":"Nothing here yet."; listEl.appendChild(e); updateUpcomingButton(); return; }
-    items.forEach(function(it,index){
+    if(!items.length){ var e=document.createElement("div"); e.className="tag-empty"; e.style.padding="10px 12px"; e.textContent=upcoming?(activeFilters?"Nothing matches these filters.":"Nothing due yet."):"Nothing here yet."; listEl.appendChild(e); updateUpcomingButton(); return; }
+    var groups=upcoming?upcomingGroups(items):[{items:items}], row=0;
+    groups.forEach(function(group){
+      if(group.label){
+        var head=document.createElement("div"); head.className="d-group"+(group.tone?" "+group.tone:"");
+        head.style.setProperty("--i",Math.min(row,11)); row++;
+        head.innerHTML='<span class="d-group-label"></span><span class="d-group-count">'+group.items.length+'</span>';
+        head.querySelector(".d-group-label").textContent=group.label;
+        listEl.appendChild(head);
+      }
+      group.items.forEach(function(it){ listEl.appendChild(buildListRow(it,row++)); });
+    });
+    updateUpcomingButton();
+  }
+  function buildListRow(it,index){
       var todoItem=isTodoNote(it)||it.type==="todo";
       var selected=state.selectedItemIds.indexOf(it.id)>=0;
       var el=document.createElement("div"); el.className="d-item"+(it.id===state.currentId?" active":"")+(todoItem&&it.done?" todo-done":"")+(state.selectingNotes?" selecting":"")+(it.id===justAddedId?" just-added":"");
@@ -1960,9 +2199,7 @@
       }
       el.onclick=function(e){ if(e.target.closest(".dx")||e.target.closest(".side-task")||e.target.closest(".side-todo-check")||e.target.closest(".note-select")) return; if(state.selectingNotes){ toggleNoteSelection(it.id,!selected); return; } if(activeAudioRecorder&&activeAudioRecorder.itemId!==it.id){ showToast("Finish the current recording before leaving it",true); return; } state.currentId=it.id; exitSidebarFocus(); app.classList.remove("open"); renderList(); renderMain(); };
       el.querySelector(".dx").onclick=function(e){ e.stopPropagation(); if(todoItem&&it.done) delItem(it.id,"Delete this completed todo? This can't be undone."); else openItemActions(e.currentTarget,it); };
-      listEl.appendChild(el);
-    });
-    updateUpcomingButton();
+      return el;
   }
   function renderAll(){ renderTags(); renderList(); renderMain(); }
   function addSelectedNotesToTag(){
@@ -2662,7 +2899,7 @@
       input.oninput=function(){ task.text=input.value; it.updated=Date.now(); save(); refreshListMeta(); };
       row.querySelector(".todo-check").onclick=function(){ task.done=!task.done; task.completed=task.done?Date.now():null; it.updated=Date.now(); persist(); renderMain(); renderList(); };
       var dueButton=document.createElement("button"); dueButton.type="button"; dueButton.className="todo-due"+(dueDateClass(task.dueDate)?" "+dueDateClass(task.dueDate):""); dueButton.style.gridColumn="2"; dueButton.innerHTML=ICON_CALENDAR+"<span>"+(task.dueDate?dueDateLabel(task.dueDate):"Add due date")+"</span>"; dueButton.title=task.dueDate?"Change due date":"Add due date";
-      dueButton.onclick=function(){ openTodoDueDatePicker(dueButton,task); };
+      dueButton.onclick=function(){ openTodoDueDatePicker(dueButton,task,it); };
       row.appendChild(dueButton);
 
       var details=document.createElement("details"); details.className="todo-details"; details.open=!task.detailsCollapsed;
@@ -2927,14 +3164,82 @@
     wrap.appendChild(addTag);
     return wrap;
   }
-  function openTodoDueDatePicker(anchor,it){
+  /* A hand-rolled calendar rather than <input type="date">. The native control
+     had to be focused open, and on a phone that focus lands a tap on whatever
+     day sits under the finger — which is why picking a date used to take two
+     goes at the button. Owning the grid means one tap sets exactly one day. */
+  function openTodoDueDatePicker(anchor,it,owner){
     openMenu(anchor,function(menu){
+      menu.classList.add("calendar-menu"); menu.setAttribute("data-noautofocus","1");
+      var today=startOfDay(new Date()), selected=dateFromKey(it.dueDate), weekStart=weekStartDay();
+      var view=new Date((selected||today).getFullYear(),(selected||today).getMonth(),1);
+      function commit(key,cell){
+        it.dueDate=key||""; it.updated=Date.now();
+        if(owner&&owner!==it) owner.updated=Date.now();
+        persist();
+        /* Only close our own menu — by the time the delay below elapses the user
+           may already have opened a different one. */
+        function finish(){ if(openMenuEl===menu) closeMenu(); renderAll(); showToast(key?"Due "+dueDateLabel(key):"Due date cleared"); }
+        /* Let the tap register visually before the menu goes away. */
+        if(cell&&!document.body.classList.contains("reduce-fx")) setTimeout(finish,190); else finish();
+      }
+
       var title=document.createElement("div"); title.className="mtitle"; title.textContent="Due date"; menu.appendChild(title);
-      var row=document.createElement("div"); row.className="mrow";
-      var input=document.createElement("input"); input.type="date"; input.value=it.dueDate||""; input.setAttribute("aria-label","Due date");
-      input.onchange=function(){ it.dueDate=input.value; it.updated=Date.now(); closeMenu(); persist(); renderAll(); showToast(input.value?"Due date updated":"Due date cleared"); };
-      row.appendChild(input); menu.appendChild(row);
-      if(it.dueDate){ var clear=document.createElement("button"); clear.type="button"; clear.className="color-reset"; clear.textContent="Clear due date"; clear.onclick=function(){ it.dueDate=""; it.updated=Date.now(); closeMenu(); persist(); renderAll(); showToast("Due date cleared"); }; menu.appendChild(clear); }
+
+      var quick=document.createElement("div"); quick.className="cal-quick";
+      [["Today",0],["Tomorrow",1],["+1 week",7]].forEach(function(option){
+        var button=document.createElement("button"); button.type="button"; button.className="cal-quick-btn"; button.textContent=option[0];
+        if(selected&&dateKey(selected)===dateKey(addDays(today,option[1]))) button.classList.add("on");
+        button.onclick=function(){ commit(dateKey(addDays(today,option[1]))); };
+        quick.appendChild(button);
+      });
+      menu.appendChild(quick);
+
+      var head=document.createElement("div"); head.className="cal-head";
+      head.innerHTML='<button type="button" class="cal-nav" aria-label="Previous month">'+ICON_CHEV_LEFT+'</button><span class="cal-month" aria-live="polite"></span><button type="button" class="cal-nav" aria-label="Next month">'+ICON_CHEV_RIGHT+'</button>';
+      var monthLabel=head.querySelector(".cal-month"), navButtons=head.querySelectorAll(".cal-nav");
+      navButtons[0].onclick=function(){ view.setMonth(view.getMonth()-1); draw(-1); };
+      navButtons[1].onclick=function(){ view.setMonth(view.getMonth()+1); draw(1); };
+      menu.appendChild(head);
+
+      var dow=document.createElement("div"); dow.className="cal-dow";
+      for(var offset=0;offset<7;offset++){
+        /* 2024-09-01 was a Sunday, so it indexes weekday names without hardcoding
+           any language. */
+        var name=new Date(2024,8,1+((weekStart+offset)%7)).toLocaleDateString(undefined,{weekday:"narrow"});
+        var cellLabel=document.createElement("span"); cellLabel.textContent=name; dow.appendChild(cellLabel);
+      }
+      menu.appendChild(dow);
+
+      var grid=document.createElement("div"); grid.className="cal-grid"; menu.appendChild(grid);
+      function draw(direction){
+        monthLabel.textContent=view.toLocaleDateString(undefined,{month:"long",year:"numeric"});
+        grid.style.setProperty("--cal-slide",(direction<0?-10:10)+"px");
+        grid.innerHTML="";
+        if(direction){ grid.style.animation="none"; void grid.offsetWidth; grid.style.animation=""; }
+        var lead=(new Date(view.getFullYear(),view.getMonth(),1).getDay()-weekStart+7)%7;
+        var days=new Date(view.getFullYear(),view.getMonth()+1,0).getDate();
+        for(var blank=0;blank<lead;blank++){ var gap=document.createElement("span"); gap.className="cal-cell blank"; grid.appendChild(gap); }
+        for(var day=1;day<=days;day++) grid.appendChild(dayCell(day,lead));
+      }
+      function dayCell(day,lead){
+        var date=new Date(view.getFullYear(),view.getMonth(),day), key=dateKey(date);
+        var cell=document.createElement("button"); cell.type="button"; cell.className="cal-cell"; cell.textContent=String(day);
+        cell.setAttribute("aria-label",date.toLocaleDateString(undefined,{weekday:"long",month:"long",day:"numeric"}));
+        if(date<today) cell.classList.add("is-past");
+        if(key===dateKey(today)) cell.classList.add("is-today");
+        if(selected&&key===dateKey(selected)){ cell.classList.add("is-selected"); cell.setAttribute("aria-current","date"); }
+        cell.style.setProperty("--d",lead+day-1);
+        cell.onclick=function(){ cell.classList.add("picking"); commit(key,cell); };
+        return cell;
+      }
+      draw(0);
+
+      if(it.dueDate){
+        var clear=document.createElement("button"); clear.type="button"; clear.className="color-reset"; clear.textContent="Clear due date";
+        clear.onclick=function(){ commit(""); };
+        menu.appendChild(clear);
+      }
     });
   }
   function openNoteColorPicker(anchor,it){
@@ -2965,28 +3270,74 @@
       row.appendChild(inp); m.appendChild(row);
     });
   }
+  /* Tagging is a batch job — you rarely want exactly one — so the menu stays put
+     while you pick, and writes once at the end. */
   function openTagPick(anchor,it){
     openMenu(anchor,function(m){
-      var t=document.createElement("div"); t.className="mtitle"; t.textContent="Tags"; m.appendChild(t);
+      var picked=(it.tagIds||[]).slice(), rows={}, dirty=false, saveButton=null;
+      m.classList.add("tag-pick-menu"); m.setAttribute("data-noautofocus","1");
+      var t=document.createElement("div"); t.className="mtitle"; t.textContent="Tags · tap to pick, then save"; m.appendChild(t);
       var box=document.createElement("div"); box.className="maxscroll";
-      if(!state.tags.length){ var e=document.createElement("div"); e.className="mtitle"; e.style.textTransform="none"; e.style.letterSpacing="0"; e.textContent="No tags yet."; box.appendChild(e); }
-      state.tags.forEach(function(tag){
-        var on=(it.tagIds||[]).indexOf(tag.id)>=0;
-        box.appendChild(mkItem('<span style="width:9px;height:9px;border-radius:50%;background:hsl('+tag.hue+',65%,62%);display:inline-block"></span>',tag.name,on,function(){
-          it.tagIds=it.tagIds||[];
-          var idx=it.tagIds.indexOf(tag.id);
-          if(idx>=0) it.tagIds.splice(idx,1); else it.tagIds.push(tag.id);
-          it.updated=Date.now(); closeMenu(); persist(); renderMain(); renderList();
-        }));
-      });
-      m.appendChild(box); m.appendChild(sep());
+      var empty=document.createElement("div"); empty.className="mtitle tag-pick-empty"; empty.style.textTransform="none"; empty.style.letterSpacing="0"; empty.textContent="No tags yet — type one below.";
+      if(!state.tags.length) box.appendChild(empty);
+      function bounce(row){
+        var mark=row.querySelector(".chk"); if(!mark) return;
+        mark.style.animation="none"; void mark.offsetWidth; mark.style.animation="";
+      }
+      function setPicked(tagId,on){
+        var index=picked.indexOf(tagId);
+        if(on&&index<0) picked.push(tagId); else if(!on&&index>=0) picked.splice(index,1); else return;
+        dirty=true;
+        var row=rows[tagId];
+        if(row){ row.classList.toggle("on",on); bounce(row); }
+        refresh();
+      }
+      function addRow(tag){
+        var row=mkItem('<span style="width:9px;height:9px;border-radius:50%;background:'+tagColor(tag)+';display:inline-block"></span>',tag.name,picked.indexOf(tag.id)>=0,function(){ setPicked(tag.id,picked.indexOf(tag.id)<0); });
+        rows[tag.id]=row; box.appendChild(row);
+        return row;
+      }
+      state.tags.forEach(addRow);
+      m.appendChild(box);
+
       var row=document.createElement("div"); row.className="mrow";
-      var inp=document.createElement("input"); inp.placeholder="Create new tag…";
-      inp.onkeydown=function(e){ if(e.key==="Enter"&&inp.value.trim()){
-        var nt={id:uid(),name:inp.value.trim().replace(/^#+/,""),hue:TAG_HUES[state.tags.length%TAG_HUES.length]};
-        state.tags.push(nt); it.tagIds=it.tagIds||[]; it.tagIds.push(nt.id); it.updated=Date.now();
-        closeMenu(); persist(); renderAll(); } };
+      var inp=document.createElement("input"); inp.placeholder="Create new tag…"; inp.setAttribute("aria-label","Create a new tag");
+      inp.onkeydown=function(e){
+        if(e.key!=="Enter") return;
+        e.preventDefault();
+        var name=inp.value.trim().replace(/^#+/,""); if(!name) return;
+        inp.value="";
+        var existing=state.tags.find(function(tag){ return (tag.name||"").toLowerCase()===name.toLowerCase(); });
+        if(existing){ setPicked(existing.id,true); return; }
+        var nt={id:uid(),name:name,hue:TAG_HUES[state.tags.length%TAG_HUES.length]};
+        state.tags.push(nt);
+        if(empty.parentNode) empty.parentNode.removeChild(empty);
+        addRow(nt);
+        /* The tag itself is real straight away — only the note's membership waits
+           for the save button. */
+        persist(); renderTags();
+        setPicked(nt.id,true);
+      };
       row.appendChild(inp); m.appendChild(row);
+
+      m.appendChild(sep());
+      saveButton=document.createElement("button"); saveButton.type="button"; saveButton.className="tag-save";
+      saveButton.onclick=function(){ closeMenu(); };
+      m.appendChild(saveButton);
+
+      function refresh(){
+        var count=picked.length;
+        saveButton.textContent=(dirty?"Save ":"Done · ")+(count?count+" tag"+(count===1?"":"s"):"no tags");
+        saveButton.classList.toggle("ready",dirty);
+      }
+      /* Dismissing the menu commits too, so nothing is lost to a stray tap. */
+      m.__onClose=function(){
+        if(!dirty) return;
+        it.tagIds=picked.slice(); it.updated=Date.now();
+        persist(); renderAll();
+        showToast(picked.length?"Saved "+picked.length+" tag"+(picked.length===1?"":"s"):"Tags cleared");
+      };
+      refresh();
     });
   }
 
@@ -5043,8 +5394,28 @@
     }).then(function(){ trimCloudBackups(); }).catch(function(e){ cloudSyncLoading=false; console.warn(e); showToast("Couldn’t read cloud data — check Firestore rules",true); });
   }
   /* Cloud writes are deliberately batched: local recovery saves stay immediate,
-     while a burst of typing becomes one network write after a quiet moment. */
-  function saveCloud(){ if(!currentUser||!db||cloudSyncPaused||cloudSyncLoading) return; clearTimeout(cloudTimer); cloudTimer=setTimeout(saveCloudNow,4500); }
+     while a burst of typing becomes one network write after a quiet moment.
+     The wait is not fixed, though — it scales with how much actually changed, so
+     fixing a typo waits out the full cooldown while a pasted paragraph, a bulk
+     tag edit or a delete goes up almost at once. CLOUD_SAVE_MAX_WAIT is the
+     backstop: an unbroken burst of edits can never push the debounce out
+     forever, because the oldest unsaved change is only ever that far behind. */
+  var CLOUD_SAVE_MIN_DELAY=500, CLOUD_SAVE_MAX_DELAY=4500, CLOUD_SAVE_RUSH_WEIGHT=12, CLOUD_SAVE_MAX_WAIT=9000;
+  var cloudPendingWeight=0, cloudPendingSince=0;
+  function cloudSaveDelay(){
+    /* Weight comes from revisionWeight(), which counts one unit per ~120 changed
+       characters, so RUSH_WEIGHT lands around "a paragraph or more moved". */
+    var reach=Math.min(1,Math.max(0,cloudPendingWeight-1)/CLOUD_SAVE_RUSH_WEIGHT);
+    var delay=CLOUD_SAVE_MAX_DELAY-(CLOUD_SAVE_MAX_DELAY-CLOUD_SAVE_MIN_DELAY)*reach;
+    if(cloudPendingSince) delay=Math.min(delay,cloudPendingSince+CLOUD_SAVE_MAX_WAIT-Date.now());
+    return Math.max(0,Math.round(delay));
+  }
+  function saveCloud(weight){
+    if(!currentUser||!db||cloudSyncPaused||cloudSyncLoading) return;
+    cloudPendingWeight+=Math.max(0,Number(weight)||0);
+    if(!cloudPendingSince) cloudPendingSince=Date.now();
+    clearTimeout(cloudTimer); cloudTimer=setTimeout(saveCloudNow,cloudSaveDelay());
+  }
   function cloudBackupRef(id){ return db.collection("users").doc(currentUser.uid).collection("backups").doc(id); }
   function trimCloudBackups(maximum){
     if(!currentUser||!db) return Promise.resolve();
@@ -5122,6 +5493,7 @@
   function restoreLatestCloudBackup(){ getCloudBackups().then(function(list){ if(!list.length){ showToast("No cloud backup yet",true); return; } restoreBackup(list[0]); }).catch(function(e){ console.warn(e); showToast("Cloud backups could not be loaded",true); }); }
   function saveCloudNow(){
     if(!currentUser||!db||cloudSyncPaused||cloudSyncLoading) return;
+    clearTimeout(cloudTimer); cloudPendingWeight=0; cloudPendingSince=0;
     return saveCloudNowVersioned();
     var sentAt=Date.now();
     db.collection("users").doc(currentUser.uid).set({ items:state.items, folders:state.folders, tags:state.tags, preferences:{theme:state.theme,motion:state.motion,darkness:state.darkness,enabledTypes:state.enabledTypes,typeDefaults:state.typeDefaults,noteInsertOptions:state.noteInsertOptions,tagsCollapsed:state.tagsCollapsed,allNotesName:state.allNotesName,readChapterNames:state.readChapterNames,agentSettings:agentSettings()}, theme:state.theme, motion:state.motion, updated:sentAt },{merge:true}).then(function(){
