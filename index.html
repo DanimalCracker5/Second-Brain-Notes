@@ -199,14 +199,45 @@
   .note-attachment-file{ display:flex; align-items:center; gap:10px; min-height:78px; padding:14px 64px 14px 14px; }
   .attachment-icon{ width:34px; height:34px; flex:none; display:grid; place-items:center; border-radius:9px; color:var(--accent); background:var(--accent-soft); font-size:.76rem; font-weight:700; }
   .attachment-info{ min-width:0; flex:1; display:grid; gap:3px; } .attachment-info b{ overflow:hidden; text-overflow:ellipsis; white-space:nowrap; font-size:.84rem; } .attachment-info small{ color:var(--ink-faint); font:400 .66rem "DM Mono",monospace; }
-  .note-attachment-actions{ position:absolute; z-index:2; top:9px; right:9px; display:flex; gap:5px; opacity:0; transition:opacity .14s; }
+  .note-attachment-actions{ position:absolute; z-index:2; top:9px; right:9px; display:flex; flex-wrap:wrap; justify-content:flex-end; max-width:calc(100% - 18px); gap:5px; opacity:0; transition:opacity .14s; }
   .note-attachment:hover .note-attachment-actions,.note-attachment:focus-within .note-attachment-actions{ opacity:1; }
-  .attachment-open,.attachment-retry,.attachment-remove{ border:1px solid rgba(255,255,255,.12); border-radius:8px; padding:6px 8px; cursor:pointer; font:600 .7rem "DM Sans",sans-serif; backdrop-filter:blur(8px); }
+  .attachment-open,.attachment-retry,.attachment-remove,.attachment-copy,.attachment-download{ border:1px solid rgba(255,255,255,.12); border-radius:8px; padding:6px 8px; cursor:pointer; font:600 .7rem "DM Sans",sans-serif; backdrop-filter:blur(8px); }
   .attachment-open{ color:var(--ink); background:rgba(10,10,14,.76); } .attachment-retry{ color:var(--accent); background:rgba(10,10,14,.76); } .attachment-remove{ color:#fca5a5; background:rgba(68,12,18,.82); }
+  .attachment-copy,.attachment-download{ color:var(--ink); background:rgba(10,10,14,.76); } .attachment-copy:hover,.attachment-download:hover,.attachment-open:hover{ border-color:var(--accent-line); color:var(--accent); }
   .attachment-resize{ position:absolute; z-index:3; right:0; bottom:0; width:25px; height:25px; border:0; border-radius:10px 0 0; color:#08080a; background:var(--accent); cursor:se-resize; opacity:0; transition:opacity .14s; }
   .attachment-resize::before{ content:"↘"; font-size:.8rem; font-weight:800; } .note-attachment:hover .attachment-resize,.note-attachment:focus-within .attachment-resize{ opacity:1; }
   .attachment-status{ position:absolute; left:10px; bottom:8px; max-width:calc(100% - 42px); overflow:hidden; text-overflow:ellipsis; white-space:nowrap; padding:4px 7px; border-radius:6px; color:rgba(255,255,255,.72); background:rgba(0,0,0,.52); font:500 .62rem "DM Mono",monospace; }
   @media (max-width:560px){ .note-attachment{ width:100% !important; } .note-attachment-actions,.attachment-resize{ opacity:1; } }
+
+  .note-embed,.note-link{ width:min(100%,var(--attachment-width,100%)); position:relative; margin:10px 0 14px; border:1px solid var(--line); border-radius:14px; overflow:hidden; background:rgba(255,255,255,.035); box-shadow:0 12px 38px rgba(0,0,0,.16); }
+  .note-embed-frame{ position:relative; width:100%; aspect-ratio:16/9; background:#000; }
+  .note-embed-frame iframe{ position:absolute; inset:0; width:100%; height:100%; border:0; }
+  .note-embed-actions,.note-link-actions{ position:absolute; z-index:3; top:9px; right:9px; display:flex; gap:5px; opacity:0; transition:opacity .14s; }
+  .note-embed:hover .note-embed-actions,.note-embed:focus-within .note-embed-actions,.note-link:hover .note-link-actions,.note-link:focus-within .note-link-actions{ opacity:1; }
+  .embed-btn{ border:1px solid rgba(255,255,255,.12); border-radius:8px; padding:6px 8px; color:var(--ink); background:rgba(10,10,14,.76); cursor:pointer; font:600 .7rem "DM Sans",sans-serif; backdrop-filter:blur(8px); }
+  .embed-btn:hover{ border-color:var(--accent-line); color:var(--accent); } .embed-btn.danger{ color:#fca5a5; background:rgba(68,12,18,.82); }
+  .note-embed:not(.editing) .note-embed-edit,.note-link:not(.editing) .note-link-edit{ display:none; }
+  .note-embed:hover .attachment-resize,.note-embed:focus-within .attachment-resize,.note-link:hover .attachment-resize,.note-link:focus-within .attachment-resize{ opacity:1; }
+  .note-embed-edit,.note-link-edit{ display:grid; gap:9px; padding:14px; }
+  .note-link-edit{ border-top:1px solid var(--line-soft); }
+  .note-embed-edit label,.note-link-edit label{ display:grid; gap:5px; color:var(--ink-faint); font:600 .64rem "DM Sans",sans-serif; letter-spacing:.09em; text-transform:uppercase; }
+  .note-embed-edit input,.note-link-edit input{ width:100%; border:1px solid var(--line); border-radius:10px; padding:9px 11px; color:var(--ink); background:rgba(0,0,0,.22); outline:none; font:500 .82rem "DM Mono",monospace; }
+  .note-link-edit input.plain{ font:500 .9rem "DM Sans",sans-serif; }
+  .note-embed-edit input:focus,.note-link-edit input:focus{ border-color:var(--accent-line); }
+  .note-embed-edit .erow,.note-link-edit .erow{ display:flex; flex-wrap:wrap; gap:7px; }
+  .note-embed-edit .ehint,.note-link-edit .ehint{ margin:0; color:var(--ink-faint); font-size:.68rem; line-height:1.5; }
+  .erow button{ border:1px solid var(--line); border-radius:9px; padding:7px 11px; color:var(--ink-dim); background:rgba(255,255,255,.035); cursor:pointer; font:600 .72rem "DM Sans",sans-serif; }
+  .erow button:hover{ border-color:var(--accent-line); color:var(--accent); }
+  .erow button.primary{ border-color:var(--accent-line); color:var(--accent); background:var(--accent-soft); }
+  .note-link-card{ display:block; color:inherit; text-decoration:none; }
+  .note-link-media{ display:block; width:100%; aspect-ratio:16/9; object-fit:cover; background:rgba(0,0,0,.3); }
+  .note-link-media.blank{ display:grid; place-items:center; aspect-ratio:auto; min-height:96px; color:var(--ink-faint); font:600 .68rem "DM Mono",monospace; letter-spacing:.06em; }
+  .note-link-body{ display:grid; gap:5px; padding:13px 14px; }
+  .note-link-body b{ font-size:.96rem; letter-spacing:-.01em; overflow-wrap:anywhere; }
+  .note-link-body small{ color:var(--ink-dim); font-size:.79rem; line-height:1.5; overflow-wrap:anywhere; }
+  .note-link-host{ color:var(--accent); font:600 .64rem "DM Mono",monospace; letter-spacing:.07em; text-transform:uppercase; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+  .note-link-card:hover .note-link-body b{ color:var(--accent); }
+  @media (max-width:560px){ .note-embed,.note-link{ width:100% !important; } .note-embed-actions,.note-link-actions{ opacity:1; } }
 
   .ch{ padding:4px 0 22px; border-bottom:1px solid var(--line-soft); margin-bottom:22px; }
   .ch:last-of-type{ border-bottom:none; }
@@ -1078,7 +1109,7 @@
   function newTask(){ return {id:uid(),text:"",description:"",body:"",attachments:[],blocks:[textBlock("")],subtasks:[],done:false,completed:null,dueDate:"",detailsCollapsed:true}; }
   function newAgentItem(){ var it=baseItem(); it.type="agent"; it.title="New Agent"; it.agent={tab:"chat"}; normalizeAgent(it); return it; }
   function newWorkoutRoutine(){ var it=baseItem(); it.type="workout"; it.title="New Workout Routine"; it.workout={sessions:[],lastCompleted:null}; it.blocks=[textBlock("")]; it.body=""; return it; }
-  var NOTE_INSERT_DEFAULTS={file:true,paragraph:true,comment:true,prompt:true,heading:true,chapter:true,group:true,code:true};
+  var NOTE_INSERT_DEFAULTS={file:true,embed:true,link:true,paragraph:true,comment:true,prompt:true,heading:true,chapter:true,group:true,code:true};
   function textBlock(text){ return {id:uid(),type:"text",text:text||"",html:escapeHtml(text||"").replace(/\n/g,"<br>")}; }
   function richTextToPlain(html){ var box=document.createElement("div"); box.innerHTML=html||""; return (box.innerText||box.textContent||"").replace(/\u00a0/g," "); }
   function sanitizeRichHtml(html){
@@ -1096,6 +1127,8 @@
     if(block.type==="heading"||block.type==="prompt"||block.type==="code") return block.type==="code"?(block.code||""):(block.text||"");
     if(block.type==="chapter") return block.text||"";
     if(block.type==="group") return [block.title,block.text].filter(Boolean).join("\n");
+    if(block.type==="embed") return [block.title,block.url].filter(Boolean).join("\n");
+    if(block.type==="link") return [block.title,block.description,block.url].filter(Boolean).join("\n");
     return "";
   }
   /* A short-lived migration build could save an old script's sections as JSON
@@ -1144,6 +1177,17 @@
     return (sections||[]).filter(Boolean).map(function(section){ return section.kind==="cue" ? {id:uid(),type:"comment",text:section.body||""} : chapterBlock(section.title||"",section.body||""); });
   }
   function syncNoteBody(note){ note.body=(note.blocks||[]).map(blockPlainText).filter(Boolean).join("\n"); if(Object.prototype.hasOwnProperty.call(note,"description")) note.description=note.body; }
+  /* An uploaded file can be shown either as its own attachment block or as a link
+     block's photo, so both places count as "still in use". */
+  function noteAttachmentInUse(note,attachmentId){
+    if(!attachmentId) return false;
+    return (note&&note.blocks||[]).some(function(block){
+      if(!block) return false;
+      if(block.type==="attachment") return block.attachmentId===attachmentId;
+      if(block.type==="link") return block.imageAttachmentId===attachmentId;
+      return false;
+    });
+  }
   function ensureNoteBlocks(note){
     if(!note||typeof note!=="object") return;
     var recoveredSections=serializedScriptSectionsForNote(note);
@@ -1160,7 +1204,7 @@
       note.blocks=[textBlock(note.body||"")];
       note.attachments.forEach(function(attachment){ note.blocks.push({id:uid(),type:"attachment",attachmentId:attachment.id,width:100}); });
     } else {
-      note.blocks=note.blocks.filter(function(block){ return block&&["text","attachment","heading","comment","prompt","chapter","group","code"].indexOf(block.type)>=0&&(block.type!=="attachment"||block.attachmentId); });
+      note.blocks=note.blocks.filter(function(block){ return block&&["text","attachment","embed","link","heading","comment","prompt","chapter","group","code"].indexOf(block.type)>=0&&(block.type!=="attachment"||block.attachmentId); });
       /* A malformed legacy block list must not make the collaborator see only
          the title while the note's body still contains editable text. */
       if(!note.blocks.length&&typeof note.body==="string"&&note.body.trim()) note.blocks=[textBlock(note.body)];
@@ -1173,8 +1217,12 @@
         if(block.type==="comment"||block.type==="prompt"){ if(typeof block.text!=="string") block.text=""; }
         if(block.type==="group"){ if(typeof block.title!=="string") block.title="Untitled group"; if(typeof block.text!=="string") block.text=""; if(typeof block.collapsed!=="boolean") block.collapsed=false; }
         if(block.type==="code"){ if(typeof block.language!=="string") block.language="javascript"; if(typeof block.code!=="string") block.code=""; }
+        if(block.type==="embed"){ if(typeof block.url!=="string") block.url=""; if(typeof block.videoId!=="string") block.videoId=""; block.provider=block.provider==="vimeo"?"vimeo":"youtube"; block.start=Math.max(0,Number(block.start)||0); if(typeof block.width!=="number") block.width=100; }
+        if(block.type==="link"){ ["url","title","description","imageUrl","imageAttachmentId"].forEach(function(key){ if(typeof block[key]!=="string") block[key]=""; }); if(typeof block.width!=="number") block.width=100; }
       });
-      note.attachments.forEach(function(attachment){ if(!note.blocks.some(function(block){ return block.type==="attachment"&&block.attachmentId===attachment.id; })) note.blocks.push({id:uid(),type:"attachment",attachmentId:attachment.id,width:100}); });
+      /* An attachment with no block of its own is an orphan and gets one back —
+         unless a link block is already using it as its photo. */
+      note.attachments.forEach(function(attachment){ if(!noteAttachmentInUse(note,attachment.id)) note.blocks.push({id:uid(),type:"attachment",attachmentId:attachment.id,width:100}); });
     }
     syncNoteBody(note);
   }
@@ -1683,8 +1731,26 @@
       if(block.type==="group") return {id:block.id||uid(),type:"group",title:block.title||"Untitled group",text:block.text||""};
       if(block.type==="code") return {id:block.id||uid(),type:"code",language:block.language||"javascript",code:block.code||""};
       if(block.type==="attachment") return {id:block.id||uid(),type:"attachment",attachmentId:block.attachmentId||"",width:Math.max(20,Math.min(100,Number(block.width)||100))};
+      if(block.type==="embed") return block.videoId?{id:block.id||uid(),type:"embed",provider:block.provider==="vimeo"?"vimeo":"youtube",videoId:block.videoId,start:Math.max(0,Number(block.start)||0),url:embedWatchUrl(block),width:Math.max(20,Math.min(100,Number(block.width)||100))}:null;
+      if(block.type==="link"){
+        var linkUrl=safeLinkUrl(block.url);
+        return linkUrl?{id:block.id||uid(),type:"link",url:linkUrl,title:block.title||"",description:block.description||"",imageAttachmentId:block.imageAttachmentId||"",imageUrl:safeImageUrl(block.imageUrl),width:Math.max(20,Math.min(100,Number(block.width)||100))}:null;
+      }
       return null;
     }).filter(Boolean);
+  }
+  /* The public page has no themes of its own, so a shared note carries the
+     colours it was written in. Otherwise every link looks purple to its reader. */
+  function publicShareTheme(){
+    var theme=themeDef(), accent=theme.accent;
+    return {
+      id:theme.id,
+      accent:hsl(accent,0),
+      accentSoft:"hsla("+accent[0]+","+accent[1]+"%,"+Math.max(accent[2]-14,30)+"%,.16)",
+      accentLine:"hsla("+accent[0]+","+accent[1]+"%,"+accent[2]+"%,.32)",
+      glow1:"hsla("+theme.glows[0][0]+","+theme.glows[0][1]+"%,"+theme.glows[0][2]+"%,.28)",
+      glow2:"hsla("+theme.glows[1][0]+","+theme.glows[1][1]+"%,"+theme.glows[1][2]+"%,.16)"
+    };
   }
   function publicAttachments(note){
     return Promise.all((note.attachments||[]).map(function(attachment){
@@ -1696,10 +1762,10 @@
   }
   function publicShareSignature(item){
     if(item.type==="script") return JSON.stringify({type:item.type,title:item.title||"",sections:(item.sections||[]).map(function(section){ return {title:section.title||"",body:section.body||"",kind:section.kind||"chapter"}; })});
-    return JSON.stringify({type:item.type,title:item.title||"",todo:!!item.todo,done:!!item.done,blocks:publicNoteBlocks(item),attachments:(item.attachments||[]).map(function(attachment){ return attachment&&{id:attachment.id,name:attachment.name,type:attachment.type,size:attachment.size,storagePath:attachment.storagePath,inlineData:attachment.inlineData}; })});
+    return JSON.stringify({type:item.type,title:item.title||"",todo:!!item.todo,done:!!item.done,theme:publicShareTheme(),blocks:publicNoteBlocks(item),attachments:(item.attachments||[]).map(function(attachment){ return attachment&&{id:attachment.id,name:attachment.name,type:attachment.type,size:attachment.size,storagePath:attachment.storagePath,inlineData:attachment.inlineData}; })});
   }
   function publicSharePayload(item){
-    var now=Date.now(), payload={ownerId:currentUser.uid,shareId:item.shareId,type:item.type,title:item.title||"",todo:!!item.todo,done:!!item.done,createdAt:item.shareCreatedAt||now,updatedAt:now};
+    var now=Date.now(), payload={ownerId:currentUser.uid,shareId:item.shareId,type:item.type,title:item.title||"",todo:!!item.todo,done:!!item.done,theme:publicShareTheme(),createdAt:item.shareCreatedAt||now,updatedAt:now};
     if(item.type==="script"){
       payload.sections=(item.sections||[]).map(function(section){ return {id:section.id||uid(),title:section.title||"",body:section.body||"",kind:section.kind||"chapter"}; });
       return Promise.resolve(payload);
@@ -2607,6 +2673,33 @@
     var index=typeof insertAt==="number"?insertAt:noteInsertIndex(note), blocks=attachments.map(function(attachment){ return {id:uid(),type:"attachment",attachmentId:attachment.id,width:100}; });
     note.blocks.splice.apply(note.blocks,[index,0].concat(blocks)); syncNoteBody(note); activeNoteTextBlock=null;
   }
+  /* Saves one file into the note and starts the device-then-cloud sync for it.
+     The caller decides how the file is shown — its own block, or a link photo. */
+  function attachNoteFile(note,file){
+    note.attachments=note.attachments||[];
+    var attachment={id:uid(),name:file.name||"Untitled file",type:file.type||"",size:file.size||0,added:Date.now(),syncState:"saving"};
+    note.attachments.push(attachment);
+    readInlineImage(file).then(function(data){ if(data&&!attachment.storagePath&&note.attachments.indexOf(attachment)>=0){ attachment.inlineData=data; touchContent(note); persist(); refreshNoteEditor(note); } });
+    storeAttachmentFile(note.id,attachment.id,file).then(function(){
+      attachment.syncState="device"; touchContent(note); persist(); refreshNoteEditor(note);
+      return uploadAttachment(note,attachment,file);
+    }).then(function(uploaded){
+      if(uploaded) showToast("Attachment added and synced");
+      else showToast("Attachment added to this device");
+    }).catch(function(error){
+      console.warn("Attachment could not be synced:",error);
+      if(attachment.syncState==="saving"){
+        note.attachments=note.attachments.filter(function(item){ return item.id!==attachment.id; });
+        note.blocks=note.blocks.filter(function(block){ return block.attachmentId!==attachment.id; });
+        note.blocks.forEach(function(block){ if(block.type==="link"&&block.imageAttachmentId===attachment.id) block.imageAttachmentId=""; });
+        syncNoteBody(note); touchContent(note);
+        persist(); refreshNoteEditor(note); showToast("Couldn’t save that attachment",true);
+      } else {
+        attachment.syncState="device"; touchContent(note); persist(); refreshNoteEditor(note); showToast("Attachment saved on this device; cloud sync is unavailable");
+      }
+    });
+    return attachment;
+  }
   function addNoteAttachments(note,files,insertAt){
     var selected=Array.prototype.slice.call(files||[]), accepted=[];
     selected.forEach(function(file){
@@ -2614,29 +2707,7 @@
       accepted.push(file);
     });
     if(!accepted.length) return;
-    note.attachments=note.attachments||[];
-    var newAttachments=[];
-    accepted.forEach(function(file){
-      var attachment={id:uid(),name:file.name||"Untitled file",type:file.type||"",size:file.size||0,added:Date.now(),syncState:"saving"};
-      note.attachments.push(attachment); newAttachments.push(attachment);
-      readInlineImage(file).then(function(data){ if(data&&!attachment.storagePath&&note.attachments.indexOf(attachment)>=0){ attachment.inlineData=data; touchContent(note); persist(); refreshNoteEditor(note); } });
-      storeAttachmentFile(note.id,attachment.id,file).then(function(){
-        attachment.syncState="device"; touchContent(note); persist(); refreshNoteEditor(note);
-        return uploadAttachment(note,attachment,file);
-      }).then(function(uploaded){
-        if(uploaded) showToast("Attachment added and synced");
-        else showToast("Attachment added to this device");
-      }).catch(function(error){
-        console.warn("Attachment could not be synced:",error);
-        if(attachment.syncState==="saving"){
-          note.attachments=note.attachments.filter(function(item){ return item.id!==attachment.id; });
-          note.blocks=note.blocks.filter(function(block){ return block.attachmentId!==attachment.id; }); syncNoteBody(note); touchContent(note);
-          persist(); refreshNoteEditor(note); showToast("Couldn’t save that attachment",true);
-        } else {
-          attachment.syncState="device"; touchContent(note); persist(); refreshNoteEditor(note); showToast("Attachment saved on this device; cloud sync is unavailable");
-        }
-      });
-    });
+    var newAttachments=accepted.map(function(file){ return attachNoteFile(note,file); });
     insertAttachmentBlocks(note,newAttachments,insertAt); touchContent(note); persist(); refreshNoteEditor(note);
   }
   function openAttachment(note,attachment){
@@ -2647,18 +2718,23 @@
     }
     getAttachmentUrl(note,attachment).then(function(result){ clickLink(result.url,result.local); }).catch(function(error){ console.warn("Attachment could not be opened:",error); showToast("That attachment is not available on this device",true); });
   }
-  function removeInlineAttachment(note,block){
-    var attachment=attachmentById(note,block.attachmentId);
-    note.blocks=note.blocks.filter(function(item){ return item.id!==block.id; });
-    if(!note.blocks.some(function(item){ return item.type==="text"; })) note.blocks.push(textBlock(""));
-    var deleteFile=attachment&&!note.blocks.some(function(item){ return item.type==="attachment"&&item.attachmentId===attachment.id; });
-    if(deleteFile) note.attachments=note.attachments.filter(function(item){ return item.id!==attachment.id; });
-    syncNoteBody(note); touchContent(note); persist(); refreshNoteEditor(note);
-    if(!deleteFile) return;
-    removeAttachmentFile(note.id,attachment.id);
+  /* Drops the stored file once nothing in the note points at it any more. Call
+     this only after the blocks have already been updated. */
+  function releaseNoteAttachment(note,attachmentId){
+    if(!attachmentId||noteAttachmentInUse(note,attachmentId)) return;
+    var attachment=attachmentById(note,attachmentId); if(!attachment) return;
+    note.attachments=(note.attachments||[]).filter(function(item){ return item.id!==attachmentId; });
+    removeAttachmentFile(note.id,attachmentId);
     var sharedInAnotherItem=false;
     if(attachment.storagePath) forEachContentDocument(function(document){ if(document!==note&&(document.attachments||[]).some(function(other){ return other.storagePath===attachment.storagePath; })) sharedInAnotherItem=true; });
     if(storage&&attachment.storagePath&&!sharedInAnotherItem) storage.ref(attachment.storagePath).delete().catch(function(error){ console.warn("Cloud attachment cleanup skipped:",error); }).then(function(){ scheduleAccountUsageRefresh(0); });
+  }
+  function removeInlineAttachment(note,block){
+    var attachmentId=block.attachmentId;
+    note.blocks=note.blocks.filter(function(item){ return item.id!==block.id; });
+    if(!note.blocks.some(function(item){ return item.type==="text"; })) note.blocks.push(textBlock(""));
+    releaseNoteAttachment(note,attachmentId);
+    syncNoteBody(note); touchContent(note); persist(); refreshNoteEditor(note);
     showToast("Attachment removed");
   }
   function cleanupContentAttachments(note){
@@ -2685,7 +2761,9 @@
   function deleteNoteBlock(note,block){
     var index=note.blocks.findIndex(function(item){ return item.id===block.id; });
     if(index<0) return;
-    note.blocks.splice(index,1); activeNoteTextBlock=null; refreshNoteBlocks(note); showToast("Block deleted");
+    note.blocks.splice(index,1); activeNoteTextBlock=null;
+    if(block.type==="link"&&block.imageAttachmentId) releaseNoteAttachment(note,block.imageAttachmentId);
+    refreshNoteBlocks(note); showToast("Block deleted");
   }
   function buildNoteBlockActions(note,block,className){
     var index=note.blocks.findIndex(function(item){ return item.id===block.id; }), actions=document.createElement("div"); actions.className="note-block-actions "+className;
@@ -2713,11 +2791,73 @@
     function finish(){ document.removeEventListener("pointermove",move); document.removeEventListener("pointerup",finish); touchContent(note); persist(); }
     document.addEventListener("pointermove",move); document.addEventListener("pointerup",finish);
   }
+  function makeNoteBlockDraggable(note,block,card){
+    card.draggable=true; card.title="Drag to move within this note";
+    card.ondragstart=function(event){ if(event.target.closest("button")||event.target.closest("input")||event.target.closest("iframe")){ event.preventDefault(); return; } draggedNoteBlock={noteId:note.id,blockId:block.id}; card.classList.add("dragging"); event.dataTransfer.effectAllowed="move"; event.dataTransfer.setData("text/plain",block.id); var editor=card.closest(".note-editor"); if(editor) editor.classList.add("dragging"); };
+    card.ondragend=function(){ draggedNoteBlock=null; card.classList.remove("dragging"); var editor=card.closest(".note-editor"); if(editor) editor.classList.remove("dragging"); };
+  }
+  /* The clipboard only reliably takes PNG, so anything else is repainted through
+     a canvas before it is handed over. */
+  function pngBlobFrom(blob){
+    return new Promise(function(resolve,reject){
+      var url=URL.createObjectURL(blob), image=new Image();
+      image.onload=function(){
+        var canvas=document.createElement("canvas"); canvas.width=image.naturalWidth||image.width; canvas.height=image.naturalHeight||image.height;
+        canvas.getContext("2d").drawImage(image,0,0); URL.revokeObjectURL(url);
+        canvas.toBlob(function(png){ if(png) resolve(png); else reject(new Error("Could not convert this image")); },"image/png");
+      };
+      image.onerror=function(){ URL.revokeObjectURL(url); reject(new Error("Could not read this image")); };
+      image.src=url;
+    });
+  }
+  function attachmentBlob(note,attachment){
+    return readAttachmentFile(note.id,attachment.id).then(function(file){
+      if(file) return file;
+      return getAttachmentUrl(note,attachment).then(function(result){
+        return fetch(result.url).then(function(response){
+          if(!response.ok) throw new Error("Attachment download failed");
+          return response.blob();
+        }).then(function(blob){ if(result.local) URL.revokeObjectURL(result.url); return blob; });
+      });
+    });
+  }
+  function copyAttachmentImage(note,attachment,button){
+    var label=button.textContent;
+    button.disabled=true; button.textContent="Copying…";
+    function finish(text){ button.textContent=text; setTimeout(function(){ button.textContent=label; button.disabled=false; },1400); }
+    attachmentBlob(note,attachment).then(function(blob){
+      return (blob.type||"").toLowerCase()==="image/png"?blob:pngBlobFrom(blob);
+    }).then(function(png){
+      return navigator.clipboard.write([new ClipboardItem({"image/png":png})]);
+    }).then(function(){
+      finish("Copied"); showToast("Image copied to your clipboard");
+    }).catch(function(error){
+      console.warn("Image could not be copied:",error);
+      finish("Copy"); showToast("Couldn’t copy that image",true);
+    });
+  }
+  function copyAttachmentLink(note,attachment){
+    getAttachmentUrl(note,attachment).then(function(result){
+      if(result.local||/^blob:/i.test(result.url)){ if(result.local) URL.revokeObjectURL(result.url); showToast("This file has no shareable link yet",true); return; }
+      copy(result.url,function(){ showToast("File link copied"); });
+    }).catch(function(){ showToast("This file has no shareable link yet",true); });
+  }
+  function downloadAttachment(note,attachment){
+    var name=attachment.name||"attachment";
+    attachmentBlob(note,attachment).then(function(blob){
+      var url=URL.createObjectURL(blob), link=document.createElement("a");
+      link.href=url; link.download=name; document.body.appendChild(link); link.click(); document.body.removeChild(link);
+      setTimeout(function(){ URL.revokeObjectURL(url); },60000);
+      showToast("Saving "+name);
+    }).catch(function(error){
+      console.warn("Attachment could not be downloaded:",error);
+      openAttachment(note,attachment);
+    });
+  }
   function buildNoteAttachmentBlock(note,block){
     var attachment=attachmentById(note,block.attachmentId); if(!attachment) return null;
-    var card=document.createElement("figure"); card.className="note-attachment"; card.draggable=true; card.title="Drag to move within this note"; card.style.setProperty("--attachment-width",Math.max(25,Math.min(100,block.width||100))+"%");
-    card.ondragstart=function(event){ if(event.target.closest("button")){ event.preventDefault(); return; } draggedNoteBlock={noteId:note.id,blockId:block.id}; card.classList.add("dragging"); event.dataTransfer.effectAllowed="move"; event.dataTransfer.setData("text/plain",block.id); var editor=card.closest(".note-editor"); if(editor) editor.classList.add("dragging"); };
-    card.ondragend=function(){ draggedNoteBlock=null; card.classList.remove("dragging"); var editor=card.closest(".note-editor"); if(editor) editor.classList.remove("dragging"); };
+    var card=document.createElement("figure"); card.className="note-attachment"; card.style.setProperty("--attachment-width",Math.max(25,Math.min(100,block.width||100))+"%");
+    makeNoteBlockDraggable(note,block,card);
     var grip=document.createElement("span"); grip.className="attachment-grip"; grip.textContent="⋮⋮"; card.appendChild(grip);
     if(attachmentIsImage(attachment)){
       var image=document.createElement("img"); image.className="note-attachment-image"; image.alt=attachment.name||"Attached image"; card.appendChild(image);
@@ -2736,13 +2876,205 @@
     var remove=document.createElement("button"); remove.type="button"; remove.className="attachment-remove"; remove.textContent="Remove"; remove.onclick=function(){ removeInlineAttachment(note,block); };
     var resize=document.createElement("button"); resize.type="button"; resize.className="attachment-resize"; resize.setAttribute("aria-label","Resize attachment"); resize.onpointerdown=function(event){ startAttachmentResize(event,note,block,card); };
     actions.appendChild(open);
+    var canCopyImage=attachmentIsImage(attachment)&&!!(navigator.clipboard&&navigator.clipboard.write&&window.ClipboardItem);
+    if(canCopyImage||attachment.storagePath){
+      var copyButton=document.createElement("button"); copyButton.type="button"; copyButton.className="attachment-copy";
+      copyButton.textContent=canCopyImage?"Copy":"Copy link";
+      copyButton.title=canCopyImage?"Copy this image to the clipboard":"Copy a link to this file";
+      copyButton.onclick=function(){ if(canCopyImage) copyAttachmentImage(note,attachment,copyButton); else copyAttachmentLink(note,attachment); };
+      actions.appendChild(copyButton);
+    }
+    var download=document.createElement("button"); download.type="button"; download.className="attachment-download"; download.textContent="Download"; download.title="Save "+(attachment.name||"this file")+" to your device";
+    download.onclick=function(){ downloadAttachment(note,attachment); };
+    actions.appendChild(download);
     if(attachment.cloudError){ var retry=document.createElement("button"); retry.type="button"; retry.className="attachment-retry"; retry.textContent="Retry"; retry.onclick=function(){ retryAttachmentSync(note,attachment); }; actions.appendChild(retry); }
     actions.appendChild(remove); card.appendChild(actions); card.appendChild(resize);
     if(attachmentIsImage(attachment)||attachmentIsVideo(attachment)){ var status=document.createElement("span"); status.className="attachment-status"; status.textContent=attachment.name+" · "+attachmentLabel(attachment); card.appendChild(status); }
     return card;
   }
+  function embedActionButton(label,handler,kind){
+    var button=document.createElement("button"); button.type="button"; button.className="embed-btn"+(kind?" "+kind:""); button.textContent=label;
+    button.onmousedown=function(event){ event.preventDefault(); };
+    button.onclick=handler; return button;
+  }
+  function buildNoteEmbedBlock(note,block){
+    var card=document.createElement("figure"); card.className="note-embed"; card.style.setProperty("--attachment-width",Math.max(25,Math.min(100,block.width||100))+"%");
+    makeNoteBlockDraggable(note,block,card);
+    if(block.videoId){
+      var frame=document.createElement("div"); frame.className="note-embed-frame";
+      var player=document.createElement("iframe");
+      player.src=embedPlayerUrl(block); player.title=embedProviderName(block)+" video"; player.loading="lazy"; player.allowFullscreen=true;
+      player.setAttribute("allow","accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share");
+      player.setAttribute("referrerpolicy","strict-origin-when-cross-origin");
+      frame.appendChild(player); card.appendChild(frame);
+    } else card.classList.add("editing");
+    var actions=document.createElement("div"); actions.className="note-embed-actions";
+    var edit=document.createElement("div"); edit.className="note-embed-edit";
+    var label=document.createElement("label"); label.textContent=block.videoId?embedProviderName(block)+" link":"Video link";
+    var field=document.createElement("input"); field.type="url"; field.value=block.url||""; field.spellcheck=false; field.placeholder="https://www.youtube.com/watch?v=…"; field.setAttribute("data-note-block",block.id);
+    label.appendChild(field); edit.appendChild(label);
+    var hint=document.createElement("p"); hint.className="ehint"; hint.textContent="Paste any YouTube link — watch, share, Shorts, or live — and the player appears here. Vimeo links work too."; edit.appendChild(hint);
+    function commit(){
+      var value=field.value.trim(), info=videoEmbedInfo(value);
+      if(!value){ showToast("Paste a video link first",true); field.focus(); return; }
+      if(!info){ showToast("That doesn’t look like a YouTube or Vimeo link",true); field.focus(); return; }
+      block.url=value; block.provider=info.provider; block.videoId=info.videoId; block.start=info.start;
+      refreshNoteBlocks(note); showToast("Video added");
+    }
+    field.onkeydown=function(event){ if(event.key==="Enter"){ event.preventDefault(); commit(); } };
+    var row=document.createElement("div"); row.className="erow";
+    var apply=document.createElement("button"); apply.type="button"; apply.className="primary"; apply.textContent=block.videoId?"Update video":"Add video"; apply.onclick=commit; row.appendChild(apply);
+    if(block.videoId){
+      var cancel=document.createElement("button"); cancel.type="button"; cancel.textContent="Cancel";
+      cancel.onclick=function(){ field.value=block.url||""; card.classList.remove("editing"); };
+      row.appendChild(cancel);
+      actions.appendChild(embedActionButton("Open",function(){ window.open(embedWatchUrl(block),"_blank","noopener"); }));
+      actions.appendChild(embedActionButton("Copy link",function(){ copy(embedWatchUrl(block),function(){ showToast("Video link copied"); }); }));
+      actions.appendChild(embedActionButton("Change",function(){ card.classList.add("editing"); field.focus(); field.select(); }));
+    }
+    edit.appendChild(row);
+    actions.appendChild(embedActionButton("Remove",function(){ deleteNoteBlock(note,block); },"danger"));
+    card.appendChild(actions); card.appendChild(edit);
+    var resize=document.createElement("button"); resize.type="button"; resize.className="attachment-resize"; resize.setAttribute("aria-label","Resize video");
+    resize.onpointerdown=function(event){ startAttachmentResize(event,note,block,card); };
+    card.appendChild(resize);
+    return card;
+  }
+  function buildNoteLinkBlock(note,block){
+    var card=document.createElement("figure"); card.className="note-link"; card.style.setProperty("--attachment-width",Math.max(25,Math.min(100,block.width||100))+"%");
+    makeNoteBlockDraggable(note,block,card);
+    var url=safeLinkUrl(block.url), host=linkHostLabel(url);
+    if(!url) card.classList.add("editing");
+    var anchor=document.createElement(url?"a":"div"); anchor.className="note-link-card";
+    if(url){ anchor.href=url; anchor.target="_blank"; anchor.rel="noopener noreferrer"; anchor.title="Open "+host; }
+    var photo=block.imageAttachmentId?attachmentById(note,block.imageAttachmentId):null, remote=safeImageUrl(block.imageUrl);
+    if(photo){
+      var image=document.createElement("img"); image.className="note-link-media"; image.alt=block.title||"Link photo"; anchor.appendChild(image);
+      getAttachmentUrl(note,photo).then(function(result){
+        if(!image.isConnected) return;
+        image.src=result.url;
+        if(result.local) image.onload=function(){ setTimeout(function(){ URL.revokeObjectURL(result.url); },1000); };
+      }).catch(function(){ image.alt="Photo unavailable on this device"; });
+    } else if(remote){
+      var linked=document.createElement("img"); linked.className="note-link-media"; linked.loading="lazy"; linked.alt=block.title||"Link photo"; linked.src=remote;
+      linked.onerror=function(){ linked.replaceWith(blankMedia("PHOTO UNAVAILABLE")); };
+      anchor.appendChild(linked);
+    } else anchor.appendChild(blankMedia(url?"NO PHOTO YET":"ADD A LINK"));
+    function blankMedia(text){ var blank=document.createElement("div"); blank.className="note-link-media blank"; blank.textContent=text; return blank; }
+    var body=document.createElement("div"); body.className="note-link-body";
+    var hostLine=document.createElement("span"); hostLine.className="note-link-host"; hostLine.textContent=host||"Link";
+    var title=document.createElement("b"); title.textContent=block.title||host||"Untitled link";
+    body.appendChild(hostLine); body.appendChild(title);
+    if(block.description){ var description=document.createElement("small"); description.textContent=block.description; body.appendChild(description); }
+    anchor.appendChild(body); card.appendChild(anchor);
+    var actions=document.createElement("div"); actions.className="note-link-actions";
+    var edit=document.createElement("div"); edit.className="note-link-edit";
+    function editField(text,value,placeholder,plain){
+      var wrap=document.createElement("label"); wrap.textContent=text;
+      var input=document.createElement("input"); input.type="text"; input.value=value||""; input.placeholder=placeholder; input.spellcheck=false;
+      if(plain) input.className="plain";
+      wrap.appendChild(input); edit.appendChild(wrap); return input;
+    }
+    var urlField=editField("Link",block.url,"https://example.com");
+    urlField.setAttribute("data-note-block",block.id);
+    var titleField=editField("Title",block.title,"What is this link?",true);
+    var descriptionField=editField("Description",block.description,"Optional one-line summary",true);
+    var imageField=editField("Photo address",block.imageUrl,"Paste an image link, or upload one below");
+    var picker=document.createElement("input"); picker.type="file"; picker.accept="image/*"; picker.hidden=true;
+    picker.onchange=function(){ var file=picker.files&&picker.files[0]; picker.value=""; if(file) setLinkBlockPhoto(note,block,file); };
+    function commit(){
+      var value=urlField.value.trim(), clean=safeLinkUrl(value), photoValue=imageField.value.trim();
+      if(!clean){ showToast("Paste a web link first",true); urlField.focus(); return; }
+      if(photoValue&&!safeImageUrl(photoValue)){ showToast("That photo address isn’t a valid link",true); imageField.focus(); return; }
+      var previousPhoto=block.imageAttachmentId;
+      block.url=clean; block.title=titleField.value.trim(); block.description=descriptionField.value.trim(); block.imageUrl=photoValue;
+      if(photoValue&&previousPhoto){ block.imageAttachmentId=""; releaseNoteAttachment(note,previousPhoto); }
+      refreshNoteBlocks(note); showToast("Link saved");
+    }
+    [urlField,titleField,descriptionField,imageField].forEach(function(input){ input.onkeydown=function(event){ if(event.key==="Enter"){ event.preventDefault(); commit(); } }; });
+    var row=document.createElement("div"); row.className="erow";
+    var save=document.createElement("button"); save.type="button"; save.className="primary"; save.textContent=url?"Save link":"Add link"; save.onclick=commit; row.appendChild(save);
+    var upload=document.createElement("button"); upload.type="button"; upload.textContent=photo||remote?"Replace photo":"Upload photo"; upload.onclick=function(){ picker.click(); }; row.appendChild(upload);
+    if(photo||remote){
+      var clear=document.createElement("button"); clear.type="button"; clear.textContent="Remove photo";
+      clear.onclick=function(){
+        var previousPhoto=block.imageAttachmentId;
+        block.imageAttachmentId=""; block.imageUrl="";
+        if(previousPhoto) releaseNoteAttachment(note,previousPhoto);
+        refreshNoteBlocks(note); showToast("Link photo removed");
+      };
+      row.appendChild(clear);
+    }
+    if(url){
+      var cancel=document.createElement("button"); cancel.type="button"; cancel.textContent="Cancel"; cancel.onclick=function(){ card.classList.remove("editing"); }; row.appendChild(cancel);
+      actions.appendChild(embedActionButton("Open",function(){ window.open(url,"_blank","noopener"); }));
+      actions.appendChild(embedActionButton("Copy link",function(){ copy(url,function(){ showToast("Link copied"); }); }));
+      actions.appendChild(embedActionButton("Edit",function(){ card.classList.add("editing"); urlField.focus(); }));
+    }
+    edit.appendChild(row); edit.appendChild(picker);
+    actions.appendChild(embedActionButton("Remove",function(){ deleteNoteBlock(note,block); },"danger"));
+    card.appendChild(actions); card.appendChild(edit);
+    var resize=document.createElement("button"); resize.type="button"; resize.className="attachment-resize"; resize.setAttribute("aria-label","Resize link card");
+    resize.onpointerdown=function(event){ startAttachmentResize(event,note,block,card); };
+    card.appendChild(resize);
+    return card;
+  }
+  function setLinkBlockPhoto(note,block,file){
+    if(!/^image\//.test(file.type||"")){ showToast("Choose an image file for the link photo",true); return; }
+    if(file.size>MAX_ATTACHMENT_BYTES){ showToast(file.name+" is over the 25 MB attachment limit",true); return; }
+    var previousPhoto=block.imageAttachmentId, attachment=attachNoteFile(note,file);
+    block.imageAttachmentId=attachment.id; block.imageUrl="";
+    if(previousPhoto&&previousPhoto!==attachment.id) releaseNoteAttachment(note,previousPhoto);
+    refreshNoteBlocks(note);
+  }
+  /* Video links arrive in half a dozen shapes — watch, share, Shorts, embed,
+     live. Normalize every one of them down to the id the player actually needs. */
+  function videoEmbedInfo(value){
+    var raw=(value||"").trim(); if(!raw) return null;
+    var url; try{ url=new URL(/^https?:\/\//i.test(raw)?raw:"https://"+raw); }catch(error){ return null; }
+    var host=url.hostname.replace(/^www\./i,"").toLowerCase(), path=url.pathname.replace(/^\/+/,"");
+    if(host==="youtu.be"){ var short=path.split("/")[0]; return short?{provider:"youtube",videoId:short,start:embedStartSeconds(url)}:null; }
+    if(/^(m\.)?youtube(-nocookie)?\.com$/.test(host)){
+      var id=url.searchParams.get("v")||"", parts=path.split("/");
+      if(!id&&["embed","shorts","live","v"].indexOf(parts[0])>=0) id=parts[1]||"";
+      return id?{provider:"youtube",videoId:id,start:embedStartSeconds(url)}:null;
+    }
+    if(/^(player\.)?vimeo\.com$/.test(host)){ var vimeoId=(path.match(/\d+/)||[])[0]; return vimeoId?{provider:"vimeo",videoId:vimeoId,start:0}:null; }
+    return null;
+  }
+  function embedStartSeconds(url){
+    var value=(url.searchParams.get("t")||url.searchParams.get("start")||"").trim();
+    var match=/^(?:(\d+)h)?(?:(\d+)m)?(?:(\d+)s?)?$/i.exec(value);
+    if(!match) return 0;
+    return (Number(match[1])||0)*3600+(Number(match[2])||0)*60+(Number(match[3])||0);
+  }
+  function embedPlayerUrl(block){
+    if(!block||!block.videoId) return "";
+    var id=encodeURIComponent(block.videoId), start=Math.max(0,Number(block.start)||0);
+    if(block.provider==="vimeo") return "https://player.vimeo.com/video/"+id+(start?"#t="+start+"s":"");
+    return "https://www.youtube-nocookie.com/embed/"+id+"?rel=0"+(start?"&start="+start:"");
+  }
+  function embedWatchUrl(block){
+    if(!block||!block.videoId) return (block&&block.url)||"";
+    var id=encodeURIComponent(block.videoId);
+    if(block.provider==="vimeo") return "https://vimeo.com/"+id;
+    return "https://www.youtube.com/watch?v="+id;
+  }
+  function embedProviderName(block){ return block&&block.provider==="vimeo"?"Vimeo":"YouTube"; }
+  function safeLinkUrl(value){
+    var raw=(value||"").trim(); if(!raw) return "";
+    try{ var url=new URL(/^[a-z][a-z0-9+.-]*:/i.test(raw)?raw:"https://"+raw); return /^https?:$/i.test(url.protocol)?url.href:""; }catch(error){ return ""; }
+  }
+  function safeImageUrl(value){
+    var raw=(value||"").trim(); if(!raw) return "";
+    if(/^data:image\//i.test(raw)) return raw;
+    return safeLinkUrl(raw);
+  }
+  function linkHostLabel(value){ try{ return new URL(value).hostname.replace(/^www\./i,""); }catch(error){ return ""; } }
   function createNoteBlock(type){
     if(type==="paragraph") return textBlock("");
+    if(type==="embed") return {id:uid(),type:"embed",provider:"youtube",url:"",videoId:"",start:0,width:100};
+    if(type==="link") return {id:uid(),type:"link",url:"",title:"",description:"",imageUrl:"",imageAttachmentId:"",width:100};
     if(type==="comment") return {id:uid(),type:"comment",text:""};
     if(type==="prompt") return {id:uid(),type:"prompt",text:""};
     if(type==="heading") return {id:uid(),type:"heading",text:"",level:2};
@@ -2856,6 +3188,8 @@
   function buildNoteBlock(note,block){
     if(block.type==="text") return buildNoteParagraph(note,block);
     if(block.type==="attachment") return buildNoteAttachmentBlock(note,block);
+    if(block.type==="embed") return buildNoteEmbedBlock(note,block);
+    if(block.type==="link") return buildNoteLinkBlock(note,block);
     if(block.type==="heading") return buildNoteHeading(note,block);
     if(block.type==="chapter") return buildNoteChapter(note,block);
     if(block.type==="comment") return buildNoteComment(note,block);
@@ -2869,6 +3203,8 @@
       var title=document.createElement("div"); title.className="mtitle"; title.textContent="Insert"; menu.appendChild(title);
       var options=[
         ["file","<span style=\"font-size:1rem\">↗</span>","Photo, video, or file",function(){ if(picker) picker.click(); else { var input=document.createElement("input"); input.type="file"; input.multiple=true; input.hidden=true; input.onchange=function(){ addNoteAttachments(note,input.files,insertAt); input.remove(); }; document.body.appendChild(input); input.click(); } }],
+        ["embed","<span style=\"font-size:.9rem\">▶</span>","YouTube video",function(){ insertNoteBlock(note,"embed",insertAt); }],
+        ["link","<span style=\"font-size:1rem\">🔗</span>","Link with photo",function(){ insertNoteBlock(note,"link",insertAt); }],
         ["paragraph","<span style=\"font-size:1rem\">¶</span>","Paragraph",function(){ insertNoteBlock(note,"paragraph",insertAt); }],
         ["comment","<span style=\"font-style:italic;color:var(--ink-dim)\">…</span>","Comment",function(){ insertNoteBlock(note,"comment",insertAt); }],
         ["prompt","<span style=\"font:700 .76rem DM Mono\">›_</span>","Prompt",function(){ insertNoteBlock(note,"prompt",insertAt); }],
@@ -5610,7 +5946,7 @@
     } else if(settingsPage==="collab"){
       content=settingsHeading("AI collaborator",true)+'<p class="hint">The microphone beside this gear starts a conversation about whatever you have open — a note, a YouTube script, or a todo. The agent can suggest changes to your text, but nothing is written until you press Apply, and a backup is saved before every session.</p><div class="agent-edit" id="collabSettings"></div>';
     } else if(settingsPage==="manage"){
-      content=settingsHeading("Manage",true)+'<p class="hint">Choose what appears under New and in a note’s Insert menu. Existing content is never removed when an option is turned off.</p><div class="grp"><div class="srow"><div class="sl">Notes<small>Flexible rich-text notes</small></div><button class="toggle" id="typeNote"><b></b></button></div><div class="srow"><div class="sl">YouTube Script<small>Chaptered note template</small></div><button class="toggle" id="typeScript"><b></b></button></div><div class="srow"><div class="sl">Audio<small>Record or upload audio clips</small></div><button class="toggle" id="typeAudio"><b></b></button></div><div class="srow"><div class="sl">Todos<small>A note with a completion checkbox</small></div><button class="toggle" id="typeTodo"><b></b></button></div><div class="srow"><div class="sl">Agent<small>AI collaborators you can talk to inside a note</small></div><button class="toggle" id="typeAgent"><b></b></button></div></div><div class="grp" id="moduleTypes"></div><div class="grp"><h4>Note insert menu</h4><div class="srow"><div class="sl">Photo, video, or file<small>Inline images and videos, plus any attachment</small></div><button class="toggle" id="insertFile"><b></b></button></div><div class="srow"><div class="sl">Paragraph<small>Rich text with bold, italic, and underline</small></div><button class="toggle" id="insertParagraph"><b></b></button></div><div class="srow"><div class="sl">Comment<small>A cue-style note to yourself</small></div><button class="toggle" id="insertComment"><b></b></button></div><div class="srow"><div class="sl">Prompt<small>A copy-ready prompt drafting box</small></div><button class="toggle" id="insertPrompt"><b></b></button></div><div class="srow"><div class="sl">Heading<small>Simple size picker when selected</small></div><button class="toggle" id="insertHeading"><b></b></button></div><div class="srow"><div class="sl">Chapter<small>Named section with its own Listen button</small></div><button class="toggle" id="insertChapter"><b></b></button></div><div class="srow"><div class="sl">Collapsible group<small>Hide supporting details until needed</small></div><button class="toggle" id="insertGroup"><b></b></button></div><div class="srow"><div class="sl">Code<small>Syntax-highlighted editor, preview, and run tools</small></div><button class="toggle" id="insertCode"><b></b></button></div></div>';
+      content=settingsHeading("Manage",true)+'<p class="hint">Choose what appears under New and in a note’s Insert menu. Existing content is never removed when an option is turned off.</p><div class="grp"><div class="srow"><div class="sl">Notes<small>Flexible rich-text notes</small></div><button class="toggle" id="typeNote"><b></b></button></div><div class="srow"><div class="sl">YouTube Script<small>Chaptered note template</small></div><button class="toggle" id="typeScript"><b></b></button></div><div class="srow"><div class="sl">Audio<small>Record or upload audio clips</small></div><button class="toggle" id="typeAudio"><b></b></button></div><div class="srow"><div class="sl">Todos<small>A note with a completion checkbox</small></div><button class="toggle" id="typeTodo"><b></b></button></div><div class="srow"><div class="sl">Agent<small>AI collaborators you can talk to inside a note</small></div><button class="toggle" id="typeAgent"><b></b></button></div></div><div class="grp" id="moduleTypes"></div><div class="grp"><h4>Note insert menu</h4><div class="srow"><div class="sl">Photo, video, or file<small>Inline images and videos, plus any attachment</small></div><button class="toggle" id="insertFile"><b></b></button></div><div class="srow"><div class="sl">YouTube video<small>Paste a link and play it inside the note</small></div><button class="toggle" id="insertEmbed"><b></b></button></div><div class="srow"><div class="sl">Link with photo<small>A link card with your own picture, title, and summary</small></div><button class="toggle" id="insertLink"><b></b></button></div><div class="srow"><div class="sl">Paragraph<small>Rich text with bold, italic, and underline</small></div><button class="toggle" id="insertParagraph"><b></b></button></div><div class="srow"><div class="sl">Comment<small>A cue-style note to yourself</small></div><button class="toggle" id="insertComment"><b></b></button></div><div class="srow"><div class="sl">Prompt<small>A copy-ready prompt drafting box</small></div><button class="toggle" id="insertPrompt"><b></b></button></div><div class="srow"><div class="sl">Heading<small>Simple size picker when selected</small></div><button class="toggle" id="insertHeading"><b></b></button></div><div class="srow"><div class="sl">Chapter<small>Named section with its own Listen button</small></div><button class="toggle" id="insertChapter"><b></b></button></div><div class="srow"><div class="sl">Collapsible group<small>Hide supporting details until needed</small></div><button class="toggle" id="insertGroup"><b></b></button></div><div class="srow"><div class="sl">Code<small>Syntax-highlighted editor, preview, and run tools</small></div><button class="toggle" id="insertCode"><b></b></button></div></div>';
     } else { settingsPage="home"; renderSettingsPage(); return; }
     box.innerHTML=content;
     $("closeSettings").onclick=function(){ $("settingsModal").classList.remove("open"); };
@@ -5748,7 +6084,7 @@
       });
     }
     [["typeNote","note"],["typeScript","script"],["typeAudio","audio"],["typeTodo","todo"],["typeAgent","agent"]].forEach(function(pair){ var button=$(pair[0]); button.classList.toggle("on",state.enabledTypes[pair[1]]); button.onclick=function(){ state.enabledTypes[pair[1]]=!state.enabledTypes[pair[1]]; button.classList.toggle("on",state.enabledTypes[pair[1]]); persist(); }; });
-    [["insertFile","file"],["insertParagraph","paragraph"],["insertComment","comment"],["insertPrompt","prompt"],["insertHeading","heading"],["insertChapter","chapter"],["insertGroup","group"],["insertCode","code"]].forEach(function(pair){ var button=$(pair[0]); button.classList.toggle("on",state.noteInsertOptions[pair[1]]); button.onclick=function(){ state.noteInsertOptions[pair[1]]=!state.noteInsertOptions[pair[1]]; button.classList.toggle("on",state.noteInsertOptions[pair[1]]); persist(); }; });
+    [["insertFile","file"],["insertEmbed","embed"],["insertLink","link"],["insertParagraph","paragraph"],["insertComment","comment"],["insertPrompt","prompt"],["insertHeading","heading"],["insertChapter","chapter"],["insertGroup","group"],["insertCode","code"]].forEach(function(pair){ var button=$(pair[0]); button.classList.toggle("on",state.noteInsertOptions[pair[1]]); button.onclick=function(){ state.noteInsertOptions[pair[1]]=!state.noteInsertOptions[pair[1]]; button.classList.toggle("on",state.noteInsertOptions[pair[1]]); persist(); }; });
   }
   var apiKeySaveTimer=null;
   function setupApiKeySettings(){
