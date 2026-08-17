@@ -740,6 +740,9 @@
   .cmsg.agent{ align-self:flex-start; color:var(--ink); background:rgba(255,255,255,.06); border-bottom-left-radius:4px; }
   .cmsg.system{ align-self:center; max-width:100%; padding:1px 0; text-align:center; color:var(--ink-faint); background:none; font:400 .67rem "DM Mono",monospace; line-height:1.6; }
   .cmsg.error{ align-self:flex-start; color:#fca5a5; background:rgba(248,113,113,.1); border:1px solid rgba(248,113,113,.28); }
+  .cmsg.streaming::after{ content:"▍"; display:inline; margin-left:2px; animation:streamCaret .9s steps(1) infinite; color:var(--accent); }
+  @keyframes streamCaret{ 0%,49%{ opacity:1; } 50%,100%{ opacity:0; } }
+  body.reduce-fx .cmsg.streaming::after{ animation:none; opacity:.7; }
   .collab-proposal{ align-self:stretch; padding:12px; border:1px solid var(--accent-line); border-radius:14px; background:var(--accent-soft); }
   .collab-proposal.settled{ border-color:var(--line); background:rgba(255,255,255,.03); }
   .collab-proposal h5{ margin:0 0 4px; font-size:.8rem; letter-spacing:.02em; }
@@ -802,6 +805,8 @@
   .voice-overlay-ui > *{ pointer-events:auto; }
   .voice-overlay-name{ font:700 1.35rem "DM Sans",sans-serif; letter-spacing:.02em; text-shadow:0 8px 28px rgba(0,0,0,.45); }
   .voice-overlay-status{ margin-top:6px; min-height:1.2em; color:var(--ink-dim); font:400 .78rem "DM Mono",monospace; letter-spacing:.06em; text-transform:uppercase; }
+  .voice-overlay-link{ margin-top:4px; min-height:1em; color:var(--voice-accent,var(--accent)); font:500 .64rem "DM Mono",monospace; letter-spacing:.12em; text-transform:uppercase; opacity:.85; }
+  .voice-overlay-link:empty{ display:none; }
   .voice-overlay-transcript{ max-width:min(720px,92vw); max-height:22vh; overflow:auto; margin:14px 0 8px; padding:12px 16px;
     border:1px solid var(--line); border-radius:16px; background:rgba(0,0,0,.38); color:var(--ink); font-size:.92rem; line-height:1.55;
     white-space:pre-wrap; text-align:left; }
@@ -863,6 +868,7 @@
   @keyframes companionBob{ 0%,100%{ transform:translateY(0); } 50%{ transform:translateY(-5px); } }
   @keyframes companionWrite{ 0%,100%{ transform:translate(0,0) rotate(0); } 50%{ transform:translate(3px,-2px) rotate(6deg); } }
   .note-editor.agent-writing{ outline:1px solid var(--accent-line); box-shadow:0 0 0 6px var(--accent-soft); border-radius:14px; }
+  .agent-writing-block{ outline:1px solid var(--accent-line); box-shadow:0 0 0 4px var(--accent-soft); border-radius:10px; transition:outline .2s ease, box-shadow .2s ease; }
 
   .agent-mind{ display:grid; gap:12px; }
   .agent-mind .mind-block{ padding:12px 14px; border:1px solid var(--line); border-radius:14px; background:rgba(255,255,255,.03); }
@@ -1032,6 +1038,7 @@
   <div class="voice-overlay-ui">
     <div class="voice-overlay-name" id="voiceOverlayName">Assistant</div>
     <div class="voice-overlay-status" id="voiceOverlayStatus" role="status" aria-live="polite">Listening</div>
+    <div class="voice-overlay-link" id="voiceOverlayLink"></div>
     <div class="voice-overlay-transcript" id="voiceOverlayTranscript"></div>
     <div class="voice-overlay-decision" id="voiceOverlayDecision" hidden></div>
     <div class="voice-overlay-tasks" id="voiceOverlayTasks"></div>
@@ -1109,6 +1116,8 @@
   var AGENT_DEFAULT_ID="__default_agent__", AGENT_DEFAULT_NAME="Assistant", AGENT_DEFAULT_MODEL="gpt-4o-mini";
   var AGENT_LISTEN_MODEL="gpt-4o-mini", AGENT_WORK_MODEL="gpt-4o-mini", AGENT_COMPLEX_MODEL="gpt-4o";
   var AGENT_GEMINI_LISTEN="gemini-2.5-flash", AGENT_FALLBACK_MODELS=["gpt-4o-mini","gpt-4o","gpt-4.1-mini"];
+  var AGENT_GEMINI_LIVE_MODELS=["gemini-2.0-flash-live-001","gemini-live-2.5-flash-preview"];
+  var AGENT_GEMINI_LIVE_WS="wss://generativelanguage.googleapis.com/ws/google.ai.generativelanguage.v1beta.GenerativeService.BidiGenerateContent";
   var AGENT_VOICE_STYLES=[
     {id:"hud",name:"Jarvis HUD",hint:"Circular scanner — good for screen recordings"},
     {id:"pulse",name:"Growing light",hint:"A light that swells while you talk"},
@@ -3320,8 +3329,10 @@
   }
   function buildNoteGroup(note,block){
     var details=document.createElement("details"); details.className="note-group"; details.open=!block.collapsed;
+    details.setAttribute("data-group-id",block.id);
+    if(cleanText(block.title).toLowerCase()===TRANSCRIPT_GROUP_TITLE.toLowerCase()) details.setAttribute("data-transcript-group","true");
     var summary=document.createElement("summary"), title=document.createElement("input"); title.type="text"; title.value=block.title||"Untitled group"; title.setAttribute("data-note-block",block.id); title.onclick=function(event){ event.stopPropagation(); }; title.oninput=function(){ block.title=title.value; saveNoteBlockChange(note,block,false); }; summary.appendChild(title);
-    var body=document.createElement("div"); body.className="note-group-body"; body.contentEditable="true"; body.setAttribute("role","textbox"); body.setAttribute("aria-multiline","true"); body.textContent=block.text||""; body.oninput=function(){ block.text=body.innerText||body.textContent||""; saveNoteBlockChange(note,block,false); };
+    var body=document.createElement("div"); body.className="note-group-body"; body.contentEditable="true"; body.setAttribute("role","textbox"); body.setAttribute("aria-multiline","true"); body.setAttribute("data-group-body",block.id); body.textContent=block.text||""; body.oninput=function(){ block.text=body.innerText||body.textContent||""; saveNoteBlockChange(note,block,false); };
     details.ontoggle=function(){ block.collapsed=!details.open; touchContent(note); persist(); }; details.appendChild(summary); details.appendChild(body); return details;
   }
   function buildNoteBlock(note,block){
@@ -3472,7 +3483,7 @@
       var copy=document.createElement("div");
       var heading=document.createElement("b"); heading.textContent="Live voice with "+a.name;
       var detail=document.createElement("p");
-      detail.textContent="A fast listen model decides when you are done rambling. The work model writes the note. Pauses are not treated as “send it now.”";
+      detail.textContent="Gemini Live keeps the mic open while "+a.name+" talks (ElevenLabs still does the voice). A cheap listen pass decides when you are done rambling — pauses are not treated as “send it now.”";
       copy.appendChild(heading); copy.appendChild(detail); stage.appendChild(copy);
       var voiceRow=document.createElement("div"); voiceRow.className="btnrow"; voiceRow.style.justifyContent="center";
       var start=document.createElement("button"); start.type="button"; start.className="b2 primary"; start.textContent=collab.voice&&collab.voice.active?"End voice session":"Start voice conversation";
@@ -3499,7 +3510,7 @@
         var pre=document.createElement("pre"); pre.textContent=body||"(empty)"; block.appendChild(pre);
         mind.appendChild(block);
       }
-      mindBlock("Now",(collab.voice&&collab.voice.active?"Listening":"Idle")+(collab.busy?" · work model running":"")+(collab.decisions.length?" · last: "+collab.decisions[collab.decisions.length-1].action:""));
+      mindBlock("Now",(collab.voice&&collab.voice.active?"Listening":"Idle")+(collab.voice&&collab.voice.live&&collab.voice.live.ready?" · Live ears":"")+(collab.busy?" · work model running":"")+(collab.decisions.length?" · last: "+collab.decisions[collab.decisions.length-1].action:""));
       mindBlock("Tasks",(a.tasks||[]).map(function(task){ return "["+task.status+"] "+task.title+(task.detail?" — "+task.detail:""); }).join("\n")||"No tasks yet. Voice sessions and the work model add them here.");
       mindBlock("Long-term memory",a.longTermMemory);
       mindBlock("Short-term memory",a.shortTermMemory);
@@ -3580,7 +3591,7 @@
       field("Agent name","name","Jarvis");
       field("Greeting","greeting",AGENT_DEFAULT_GREETING);
 
-      modelPicker("Listen model","listenModel","Fast and cheap. Decides whether to keep listening or hand off. Gemini 2.5 Flash is a good default.");
+      modelPicker("Listen model","listenModel","Used when Live ears are off, or as a fallback. Fast and cheap. Gemini 2.5 Flash is a good default.");
       modelPicker("Work model","workModel","Writes the note and talks with you. Used for normal requests.");
       modelPicker("Complex model","complexModel","Used when the listen model flags a long ramble or a hard rewrite.");
 
@@ -3660,6 +3671,7 @@
       approvalLabel.appendChild(approvalSelect);
 
       toggleField("Capture transcribed audio in the open note","Keeps a collapsible group of everything you said, indented by pause.","transcribeToNote");
+      toggleField("Gemini Live ears","Stream the mic to Gemini so listening never stops while ElevenLabs talks. Falls back to the browser if Live is unavailable.","liveListen");
       toggleField("Keep listening while speaking","So you can interrupt or keep rambling during a reply.","keepListeningWhileSpeaking");
       toggleField("Barge in","If you start talking over it, cut the spoken reply and listen.","bargeIn");
 
@@ -4185,6 +4197,7 @@
     if(["listen","after_edits","always","never"].indexOf(a.readBack)<0) a.readBack="listen";
     if(typeof a.transcribeToNote!=="boolean") a.transcribeToNote=true;
     if(typeof a.keepListeningWhileSpeaking!=="boolean") a.keepListeningWhileSpeaking=true;
+    if(typeof a.liveListen!=="boolean") a.liveListen=true;
     if(typeof a.bargeIn!=="boolean") a.bargeIn=true;
     if(typeof a.silenceMs!=="number"||!isFinite(a.silenceMs)) a.silenceMs=1400;
     a.silenceMs=Math.max(400,Math.min(6000,Math.round(a.silenceMs)));
@@ -4481,6 +4494,38 @@
       });
     });
   }
+  function readSseJsonStream(response,provider,onEvent){
+    if(!response.ok){
+      return response.text().then(function(raw){
+        var data=null; try{ data=JSON.parse(raw); }catch(e){}
+        throw new Error(formatLlmError(provider,response.status,data,raw));
+      });
+    }
+    if(!response.body||typeof response.body.getReader!=="function"){
+      return response.text().then(function(raw){
+        var data=null; try{ data=JSON.parse(raw); }catch(e){}
+        if(data) onEvent(data);
+      });
+    }
+    var reader=response.body.getReader(), decoder=new TextDecoder(), buf="";
+    function flushBlock(block){
+      var payload=block.split(/\r?\n/).filter(function(line){ return /^data:\s*/.test(line); }).map(function(line){ return line.replace(/^data:\s*/,""); }).join("\n").trim();
+      if(!payload||payload==="[DONE]") return;
+      try{ onEvent(JSON.parse(payload)); }catch(e){}
+    }
+    function pump(){
+      return reader.read().then(function(result){
+        buf+=decoder.decode(result.value||new Uint8Array(),{stream:!result.done});
+        if(result.done) buf+=decoder.decode();
+        var parts=buf.split(/\r?\n\r?\n/);
+        buf=result.done?"":parts.pop();
+        parts.forEach(flushBlock);
+        if(result.done){ if(buf) flushBlock(buf); return; }
+        return pump();
+      });
+    }
+    return pump();
+  }
   function openaiToolsToGemini(tools){
     var decls=(tools||[]).map(function(tool){
       var fn=tool&&tool.function; if(!fn||!fn.name) return null;
@@ -4515,6 +4560,7 @@
     var candidate=data&&data.candidates&&data.candidates[0], parts=candidate&&candidate.content&&candidate.content.parts||[];
     var text=[], toolCalls=[];
     parts.forEach(function(part,index){
+      if(part.thought) return;
       if(part.text) text.push(part.text);
       if(part.functionCall&&part.functionCall.name){
         toolCalls.push({id:"gemini_"+index+"_"+part.functionCall.name,type:"function",function:{name:part.functionCall.name,arguments:JSON.stringify(part.functionCall.args||{})}});
@@ -4529,21 +4575,60 @@
   function llmChat(opts){
     var model=cleanText(opts.model)||AGENT_DEFAULT_MODEL, messages=opts.messages||[], tools=opts.tools||[];
     var temperature=opts.temperature, json=!!opts.json, fallbacks=opts.fallbacks||[];
-    function viaOpenAI(id,withTemperature,withTools){
+    var onDelta=typeof opts.onDelta==="function"?opts.onDelta:null;
+    var wantStream=!!opts.stream&&!!onDelta&&!json;
+    function openaiBody(id,withTemperature,withTools,stream){
       var body={model:id,messages:messages};
       if(withTools&&tools.length){ body.tools=tools; body.tool_choice="auto"; }
       if(json) body.response_format={type:"json_object"};
       if(withTemperature&&typeof temperature==="number"&&!isReasoningModel(id)) body.temperature=temperature;
       if(isReasoningModel(id)&&opts.maxTokens) body.max_completion_tokens=opts.maxTokens;
       else if(opts.maxTokens) body.max_tokens=opts.maxTokens;
-      return openaiRequest("chat/completions",body).catch(function(error){
+      if(stream) body.stream=true;
+      return body;
+    }
+    function viaOpenAI(id,withTemperature,withTools,stream){
+      var body=openaiBody(id,withTemperature,withTools,stream);
+      if(!stream){
+        return openaiRequest("chat/completions",body).catch(function(error){
+          var text=error&&error.message||"";
+          if(withTemperature&&/temperature/i.test(text)) return viaOpenAI(id,false,withTools,false);
+          if(withTools&&(/tools?|tool_choice|functions?/i.test(text)||/not supported/i.test(text))) return viaOpenAI(id,withTemperature,false,false);
+          throw error;
+        });
+      }
+      var key=runtimeApiKeys.openai;
+      if(!key) return Promise.reject(new Error("Add your OpenAI API key in Settings → API keys."));
+      return fetch("https://api.openai.com/v1/chat/completions",{
+        method:"POST",headers:{"Content-Type":"application/json","Authorization":"Bearer "+key},body:JSON.stringify(body)
+      }).then(function(response){
+        var acc={role:"assistant",content:"",tool_calls:[]}, usage;
+        return readSseJsonStream(response,"OpenAI",function(chunk){
+          if(chunk&&chunk.usage) usage=chunk.usage;
+          var delta=chunk&&chunk.choices&&chunk.choices[0]&&chunk.choices[0].delta;
+          if(!delta) return;
+          if(delta.content){ acc.content+=delta.content; onDelta(delta.content); }
+          (delta.tool_calls||[]).forEach(function(piece){
+            var i=typeof piece.index==="number"?piece.index:0;
+            if(!acc.tool_calls[i]) acc.tool_calls[i]={id:"",type:"function",function:{name:"",arguments:""}};
+            if(piece.id) acc.tool_calls[i].id=piece.id;
+            if(piece.type) acc.tool_calls[i].type=piece.type;
+            if(piece.function&&piece.function.name) acc.tool_calls[i].function.name+=piece.function.name;
+            if(piece.function&&typeof piece.function.arguments==="string") acc.tool_calls[i].function.arguments+=piece.function.arguments;
+          });
+        }).then(function(){
+          var calls=acc.tool_calls.filter(Boolean);
+          return {choices:[{message:{role:"assistant",content:acc.content||null,tool_calls:calls.length?calls:undefined}}],usage:usage};
+        });
+      }).catch(function(error){
         var text=error&&error.message||"";
-        if(withTemperature&&/temperature/i.test(text)) return viaOpenAI(id,false,withTools);
-        if(withTools&&(/tools?|tool_choice|functions?/i.test(text)||/not supported/i.test(text))) return viaOpenAI(id,withTemperature,false);
-        throw error;
+        if(withTemperature&&/temperature/i.test(text)) return viaOpenAI(id,false,withTools,stream);
+        if(withTools&&(/tools?|tool_choice|functions?/i.test(text)||/not supported/i.test(text))) return viaOpenAI(id,withTemperature,false,stream);
+        console.warn("OpenAI stream failed, retrying without stream:",error);
+        return viaOpenAI(id,withTemperature,withTools,false);
       });
     }
-    function viaGemini(id){
+    function geminiPayload(){
       var converted=messagesToGemini(messages), payload={contents:converted.contents,generationConfig:{}};
       if(converted.system) payload.systemInstruction={parts:[{text:converted.system}]};
       if(typeof temperature==="number") payload.generationConfig.temperature=temperature;
@@ -4551,21 +4636,42 @@
       if(json) payload.generationConfig.responseMimeType="application/json";
       var geminiTools=openaiToolsToGemini(tools);
       if(geminiTools.length) payload.tools=geminiTools;
-      return geminiRequest(id,payload).then(geminiToOpenAI);
+      return payload;
     }
-    function send(id){
+    function viaGemini(id,stream){
+      var payload=geminiPayload();
+      if(!stream) return geminiRequest(id,payload).then(geminiToOpenAI);
+      var key=runtimeApiKeys.gemini;
+      if(!key) return Promise.reject(new Error("Add your Gemini API key in Settings → API keys."));
+      var url="https://generativelanguage.googleapis.com/v1beta/models/"+encodeURIComponent(id)+":streamGenerateContent?alt=sse&key="+encodeURIComponent(key);
+      return fetch(url,{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify(payload)}).then(function(response){
+        var text=[], toolCalls=[], usage;
+        return readSseJsonStream(response,"Gemini",function(chunk){
+          var converted=geminiToOpenAI(chunk), message=converted.choices[0].message;
+          if(converted.usage) usage=converted.usage;
+          if(message.content){ text.push(message.content); onDelta(message.content); }
+          if(message.tool_calls) toolCalls=toolCalls.concat(message.tool_calls);
+        }).then(function(){
+          return {choices:[{message:{role:"assistant",content:text.join("")||null,tool_calls:toolCalls.length?toolCalls:undefined}}],usage:usage};
+        });
+      }).catch(function(error){
+        console.warn("Gemini stream failed, retrying without stream:",error);
+        return viaGemini(id,false);
+      });
+    }
+    function send(id,stream){
       if(isGeminiModel(id)){
         if(!runtimeApiKeys.gemini) return Promise.reject(new Error("Gemini model “"+id+"” needs a Gemini API key in Settings → API keys."));
-        return viaGemini(id);
+        return viaGemini(id,stream);
       }
       if(!runtimeApiKeys.openai) return Promise.reject(new Error("OpenAI model “"+id+"” needs an OpenAI API key in Settings → API keys."));
-      return viaOpenAI(id,true,true);
+      return viaOpenAI(id,true,true,stream);
     }
-    return send(model).catch(function(error){
+    return send(model,wantStream).catch(function(error){
       var next=fallbacks.filter(function(id){ return id&&id!==model; });
       if(!next.length) throw error;
       console.warn("Model "+model+" failed; retrying with "+next[0]+":",error);
-      return send(next[0]).then(function(data){
+      return send(next[0],false).then(function(data){
         data=data||{};
         data._fallbackFrom=model;
         data._fallbackTo=next[0];
@@ -4591,14 +4697,17 @@
     }
     return list.filter(function(id,index){ return id&&id!==chosen&&list.indexOf(id)===index; });
   }
-  function agentCompletion(agentItem,messages,tools,role){
+  function agentCompletion(agentItem,messages,tools,role,extra){
     var a=normalizeAgent(agentItem), model=agentModelForRole(agentItem,role||"work");
+    extra=extra||{};
     return llmChat({
       model:model,
       messages:messages,
       tools:tools,
       temperature:role==="listen"?0.1:a.temperature,
-      fallbacks:agentFallbacks(role||"work",model)
+      fallbacks:agentFallbacks(role||"work",model),
+      stream:!!extra.onDelta,
+      onDelta:extra.onDelta
     });
   }
   function generateNoteTitle(note){
@@ -4771,6 +4880,38 @@
     if(agentItem){ var a=normalizeAgent(agentItem); a.stats.messages++; a.stats.lastUsed=Date.now(); agentItem.updated=Date.now(); }
     save(); renderCollabLog();
   }
+  function beginCollabStream(){
+    var log=collabConversation(), entry={role:"agent",text:"",ts:Date.now(),streaming:true};
+    log.push(entry);
+    while(log.length>COLLAB_HISTORY_LIMIT) log.shift();
+    renderCollabLog();
+    return entry;
+  }
+  function updateCollabStream(entry,text){
+    if(!entry) return;
+    entry.text=String(text||"").slice(0,COLLAB_MESSAGE_LIMIT);
+    var node=collab.host&&collab.host.querySelector('[data-collab-stream="'+entry.ts+'"]');
+    if(node){
+      node.textContent=entry.text;
+      var log=collab.host.querySelector(".collab-log");
+      if(log) log.scrollTop=log.scrollHeight;
+    } else renderCollabLog();
+  }
+  function finishCollabStream(entry,text){
+    if(!entry) return;
+    entry.text=String(text||"").slice(0,COLLAB_MESSAGE_LIMIT);
+    delete entry.streaming;
+    var doc=collabDocument(), agentItem=collabAgent();
+    if(doc) doc.updated=Date.now();
+    if(agentItem){ var a=normalizeAgent(agentItem); a.stats.messages++; a.stats.lastUsed=Date.now(); agentItem.updated=Date.now(); }
+    save(); renderCollabLog();
+  }
+  function abandonCollabStream(entry){
+    if(!entry) return;
+    var log=collabConversation(), index=log.indexOf(entry);
+    if(index>=0) log.splice(index,1);
+    renderCollabLog();
+  }
   function noteCatalog(includeAgents){
     return (state.items||[]).filter(function(it){ return (includeAgents||it.type!=="agent")&&!it.hidden; }).map(function(it){
       return {id:it.id,title:it.title||("Untitled "+itemLabel(it).toLowerCase()),type:itemLabel(it)};
@@ -4879,7 +5020,7 @@
     if(it.type==="todo") (it.todos||[]).forEach(ensureTodoTaskDetails);
     touchContent(it); persist(); renderList();
     if(current()&&current().id===it.id){
-      if(it.type==="note"){ refreshNoteEditor(it); updateMeta(); }
+      if(it.type==="note"){ refreshNoteEditor(it); updateMeta(); flashAgentEdits(proposal.edits.map(function(edit){ return edit.targetId; })); }
       else renderMain();
     }
     markCompanionState("writing");
@@ -4888,6 +5029,16 @@
     proposal.state="applied";
     pushCollabNote(applied+" change"+(applied===1?"":"s")+" applied"+(agentSettings().backupBeforeWork?" — a backup was saved first":"")+(skipped?". "+skipped+" could not be matched.":"."));
     renderCollabLog();
+  }
+  function flashAgentEdits(ids){
+    (ids||[]).forEach(function(id){
+      if(!id) return;
+      var nodes=canvas.querySelectorAll('[data-note-block="'+id+'"], [data-group-id="'+id+'"]');
+      Array.prototype.forEach.call(nodes,function(node){
+        node.classList.add("agent-writing-block");
+        setTimeout(function(){ node.classList.remove("agent-writing-block"); },1800);
+      });
+    });
   }
 
   /* ---------- a turn ---------- */
@@ -4908,10 +5059,20 @@
     var role=opts.role==="complex"?"complex":"work";
     collab.busy=true; updateCollabControls(); setCollabStatus(role==="complex"?"Working on the harder pass…":"Thinking…");
     markCompanionState("thinking");
-    var rounds=0;
+    var rounds=0, streamEntry=null, streamedText="";
+    function onDelta(piece){
+      if(!piece) return;
+      streamedText+=piece;
+      if(!streamEntry) streamEntry=beginCollabStream();
+      updateCollabStream(streamEntry,streamedText);
+    }
+    function dropStream(){
+      if(streamEntry) abandonCollabStream(streamEntry);
+      streamEntry=null; streamedText="";
+    }
     function step(){
       rounds++;
-      return agentCompletion(agentItem,messages,tools,role).then(function(data){
+      return agentCompletion(agentItem,messages,tools,role,{onDelta:onDelta}).then(function(data){
         var a=normalizeAgent(agentItem);
         if(data&&data.usage&&typeof data.usage.total_tokens==="number") a.stats.tokens+=data.usage.total_tokens;
         if(data&&data._fallbackTo){
@@ -4921,6 +5082,7 @@
         if(!message) throw new Error("The model returned no reply.");
         var calls=Array.isArray(message.tool_calls)?message.tool_calls:[];
         if(!calls.length) return cleanText(message.content);
+        dropStream();
         messages.push({role:"assistant",content:message.content||null,tool_calls:calls});
         calls.forEach(function(call){
           var name=call&&call.function&&call.function.name, args={}, result="Done.";
@@ -4989,8 +5151,16 @@
         else if(a.readBack==="after_edits") shouldSpeak=!!turnProposals.length;
         else shouldSpeak=opts.readBack!==false;
       }
-      if(text){ pushCollabMessage("agent",text); setCollabStatus(""); if(shouldSpeak){ markCompanionState("speaking"); speakCollab(text); } }
-      else setCollabStatus("");
+      if(text){
+        if(streamEntry) finishCollabStream(streamEntry,text);
+        else pushCollabMessage("agent",text);
+        setCollabStatus("");
+        if(shouldSpeak){ markCompanionState("speaking"); speakCollab(text); }
+      }
+      else {
+        if(streamEntry) abandonCollabStream(streamEntry);
+        setCollabStatus("");
+      }
       save();
       if(collab.voice&&collab.voice.active){
         markCompanionState("listening");
@@ -4998,6 +5168,7 @@
         if(collab.queuedUtterance){ var leftover=collab.queuedUtterance; collab.queuedUtterance=""; considerVoiceTurn(leftover,true); }
       }
     }).catch(function(error){
+      if(streamEntry) abandonCollabStream(streamEntry);
       collab.busy=false; updateCollabControls();
       console.warn("Agent turn failed:",error);
       pushCollabNote(cleanText(error&&error.message)||"The model could not be reached.",true);
@@ -5019,27 +5190,51 @@
     ensureNoteBlocks(note);
     var found=note.blocks.find(function(block){ return block.type==="group"&&cleanText(block.title).toLowerCase()===TRANSCRIPT_GROUP_TITLE.toLowerCase(); });
     if(found) return found;
-    var group={id:uid(),type:"group",title:TRANSCRIPT_GROUP_TITLE,text:"",collapsed:true};
+    var group={id:uid(),type:"group",title:TRANSCRIPT_GROUP_TITLE,text:"",collapsed:false};
     note.blocks.push(group);
     return group;
+  }
+  function patchTranscriptGroupDom(note,group,created){
+    if(!current()||current().id!==note.id) return true;
+    var editor=canvas.querySelector('.note-editor[data-note-id="'+note.id+'"]');
+    if(!editor) return false;
+    var details=editor.querySelector('[data-group-id="'+group.id+'"]');
+    var body=editor.querySelector('[data-group-body="'+group.id+'"]');
+    if(!details||!body){
+      if(!created) return false;
+      var rendered=buildNoteGroup(note,group);
+      var lastDrop=editor.querySelector(".note-drop-target:last-child");
+      if(lastDrop) editor.insertBefore(rendered,lastDrop);
+      else editor.appendChild(rendered);
+      details=rendered; body=rendered.querySelector("[data-group-body]");
+    }
+    if(document.activeElement===body) return true;
+    body.textContent=group.text||"";
+    if(details&&details.tagName==="DETAILS") details.open=true;
+    body.scrollTop=body.scrollHeight;
+    return true;
   }
   function appendTranscriptUtterance(text,continuing){
     var note=collabDocument();
     var agentItem=collabAgent(), a=agentItem?normalizeAgent(agentItem):null;
     if(!note||!a||!a.transcribeToNote||note.type!=="note") return;
+    var existed=note.blocks.some(function(block){ return block.type==="group"&&cleanText(block.title).toLowerCase()===TRANSCRIPT_GROUP_TITLE.toLowerCase(); });
     var group=ensureTranscriptGroup(note);
     if(!group) return;
     var stamp=new Date(), label=stamp.getHours()+":"+String(stamp.getMinutes()).padStart(2,"0");
     var line=continuing?("  "+text):("You · "+label+"\n  "+text);
     group.text=group.text?group.text.replace(/\s+$/,"")+"\n"+line:line;
     syncNoteBody(note); touchContent(note); save();
-    if(current()&&current().id===note.id) refreshNoteEditor(note);
+    if(!patchTranscriptGroupDom(note,group,!existed)) refreshNoteEditor(note);
   }
 
   /* ---------- voice stage ---------- */
   function setVoiceStatus(text){
     var el=$("voiceOverlayStatus"); if(el) el.textContent=text||"";
     setCollabStatus(text||"");
+  }
+  function setVoiceLink(text){
+    var el=$("voiceOverlayLink"); if(el) el.textContent=text||"";
   }
   function setVoiceTranscriptPreview(text){
     var el=$("voiceOverlayTranscript"); if(el) el.textContent=text||"";
@@ -5098,7 +5293,7 @@
     else if(style==="halo") art.innerHTML='<div class="voice-art-halo"></div>';
     else if(style==="waveform") art.innerHTML='<div class="voice-art-waveform">'+new Array(14).join("<i></i>")+"</div>";
     else if(style==="cinema") art.innerHTML='<div class="voice-art-cinema-light"></div>';
-    else if(style==="hud") art.innerHTML='<div class="voice-art-hud"><b>ONLINE</b></div>';
+    else if(style==="hud") art.innerHTML='<div class="voice-art-hud"><b>'+(collab.voice&&collab.voice.live&&collab.voice.live.ready?"LIVE":"ONLINE")+'</b></div>';
     else if(style==="companion") art.innerHTML="";
     else art.innerHTML='<div class="voice-art-orb"></div>';
   }
@@ -5133,6 +5328,7 @@
     var overlay=$("voiceOverlay"), companion=$("voiceCompanion");
     if(overlay){ overlay.classList.remove("open","cinema","companion-mode"); overlay.setAttribute("aria-hidden","true"); }
     if(companion){ companion.hidden=true; companion.classList.remove("open"); companion.setAttribute("aria-hidden","true"); }
+    setVoiceLink("");
     markCompanionState("");
   }
   function showVoiceStage(){
@@ -5150,7 +5346,8 @@
     var a=normalizeAgent(agentItem);
     return [
       'You are the turn-taking mind of "'+a.name+'". You are fast, cheap, and not the one who writes the note.',
-      "The owner rambles, often for a long time, via speech-to-text. Pauses do not mean they are done.",
+      "The owner rambles, often for a long time, via speech-to-text or live audio. Pauses do not mean they are done.",
+      "You may be listening to a live microphone. After each pause, output JSON only — no greeting, no markdown, no conversation.",
       "Decide what should happen after this latest utterance.",
       "Return JSON only with keys:",
       'action: "keep_listening" | "respond" | "dictate_only"',
@@ -5194,15 +5391,46 @@
     if(text.length>40&&!question&&!named) return {action:"dictate_only",reason:"sounds like dictation",complexity:"small",speak:false,read_back:false,compressed:buffer};
     return {action:"keep_listening",reason:"incomplete thought",complexity:"small",speak:false,read_back:false,compressed:buffer};
   }
+  function ingestVoiceUtterance(utterance,alreadyBuffered){
+    var session=collab.voice; if(!session||!session.active) return "";
+    var text=cleanText(utterance); if(!text) return session.buffer||"";
+    if(!alreadyBuffered){
+      session.buffer=session.buffer?session.buffer+"\n"+text:text;
+      appendTranscriptUtterance(text,session.buffer.split("\n").length>1);
+    } else if(!session.buffer) session.buffer=text;
+    setVoiceTranscriptPreview(session.buffer);
+    return session.buffer;
+  }
+  function applyListenDecision(decision){
+    var session=collab.voice, agentItem=collabAgent();
+    if(!session||!session.active||!agentItem||!decision) return;
+    showListenDecision(decision);
+    if(decision.action==="keep_listening"){
+      setVoiceStatus("Still listening");
+      markCompanionState("listening");
+      if(session.pendingReview){
+        var extra=session.pendingReview; session.pendingReview="";
+        if(session.live&&session.live.ready) ingestVoiceUtterance(extra,true);
+        else considerVoiceTurn(extra,true);
+      }
+      return;
+    }
+    var buffered=session.buffer; session.buffer="";
+    setVoiceTranscriptPreview(buffered);
+    if(decision.action==="dictate_only"){
+      setVoiceStatus("Captured — still listening");
+      pushCollabNote("Dictation captured without a reply.");
+      return;
+    }
+    if(collab.busy){ collab.queuedUtterance=(collab.queuedUtterance?collab.queuedUtterance+"\n":"")+buffered; setVoiceStatus("Queued for when the current pass finishes"); return; }
+    agentTaskWrite(agentItem,decision.complexity==="complex"?"Structure this ramble":"Work on the note","running",decision.reason,agentModelForRole(agentItem,decision.complexity==="complex"?"complex":"work"));
+    handoffVoiceBuffer(decision.compressed||buffered,decision);
+  }
   function considerVoiceTurn(utterance,alreadyBuffered){
     var agentItem=collabAgent(); if(!agentItem||!collab.voice||!collab.voice.active) return;
-    var a=normalizeAgent(agentItem);
     var text=cleanText(utterance); if(!text) return;
-    if(!alreadyBuffered){
-      collab.voice.buffer=(collab.voice.buffer?collab.voice.buffer+"\n":"")+text;
-      appendTranscriptUtterance(text,collab.voice.buffer.split("\n").length>1);
-    } else if(!collab.voice.buffer) collab.voice.buffer=text;
-    setVoiceTranscriptPreview(collab.voice.buffer);
+    ingestVoiceUtterance(text,alreadyBuffered);
+    if(collab.voice.live&&collab.voice.live.ready) return;
     if(collab.voice.listenBusy){ collab.voice.pendingReview=text; return; }
     collab.voice.listenBusy=true;
     setVoiceStatus("Deciding whether to jump in…");
@@ -5220,25 +5448,9 @@
         return heuristicListenDecision(collab.voice.buffer,agentItem);
       })
       .then(function(decision){
-        collab.voice.listenBusy=false;
         if(!collab.voice||!collab.voice.active) return;
-        showListenDecision(decision);
-        if(decision.action==="keep_listening"){
-          setVoiceStatus("Still listening");
-          markCompanionState("listening");
-          if(collab.voice.pendingReview){ var extra=collab.voice.pendingReview; collab.voice.pendingReview=""; considerVoiceTurn(extra,true); }
-          return;
-        }
-        var buffered=collab.voice.buffer; collab.voice.buffer="";
-        setVoiceTranscriptPreview(buffered);
-        if(decision.action==="dictate_only"){
-          setVoiceStatus("Captured — still listening");
-          pushCollabNote("Dictation captured without a reply.");
-          return;
-        }
-        if(collab.busy){ collab.queuedUtterance=(collab.queuedUtterance?collab.queuedUtterance+"\n":"")+buffered; setVoiceStatus("Queued for when the current pass finishes"); return; }
-        agentTaskWrite(agentItem,decision.complexity==="complex"?"Structure this ramble":"Work on the note","running",decision.reason,agentModelForRole(agentItem,decision.complexity==="complex"?"complex":"work"));
-        handoffVoiceBuffer(decision.compressed||buffered,decision);
+        collab.voice.listenBusy=false;
+        applyListenDecision(decision);
       });
   }
 
@@ -5257,15 +5469,223 @@
     });
   }
 
+  function int16ToBase64(int16){
+    var bytes=new Uint8Array(int16.buffer,int16.byteOffset,int16.byteLength), binary="", chunk=8192;
+    for(var i=0;i<bytes.length;i+=chunk) binary+=String.fromCharCode.apply(null,bytes.subarray(i,Math.min(i+chunk,bytes.length)));
+    return btoa(binary);
+  }
+  function downsampleToPcm16(float32,inputRate,outputRate){
+    if(!float32||!float32.length) return null;
+    var ratio=inputRate/outputRate, outLen=Math.round(float32.length/ratio);
+    if(outLen<1) return null;
+    var out=new Int16Array(outLen);
+    for(var i=0;i<outLen;i++){
+      var src=i*ratio, idx=Math.floor(src), frac=src-idx;
+      var s=float32[idx]||0, t=float32[idx+1]==null?s:float32[idx+1];
+      var sample=s+(t-s)*frac;
+      sample=Math.max(-1,Math.min(1,sample));
+      out[i]=sample<0?sample*0x8000:sample*0x7fff;
+    }
+    return out;
+  }
+  function mergeLiveTranscript(prev,next){
+    next=cleanText(next); if(!next) return prev||"";
+    prev=prev||"";
+    if(!prev) return next;
+    if(next.indexOf(prev)===0) return next;
+    if(prev.indexOf(next)>=0) return prev;
+    return prev+next;
+  }
+  function parseLiveMessage(data){
+    if(typeof data==="string"){
+      try{ return Promise.resolve(JSON.parse(data)); }catch(e){ return Promise.resolve(null); }
+    }
+    if(typeof Blob!=="undefined"&&data instanceof Blob){
+      return data.text().then(function(raw){ try{ return JSON.parse(raw); }catch(e){ return null; } });
+    }
+    if(typeof ArrayBuffer!=="undefined"&&data instanceof ArrayBuffer){
+      try{ return Promise.resolve(JSON.parse(new TextDecoder().decode(data))); }catch(e){ return Promise.resolve(null); }
+    }
+    return Promise.resolve(null);
+  }
+  function liveSetupPayload(agentItem,model,lite){
+    var a=normalizeAgent(agentItem);
+    var setup={
+      model:"models/"+model,
+      generationConfig:{responseModalities:["TEXT"],temperature:0.1,maxOutputTokens:256},
+      systemInstruction:{parts:[{text:listenSystemPrompt(agentItem)}]},
+      inputAudioTranscription:{}
+    };
+    if(!lite){
+      setup.proactivity={proactiveAudio:true};
+      setup.realtimeInputConfig={
+        automaticActivityDetection:{
+          endOfSpeechSensitivity:"END_SENSITIVITY_LOW",
+          silenceDurationMs:a.silenceMs||1400
+        }
+      };
+    }
+    return setup;
+  }
+  function detachPcmCapture(session){
+    if(!session) return;
+    if(session.processor){ try{ session.processor.onaudioprocess=null; session.processor.disconnect(); }catch(e){} session.processor=null; }
+    if(session.processorMute){ try{ session.processorMute.disconnect(); }catch(e){} session.processorMute=null; }
+  }
+  function attachPcmCapture(session){
+    detachPcmCapture(session);
+    var ctx=session.audioContext, source=session.mediaSource;
+    if(!ctx||!source||typeof ctx.createScriptProcessor!=="function") return false;
+    if(ctx.state==="suspended"&&ctx.resume) ctx.resume();
+    var proc=ctx.createScriptProcessor(4096,1,1);
+    var mute=ctx.createGain(); mute.gain.value=0;
+    source.connect(proc); proc.connect(mute); mute.connect(ctx.destination);
+    proc.onaudioprocess=function(event){
+      if(!session.active||!session.live||!session.live.ready||!session.live.ws||session.live.ws.readyState!==1) return;
+      var agentItem=collabAgent(), a=agentItem?normalizeAgent(agentItem):null;
+      if(a&&!a.keepListeningWhileSpeaking&&collab.audio) return;
+      var input=event.inputBuffer.getChannelData(0);
+      var pcm=downsampleToPcm16(input,ctx.sampleRate,16000);
+      if(!pcm||!pcm.length) return;
+      try{
+        session.live.ws.send(JSON.stringify({realtimeInput:{audio:{mimeType:"audio/pcm;rate=16000",data:int16ToBase64(pcm)}}}));
+      }catch(e){}
+    };
+    session.processor=proc; session.processorMute=mute;
+    return true;
+  }
+  function finishLiveListenTurn(session){
+    if(!session||!session.active||!session.live) return;
+    var said=cleanText(session.live.utterance||session.live.partial);
+    var reply=cleanText(session.live.reply);
+    session.live.utterance=""; session.live.partial=""; session.live.reply="";
+    if(!said&&!reply) return;
+    if(said) ingestVoiceUtterance(said,false);
+    else if(!session.buffer) return;
+    var agentItem=collabAgent();
+    var decision=/keep_listening|respond|dictate_only/.test(reply)?parseListenDecision(reply):heuristicListenDecision(session.buffer,agentItem);
+    applyListenDecision(decision);
+  }
+  function handleLiveServerMessage(session,msg){
+    if(!session||!session.live||!msg) return;
+    var sc=msg.serverContent||{};
+    var inT=msg.inputTranscription||sc.inputTranscription||{};
+    var piece=cleanText(inT.text);
+    if(piece){
+      session.live.partial=mergeLiveTranscript(session.live.partial,piece);
+      session.live.utterance=session.live.partial;
+      setVoiceTranscriptPreview((session.buffer?session.buffer+"\n":"")+session.live.partial);
+    }
+    var parts=sc.modelTurn&&sc.modelTurn.parts||[];
+    parts.forEach(function(part){ if(part&&part.text&&!part.thought) session.live.reply=(session.live.reply||"")+part.text; });
+    if(sc.interrupted) session.live.reply="";
+    if(sc.generationComplete&&!sc.turnComplete&&session.live.reply) { /* wait for turnComplete */ }
+    if(sc.turnComplete) finishLiveListenTurn(session);
+    if(msg.goAway) setVoiceStatus("Live session wrapping up — I’ll reconnect");
+  }
+  function closeLiveSocket(session,intentional){
+    if(!session||!session.live) return;
+    session.live.intentional=!!intentional;
+    session.live.ready=false;
+    if(intentional&&session.live.ws&&session.live.ws.readyState===1){
+      try{ session.live.ws.send(JSON.stringify({realtimeInput:{audioStreamEnd:true}})); }catch(e){}
+    }
+    if(session.live.ws){ try{ session.live.ws.close(); }catch(e){} }
+  }
+  function openGeminiLiveSocket(session,agentItem,model,lite){
+    return new Promise(function(resolve){
+      var settled=false;
+      function done(ok){ if(settled) return; settled=true; resolve(!!ok); }
+      var ws;
+      try{ ws=new WebSocket(AGENT_GEMINI_LIVE_WS+"?key="+encodeURIComponent(runtimeApiKeys.gemini)); }
+      catch(e){ done(false); return; }
+      session.live={ws:ws,model:model,ready:false,intentional:false,utterance:"",partial:"",reply:"",lite:!!lite};
+      var timer=setTimeout(function(){ try{ ws.close(); }catch(e){} done(false); },5000);
+      ws.onopen=function(){
+        try{ ws.send(JSON.stringify({setup:liveSetupPayload(agentItem,model,lite)})); }
+        catch(e){ done(false); }
+      };
+      ws.onmessage=function(event){
+        parseLiveMessage(event.data).then(function(msg){
+          if(!msg||!session.active) return;
+          if(msg.setupComplete){
+            clearTimeout(timer);
+            if(!session.live||session.live.ws!==ws) return;
+            session.live.ready=true;
+            if(!attachPcmCapture(session)){
+              closeLiveSocket(session,true);
+              done(false);
+              return;
+            }
+            var a=normalizeAgent(agentItem);
+            buildVoiceArt(a.animationStyle);
+            setVoiceLink("Live ears · "+(runtimeApiKeys.elevenlabs?"ElevenLabs voice":"text replies"));
+            done(true);
+            return;
+          }
+          handleLiveServerMessage(session,msg);
+        });
+      };
+      ws.onerror=function(){};
+      ws.onclose=function(){
+        clearTimeout(timer);
+        var live=session.live, same=live&&live.ws===ws, wasReady=same&&live.ready, intentional=live&&live.intentional;
+        if(!settled){ done(false); return; }
+        if(intentional||!session.active||!same) return;
+        if(wasReady&&(session.liveDrops||0)<2){
+          session.liveDrops=(session.liveDrops||0)+1;
+          live.ready=false;
+          setVoiceStatus("Live ears dropped — reconnecting");
+          connectGeminiLive(session,agentItem).then(function(ok){
+            if(ok||!session.active) return;
+            startBrowserListen(session);
+          });
+        } else if(session.active&&!session.usingSpeech&&!session.recorder){
+          startBrowserListen(session);
+        }
+      };
+    });
+  }
+  function connectGeminiLive(session,agentItem){
+    var models=AGENT_GEMINI_LIVE_MODELS.slice();
+    function tryModel(){
+      if(!session.active||!runtimeApiKeys.gemini||!models.length) return Promise.resolve(false);
+      var model=models.shift();
+      setVoiceLink("Connecting "+model);
+      return openGeminiLiveSocket(session,agentItem,model,false).then(function(ok){
+        if(ok) return true;
+        if(!session.active) return false;
+        return openGeminiLiveSocket(session,agentItem,model,true).then(function(okLite){ return okLite?true:tryModel(); });
+      });
+    }
+    return tryModel();
+  }
+  function startBrowserListen(session){
+    if(!session||!session.active||session.usingSpeech||session.recorder) return;
+    if(!attachSpeechRecognition(session)){
+      try{ attachChunkRecorder(session,session.stream); }
+      catch(error){
+        console.warn("Browser listen failed:",error);
+        setVoiceStatus("Could not start a fallback listener",true);
+        return;
+      }
+    }
+    setVoiceLink("Browser listen"+(runtimeApiKeys.elevenlabs?" · ElevenLabs voice":""));
+    setVoiceStatus("Listening — pause when you want a decision, keep talking if you’re not done");
+  }
+
   function stopVoiceSession(){
     var session=collab.voice;
     if(!session) return;
     session.active=false;
     if(session.raf) cancelAnimationFrame(session.raf);
     if(session.silenceTimer) clearTimeout(session.silenceTimer);
+    detachPcmCapture(session);
+    closeLiveSocket(session,true);
     if(session.recognition){ try{ session.recognition.onend=null; session.recognition.stop(); }catch(e){} }
     if(session.recorder&&session.recorder.state==="recording"){ try{ session.recorder.stop(); }catch(e){} }
     if(session.stream) session.stream.getTracks().forEach(function(track){ track.stop(); });
+    if(session.audioContext){ try{ session.audioContext.close(); }catch(e){} }
     collab.voice=null;
     collab.recorder=null; collab.recorderStream=null; collab.recorderStop=false;
     hideVoiceStage();
@@ -5319,7 +5739,10 @@
         else interim+=piece;
       }
       if(interim) setVoiceTranscriptPreview((collab.voice.buffer?collab.voice.buffer+"\n":"")+interim);
-      if(finalText) considerVoiceTurn(finalText,false);
+      if(finalText){
+        if(collab.voice.live&&collab.voice.live.ready) ingestVoiceUtterance(finalText,false);
+        else considerVoiceTurn(finalText,false);
+      }
     };
     rec.onerror=function(event){ if(event&&event.error==="not-allowed") setVoiceStatus("Microphone permission was blocked",true); };
     rec.onend=function(){ if(collab.voice&&collab.voice.active){ try{ rec.start(); }catch(e){} } };
@@ -5338,7 +5761,11 @@
       var blob=new Blob(chunks,{type:recorder.mimeType||mimeType||"audio/webm"});
       chunks=[];
       if(blob.size<1200) return;
-      transcribeSpeech(blob).then(function(text){ if(text) considerVoiceTurn(text,false); }).catch(function(error){ console.warn("Live transcription failed:",error); });
+      transcribeSpeech(blob).then(function(text){
+        if(!text) return;
+        if(collab.voice&&collab.voice.live&&collab.voice.live.ready) ingestVoiceUtterance(text,false);
+        else considerVoiceTurn(text,false);
+      }).catch(function(error){ console.warn("Live transcription failed:",error); });
     };
     recorder.start(1200);
     session.recorder=recorder;
@@ -5351,28 +5778,33 @@
     if(!runtimeApiKeys.elevenlabs&&!runtimeApiKeys.openai&&!runtimeApiKeys.gemini){ setCollabStatus("Add an API key in Settings → API keys first.",true); return; }
     startCollabSession();
     setCollabStatus("Waiting for the microphone…");
-    navigator.mediaDevices.getUserMedia({audio:true}).then(function(stream){
+    navigator.mediaDevices.getUserMedia({audio:{echoCancellation:true,noiseSuppression:true,autoGainControl:true}}).then(function(stream){
       var ctx=null, analyser=null, source=null;
       try{
         ctx=new (window.AudioContext||window.webkitAudioContext)();
         analyser=ctx.createAnalyser(); analyser.fftSize=1024;
         source=ctx.createMediaStreamSource(stream); source.connect(analyser);
       }catch(e){ console.warn("Analyser unavailable:",e); }
-      collab.voice={active:true,stream:stream,analyser:analyser,audioContext:ctx,buffer:"",level:0,barge:0,usingSpeech:false,listenBusy:false,speaking:false};
+      collab.voice={active:true,stream:stream,analyser:analyser,audioContext:ctx,mediaSource:source,buffer:"",level:0,barge:0,usingSpeech:false,listenBusy:false,speaking:false,liveDrops:0};
       collab.recorderStream=stream;
       showVoiceStage();
-      if(!attachSpeechRecognition(collab.voice)){
-        try{ attachChunkRecorder(collab.voice,stream); }
-        catch(error){ stream.getTracks().forEach(function(track){ track.stop(); }); throw error; }
-      }
       startVoiceAnalyserLoop();
-      setVoiceStatus("Listening — pause when you want a decision, keep talking if you’re not done");
       updateCollabControls();
       var agentItem=collabAgent(), a=agentItem?normalizeAgent(agentItem):null;
       if(a&&a.greeting&&!collabConversation().length){
         pushCollabMessage("agent",a.greeting);
         if(agentSettings().speakReplies) speakCollab(a.greeting);
       }
+      var wantLive=!!(a&&a.liveListen&&runtimeApiKeys.gemini&&collab.voice.audioContext&&typeof collab.voice.audioContext.createScriptProcessor==="function");
+      if(wantLive){
+        setVoiceStatus("Connecting Live ears…");
+        setVoiceLink("Gemini Live");
+        connectGeminiLive(collab.voice,agentItem).then(function(ok){
+          if(!collab.voice||!collab.voice.active) return;
+          if(ok) setVoiceStatus("Listening — keep talking, I’ll wait");
+          else startBrowserListen(collab.voice);
+        });
+      } else startBrowserListen(collab.voice);
     }).catch(function(error){
       console.warn("Microphone unavailable:",error);
       stopVoiceSession();
@@ -5403,8 +5835,8 @@
   function collabReadiness(){
     var missing=[], warnings=[];
     if(!runtimeApiKeys.openai&&!runtimeApiKeys.gemini) missing.push(currentUser?"Add an OpenAI or Gemini API key in Settings → API keys.":"Sign in, then add an OpenAI or Gemini API key in Settings → API keys.");
-    if(!runtimeApiKeys.elevenlabs) warnings.push("Add your ElevenLabs API key for spoken replies. Live listening can use the browser’s speech engine without it.");
-    if(!runtimeApiKeys.gemini) warnings.push("A Gemini key lets the fast listen model (gemini-2.5-flash) decide when you are done rambling.");
+    if(!runtimeApiKeys.elevenlabs) warnings.push("Add your ElevenLabs API key for spoken replies. Live listening can use Gemini or the browser without it.");
+    if(!runtimeApiKeys.gemini) warnings.push("A Gemini key turns on Live ears so listening never stops while it talks, and gives you the fast listen model.");
     return {missing:missing,warnings:warnings,ok:!missing.length};
   }
   function setCollabStatus(text,bad){
@@ -5429,7 +5861,8 @@
   }
   function collabMessageNode(entry){
     var node=document.createElement("div");
-    node.className="cmsg "+(entry.role==="user"?"user":"agent");
+    node.className="cmsg "+(entry.role==="user"?"user":"agent")+(entry.streaming?" streaming":"");
+    if(entry.streaming) node.setAttribute("data-collab-stream",String(entry.ts));
     node.textContent=entry.text;
     return node;
   }
@@ -5602,7 +6035,7 @@
     var avatar=$("collabAvatar"), name=$("collabName"), model=$("collabModel"), speak=$("collabSpeakBtn");
     if(avatar) avatar.textContent=(a?a.name:"A").trim().charAt(0).toUpperCase()||"A";
     if(name) name.textContent=a?a.name:"AI collaborator";
-    if(model) model.textContent=a?(a.listenModel+" → "+a.workModel+(a.complexModel&&a.complexModel!==a.workModel?" / "+a.complexModel:"")):"No agent yet";
+    if(model) model.textContent=a?(a.listenModel+" → "+a.workModel+(a.complexModel&&a.complexModel!==a.workModel?" / "+a.complexModel:"")+(a.liveListen&&runtimeApiKeys.gemini?" · Live ears":"")):"No agent yet";
     if(speak){
       var on=agentSettings().speakReplies;
       speak.classList.toggle("on",on);
