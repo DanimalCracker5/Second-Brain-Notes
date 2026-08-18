@@ -491,14 +491,15 @@
   .d-foot .who b{ font-size:.8rem; font-weight:600; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
   .d-foot .icon-sbtn{ flex:0 0 auto; width:38px; height:38px; padding:0; }
   .d-foot .agent-mic.on{ color:var(--accent); border-color:var(--accent-line); background:var(--accent-soft); }
-  .d-foot.has-account{ display:grid; grid-template-columns:minmax(0,1fr) 42px 42px 42px; align-items:center; gap:10px; padding:12px 14px; }
+  .d-foot.has-account{ display:grid; grid-template-columns:minmax(0,1fr) 38px 38px 38px 38px; align-items:center; gap:8px; padding:12px 14px; }
   .d-foot.has-account .account-summary{ display:contents; }
   .d-foot.has-account .who{ grid-column:1; grid-row:1; min-height:42px; }
-  .d-foot.has-account > .sbtn{ grid-row:1; width:42px; height:42px; padding:0; }
+  .d-foot.has-account > .sbtn{ grid-row:1; width:38px; height:38px; padding:0; }
   .d-foot.has-account > .agent-mic{ grid-column:2; }
   .d-foot.has-account > .upcoming-button{ grid-column:3; }
-  .d-foot.has-account > .settings-gear{ grid-column:4; }
-  .upcoming-button.on{ color:var(--accent) !important; border-color:var(--accent-line) !important; background:var(--accent-soft) !important; box-shadow:0 0 0 3px rgba(255,255,255,.02); }
+  .d-foot.has-account > .hidden-button{ grid-column:4; }
+  .d-foot.has-account > .settings-gear{ grid-column:5; }
+  .upcoming-button.on,.hidden-button.on{ color:var(--accent) !important; border-color:var(--accent-line) !important; background:var(--accent-soft) !important; box-shadow:0 0 0 3px rgba(255,255,255,.02); }
   .storage-usage{ position:relative; display:grid; grid-template-columns:16px minmax(0,1fr) max-content; align-items:center; gap:8px; width:100%; min-height:38px; padding:9px 10px; border:1px solid var(--line); border-radius:10px; color:var(--ink-dim); background:linear-gradient(135deg,rgba(255,255,255,.045),rgba(255,255,255,.018)); line-height:1; cursor:pointer; outline:none; transition:border-color .14s,background .14s; }
   .d-foot.has-account .storage-usage{ grid-column:1 / -1; grid-row:2; grid-template-columns:18px minmax(0,1fr) max-content; gap:10px; min-height:44px; padding:6px 12px; border-radius:12px; }
   .storage-usage:hover,.storage-usage:focus{ border-color:var(--accent-line); background:linear-gradient(135deg,var(--accent-soft),rgba(255,255,255,.035)); }
@@ -689,6 +690,10 @@
   .agent-view{ max-width:920px; }
   .agent-hero{ display:flex; align-items:center; gap:14px; padding:18px; border:1px solid var(--line); border-radius:18px; background:linear-gradient(135deg,rgba(255,255,255,.07),rgba(255,255,255,.02)); }
   .agent-avatar{ width:46px; height:46px; display:grid; place-items:center; border-radius:16px; color:#09090b; background:var(--accent); font-weight:700; }
+  .agent-avatar.has-face{ background-size:cover; background-position:center; color:transparent; font-size:0; overflow:hidden; }
+  .agent-face-row{ display:flex; align-items:center; gap:12px; }
+  .agent-face-preview{ width:64px; height:64px; border-radius:20px; flex:none; }
+  .agent-face-actions{ display:flex; flex-wrap:wrap; gap:8px; }
   .agent-hero h1{ margin:0; font-size:1.25rem; } .agent-hero p{ margin:3px 0 0; color:var(--ink-dim); font-size:.8rem; }
   .agent-tabs{ display:flex; gap:6px; margin:16px 0; border-bottom:1px solid var(--line); }
   .agent-tabs button{ padding:9px 12px; border:0; border-bottom:2px solid transparent; color:var(--ink-dim); background:transparent; cursor:pointer; font:500 .82rem "DM Sans",sans-serif; }
@@ -883,7 +888,8 @@
   @keyframes vjPulse{ 0%,100%{ filter:brightness(1); } 50%{ filter:brightness(1.35); } }
   @keyframes vjScan{ 0%,100%{ transform:translateY(-36%); opacity:.15; } 50%{ transform:translateY(36%); opacity:1; } }
   @keyframes hudspin{ to{ transform:rotate(360deg); } }
-  .voice-overlay.is-speaking .vj-core,.voice-overlay.is-speaking .voice-art-core{ animation-duration:.45s; }
+  .voice-overlay.is-speaking .vj-core,.voice-overlay.is-speaking .voice-art-core{ animation-duration:.28s; filter:brightness(1.25); }
+  .voice-overlay.is-speaking .voice-art-cinema-light{ transform:translate(-50%,-50%) scale(calc(1 + var(--voice-amp,.4)*.55)); }
   .voice-overlay[data-voice-look="jarvis"] .voice-overlay-bg::after{ content:""; position:absolute; inset:0; pointer-events:none;
     background:repeating-linear-gradient(to bottom, transparent, transparent 2px, rgba(0,0,0,.14) 3px); opacity:.4; }
 
@@ -985,6 +991,46 @@
   .look-mini-waveform{ background:repeating-linear-gradient(90deg, var(--accent) 0 4px, transparent 4px 10px); background-size:100% 40%; background-position:center; background-repeat:repeat-x; }
   .look-mini-cinema{ background:radial-gradient(circle at 50% 60%, #fff 0 4%, var(--accent) 12%, #000 40%); }
   .look-mini-companion{ background:radial-gradient(circle at 40% 36%, #fff 0, var(--accent) 28%, #14141a 70%); }
+  .look-mini-face{
+    background:
+      radial-gradient(circle at 38% 40%, #0b0910 0 4px, transparent 5px),
+      radial-gradient(circle at 62% 40%, #0b0910 0 4px, transparent 5px),
+      radial-gradient(circle at 50% 64%, #0b0910 0 5px, transparent 9px),
+      radial-gradient(circle at 50% 48%, var(--accent) 0 30%, #07070c 64%);
+  }
+
+  .voice-art-face{ position:absolute; left:50%; top:40%; width:min(56vw,300px); height:min(56vw,300px); transform:translate(-50%,-50%); }
+  .voice-art-face .face-head{
+    position:absolute; inset:6%;
+    border-radius:50%;
+    background:
+      radial-gradient(circle at 34% 30%, rgba(255,255,255,.42), transparent 42%),
+      linear-gradient(180deg, color-mix(in srgb, var(--voice-accent) 62%, #1a1420), color-mix(in srgb, var(--voice-accent) 28%, #0a0810));
+    border:3px solid color-mix(in srgb, var(--voice-accent) 78%, #fff);
+    box-shadow:0 0 calc(16px + var(--voice-amp,.3)*48px) var(--voice-accent);
+  }
+  .voice-art-face .face-eyes{ position:absolute; left:50%; top:34%; transform:translateX(-50%); display:flex; gap:36px; z-index:1; }
+  .voice-art-face .face-eyes span{
+    width:22px; height:calc(18px - var(--voice-amp,.3)*7px); min-height:8px;
+    background:#0c0a10; border-radius:50%;
+    box-shadow:inset 0 -3px 0 rgba(255,255,255,.12), 0 0 0 3px rgba(255,255,255,.08);
+  }
+  .voice-art-face .face-photo{
+    display:none; position:absolute; inset:0; border-radius:50%;
+    background-size:cover; background-position:center;
+    border:4px solid color-mix(in srgb, var(--voice-accent) 82%, #fff);
+    box-shadow:0 0 calc(14px + var(--voice-amp,.3)*56px) var(--voice-accent);
+  }
+  .voice-art-face.has-photo .face-head,.voice-art-face.has-photo .face-eyes{ display:none; }
+  .voice-art-face.has-photo .face-photo{ display:block; }
+  .voice-art-face .face-mouth{
+    position:absolute; left:50%; bottom:22%; z-index:2;
+    width:calc(24px + var(--voice-amp,.2)*42px);
+    height:calc(5px + var(--voice-amp,.2)*26px);
+    transform:translateX(-50%);
+    background:#1a1016; border-radius:6px 6px 40px 40px;
+  }
+  .voice-art-face.has-photo .face-mouth{ bottom:18%; background:rgba(18,8,12,.82); box-shadow:0 4px 12px rgba(0,0,0,.35); }
   .voice-stage-preview{ position:relative; height:min(58vw,300px); border-radius:22px; overflow:hidden; background:#050508; border:1px solid var(--line); }
   .model-custom{ margin-top:4px; } .model-custom summary{ cursor:pointer; color:var(--ink-faint); font-size:.72rem; }
   .model-custom input{ margin-top:6px; width:100%; }
@@ -994,10 +1040,21 @@
     pointer-events:auto; overflow:hidden; }
   .voice-companion.open{ display:block; }
   .voice-companion-face{ position:absolute; inset:10px; border-radius:22px; background:radial-gradient(circle at 35% 30%,#fff 0, var(--voice-accent,var(--accent)) 28%, #14141a 70%);
-    animation:companionBob 2.8s ease-in-out infinite; }
+    animation:companionBob 2.8s ease-in-out infinite; overflow:hidden; background-size:cover; background-position:center; }
   .voice-companion.listening .voice-companion-face{ box-shadow:0 0 22px var(--voice-accent,var(--accent)); }
   .voice-companion.writing .voice-companion-face{ animation:companionWrite .7s ease-in-out infinite; }
-  .voice-companion.speaking .voice-companion-face{ transform:scale(1.06); }
+  .voice-companion.speaking .voice-companion-face{ box-shadow:0 0 28px var(--voice-accent,var(--accent)); filter:brightness(1.08); }
+  .companion-eyes{ position:absolute; left:50%; top:32%; transform:translateX(-50%); display:flex; gap:14px; z-index:1; }
+  .companion-eyes span{ width:10px; height:10px; border-radius:50%; background:#0b0910; box-shadow:inset 0 -2px 0 rgba(255,255,255,.16); }
+  .companion-mouth{
+    position:absolute; left:50%; bottom:22%; z-index:2;
+    width:calc(10px + var(--voice-amp,.15)*18px);
+    height:calc(3px + var(--voice-amp,.15)*14px);
+    transform:translateX(-50%);
+    background:#1a1218; border-radius:2px 2px 10px 10px;
+  }
+  .voice-companion-face.has-photo .companion-eyes{ display:none; }
+  .voice-companion-face.has-photo .companion-mouth{ bottom:20%; background:rgba(18,8,12,.8); }
   @keyframes companionBob{ 0%,100%{ transform:translateY(0); } 50%{ transform:translateY(-5px); } }
   @keyframes companionWrite{ 0%,100%{ transform:translate(0,0) rotate(0); } 50%{ transform:translate(3px,-2px) rotate(6deg); } }
   .note-editor.agent-writing{ outline:1px solid var(--accent-line); box-shadow:0 0 0 6px var(--accent-soft); border-radius:14px; }
@@ -1256,6 +1313,7 @@
   var AGENT_GEMINI_LIVE_WS="wss://generativelanguage.googleapis.com/ws/google.ai.generativelanguage.v1beta.GenerativeService.BidiGenerateContent";
   var AGENT_VOICE_STYLE_ALIASES={hud:"jarvis",pulse:"core",orb:"core",rings:"nova",halo:"radial"};
   var AGENT_VOICE_STYLES=[
+    {id:"face",name:"Face",hint:"A talking face — upload a photo in Identity, or use the drawn face"},
     {id:"jarvis",name:"Jarvis HUD",hint:"Radar sweep, tick ring, live core — made for YouTube"},
     {id:"iris",name:"Iris",hint:"An eye that opens when it listens and tightens when it talks"},
     {id:"core",name:"Reactor core",hint:"Molten center with orbiting sparks"},
@@ -1725,7 +1783,7 @@
   if(state.mobileFolderFocus!==undefined) delete state.mobileFolderFocus;
   if(typeof state.readChapterNames!=="boolean") state.readChapterNames=false;
   state.filterTag=state.filterTag||null; state.selectedItemIds=Array.isArray(state.selectedItemIds)?state.selectedItemIds:[]; state.selectingNotes=!!state.selectingNotes; state.tagAssignMode=!!state.tagAssignMode;
-  state.sidebarView=state.sidebarView==="upcoming"?"upcoming":"all";
+  state.sidebarView=(state.sidebarView==="upcoming"||state.sidebarView==="hidden")?state.sidebarView:"all";
   state.version=Math.max(1,Number(state.version)||Number(state.updated)||1);
   state.noteSearch=typeof state.noteSearch==="string"?state.noteSearch:"";
   state.listSort=state.listSort||"updated";
@@ -1817,12 +1875,16 @@
   function firstTagName(it){ var names=(it.tagIds||[]).map(function(id){ var t=tagById(id); return t?t.name.toLowerCase():""; }).filter(Boolean).sort(); return names[0]||"\uffff"; }
   function visibleItems(ignoreTagFilter){
     var query=(state.noteSearch||"").trim().toLowerCase();
+    var hiddenView=state.sidebarView==="hidden";
     var items=state.items.filter(function(it){
-      if(it.hidden) return false;
-      if(!ignoreTagFilter && state.filterTag && (it.tagIds||[]).indexOf(state.filterTag)<0) return false;
-      /* Hidden tags act like an archive from the All notes view. Selecting a
-         specific tag still lets the user inspect it and make it visible again. */
-      if(!ignoreTagFilter && !state.filterTag && (it.tagIds||[]).some(function(id){ var tag=tagById(id); return tag&&tag.hidden; })) return false;
+      if(hiddenView){ if(!it.hidden) return false; }
+      else if(it.hidden) return false;
+      if(!hiddenView){
+        if(!ignoreTagFilter && state.filterTag && (it.tagIds||[]).indexOf(state.filterTag)<0) return false;
+        /* Hidden tags act like an archive from the All notes view. Selecting a
+           specific tag still lets the user inspect it and make it visible again. */
+        if(!ignoreTagFilter && !state.filterTag && (it.tagIds||[]).some(function(id){ var tag=tagById(id); return tag&&tag.hidden; })) return false;
+      }
       if(query){
         var tagNames=(it.tagIds||[]).map(function(id){ var tag=tagById(id); return tag?tag.name:""; }).join(" ");
         if(([it.title||"",itemText(it),tagNames].join(" ")).toLowerCase().indexOf(query)<0) return false;
@@ -1993,6 +2055,7 @@
     var filter=upcomingFilter(), today=startOfDay(new Date()), bounds=upcomingRangeBounds(filter.range,today);
     var query=(state.noteSearch||"").trim().toLowerCase();
     var matches=state.items.filter(function(it){
+      if(it.hidden) return false;
       var due=upcomingDueDate(it,filter.showDone), date=due&&dateFromKey(due);
       if(!date) return false;
       if(bounds.from&&date<bounds.from) return false;
@@ -2027,8 +2090,22 @@
     if(normalizeUpcomingSort(state.upcomingSort)==="dueDesc") order.reverse();
     return order;
   }
-  function updateUpcomingButton(){ var button=$("upcomingBtn"); if(button) button.classList.toggle("on",state.sidebarView==="upcoming"); }
-  function setSidebarView(view){ state.sidebarView=view==="upcoming"?"upcoming":"all"; if(state.sidebarView==="upcoming") state.filterTag=null; persist(); renderTags(); renderList(); updateUpcomingButton(); }
+  function hiddenItemCount(){ return (state.items||[]).filter(function(it){ return it.hidden; }).length; }
+  function updateSidebarButtons(){
+    var upcoming=$("upcomingBtn"), hidden=$("hiddenBtn");
+    if(upcoming) upcoming.classList.toggle("on",state.sidebarView==="upcoming");
+    if(hidden){
+      var n=hiddenItemCount();
+      hidden.classList.toggle("on",state.sidebarView==="hidden");
+      hidden.title=n?("Hidden notes ("+n+")"):"Hidden notes";
+      hidden.setAttribute("aria-label", hidden.title);
+    }
+  }
+  function setSidebarView(view){
+    state.sidebarView=view==="upcoming"||view==="hidden"?view:"all";
+    if(state.sidebarView!=="all"){ state.filterTag=null; state.selectingNotes=false; state.selectedItemIds=[]; state.tagAssignMode=false; }
+    persist(); renderTags(); renderList(); updateSidebarButtons();
+  }
   function setTodoDone(it,done){
     it.done=typeof done==="boolean"?done:!it.done;
     it.completed=it.done?Date.now():null;
@@ -2274,6 +2351,7 @@
         if(event.target.closest(".tag-action")) return;
         clearTimeout(tagCloseTimer);
         state.filterTag=state.filterTag===tag.id?null:tag.id;
+        if(state.sidebarView==="hidden") state.sidebarView="all";
         state.tagsCollapsed=false;
         persist(); renderAll();
         var picked=tagsEl.querySelector('.tg.active');
@@ -2346,6 +2424,24 @@
   }
   function openListTools(anchor){
     if(state.sidebarView==="upcoming") return openUpcomingTools(anchor);
+    if(state.sidebarView==="hidden"){
+      openMenu(anchor,function(m){
+        var title=document.createElement("div"); title.className="mtitle"; title.textContent="Hidden notes"; m.appendChild(title);
+        m.appendChild(mkItem(ICON_NOTE,"Show all notes",false,function(){ closeMenu(); setSidebarView("all"); }));
+        var hidden=(state.items||[]).filter(function(item){ return item.hidden; });
+        if(hidden.length) m.appendChild(mkItem(ICON_EYE,"Unhide all ("+hidden.length+")",false,function(){
+          hidden.forEach(function(item){ item.hidden=false; item.updated=Date.now(); });
+          closeMenu(); persist(); renderList(); showToast("Shown in the notes list");
+        }));
+        m.appendChild(sep());
+        var st=document.createElement("div"); st.className="mtitle"; st.textContent="Sort hidden notes"; m.appendChild(st);
+        m.appendChild(mkItem("","Custom order",state.listSort==="manual",function(){ state.listSort="manual"; closeMenu(); persist(); renderList(); }));
+        [["updated","Recently updated"],["timeSpent","Most time spent"],["title","Title A–Z"],["tag","Tag A–Z"]].forEach(function(opt){
+          m.appendChild(mkItem("",opt[1],state.listSort===opt[0],function(){ state.listSort=opt[0]; closeMenu(); persist(); renderList(); }));
+        });
+      });
+      return;
+    }
     openMenu(anchor,function(m){
       var ft=document.createElement("div"); ft.className="mtitle"; ft.textContent="Filter by tag"; m.appendChild(ft);
       m.appendChild(mkItem(ICON_NOTE,"All tags",state.filterTag===null,function(){ state.filterTag=null; closeMenu(); persist(); renderAll(); }));
@@ -2500,7 +2596,7 @@
       m.appendChild(mkItem(ICON_UP,"Move up",false,function(){ closeMenu(); moveItem(it,-1); }));
       m.appendChild(mkItem(ICON_DOWN,"Move down",false,function(){ closeMenu(); moveItem(it,1); }));
       m.appendChild(sep());
-      m.appendChild(mkItem(it.hidden?ICON_EYE:ICON_EYE_OFF,it.hidden?"Show in notes list":"Hide from notes list",false,function(){ closeMenu(); it.hidden=!it.hidden; it.updated=Date.now(); persist(); renderList(); renderMain(); showToast(it.hidden?"Hidden from the notes list":"Shown in the notes list"); }));
+      m.appendChild(mkItem(it.hidden?ICON_EYE:ICON_EYE_OFF,it.hidden?"Show in notes list":"Hide from notes list",false,function(){ closeMenu(); it.hidden=!it.hidden; it.updated=Date.now(); persist(); renderList(); renderMain(); showToast(it.hidden?"Hidden — open Hidden in the sidebar footer to find it":"Shown in the notes list"); }));
       m.appendChild(mkItem(it.locked?ICON_UNLOCK:ICON_LOCK,it.locked?"Unlock deletion":"Lock from deletion",false,function(){ toggleItemLock(it); }));
       if(!it.locked){ var remove=mkItem(ICON_DELETE,"Delete",false,function(){ closeMenu(); delItem(it.id); }); remove.className+=" danger"; m.appendChild(remove); }
     });
@@ -2529,18 +2625,22 @@
       selectNotesBtn.textContent=state.selectingNotes?(state.selectedItemIds.length?(state.tagAssignMode?assignLabel:"Tag "+state.selectedItemIds.length):"Cancel"):(state.filterTag?"＋":"✓");
       selectNotesBtn.title=state.selectingNotes?(state.selectedItemIds.length?(state.tagAssignMode?"Add selected notes to this tag":"Tag selected notes"):"Cancel selection"):(state.filterTag?"Add notes to this tag":"Select notes");
     }
-    var lbl = state.sidebarView==="upcoming"?"Upcoming":(state.filterTag ? ((tagById(state.filterTag)||{}).name||"Tag") : allNotesTitle());
+    var lbl = state.sidebarView==="upcoming"?"Upcoming":(state.sidebarView==="hidden"?"Hidden":(state.filterTag ? ((tagById(state.filterTag)||{}).name||"Tag") : allNotesTitle()));
     if(state.tagAssignMode&&state.filterTag) lbl="Add to "+((tagById(state.filterTag)||{}).name||"tag");
     listLabel.textContent=lbl+"  ·  "+items.length;
-    var upcoming=state.sidebarView==="upcoming", activeFilters=upcoming?upcomingFilterCount():0;
+    var upcoming=state.sidebarView==="upcoming", hiddenView=state.sidebarView==="hidden", activeFilters=upcoming?upcomingFilterCount():0;
     if(listToolsBtn) listToolsBtn.classList.toggle("filtered",activeFilters>0);
     listEl.innerHTML="";
     /* Sort and filter changes rearrange the same rows, so they belong in the
        signature — otherwise the list would quietly re-order with no animation. */
-    var signature=(upcoming?state.upcomingSort+":"+JSON.stringify(upcomingFilter())+"|":"")+items.map(function(it){ return it.id; }).join("|");
+    var signature=(upcoming?state.upcomingSort+":"+JSON.stringify(upcomingFilter())+"|":"")+(hiddenView?"hidden|":"")+items.map(function(it){ return it.id; }).join("|");
     listEl.classList.toggle("enter",signature!==lastListSignature);
     lastListSignature=signature;
-    if(!items.length){ var e=document.createElement("div"); e.className="tag-empty"; e.style.padding="10px 12px"; e.textContent=upcoming?(activeFilters?"Nothing matches these filters.":"Nothing due yet."):"Nothing here yet."; listEl.appendChild(e); updateUpcomingButton(); return; }
+    if(!items.length){
+      var e=document.createElement("div"); e.className="tag-empty"; e.style.padding="10px 12px";
+      e.textContent=upcoming?(activeFilters?"Nothing matches these filters.":"Nothing due yet."):(hiddenView?"Nothing is hidden. Use the pencil menu on any note to hide it from All notes — it stays in your account, and this list is the way back.":"Nothing here yet.");
+      listEl.appendChild(e); updateSidebarButtons(); return;
+    }
     var groups=upcoming?upcomingGroups(items):[{items:items}], row=0;
     groups.forEach(function(group){
       if(group.label){
@@ -2552,7 +2652,7 @@
       }
       group.items.forEach(function(it){ listEl.appendChild(buildListRow(it,row++)); });
     });
-    updateUpcomingButton();
+    updateSidebarButtons();
   }
   function buildListRow(it,index){
       var todoItem=isTodoNote(it)||it.type==="todo";
@@ -3633,7 +3733,7 @@
     var wrap=document.createElement("div");
     var hero=document.createElement("div"); hero.className="agent-hero";
     hero.innerHTML='<div class="agent-avatar"></div><div><h1></h1><p></p></div>';
-    hero.querySelector(".agent-avatar").textContent=a.name.trim().charAt(0).toUpperCase()||"A";
+    paintAgentAvatar(hero.querySelector(".agent-avatar"), a);
     hero.querySelector("h1").textContent=a.name;
     var ready=collabReadiness();
     if(a.accentColor) hero.style.setProperty("--agent-accent",a.accentColor);
@@ -3669,14 +3769,14 @@
       stage.className+=" voice-stage";
       var preview=document.createElement("div"); preview.className="voice-stage-preview"; preview.style.setProperty("--voice-accent",agentAccent(it)||"var(--accent)");
       stage.appendChild(preview);
-      buildVoiceArt(a.animationStyle,preview);
+      buildVoiceArt(a.animationStyle,preview,a);
       var copy=document.createElement("div");
       var heading=document.createElement("b"); heading.textContent="Live voice with "+a.name;
       var detail=document.createElement("p");
-      detail.textContent="Pick a look on the Edit tab. Gemini Live keeps the mic open while "+a.name+" talks — ElevenLabs still does the voice.";
+      detail.textContent="Upload a face on the Edit tab, then pick Face here so it lip-syncs while talking. Other looks still use the photo on the dock companion.";
       copy.appendChild(heading); copy.appendChild(detail); stage.appendChild(copy);
       var lookWrap=document.createElement("div"); lookWrap.style.margin="12px 0 18px";
-      lookWrap.appendChild(buildVoiceLookGrid(a,it,function(style){ buildVoiceArt(style.id,preview); }));
+      lookWrap.appendChild(buildVoiceLookGrid(a,it,function(style){ buildVoiceArt(style.id,preview,a); }));
       stage.appendChild(lookWrap);
       var voiceRow=document.createElement("div"); voiceRow.className="btnrow"; voiceRow.style.justifyContent="center";
       var start=document.createElement("button"); start.type="button"; start.className="b2 primary"; start.textContent=collab.voice&&collab.voice.active?"End voice session":"Start voice conversation";
@@ -3724,7 +3824,7 @@
         input.value=a[key]||""; input.placeholder=placeholder||"";
         input.oninput=function(){
           a[key]=input.value; it.updated=Date.now();
-          if(key==="name"){ it.title=input.value; hero.querySelector("h1").textContent=input.value||"New Agent"; refreshListTitles(); }
+          if(key==="name"){ it.title=input.value; hero.querySelector("h1").textContent=input.value||"New Agent"; paintAgentAvatar(hero.querySelector(".agent-avatar"), a); refreshListTitles(); }
           save();
         };
         l.appendChild(input);
@@ -3819,6 +3919,45 @@
 
       var identity=section("Identity");
       fieldOn(identity,"Agent name","name","Jarvis");
+      var faceLabel=labelOn(identity,"Face photo");
+      var faceRow=document.createElement("div"); faceRow.className="agent-face-row";
+      var facePreview=document.createElement("div"); facePreview.className="agent-avatar agent-face-preview";
+      paintAgentAvatar(facePreview, a);
+      var faceActions=document.createElement("div"); faceActions.className="agent-face-actions";
+      var facePick=document.createElement("button"); facePick.type="button"; facePick.className="b2"; facePick.textContent=a.faceData?"Replace photo":"Upload photo";
+      var faceFile=document.createElement("input"); faceFile.type="file"; faceFile.accept="image/*"; faceFile.hidden=true;
+      var faceClear=document.createElement("button"); faceClear.type="button"; faceClear.className="b2"; faceClear.textContent="Remove"; faceClear.hidden=!a.faceData;
+      function refreshFaceUi(){
+        paintAgentAvatar(facePreview, a);
+        paintAgentAvatar(hero.querySelector(".agent-avatar"), a);
+        facePick.textContent=a.faceData?"Replace photo":"Upload photo";
+        faceClear.hidden=!a.faceData;
+        refreshCollabChrome();
+        applyCompanionFace(a);
+        if(collab.voice&&collab.voice.active) buildVoiceArt(a.animationStyle, null, a);
+      }
+      facePick.onclick=function(){ faceFile.click(); };
+      faceFile.onchange=function(){
+        var file=faceFile.files&&faceFile.files[0];
+        faceFile.value="";
+        if(!file) return;
+        resizeFaceData(file).then(function(data){
+          a.faceData=data; it.updated=Date.now(); save();
+          refreshFaceUi();
+          showToast(a.animationStyle==="face"?"Face photo saved":"Face photo saved — pick the Face look to see it while talking");
+        }).catch(function(err){ showToast((err&&err.message)||"Could not use that photo",true); });
+      };
+      faceClear.onclick=function(){
+        a.faceData=""; it.updated=Date.now(); save();
+        refreshFaceUi();
+        showToast("Face photo removed");
+      };
+      faceActions.appendChild(facePick); faceActions.appendChild(faceClear); faceActions.appendChild(faceFile);
+      faceRow.appendChild(facePreview); faceRow.appendChild(faceActions);
+      faceLabel.appendChild(faceRow);
+      var faceHint=document.createElement("small");
+      faceHint.textContent="Shown on the collaborator, the dock companion, and the Face look. Cropped square and stored with this agent.";
+      faceLabel.appendChild(faceHint);
       fieldOn(identity,"Greeting","greeting",AGENT_DEFAULT_GREETING);
       fieldOn(identity,"Response style","responseStyle","Balanced");
       var colorLabel=labelOn(identity,"Accent color"), colorRow=document.createElement("div"); colorRow.className="agent-color-row";
@@ -4326,7 +4465,8 @@
   var agentModelCache=null;
   var collab={open:false,host:null,hostKind:null,mode:"document",agentId:"",itemId:"",draft:"",busy:false,
     notes:[],proposals:[],recorder:null,recorderStream:null,recorderStop:false,
-    audio:null,audioUrl:null,speakToken:0,sessionKey:"",grantedNoteIds:{},
+    audio:null,audioUrl:null,speakToken:0,speakCtx:null,speakSource:null,speakAnalyser:null,artRaf:0,voiceAmp:0.22,
+    sessionKey:"",grantedNoteIds:{},
     voice:null,decisions:[],queuedUtterance:""};
 
   function defaultUsageStats(){ return {calls:0,tokens:0,inputTokens:0,outputTokens:0,byModel:{},byRole:{},recent:[]}; }
@@ -4396,6 +4536,75 @@
     return AGENT_VOICE_STYLES.some(function(style){ return style.id===id; })?id:"jarvis";
   }
   function knownVoicePresence(id){ return AGENT_VOICE_PRESENCES.some(function(style){ return style.id===id; })?id:"overlay"; }
+  function sanitizeFaceData(value){
+    if(typeof value!=="string") return "";
+    var data=value.replace(/\s/g,"");
+    if(data.length<32||data.length>80000) return "";
+    return /^data:image\/(jpeg|jpg|png|webp);base64,[A-Za-z0-9+/=]+$/i.test(data)?data:"";
+  }
+  function resizeFaceData(file){
+    return new Promise(function(resolve,reject){
+      if(!file||String(file.type||"").indexOf("image/")!==0){ reject(new Error("Choose an image")); return; }
+      var url=URL.createObjectURL(file);
+      var img=new Image();
+      img.onload=function(){
+        URL.revokeObjectURL(url);
+        function encode(size,q){
+          var canvas=document.createElement("canvas");
+          canvas.width=size; canvas.height=size;
+          var ctx=canvas.getContext("2d");
+          var s=Math.min(img.width,img.height)||1;
+          ctx.drawImage(img,(img.width-s)/2,(img.height-s)/2,s,s,0,0,size,size);
+          return canvas.toDataURL("image/jpeg",q);
+        }
+        var size=256, q=0.82, out=encode(size,q);
+        while(out.length>36000&&q>0.4){ q-=0.12; out=encode(size,q); }
+        if(out.length>36000){ size=192; q=0.72; out=encode(size,q); }
+        while(out.length>36000&&q>0.35){ q-=0.1; out=encode(size,q); }
+        resolve(out);
+      };
+      img.onerror=function(){ URL.revokeObjectURL(url); reject(new Error("Could not read that photo")); };
+      img.src=url;
+    });
+  }
+  function paintAgentAvatar(el,a){
+    if(!el) return;
+    if(a&&a.faceData){
+      el.classList.add("has-face");
+      el.style.backgroundImage='url("'+a.faceData+'")';
+      el.textContent="";
+    } else {
+      el.classList.remove("has-face");
+      el.style.backgroundImage="";
+      el.textContent=((a&&a.name)||"A").trim().charAt(0).toUpperCase()||"A";
+    }
+  }
+  function applyCompanionFace(a){
+    var wrap=$("voiceCompanion"); if(!wrap) return;
+    var face=wrap.querySelector(".voice-companion-face");
+    if(!face){
+      face=document.createElement("div");
+      face.className="voice-companion-face";
+      wrap.appendChild(face);
+    }
+    var photo=!!(a&&a.faceData);
+    face.classList.toggle("has-photo",photo);
+    if(photo){
+      face.style.backgroundImage='url("'+a.faceData+'")';
+      face.innerHTML='<div class="companion-mouth"></div>';
+    } else {
+      face.style.backgroundImage="";
+      face.innerHTML='<div class="companion-eyes"><span></span><span></span></div><div class="companion-mouth"></div>';
+    }
+  }
+  function paintFaceStage(art,a){
+    if(!art) return;
+    var wrap=art.querySelector(".voice-art-face");
+    if(!wrap) return;
+    wrap.classList.toggle("has-photo",!!(a&&a.faceData));
+    var photo=wrap.querySelector(".face-photo");
+    if(photo) photo.style.backgroundImage=a&&a.faceData?'url("'+a.faceData+'")':"";
+  }
   /* Older agent items stored a free-text voice name, JSON memory, a single
      model, then listen/work/complex. Fold all of that forward into
      subconscious + conscious so every read path can assume the full shape. */
@@ -4425,6 +4634,7 @@
     a.voicePresence=knownVoicePresence(a.voicePresence==="cinema"?"cinema":a.voicePresence);
     if(a.animationStyle==="companion"&&a.voicePresence==="overlay") a.voicePresence="companion";
     if(typeof a.accentColor!=="string"||!/^#[0-9a-f]{6}$/i.test(a.accentColor)) a.accentColor="";
+    a.faceData=sanitizeFaceData(a.faceData);
     if(typeof a.requireApproval!=="boolean") a.requireApproval=null;
     if(["listen","after_edits","always","never"].indexOf(a.readBack)<0) a.readBack="listen";
     if(typeof a.transcribeToNote!=="boolean") a.transcribeToNote=true;
@@ -5305,10 +5515,38 @@
   }
 
   /* ---------- spoken replies ---------- */
+  function disconnectSpeakAnalyser(){
+    try{ if(collab.speakSource) collab.speakSource.disconnect(); }catch(e){}
+    try{ if(collab.speakAnalyser) collab.speakAnalyser.disconnect(); }catch(e){}
+    collab.speakSource=null;
+    collab.speakAnalyser=null;
+  }
+  function hookSpeakAnalyser(audio){
+    disconnectSpeakAnalyser();
+    if(!audio) return;
+    try{
+      var AC=window.AudioContext||window.webkitAudioContext;
+      if(!AC) return;
+      if(!collab.speakCtx) collab.speakCtx=new AC();
+      if(collab.speakCtx.state==="suspended") collab.speakCtx.resume().catch(function(){});
+      var src=collab.speakCtx.createMediaElementSource(audio);
+      var an=collab.speakCtx.createAnalyser();
+      an.fftSize=256;
+      an.smoothingTimeConstant=0.5;
+      src.connect(an);
+      an.connect(collab.speakCtx.destination);
+      collab.speakSource=src;
+      collab.speakAnalyser=an;
+    }catch(e){
+      collab.speakSource=null;
+      collab.speakAnalyser=null;
+    }
+  }
   function stopCollabSpeech(){
     collab.speakToken++;
     if(collab.audio){ try{ collab.audio.pause(); }catch(e){} collab.audio=null; }
     if(collab.audioUrl){ URL.revokeObjectURL(collab.audioUrl); collab.audioUrl=null; }
+    disconnectSpeakAnalyser();
   }
   function splitCollabSpeech(text){
     var remaining=cleanText(text), chunks=[];
@@ -5338,16 +5576,19 @@
         if(collab.audioUrl) URL.revokeObjectURL(collab.audioUrl);
         collab.audioUrl=URL.createObjectURL(blob);
         collab.audio=new Audio(collab.audioUrl);
+        hookSpeakAnalyser(collab.audio);
         collab.audio.onended=function(){
           if(token!==collab.speakToken) return;
           collab.audio=null;
           if(collab.audioUrl){ URL.revokeObjectURL(collab.audioUrl); collab.audioUrl=null; }
+          disconnectSpeakAnalyser();
           playNext();
         };
         collab.audio.onerror=function(){ if(token===collab.speakToken){ stopCollabSpeech(); setCollabStatus(""); } };
         setCollabStatus("Speaking…");
         markCompanionState("speaking");
         setVoiceStatus("Speaking");
+        startVoiceAnalyserLoop();
         return collab.audio.play();
       }).catch(function(error){
         console.warn("Agent speech failed:",error);
@@ -6126,9 +6367,10 @@
     }
     return html+"</div>";
   }
-  function voiceArtHtml(style){
+  function voiceArtHtml(style,agent){
     var live=!!(collab.voice&&collab.voice.live&&collab.voice.live.ready);
     var label=live?"LIVE":"ONLINE";
+    if(style==="face") return '<div class="voice-art-face'+(agent&&agent.faceData?" has-photo":"")+'"><div class="face-photo"></div><div class="face-head"></div><div class="face-eyes"><span></span><span></span></div><div class="face-mouth"></div></div>';
     if(style==="jarvis") return '<div class="voice-art-jarvis"><div class="vj-sweep"></div><div class="vj-ticks">'+voiceArtPieces(48,"")+'</div><div class="vj-bars">'+voiceArtPieces(36,"")+'</div><span class="vj-ring vj-a"></span><span class="vj-ring vj-b"></span><span class="vj-ring vj-c"></span><div class="vj-scan"></div><div class="vj-core"><b>'+label+'</b></div></div>';
     if(style==="iris") return '<div class="voice-art-iris"><div class="iris-glow"></div><div class="iris-ring"></div><div class="iris-pupil"><span></span></div></div>';
     if(style==="core") return '<div class="voice-art-core"><i></i><i></i><i></i><i></i></div>';
@@ -6144,10 +6386,17 @@
     if(style==="companion") return "";
     return '<div class="voice-art-core"><i></i><i></i><i></i><i></i></div>';
   }
+  function voicePreviewAgent(fallback){
+    if(fallback) return fallback;
+    var open=current();
+    if(open&&open.type==="agent") return normalizeAgent(open);
+    var agentItem=collabAgent();
+    return agentItem?normalizeAgent(agentItem):null;
+  }
   function renderVoiceArt(style,level){
     var art=$("voiceStageArt"); if(!art) return;
     var amp=Math.max(0.18,Math.min(1.6,0.4+(Number(level)||0)*1.8));
-    art.style.setProperty("--voice-amp",String(amp));
+    setVoiceAmp(amp);
     if(style==="waveform"){
       var bars=art.querySelectorAll(".voice-art-waveform i");
       Array.prototype.forEach.call(bars,function(bar,index){
@@ -6155,11 +6404,13 @@
       });
     }
   }
-  function buildVoiceArt(style,target){
+  function buildVoiceArt(style,target,agent){
     var art=target||$("voiceStageArt"); if(!art) return;
     style=knownVoiceStyle(style);
-    art.innerHTML=voiceArtHtml(style);
-    art.style.setProperty("--voice-amp","0.45");
+    var a=voicePreviewAgent(agent);
+    art.innerHTML=voiceArtHtml(style,a);
+    paintFaceStage(art,a);
+    art.style.setProperty("--voice-amp",String(collab.voiceAmp||0.45));
   }
   function buildVoiceLookGrid(a,it,onPick){
     var wrap=document.createElement("div"); wrap.className="voice-look-grid";
@@ -6173,7 +6424,7 @@
         if(style.id==="cinema"&&a.voicePresence==="overlay") a.voicePresence="cinema";
         it.updated=Date.now(); save();
         Array.prototype.forEach.call(wrap.querySelectorAll(".voice-look-card"),function(el){ el.classList.toggle("on",el===card); });
-        if(collab.voice&&collab.voice.active){ buildVoiceArt(style.id); renderVoiceChrome(); }
+        if(collab.voice&&collab.voice.active){ buildVoiceArt(style.id,null,a); renderVoiceChrome(); }
         if(onPick) onPick(style);
       };
       wrap.appendChild(card);
@@ -6194,6 +6445,7 @@
     if(nameEl) nameEl.textContent=a?a.name:"Assistant";
     if(companion){
       companion.style.setProperty("--voice-accent",accent||"var(--accent)");
+      applyCompanionFace(a);
       var showCompanion=!!(collab.voice&&collab.voice.active&&a&&(a.voicePresence==="companion"||a.animationStyle==="companion"));
       companion.hidden=!showCompanion;
       companion.classList.toggle("open",showCompanion);
@@ -6221,7 +6473,7 @@
     if(presence==="panel"){ hideVoiceStage(); return; }
     var overlay=$("voiceOverlay");
     if(overlay){ overlay.classList.add("open"); overlay.setAttribute("aria-hidden","false"); }
-      buildVoiceArt(a?a.animationStyle:"jarvis");
+    buildVoiceArt(a?a.animationStyle:"jarvis",null,a);
     renderVoiceChrome();
     markCompanionState("listening");
   }
@@ -6499,7 +6751,7 @@
               return;
             }
             var a=normalizeAgent(agentItem);
-            buildVoiceArt(a.animationStyle);
+            buildVoiceArt(a.animationStyle,null,a);
             setVoiceLink("Live ears · "+(runtimeApiKeys.elevenlabs?"ElevenLabs voice":"text replies"));
             done(true);
             return;
@@ -6581,30 +6833,77 @@
     for(var i=0;i<bytes.length;i++){ var v=(bytes[i]-128)/128; sum+=v*v; }
     return Math.sqrt(sum/bytes.length);
   }
+  function talkingNow(){
+    var audio=collab.audio;
+    return !!(audio && !audio.paused && !audio.ended);
+  }
+  function voiceStageLive(){
+    var overlay=$("voiceOverlay"), companion=$("voiceCompanion");
+    var overlayOn=overlay&&overlay.classList.contains("open");
+    var companionOn=companion&&companion.classList.contains("open");
+    return overlayOn||companionOn||!!(collab.voice&&collab.voice.active)||talkingNow();
+  }
+  function setVoiceAmp(amp){
+    collab.voiceAmp=amp;
+    var value=String(amp);
+    document.documentElement.style.setProperty("--voice-amp",value);
+    var art=$("voiceStageArt"); if(art) art.style.setProperty("--voice-amp",value);
+    var companion=$("voiceCompanion"); if(companion) companion.style.setProperty("--voice-amp",value);
+  }
+  function syntheticTalkLevel(){
+    var t=performance.now();
+    var syllable=0.5+0.5*Math.sin(t/68);
+    var phrase=Math.max(0.18,0.55+0.45*Math.sin(t/190));
+    var jitter=0.75+0.25*Math.sin(t/27);
+    return 0.14+0.42*syllable*phrase*jitter;
+  }
   function startVoiceAnalyserLoop(){
-    var session=collab.voice; if(!session||!session.analyser) return;
+    if(collab.artRaf) return;
     function tick(){
-      if(!collab.voice||!collab.voice.active) return;
-      var level=voiceLevelFromAnalyser(session.analyser);
-      session.level=level;
+      collab.artRaf=0;
+      if(!voiceStageLive()){
+        setVoiceAmp(0.18);
+        return;
+      }
+      var session=collab.voice;
+      var mic=session&&session.analyser?voiceLevelFromAnalyser(session.analyser):0;
+      if(session) session.level=mic;
+      var talk=0;
+      if(talkingNow()){
+        var synth=syntheticTalkLevel();
+        var measured=collab.speakAnalyser?voiceLevelFromAnalyser(collab.speakAnalyser):0;
+        talk=Math.max(measured*1.15,synth*0.85);
+      }
+      var mapped=Math.max(0.14,Math.min(1.7,0.2+Math.max(mic*2.2,talk*3.8)));
+      var prev=typeof collab.voiceAmp==="number"?collab.voiceAmp:0.2;
+      setVoiceAmp(prev+(mapped-prev)*0.42);
       var agentItem=collabAgent(), a=agentItem?normalizeAgent(agentItem):null;
-      renderVoiceArt(a?a.animationStyle:"jarvis",level);
-      if(a&&a.bargeIn&&collab.audio&&level>0.12){
-        session.barge+=1;
-        if(session.barge>6){ stopCollabSpeech(); setVoiceStatus("You jumped in — listening"); markCompanionState("listening"); }
-      } else session.barge=0;
-      if(!session.usingSpeech&&session.recorder){
-        if(level>0.045){ session.speaking=true; if(session.silenceTimer){ clearTimeout(session.silenceTimer); session.silenceTimer=null; } }
-        else if(session.speaking&&!session.silenceTimer){
-          session.silenceTimer=setTimeout(function(){
-            session.speaking=false; session.silenceTimer=null;
-            if(session.recorder&&session.recorder.state==="recording"){ try{ session.recorder.requestData(); }catch(e){} }
-          },a?a.silenceMs:1400);
+      var style=a?a.animationStyle:"jarvis";
+      var art=$("voiceStageArt");
+      if(art&&style==="waveform"){
+        var bars=art.querySelectorAll(".voice-art-waveform i");
+        Array.prototype.forEach.call(bars,function(bar,index){
+          bar.style.height=Math.round(12+collab.voiceAmp*70*((index%5)+1)/5)+"px";
+        });
+      }
+      if(session&&session.active){
+        if(a&&a.bargeIn&&collab.audio&&mic>0.12){
+          session.barge+=1;
+          if(session.barge>6){ stopCollabSpeech(); setVoiceStatus("You jumped in — listening"); markCompanionState("listening"); }
+        } else session.barge=0;
+        if(!session.usingSpeech&&session.recorder){
+          if(mic>0.045){ session.speaking=true; if(session.silenceTimer){ clearTimeout(session.silenceTimer); session.silenceTimer=null; } }
+          else if(session.speaking&&!session.silenceTimer){
+            session.silenceTimer=setTimeout(function(){
+              session.speaking=false; session.silenceTimer=null;
+              if(session.recorder&&session.recorder.state==="recording"){ try{ session.recorder.requestData(); }catch(e){} }
+            },a?a.silenceMs:1400);
+          }
         }
       }
-      session.raf=requestAnimationFrame(tick);
+      collab.artRaf=requestAnimationFrame(tick);
     }
-    session.raf=requestAnimationFrame(tick);
+    collab.artRaf=requestAnimationFrame(tick);
   }
   function attachSpeechRecognition(session){
     var Speech=window.SpeechRecognition||window.webkitSpeechRecognition;
@@ -6920,7 +7219,7 @@
   function refreshCollabChrome(){
     var agentItem=collabAgent(), a=agentItem?normalizeAgent(agentItem):null;
     var avatar=$("collabAvatar"), name=$("collabName"), model=$("collabModel"), speak=$("collabSpeakBtn");
-    if(avatar) avatar.textContent=(a?a.name:"A").trim().charAt(0).toUpperCase()||"A";
+    if(avatar) paintAgentAvatar(avatar, a);
     if(name) name.textContent=a?a.name:"AI collaborator";
     if(model) model.textContent=a?(agentMindSummary(a)+(a.liveListen&&runtimeApiKeys.gemini?" · Live ears":"")):"No agent yet";
     if(speak){
@@ -8054,11 +8353,15 @@
     var upcoming=document.createElement("button"); upcoming.className="sbtn icon-sbtn upcoming-button"; upcoming.id="upcomingBtn"; upcoming.type="button"; upcoming.innerHTML=ICON_CALENDAR; upcoming.title="Upcoming todos"; upcoming.setAttribute("aria-label","Upcoming todos");
     upcoming.onclick=function(){ setSidebarView(state.sidebarView==="upcoming"?"all":"upcoming"); };
     dfoot.appendChild(upcoming);
+    var hidden=document.createElement("button"); hidden.className="sbtn icon-sbtn hidden-button"; hidden.id="hiddenBtn"; hidden.type="button"; hidden.innerHTML=ICON_EYE_OFF; hidden.title="Hidden notes"; hidden.setAttribute("aria-label","Hidden notes");
+    hidden.onclick=function(){ setSidebarView(state.sidebarView==="hidden"?"all":"hidden"); };
+    dfoot.appendChild(hidden);
     var g=document.createElement("button"); g.className="sbtn icon-sbtn settings-gear"; g.type="button";
     g.innerHTML='<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.7 1.7 0 0 0 .3 1.9 2 2 0 1 1-2.8 2.8 1.7 1.7 0 0 0-2.9 1.2 2 2 0 1 1-4 0 1.7 1.7 0 0 0-2.9-1.2 2 2 0 1 1-2.8-2.8A1.7 1.7 0 0 0 3.3 15a2 2 0 1 1 0-4 1.7 1.7 0 0 0 1.2-2.9 2 2 0 1 1 2.8-2.8A1.7 1.7 0 0 0 10.2 4a2 2 0 1 1 4 0 1.7 1.7 0 0 0 2.9 1.2 2 2 0 1 1 2.8 2.8A1.7 1.7 0 0 0 21 11a2 2 0 1 1 0 4z"/></svg>';
     g.title="Settings"; g.setAttribute("aria-label","Settings"); g.onclick=function(){ openSettings(); };
     dfoot.appendChild(g);
     updateCollabButton();
+    updateSidebarButtons();
   }
 
   /* =================== settings =================== */
@@ -8075,7 +8378,7 @@
         '<button data-settings="account"><span><b>Account &amp; sync</b><small>Cloud storage and sign-in</small></span><span class="arrow">›</span></button>'+
         '<button data-settings="keys"><span><b>API keys</b><small>OpenAI, Gemini, and ElevenLabs keys synced to your account</small></span><span class="arrow">›</span></button>'+
         '<button data-settings="voices"><span><b>Voice</b><small>Choose from your saved ElevenLabs voices</small></span><span class="arrow">›</span></button>'+
-        '<button data-settings="collab"><span><b>AI collaborator</b><small>Agents, voice intelligence, and hidden notes</small></span><span class="arrow">›</span></button>'+
+        '<button data-settings="collab"><span><b>AI collaborator</b><small>Agents, voice intelligence, and hidden notes (also in the sidebar footer)</small></span><span class="arrow">›</span></button>'+
         '<button data-settings="usage"><span><b>Usage</b><small>Tokens, calls, and recent model activity</small></span><span class="arrow">›</span></button>'+
         '<button data-settings="manage"><span><b>Manage</b><small>Choose which things New can create</small></span><span class="arrow">›</span></button></div><div class="grp"><h4>AI text changes</h4><div class="srow"><div class="sl">Ask before changing my text<small>Keep AI edits as suggestions until you choose Apply.</small></div><button class="toggle" id="settingsRequireApprovalToggle"><b></b></button></div></div>';
     } else if(settingsPage==="appearance"){
@@ -8182,8 +8485,9 @@
     var hidden=(state.items||[]).filter(function(item){ return item.hidden; });
     var hiddenBox=document.createElement("div"); hiddenBox.className="grp"; hiddenBox.style.margin="0";
     var hiddenTitle=document.createElement("h4"); hiddenTitle.textContent="Hidden notes & agents"; hiddenBox.appendChild(hiddenTitle);
+    var hiddenHint=document.createElement("p"); hiddenHint.className="hint"; hiddenHint.textContent="The eye-off button in the sidebar footer opens this list. The pencil menu on any note can hide it from All notes."; hiddenBox.appendChild(hiddenHint);
     if(!hidden.length){
-      var empty=document.createElement("p"); empty.className="hint"; empty.textContent="Nothing is hidden. The pencil menu on any note or agent has Hide from notes list.";
+      var empty=document.createElement("p"); empty.className="hint"; empty.textContent="Nothing is hidden right now.";
       hiddenBox.appendChild(empty);
     } else {
       hidden.forEach(function(item){
