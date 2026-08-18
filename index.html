@@ -816,24 +816,30 @@
   .voice-choice-mark{ flex:none; color:var(--accent); font-size:.68rem; font-weight:700; } .voice-choice.custom .voice-choice-mark{ color:var(--ink-dim); font-size:1rem; }
   .voice-empty{ padding:18px 10px; color:var(--ink-faint); text-align:center; font-size:.78rem; }
 
-  /* ---------- Voice intelligence stage ----------
-     Full-screen presence for long ramble sessions. Each agent picks a look;
-     the overlay stays translucent so the note underneath can still be seen
-     updating in real time. */
+  /* ---------- Voice stage ----------
+     A quiet full-screen presence. The default look is a talking orb / face;
+     cinematic HUDs stay available in Edit for people who want them. */
   .voice-overlay{ position:fixed; inset:0; z-index:55; display:none; color:var(--ink);
     --voice-accent:var(--accent); --voice-accent-soft:var(--accent-soft); }
   .voice-overlay.open{ display:block; }
-  .voice-overlay-bg{ position:absolute; inset:0; background:rgba(4,4,8,.55); backdrop-filter:blur(10px); }
+  .voice-overlay-bg{ position:absolute; inset:0; background:rgba(8,8,12,.58); backdrop-filter:blur(22px) saturate(1.15); }
   .voice-overlay.cinema .voice-overlay-bg{ background:rgba(2,2,4,.88); }
   .voice-overlay.companion-mode{ pointer-events:none; }
   .voice-overlay.companion-mode .voice-overlay-bg{ display:none; }
+  .voice-overlay.companion-mode .voice-overlay-copy,
+  .voice-overlay.companion-mode .voice-overlay-actions,
+  .voice-overlay.companion-mode .voice-overlay-transcript,
+  .voice-overlay.companion-mode .voice-overlay-decision,
+  .voice-overlay.companion-mode .voice-overlay-tasks{ display:none; }
   .voice-stage-art{ position:absolute; inset:0; overflow:hidden; pointer-events:none; }
   .voice-overlay-ui{ position:absolute; inset:0; display:flex; flex-direction:column; align-items:center; justify-content:flex-end;
     padding:24px 22px calc(28px + var(--safe-b)); pointer-events:none; text-align:center; }
   .voice-overlay-ui > *{ pointer-events:auto; }
-  .voice-overlay-name{ font:700 1.35rem "DM Sans",sans-serif; letter-spacing:.02em; text-shadow:0 8px 28px rgba(0,0,0,.45); }
-  .voice-overlay-status{ margin-top:6px; min-height:1.2em; color:var(--ink-dim); font:400 .78rem "DM Mono",monospace; letter-spacing:.06em; text-transform:uppercase; }
-  .voice-overlay-link{ margin-top:4px; min-height:1em; color:var(--voice-accent,var(--accent)); font:500 .64rem "DM Mono",monospace; letter-spacing:.12em; text-transform:uppercase; opacity:.85; }
+  .voice-overlay-copy{ position:absolute; left:50%; top:58%; width:min(90vw,420px); transform:translate(-50%,0); pointer-events:auto; }
+  .voice-overlay-name{ display:inline-block; margin:0; padding:0; border:0; background:transparent; color:var(--ink); font:600 1.2rem "DM Sans",sans-serif; letter-spacing:.01em; text-shadow:0 8px 28px rgba(0,0,0,.45); cursor:pointer; }
+  .voice-overlay-name:hover{ color:var(--accent); }
+  .voice-overlay-status{ margin-top:6px; min-height:1.2em; color:var(--ink-dim); font:400 .88rem "DM Sans",sans-serif; }
+  .voice-overlay-link{ margin-top:4px; min-height:1em; color:var(--voice-accent,var(--accent)); font:400 .68rem "DM Sans",sans-serif; opacity:.7; }
   .voice-overlay-link:empty{ display:none; }
   .voice-overlay-transcript{ max-width:min(720px,92vw); max-height:22vh; overflow:auto; margin:14px 0 8px; padding:12px 16px;
     border:1px solid var(--line); border-radius:16px; background:rgba(0,0,0,.38); color:var(--ink); font-size:.92rem; line-height:1.55;
@@ -851,7 +857,8 @@
   .voice-overlay-actions .mic-live{ width:64px; height:64px; border-radius:50%; display:grid; place-items:center; padding:0;
     background:#f87171; border-color:transparent; color:#08080a; animation:micpulse 1.5s ease-in-out infinite; }
   .voice-overlay-actions .mic-live svg{ width:22px; height:22px; }
-  .voice-overlay-actions .end-voice{ background:transparent; }
+  .voice-overlay-actions .end-voice,.voice-overlay-actions .voice-edit{ background:transparent; }
+  .voice-overlay-actions .voice-edit{ min-width:0; height:44px; padding:0 12px; font-weight:500; color:var(--ink-dim); }
   body.reduce-fx .voice-overlay-actions .mic-live{ animation:none; }
 
   .voice-art-pulse{ position:absolute; left:50%; top:42%; width:min(46vw,340px); height:min(46vw,340px); transform:translate(-50%,-50%);
@@ -991,46 +998,38 @@
   .look-mini-waveform{ background:repeating-linear-gradient(90deg, var(--accent) 0 4px, transparent 4px 10px); background-size:100% 40%; background-position:center; background-repeat:repeat-x; }
   .look-mini-cinema{ background:radial-gradient(circle at 50% 60%, #fff 0 4%, var(--accent) 12%, #000 40%); }
   .look-mini-companion{ background:radial-gradient(circle at 40% 36%, #fff 0, var(--accent) 28%, #14141a 70%); }
-  .look-mini-face{
-    background:
-      radial-gradient(circle at 38% 40%, #0b0910 0 4px, transparent 5px),
-      radial-gradient(circle at 62% 40%, #0b0910 0 4px, transparent 5px),
-      radial-gradient(circle at 50% 64%, #0b0910 0 5px, transparent 9px),
-      radial-gradient(circle at 50% 48%, var(--accent) 0 30%, #07070c 64%);
-  }
+  .look-mini-face{ background:radial-gradient(circle at 42% 36%, #fff 0 8%, var(--accent) 28%, #07070c 68%); }
 
-  .voice-art-face{ position:absolute; left:50%; top:40%; width:min(56vw,300px); height:min(56vw,300px); transform:translate(-50%,-50%); }
+  .voice-art-face{ position:absolute; left:50%; top:36%; width:min(48vw,260px); height:min(48vw,260px); transform:translate(-50%,-50%); }
   .voice-art-face .face-head{
-    position:absolute; inset:6%;
+    position:absolute; inset:8%;
     border-radius:50%;
-    background:
-      radial-gradient(circle at 34% 30%, rgba(255,255,255,.42), transparent 42%),
-      linear-gradient(180deg, color-mix(in srgb, var(--voice-accent) 62%, #1a1420), color-mix(in srgb, var(--voice-accent) 28%, #0a0810));
-    border:3px solid color-mix(in srgb, var(--voice-accent) 78%, #fff);
-    box-shadow:0 0 calc(16px + var(--voice-amp,.3)*48px) var(--voice-accent);
+    background:radial-gradient(circle at 38% 32%, #fff 0 10%, var(--voice-accent) 32%, transparent 68%);
+    box-shadow:0 0 calc(18px + var(--voice-amp,.25)*70px) color-mix(in srgb, var(--voice-accent) 80%, transparent);
+    transform:scale(calc(.94 + var(--voice-amp,.2)*.22));
+    animation:faceBreathe 4.6s ease-in-out infinite;
   }
-  .voice-art-face .face-eyes{ position:absolute; left:50%; top:34%; transform:translateX(-50%); display:flex; gap:36px; z-index:1; }
-  .voice-art-face .face-eyes span{
-    width:22px; height:calc(18px - var(--voice-amp,.3)*7px); min-height:8px;
-    background:#0c0a10; border-radius:50%;
-    box-shadow:inset 0 -3px 0 rgba(255,255,255,.12), 0 0 0 3px rgba(255,255,255,.08);
-  }
+  .voice-art-face .face-eyes{ display:none; }
   .voice-art-face .face-photo{
-    display:none; position:absolute; inset:0; border-radius:50%;
+    display:none; position:absolute; inset:6%; border-radius:50%;
     background-size:cover; background-position:center;
-    border:4px solid color-mix(in srgb, var(--voice-accent) 82%, #fff);
     box-shadow:0 0 calc(14px + var(--voice-amp,.3)*56px) var(--voice-accent);
   }
-  .voice-art-face.has-photo .face-head,.voice-art-face.has-photo .face-eyes{ display:none; }
+  .voice-art-face.has-photo .face-head{ display:none; }
   .voice-art-face.has-photo .face-photo{ display:block; }
   .voice-art-face .face-mouth{
-    position:absolute; left:50%; bottom:22%; z-index:2;
-    width:calc(24px + var(--voice-amp,.2)*42px);
-    height:calc(5px + var(--voice-amp,.2)*26px);
+    position:absolute; left:50%; bottom:34%; z-index:2;
+    width:calc(18px + var(--voice-amp,.2)*36px);
+    height:calc(4px + var(--voice-amp,.2)*22px);
     transform:translateX(-50%);
-    background:#1a1016; border-radius:6px 6px 40px 40px;
+    background:rgba(255,255,255,.55);
+    border-radius:40px;
+    filter:blur(.4px);
+    opacity:calc(.35 + var(--voice-amp,.15)*.65);
   }
-  .voice-art-face.has-photo .face-mouth{ bottom:18%; background:rgba(18,8,12,.82); box-shadow:0 4px 12px rgba(0,0,0,.35); }
+  .voice-art-face.has-photo .face-mouth{ bottom:20%; background:rgba(18,8,12,.78); filter:none; opacity:1; border-radius:6px 6px 40px 40px; }
+  @keyframes faceBreathe{ 0%,100%{ filter:brightness(1); } 50%{ filter:brightness(1.12); } }
+  body.reduce-fx .voice-art-face .face-head{ animation:none; }
   .voice-stage-preview{ position:relative; height:min(58vw,300px); border-radius:22px; overflow:hidden; background:#050508; border:1px solid var(--line); }
   .model-custom{ margin-top:4px; } .model-custom summary{ cursor:pointer; color:var(--ink-faint); font-size:.72rem; }
   .model-custom input{ margin-top:6px; width:100%; }
@@ -1226,15 +1225,18 @@
   <div class="voice-overlay-bg"></div>
   <div class="voice-stage-art" id="voiceStageArt" aria-hidden="true"></div>
   <div class="voice-overlay-ui">
-    <div class="voice-overlay-name" id="voiceOverlayName">Assistant</div>
-    <div class="voice-overlay-status" id="voiceOverlayStatus" role="status" aria-live="polite">Listening</div>
-    <div class="voice-overlay-link" id="voiceOverlayLink"></div>
+    <div class="voice-overlay-copy">
+      <button type="button" class="voice-overlay-name" id="voiceOverlayName" title="Customize this agent">Assistant</button>
+      <div class="voice-overlay-status" id="voiceOverlayStatus" role="status" aria-live="polite">Listening</div>
+      <div class="voice-overlay-link" id="voiceOverlayLink"></div>
+    </div>
     <div class="voice-overlay-transcript" id="voiceOverlayTranscript"></div>
     <div class="voice-overlay-decision" id="voiceOverlayDecision" hidden></div>
     <div class="voice-overlay-tasks" id="voiceOverlayTasks"></div>
     <div class="voice-overlay-actions">
+      <button type="button" class="voice-edit" id="voiceOverlayEdit">Customize</button>
       <button type="button" class="mic-live" id="voiceOverlayMic" title="Stop listening" aria-label="Stop listening"></button>
-      <button type="button" class="end-voice" id="voiceOverlayEnd">End session</button>
+      <button type="button" class="end-voice" id="voiceOverlayEnd">End</button>
     </div>
   </div>
 </div>
@@ -1304,16 +1306,16 @@
   /* AI collaborator limits. Transcripts ride along in the synced state document,
      so they are capped hard in both directions. */
   var AGENT_DEFAULT_ID="__default_agent__", AGENT_DEFAULT_NAME="Assistant", AGENT_DEFAULT_MODEL="gpt-4o-mini";
-  var AGENT_SUBCONSCIOUS_MODEL="gpt-5.6-luna", AGENT_CONSCIOUS_MODEL="gpt-5.6-sol";
+  var AGENT_SUBCONSCIOUS_MODEL="gpt-5.6-luna", AGENT_CONSCIOUS_MODEL="gpt-5.6-terra";
   var AGENT_LISTEN_MODEL=AGENT_SUBCONSCIOUS_MODEL, AGENT_WORK_MODEL=AGENT_CONSCIOUS_MODEL, AGENT_COMPLEX_MODEL=AGENT_CONSCIOUS_MODEL;
   var AGENT_GEMINI_SUBCONSCIOUS="gemini-3.7-flash", AGENT_GEMINI_CONSCIOUS="gemini-2.5-pro";
   var AGENT_GEMINI_LISTEN=AGENT_GEMINI_SUBCONSCIOUS;
-  var AGENT_FALLBACK_MODELS=["gpt-5.6-sol","gpt-5.6-luna","gpt-5.4","gpt-5","gpt-4.1","gpt-4o","gpt-4o-mini","gemini-3.7-flash","gemini-2.5-flash","gemini-2.5-pro"];
+  var AGENT_FALLBACK_MODELS=["gpt-5.6-terra","gpt-5.6-luna","gpt-5.4","gpt-5","gpt-4.1","gpt-4o","gpt-4o-mini","gemini-3.7-flash","gemini-2.5-flash","gemini-2.5-pro"];
   var AGENT_GEMINI_LIVE_MODELS=["gemini-2.0-flash-live-001","gemini-live-2.5-flash-preview"];
   var AGENT_GEMINI_LIVE_WS="wss://generativelanguage.googleapis.com/ws/google.ai.generativelanguage.v1beta.GenerativeService.BidiGenerateContent";
   var AGENT_VOICE_STYLE_ALIASES={hud:"jarvis",pulse:"core",orb:"core",rings:"nova",halo:"radial"};
   var AGENT_VOICE_STYLES=[
-    {id:"face",name:"Face",hint:"A talking face — upload a photo in Identity, or use the drawn face"},
+    {id:"face",name:"Face",hint:"A calm talking orb — add a photo in Identity if you want a real face"},
     {id:"jarvis",name:"Jarvis HUD",hint:"Radar sweep, tick ring, live core — made for YouTube"},
     {id:"iris",name:"Iris",hint:"An eye that opens when it listens and tightens when it talks"},
     {id:"core",name:"Reactor core",hint:"Molten center with orbiting sparks"},
@@ -1340,7 +1342,7 @@
   };
   var AGENT_MODEL_SETS={
     subconscious:["gemini-3.7-flash","gemini-2.5-flash","gemini-2.5-flash-lite","gpt-5.6-luna","gpt-5.4-nano","gpt-5-nano","gpt-4.1-mini","gpt-4o-mini"],
-    conscious:["gpt-5.6-sol","gpt-5.6-terra","gpt-5.4","gpt-5.2","gpt-5","gemini-3.7-flash","gemini-2.5-pro","gpt-4.1","gpt-4o"]
+    conscious:["gpt-5.6-terra","gpt-5.6-sol","gpt-5.4","gpt-5.2","gpt-5","gemini-3.7-flash","gemini-2.5-pro","gpt-4.1","gpt-4o"]
   };
   AGENT_MODEL_SETS.listen=AGENT_MODEL_SETS.subconscious;
   AGENT_MODEL_SETS.work=AGENT_MODEL_SETS.conscious;
@@ -1478,7 +1480,7 @@
   function newTodoItem(){ var it=newNoteItem(); it.todo=true; it.done=false; it.completed=null; it.dueDate=""; return it; }
   function newAudioItem(){ var it=baseItem(); it.type="audio"; it.recordings=[]; return it; }
   function newTask(){ return {id:uid(),text:"",description:"",body:"",attachments:[],blocks:[textBlock("")],subtasks:[],done:false,completed:null,dueDate:"",detailsCollapsed:true}; }
-  function newAgentItem(){ var it=baseItem(); it.type="agent"; it.title="New Agent"; it.agent={tab:"chat"}; normalizeAgent(it); return it; }
+  function newAgentItem(){ var it=baseItem(); it.type="agent"; it.title="New Agent"; it.agent={tab:"chat",animationStyle:"face"}; normalizeAgent(it); return it; }
   function newWorkoutRoutine(){ var it=baseItem(); it.type="workout"; it.title="New Workout Routine"; it.workout={sessions:[],lastCompleted:null}; it.blocks=[textBlock("")]; it.body=""; return it; }
   var NOTE_INSERT_DEFAULTS={file:true,embed:true,link:true,paragraph:true,comment:true,prompt:true,heading:true,chapter:true,group:true,code:true};
   var AGENT_NOTE_BLOCK_TYPES=["paragraph","heading","chapter","comment","prompt","group","code","embed","link"];
@@ -3737,7 +3739,7 @@
     hero.querySelector("h1").textContent=a.name;
     var ready=collabReadiness();
     if(a.accentColor) hero.style.setProperty("--agent-accent",a.accentColor);
-    hero.querySelector("p").textContent=ready.ok?(agentMindSummary(a)+" · "+(a.animationStyle||"jarvis")+" · "+agentStatLabel(a.stats.messages)+" messages"):"Needs setup — see the Edit tab";
+    hero.querySelector("p").textContent=ready.ok?(agentMindSummary(a)+" · "+(a.animationStyle||"face")+" · "+agentStatLabel(a.stats.messages)+" messages"):"Needs setup — see the Edit tab";
     wrap.appendChild(hero);
     var tabs=document.createElement("div"); tabs.className="agent-tabs";
     [ ["chat","Chat"], ["voice","Voice"], ["mind","Mind"], ["edit","Edit"] ].forEach(function(tab){
@@ -3773,7 +3775,7 @@
       var copy=document.createElement("div");
       var heading=document.createElement("b"); heading.textContent="Live voice with "+a.name;
       var detail=document.createElement("p");
-      detail.textContent="Upload a face on the Edit tab, then pick Face here so it lip-syncs while talking. Other looks still use the photo on the dock companion.";
+      detail.textContent="Talking uses this look. Face is a quiet orb; add a photo on Edit if you want a real face.";
       copy.appendChild(heading); copy.appendChild(detail); stage.appendChild(copy);
       var lookWrap=document.createElement("div"); lookWrap.style.margin="12px 0 18px";
       lookWrap.appendChild(buildVoiceLookGrid(a,it,function(style){ buildVoiceArt(style.id,preview,a); }));
@@ -3981,7 +3983,7 @@
       silenceRow.appendChild(silence); silenceRow.appendChild(silenceOut); silenceLabel.appendChild(silenceRow);
       var conCard=document.createElement("div"); conCard.className="agent-edit-mind";
       var conTitle=document.createElement("h4"); conTitle.textContent="Conscious"; conCard.appendChild(conTitle);
-      var conHint=document.createElement("p"); conHint.textContent="Writes, searches, and uses tools. GPT-5.6 Sol is a good default."; conCard.appendChild(conHint);
+      var conHint=document.createElement("p"); conHint.textContent="Writes, searches, and uses tools. GPT-5.6 Terra is a good default."; conCard.appendChild(conHint);
       modelPickerOn(conCard,"Model","consciousModel");
       var tempLabel=labelOn(conCard,"Creativity"), tempRow=document.createElement("div"); tempRow.className="range-pair";
       var temp=document.createElement("input"); temp.type="range"; temp.min="0"; temp.max="1.4"; temp.step="0.1"; temp.value=String(a.temperature);
@@ -4496,7 +4498,7 @@
     var s=agentSettings();
     return agentById(s.activeAgentId)||agentById(s.defaultAgentId)||agentItems()[0]||defaultAgent();
   }
-  function defaultSubconsciousModel(){ return runtimeApiKeys.gemini?AGENT_GEMINI_SUBCONSCIOUS:(runtimeApiKeys.openai?AGENT_SUBCONSCIOUS_MODEL:AGENT_DEFAULT_MODEL); }
+  function defaultSubconsciousModel(){ return runtimeApiKeys.openai?AGENT_SUBCONSCIOUS_MODEL:(runtimeApiKeys.gemini?AGENT_GEMINI_SUBCONSCIOUS:AGENT_DEFAULT_MODEL); }
   function defaultConsciousModel(){ return runtimeApiKeys.openai?AGENT_CONSCIOUS_MODEL:(runtimeApiKeys.gemini?AGENT_GEMINI_CONSCIOUS:AGENT_DEFAULT_MODEL); }
   function defaultListenModel(){ return defaultSubconsciousModel(); }
   function defaultWorkModel(){ return defaultConsciousModel(); }
@@ -4521,10 +4523,54 @@
     return raw;
   }
   function defaultAgent(){
-    var it={id:AGENT_DEFAULT_ID,type:"agent",title:AGENT_DEFAULT_NAME,updated:0,agent:{}};
+    var it={id:AGENT_DEFAULT_ID,type:"agent",title:AGENT_DEFAULT_NAME,updated:0,agent:{name:AGENT_DEFAULT_NAME,animationStyle:"face"}};
     normalizeAgent(it);
     it.agent.chat=agentSettings().defaultChat;
+    it.agent.subconsciousModel=AGENT_SUBCONSCIOUS_MODEL;
+    it.agent.listenModel=AGENT_SUBCONSCIOUS_MODEL;
+    it.agent.consciousModel=AGENT_CONSCIOUS_MODEL;
+    it.agent.workModel=AGENT_CONSCIOUS_MODEL;
+    it.agent.model=AGENT_CONSCIOUS_MODEL;
     return it;
+  }
+  function ensureBuiltinAgent(){
+    var existing=agentById(AGENT_DEFAULT_ID);
+    if(existing){
+      normalizeAgent(existing);
+      return existing;
+    }
+    if(agentItems().length) return agentItems()[0];
+    var it=baseItem();
+    it.id=AGENT_DEFAULT_ID;
+    it.type="agent";
+    it.title=AGENT_DEFAULT_NAME;
+    it.agent={name:AGENT_DEFAULT_NAME,tab:"edit",animationStyle:"face",voicePresence:"overlay"};
+    normalizeAgent(it);
+    it.agent.subconsciousModel=AGENT_SUBCONSCIOUS_MODEL;
+    it.agent.listenModel=AGENT_SUBCONSCIOUS_MODEL;
+    it.agent.consciousModel=AGENT_CONSCIOUS_MODEL;
+    it.agent.workModel=AGENT_CONSCIOUS_MODEL;
+    it.agent.model=AGENT_CONSCIOUS_MODEL;
+    if(Array.isArray(agentSettings().defaultChat)&&agentSettings().defaultChat.length) it.agent.chat=trimChatLog(agentSettings().defaultChat);
+    state.enabledTypes.agent=true;
+    state.items.unshift(it);
+    agentSettings().defaultAgentId=it.id;
+    if(!agentSettings().activeAgentId) agentSettings().activeAgentId=it.id;
+    return it;
+  }
+  function openAgentEditor(agentItem){
+    agentItem=agentItem||preferredAgent()||ensureBuiltinAgent();
+    if(!agentItem) return;
+    normalizeAgent(agentItem).tab="edit";
+    if(collab.voice&&collab.voice.active) stopVoiceSession();
+    closeCollabPanel();
+    var settings=$("settingsModal");
+    if(settings) settings.classList.remove("open");
+    state.currentId=agentItem.id;
+    if(state.sidebarView==="upcoming"||state.sidebarView==="hidden") state.sidebarView="all";
+    persist(); renderAll();
+    exitSidebarFocus();
+    app.classList.remove("open");
   }
   function trimChatLog(log){
     return (Array.isArray(log)?log:[]).filter(function(m){ return m&&(m.role==="user"||m.role==="agent")&&typeof m.text==="string"; })
@@ -4533,7 +4579,7 @@
   }
   function knownVoiceStyle(id){
     id=AGENT_VOICE_STYLE_ALIASES[id]||id;
-    return AGENT_VOICE_STYLES.some(function(style){ return style.id===id; })?id:"jarvis";
+    return AGENT_VOICE_STYLES.some(function(style){ return style.id===id; })?id:"face";
   }
   function knownVoicePresence(id){ return AGENT_VOICE_PRESENCES.some(function(style){ return style.id===id; })?id:"overlay"; }
   function sanitizeFaceData(value){
@@ -5609,7 +5655,6 @@
     var doc=collabDocument();
     if(doc){ if(!Array.isArray(doc.collabChat)) doc.collabChat=[]; return doc.collabChat; }
     var agentItem=collabAgent();
-    if(agentItem&&agentItem.id===AGENT_DEFAULT_ID) return agentSettings().defaultChat;
     return agentItem?normalizeAgent(agentItem).chat:[];
   }
   function pushCollabMessage(role,text){
@@ -6256,7 +6301,7 @@
       console.warn("Agent turn failed:",error);
       pushCollabNote(cleanText(error&&error.message)||"The model could not be reached.",true);
       setCollabStatus("");
-      if(collab.voice&&collab.voice.active){ markCompanionState("listening"); setVoiceStatus("Listening — last turn failed"); }
+      if(collab.voice&&collab.voice.active){ markCompanionState("listening"); setVoiceStatus("Listening"); }
     });
   }
   function sendCollabMessage(text){
@@ -6317,7 +6362,8 @@
     setCollabStatus(text||"");
   }
   function setVoiceLink(text){
-    var el=$("voiceOverlayLink"); if(el) el.textContent=text||"";
+    var el=$("voiceOverlayLink"); if(!el) return;
+    el.textContent=agentSettings().developerTrace?(text||""):"";
   }
   function setVoiceTranscriptPreview(text){
     var el=$("voiceOverlayTranscript"); if(el) el.textContent=text||"";
@@ -6368,10 +6414,8 @@
     return html+"</div>";
   }
   function voiceArtHtml(style,agent){
-    var live=!!(collab.voice&&collab.voice.live&&collab.voice.live.ready);
-    var label=live?"LIVE":"ONLINE";
-    if(style==="face") return '<div class="voice-art-face'+(agent&&agent.faceData?" has-photo":"")+'"><div class="face-photo"></div><div class="face-head"></div><div class="face-eyes"><span></span><span></span></div><div class="face-mouth"></div></div>';
-    if(style==="jarvis") return '<div class="voice-art-jarvis"><div class="vj-sweep"></div><div class="vj-ticks">'+voiceArtPieces(48,"")+'</div><div class="vj-bars">'+voiceArtPieces(36,"")+'</div><span class="vj-ring vj-a"></span><span class="vj-ring vj-b"></span><span class="vj-ring vj-c"></span><div class="vj-scan"></div><div class="vj-core"><b>'+label+'</b></div></div>';
+    if(style==="face") return '<div class="voice-art-face'+(agent&&agent.faceData?" has-photo":"")+'"><div class="face-photo"></div><div class="face-head"></div><div class="face-mouth"></div></div>';
+    if(style==="jarvis") return '<div class="voice-art-jarvis"><div class="vj-sweep"></div><div class="vj-ticks">'+voiceArtPieces(48,"")+'</div><div class="vj-bars">'+voiceArtPieces(36,"")+'</div><span class="vj-ring vj-a"></span><span class="vj-ring vj-b"></span><span class="vj-ring vj-c"></span><div class="vj-scan"></div><div class="vj-core"></div></div>';
     if(style==="iris") return '<div class="voice-art-iris"><div class="iris-glow"></div><div class="iris-ring"></div><div class="iris-pupil"><span></span></div></div>';
     if(style==="core") return '<div class="voice-art-core"><i></i><i></i><i></i><i></i></div>';
     if(style==="nova") return '<div class="voice-art-nova"><span></span><span></span><span></span><span></span><div class="nova-core"></div></div>';
@@ -6440,7 +6484,7 @@
       overlay.style.setProperty("--voice-accent-soft",accent?accent+"33":"var(--accent-soft)");
       overlay.classList.toggle("cinema",(a&&a.voicePresence==="cinema")||(a&&a.animationStyle==="cinema"));
       overlay.classList.toggle("companion-mode",a&&(a.voicePresence==="companion"||a.animationStyle==="companion"));
-      overlay.setAttribute("data-voice-look",a?a.animationStyle:"jarvis");
+      overlay.setAttribute("data-voice-look",a?a.animationStyle:"face");
     }
     if(nameEl) nameEl.textContent=a?a.name:"Assistant";
     if(companion){
@@ -6473,7 +6517,7 @@
     if(presence==="panel"){ hideVoiceStage(); return; }
     var overlay=$("voiceOverlay");
     if(overlay){ overlay.classList.add("open"); overlay.setAttribute("aria-hidden","false"); }
-    buildVoiceArt(a?a.animationStyle:"jarvis",null,a);
+    buildVoiceArt(a?a.animationStyle:"face",null,a);
     renderVoiceChrome();
     markCompanionState("listening");
   }
@@ -6539,7 +6583,7 @@
     if(!session||!session.active||!agentItem||!decision) return;
     showListenDecision(decision);
     if(decision.action==="keep_listening"){
-      setVoiceStatus("Still listening");
+      setVoiceStatus("Listening");
       markCompanionState("listening");
       if(session.pendingReview){
         var extra=session.pendingReview; session.pendingReview="";
@@ -6551,11 +6595,11 @@
     var buffered=session.buffer; session.buffer="";
     setVoiceTranscriptPreview(buffered);
     if(decision.action==="dictate_only"){
-      setVoiceStatus("Captured — still listening");
+      setVoiceStatus("Listening");
       pushCollabNote("Dictation captured without a reply.");
       return;
     }
-    if(collab.busy){ collab.queuedUtterance=(collab.queuedUtterance?collab.queuedUtterance+"\n":"")+buffered; setVoiceStatus("Queued for when the current pass finishes"); return; }
+    if(collab.busy){ collab.queuedUtterance=(collab.queuedUtterance?collab.queuedUtterance+"\n":"")+buffered; setVoiceStatus("One moment"); return; }
     agentTaskWrite(agentItem,"Work on the note","running",decision.reason,agentModelForRole(agentItem,"conscious"));
     handoffVoiceBuffer(decision.compressed||buffered,decision);
   }
@@ -6566,7 +6610,7 @@
     if(collab.voice.live&&collab.voice.live.ready) return;
     if(collab.voice.listenBusy){ collab.voice.pendingReview=text; return; }
     collab.voice.listenBusy=true;
-    setVoiceStatus("Deciding whether to jump in…");
+    setVoiceStatus("Thinking");
     var payload=[
       {role:"system",content:listenSystemPrompt(agentItem)},
       {role:"user",content:"Latest utterance:\n"+text+"\n\nBuffered ramble so far:\n"+collab.voice.buffer.slice(-6000)+"\n\nAgent speaking: "+(!!collab.audio)+"\nConscious model busy: "+!!collab.busy}
@@ -6714,7 +6758,7 @@
     if(sc.interrupted) session.live.reply="";
     if(sc.generationComplete&&!sc.turnComplete&&session.live.reply) { /* wait for turnComplete */ }
     if(sc.turnComplete) finishLiveListenTurn(session);
-    if(msg.goAway) setVoiceStatus("Live session wrapping up — I’ll reconnect");
+    if(msg.goAway) setVoiceStatus("Reconnecting");
   }
   function closeLiveSocket(session,intentional){
     if(!session||!session.live) return;
@@ -6752,7 +6796,7 @@
             }
             var a=normalizeAgent(agentItem);
             buildVoiceArt(a.animationStyle,null,a);
-            setVoiceLink("Live ears · "+(runtimeApiKeys.elevenlabs?"ElevenLabs voice":"text replies"));
+            setVoiceLink(agentSettings().developerTrace?"Live ears":"");
             done(true);
             return;
           }
@@ -6768,7 +6812,7 @@
         if(wasReady&&(session.liveDrops||0)<2){
           session.liveDrops=(session.liveDrops||0)+1;
           live.ready=false;
-          setVoiceStatus("Live ears dropped — reconnecting");
+          setVoiceStatus("Reconnecting");
           connectGeminiLive(session,agentItem).then(function(ok){
             if(ok||!session.active) return;
             startBrowserListen(session);
@@ -6784,7 +6828,7 @@
     function tryModel(){
       if(!session.active||!runtimeApiKeys.gemini||!models.length) return Promise.resolve(false);
       var model=models.shift();
-      setVoiceLink("Connecting "+model);
+      setVoiceLink("");
       return openGeminiLiveSocket(session,agentItem,model,false).then(function(ok){
         if(ok) return true;
         if(!session.active) return false;
@@ -6799,12 +6843,12 @@
       try{ attachChunkRecorder(session,session.stream); }
       catch(error){
         console.warn("Browser listen failed:",error);
-        setVoiceStatus("Could not start a fallback listener",true);
+        setVoiceStatus("Could not hear you",true);
         return;
       }
     }
-    setVoiceLink("Browser listen"+(runtimeApiKeys.elevenlabs?" · ElevenLabs voice":""));
-    setVoiceStatus("Listening — pause when you want a decision, keep talking if you’re not done");
+    setVoiceLink("");
+    setVoiceStatus("Listening");
   }
 
   function stopVoiceSession(){
@@ -6878,7 +6922,7 @@
       var prev=typeof collab.voiceAmp==="number"?collab.voiceAmp:0.2;
       setVoiceAmp(prev+(mapped-prev)*0.42);
       var agentItem=collabAgent(), a=agentItem?normalizeAgent(agentItem):null;
-      var style=a?a.animationStyle:"jarvis";
+      var style=a?a.animationStyle:"face";
       var art=$("voiceStageArt");
       if(art&&style==="waveform"){
         var bars=art.querySelectorAll(".voice-art-waveform i");
@@ -6889,7 +6933,7 @@
       if(session&&session.active){
         if(a&&a.bargeIn&&collab.audio&&mic>0.12){
           session.barge+=1;
-          if(session.barge>6){ stopCollabSpeech(); setVoiceStatus("You jumped in — listening"); markCompanionState("listening"); }
+          if(session.barge>6){ stopCollabSpeech(); setVoiceStatus("Listening"); markCompanionState("listening"); }
         } else session.barge=0;
         if(!session.usingSpeech&&session.recorder){
           if(mic>0.045){ session.speaking=true; if(session.silenceTimer){ clearTimeout(session.silenceTimer); session.silenceTimer=null; } }
@@ -6952,6 +6996,7 @@
     collab.recorder=recorder; collab.recorderStream=stream;
   }
   function startVoiceSession(){
+    ensureBuiltinAgent();
     if(collab.voice&&collab.voice.active){ stopVoiceSession(); return; }
     if(activeAudioRecorder){ setCollabStatus("Finish the audio recording first.",true); return; }
     if(!navigator.mediaDevices||!navigator.mediaDevices.getUserMedia){ setCollabStatus("This browser can’t record audio.",true); return; }
@@ -6977,11 +7022,11 @@
       }
       var wantLive=!!(a&&a.liveListen&&runtimeApiKeys.gemini&&collab.voice.audioContext&&typeof collab.voice.audioContext.createScriptProcessor==="function");
       if(wantLive){
-        setVoiceStatus("Connecting Live ears…");
-        setVoiceLink("Gemini Live");
+        setVoiceStatus("Connecting…");
+        setVoiceLink("");
         connectGeminiLive(collab.voice,agentItem).then(function(ok){
           if(!collab.voice||!collab.voice.active) return;
-          if(ok) setVoiceStatus("Listening — keep talking, I’ll wait");
+          if(ok) setVoiceStatus("Listening");
           else startBrowserListen(collab.voice);
         });
       } else startBrowserListen(collab.voice);
@@ -7235,18 +7280,14 @@
     if(button) button.classList.toggle("on",collab.open||!!(collab.voice&&collab.voice.active));
   }
   function openCollabAgentPicker(anchor){
+    ensureBuiltinAgent();
     openMenu(anchor,function(menu){
       var title=document.createElement("div"); title.className="mtitle"; title.textContent="Talk to"; menu.appendChild(title);
       var agents=agentItems();
-      if(!agents.length){
-        var empty=document.createElement("div"); empty.className="mtitle"; empty.style.textTransform="none"; empty.style.letterSpacing="0";
-        empty.textContent="Using the hidden default assistant. Create a custom agent from New → Agent."; menu.appendChild(empty);
-        return;
-      }
       var activeId=(collabAgent()||{}).id;
       agents.forEach(function(agentItem){
         var a=normalizeAgent(agentItem);
-        menu.appendChild(mkItem(ICON_AGENT,a.name+" · "+a.model,agentItem.id===activeId,function(){
+        menu.appendChild(mkItem(ICON_AGENT,a.name+(agentSettings().defaultAgentId===agentItem.id?" · default":""),agentItem.id===activeId,function(){
           closeMenu();
           collab.agentId=agentItem.id;
           agentSettings().activeAgentId=agentItem.id;
@@ -7256,13 +7297,15 @@
         }));
       });
       menu.appendChild(sep());
-      menu.appendChild(mkItem(ICON_AGENT,"Manage agents",false,function(){ closeMenu(); openSettings("collab"); }));
+      var currentAgent=collabAgent();
+      if(currentAgent) menu.appendChild(mkItem(ICON_EDIT,"Customize "+(normalizeAgent(currentAgent).name||"agent"),false,function(){ closeMenu(); openAgentEditor(currentAgent); }));
+      menu.appendChild(mkItem(ICON_AGENT,"All agents",false,function(){ closeMenu(); openSettings("collab"); }));
     });
   }
   function openCollabPanel(options){
     var opts=options||{};
     var panel=$("collabPanel"); if(!panel) return;
-    var agentItem=agentById(opts.agentId)||preferredAgent();
+    var agentItem=agentById(opts.agentId)||preferredAgent()||ensureBuiltinAgent();
     var target=opts.mode==="agent"?null:current();
     collab.mode=(opts.mode==="agent"||!target||target.type==="agent")?"agent":"document";
     collab.agentId=(collab.mode==="agent"&&target&&target.type==="agent")?target.id:(agentItem?agentItem.id:"");
@@ -7320,6 +7363,8 @@
   };
   if($("voiceOverlayEnd")) $("voiceOverlayEnd").onclick=function(){ stopVoiceSession(); };
   if($("voiceOverlayMic")) $("voiceOverlayMic").onclick=function(){ stopVoiceSession(); };
+  if($("voiceOverlayEdit")) $("voiceOverlayEdit").onclick=function(){ openAgentEditor(collabAgent()); };
+  if($("voiceOverlayName")) $("voiceOverlayName").onclick=function(){ openAgentEditor(collabAgent()); };
 
   /* =================== actions =================== */
   $("shareBtn").onclick=function(){
@@ -7945,6 +7990,8 @@
     state.currentId=state.items[0].id; state.filterTag=null; state.selectedItemIds=[]; state.selectingNotes=false; state.tagAssignMode=false;
     state.pendingCloudSync=false; state.lastCloudSync=d.updated||Date.now();
     applyAccountPreferences(d);
+    if(!agentItems().length){ ensureBuiltinAgent(); state.pendingCloudSync=true; }
+    else ensureBuiltinAgent();
     recordSyncBaseline({items:state.items},state.lastCloudSync);
     if(canPersist){ try{ localStorage.setItem(KEY,JSON.stringify(state)); }catch(e){} }
     renderAll();
@@ -8428,12 +8475,13 @@
   function setupCollabSettings(){
     var box=$("collabSettings"); if(!box) return;
     box.innerHTML="";
+    ensureBuiltinAgent();
     var agents=agentItems(), s=agentSettings();
 
     var readyList=document.createElement("ul"); readyList.className="agent-ready";
     [[!!currentUser,"Signed in — API keys and agents sync to your devices","Sign in from the sidebar so your API keys can sync here"],
      [!!runtimeApiKeys.openai||!!runtimeApiKeys.gemini,"A thinking key is set (OpenAI or Gemini)","Add an OpenAI or Gemini API key in Settings → API keys"],
-     [!!runtimeApiKeys.gemini,"Gemini key set — good for the subconscious model","Add a Gemini key if you want Gemini Flash as the subconscious"],
+     [!!runtimeApiKeys.gemini,"Gemini key set — optional for Live ears and Gemini models","Add a Gemini key if you want Live ears or Gemini models"],
      [!!runtimeApiKeys.elevenlabs,"ElevenLabs key set — you can talk and it talks back","Add your ElevenLabs API key for spoken replies; listening can use the browser without it"],
      [!!agents.length,agents.length+" agent"+(agents.length===1?"":"s")+" available","Create an agent with New → Agent"]].forEach(function(row){
       var li=document.createElement("li"); li.className=row[0]?"":"todo"; li.textContent=row[0]?row[1]:row[2]; readyList.appendChild(li);
@@ -8462,9 +8510,24 @@
     }
     pick.appendChild(select);
     var pickHint=document.createElement("small"); pickHint.style.color="var(--ink-faint)";
-    pickHint.textContent="This is the agent the microphone opens. You can switch agents mid-conversation from the panel’s person icon.";
+    pickHint.textContent="This is the agent the microphone opens. Customize any agent below — same editor as opening it from the notes list.";
     pick.appendChild(pickHint);
     box.appendChild(pick);
+
+    var listBox=document.createElement("div"); listBox.className="grp"; listBox.style.margin="0";
+    var listTitle=document.createElement("h4"); listTitle.textContent="Customize agents"; listBox.appendChild(listTitle);
+    var listHint=document.createElement("p"); listHint.className="hint"; listHint.textContent="Name, face, voice, models, and instructions — the same Edit tab as any agent."; listBox.appendChild(listHint);
+    agents.forEach(function(agentItem){
+      var a=normalizeAgent(agentItem);
+      var row=document.createElement("div"); row.className="srow";
+      var copy=document.createElement("div"); copy.className="sl";
+      copy.appendChild(document.createTextNode(a.name||"Agent"));
+      var small=document.createElement("small"); small.textContent=agentMindSummary(a)+(s.defaultAgentId===agentItem.id?" · default":""); copy.appendChild(small);
+      var edit=document.createElement("button"); edit.type="button"; edit.className="b2"+(s.defaultAgentId===agentItem.id?" primary":""); edit.textContent="Edit";
+      edit.onclick=function(){ openAgentEditor(agentItem); };
+      row.appendChild(copy); row.appendChild(edit); listBox.appendChild(row);
+    });
+    box.appendChild(listBox);
 
     function toggleRow(title,hint,key,locked){
       var group=document.createElement("div"); group.className="grp"; group.style.margin="0";
@@ -8515,13 +8578,8 @@
     };
     row.appendChild(create);
     if(agents.length){
-      var openAgent=document.createElement("button"); openAgent.type="button"; openAgent.className="b2 primary"; openAgent.textContent="Open default agent";
-      openAgent.onclick=function(){
-        var agentItem=preferredAgent(); if(!agentItem) return;
-        state.currentId=agentItem.id;
-        $("settingsModal").classList.remove("open");
-        persist(); renderAll();
-      };
+      var openAgent=document.createElement("button"); openAgent.type="button"; openAgent.className="b2 primary"; openAgent.textContent="Customize default agent";
+      openAgent.onclick=function(){ openAgentEditor(preferredAgent()); };
       row.appendChild(openAgent);
     }
     var keys=document.createElement("button"); keys.type="button"; keys.className="b2"; keys.textContent="API keys";
@@ -8965,7 +9023,11 @@
   $("settingsModal").onclick=function(e){ if(e.target===$("settingsModal")) $("settingsModal").classList.remove("open"); };
 
   /* =================== boot =================== */
-  trackTimeSpent(); captureAutoBackup(false); applyTheme(0); syncMotion(); renderAll(); renderFoot(); initFirebase();
+  trackTimeSpent();
+  var hadAgents=!!agentItems().length;
+  ensureBuiltinAgent();
+  if(!hadAgents&&agentItems().length) persist();
+  captureAutoBackup(false); applyTheme(0); syncMotion(); renderAll(); renderFoot(); initFirebase();
   window.__astral={ state:state, render:renderAll, api:runtimeApiKeys };
 })();
 </script>
