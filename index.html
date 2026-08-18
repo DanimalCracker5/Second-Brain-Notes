@@ -698,11 +698,28 @@
   .agent-composer{ display:flex; gap:8px; margin-top:104px; } .agent-composer input{ flex:1; min-width:0; padding:11px; border:1px solid var(--line); border-radius:10px; color:var(--ink-faint); background:rgba(255,255,255,.03); } .agent-composer button{ padding:0 14px; border:0; border-radius:10px; color:#08080a; background:var(--accent); }
   .voice-stage{ display:grid; place-items:center; gap:14px; min-height:270px; text-align:center; color:var(--ink-dim); }
   .voice-orb{ width:118px; height:118px; border-radius:50%; background:radial-gradient(circle at 34% 28%,#fff 0, var(--accent) 12%, rgba(120,90,255,.44) 45%,transparent 70%); box-shadow:0 0 48px var(--accent-soft); }
-  .agent-edit{ display:grid; gap:14px; } .agent-edit label{ display:grid; gap:6px; color:var(--ink-dim); font-size:.78rem; } .agent-edit input,.agent-edit select{ padding:10px; border:1px solid var(--line); border-radius:10px; color:var(--ink); background:rgba(255,255,255,.04); font:400 .82rem "DM Mono",monospace; } .agent-edit select{ cursor:pointer; }
+  .agent-edit{ display:grid; gap:16px; } .agent-edit label{ display:grid; gap:6px; color:var(--ink-dim); font-size:.78rem; } .agent-edit input,.agent-edit select{ padding:10px; border:1px solid var(--line); border-radius:10px; color:var(--ink); background:rgba(255,255,255,.04); font:400 .82rem "DM Mono",monospace; } .agent-edit select{ cursor:pointer; }
   .agent-edit select optgroup{ color:var(--ink-faint); font-weight:600; font-style:normal; } .agent-edit select option{ color:var(--ink); }
   .agent-edit textarea{ min-height:110px; }
+  .agent-edit label small{ color:var(--ink-faint); font:400 .72rem "DM Sans",sans-serif; line-height:1.4; }
   .agent-edit .range-pair{ display:flex; align-items:center; gap:12px; } .agent-edit .range-pair input[type="range"]{ flex:1; padding:0; }
   .agent-edit .range-pair output{ flex:none; min-width:38px; text-align:right; font:400 .78rem "DM Mono",monospace; color:var(--ink); }
+  .agent-edit-section{ display:grid; gap:12px; padding:14px; border:1px solid var(--line); border-radius:16px; background:rgba(255,255,255,.03); }
+  .agent-edit-section > h3{ margin:0; color:var(--ink-faint); font:600 .62rem "DM Mono",monospace; letter-spacing:.16em; text-transform:uppercase; }
+  .agent-edit-section > p.hint{ margin:0; }
+  .agent-edit-head{ display:flex; align-items:flex-start; justify-content:space-between; gap:10px; flex-wrap:wrap; }
+  .agent-edit-head .agent-stats{ flex:1; min-width:220px; }
+  .agent-edit-minds{ display:grid; gap:10px; grid-template-columns:repeat(2,minmax(0,1fr)); }
+  .agent-edit-mind{ display:grid; gap:8px; padding:12px; border:1px solid var(--line); border-radius:14px; background:rgba(0,0,0,.22); }
+  .agent-edit-mind h4{ margin:0; color:var(--ink); font-size:.92rem; }
+  .agent-edit-mind p{ margin:0; color:var(--ink-dim); font-size:.76rem; line-height:1.45; }
+  @media (max-width:720px){ .agent-edit-minds{ grid-template-columns:1fr; } }
+  .usage-section{ margin-top:16px; padding:14px; border:1px solid var(--line); border-radius:16px; background:rgba(255,255,255,.03); }
+  .usage-section:first-child{ margin-top:0; }
+  .usage-section > h4{ font-family:"DM Mono",monospace; font-size:.58rem; letter-spacing:.22em; text-transform:uppercase; color:var(--ink-faint); margin:0 0 11px; }
+  .usage-section .hint{ margin:10px 0 0; }
+  .usage-providers{ display:flex; flex-wrap:wrap; gap:10px 14px; margin-top:12px; }
+  .usage-providers a{ color:var(--accent); font-size:.78rem; }
   .agent-stats{ display:grid; gap:9px; grid-template-columns:repeat(auto-fit,minmax(112px,1fr)); }
   .agent-stat{ padding:10px 12px; border:1px solid var(--line); border-radius:12px; background:rgba(255,255,255,.03); }
   .agent-stat b{ display:block; font-size:1.02rem; }
@@ -754,6 +771,7 @@
   .collab-proposal > p{ margin:0 0 10px; color:var(--ink-dim); font-size:.78rem; line-height:1.5; }
   .collab-diff{ margin-bottom:8px; padding:9px 10px; border:1px solid var(--line); border-radius:11px; background:rgba(0,0,0,.34); }
   .collab-diff em{ display:block; margin-bottom:5px; color:var(--ink-faint); font:400 .61rem "DM Mono",monospace; font-style:normal; letter-spacing:.08em; text-transform:uppercase; }
+  .collab-diff .kind{ display:inline-block; margin-left:6px; padding:1px 6px; border-radius:999px; color:var(--accent); background:var(--accent-soft); letter-spacing:.08em; }
   .collab-diff .was,.collab-diff .now{ display:block; max-height:168px; overflow-y:auto; padding:5px 7px; border-radius:7px; font:400 .74rem "DM Mono",monospace; line-height:1.5; white-space:pre-wrap; overflow-wrap:break-word; }
   .collab-diff .was{ margin-bottom:4px; color:#fca5a5; background:rgba(248,113,113,.08); }
   .collab-diff .now{ color:#86efac; background:rgba(52,211,153,.08); }
@@ -1278,7 +1296,7 @@
   var AGENT_ACCENT_SWATCHES=["#a78bfa","#38bdf8","#34d399","#fbbf24","#fb7185","#f97316","#e879f9","#f8fafc","#22d3ee","#818cf8"];
   var COLLAB_HISTORY_LIMIT=24, COLLAB_MESSAGE_LIMIT=4000, COLLAB_CONTEXT_LIMIT=24000, COLLAB_PROPOSAL_CONTEXT_LIMIT=12000, COLLAB_TOOL_ROUNDS=8, COLLAB_SPEECH_CHUNK_LIMIT=2400;
   var TRANSCRIPT_GROUP_TITLE="Transcribed audio";
-  var AGENT_DEFAULT_INSTRUCTIONS="You are a personal assistant inside Second Brain Notes.\nThe owner often rambles through speech-to-text, sometimes for a long stretch. Clean that up without losing meaning, and never mock filler words.\nThey use Cursor for coding. Help them draft prompts, plans, and notes they can paste there.\nKnow your own name and answer to it. Be direct, warm, and useful — more like a collaborator than a chatbot.\nWhen a session starts, offer to help. Ask one short question if you need a target; otherwise start working.";
+  var AGENT_DEFAULT_INSTRUCTIONS="You are a personal assistant inside Second Brain Notes.\nThe owner often rambles through speech-to-text, sometimes for a long stretch. Clean that up without losing meaning, and never mock filler words.\nThey use Cursor for coding. Help them draft prompts, plans, and notes they can paste there.\nSearch their notes when they ask you to find something. Tick todos done, add new todos, and open a note when you need to work in it.\nCreate notes, todos, YouTube scripts, workouts, audio items, code files, and other types when asked. Put Cursor prompts in prompt blocks — never flatten them into ordinary paragraphs. Use headings, chapters, comments, groups, code, embeds, and links when those fit.\nKnow your own name and answer to it. Be direct, warm, and useful — more like a collaborator than a chatbot.\nWhen a session starts, offer to help. Ask one short question if you need a target; otherwise start working.";
   var AGENT_DEFAULT_GREETING="What can I help you with today?";
   var canPersist=(function(){ try{ localStorage.setItem("__t","1"); localStorage.removeItem("__t"); return true; }catch(e){ return false; } })();
   function readKey(k){ if(canPersist){ try{ return JSON.parse(localStorage.getItem(k)); }catch(e){} } return null; }
@@ -1405,6 +1423,7 @@
   function newAgentItem(){ var it=baseItem(); it.type="agent"; it.title="New Agent"; it.agent={tab:"chat"}; normalizeAgent(it); return it; }
   function newWorkoutRoutine(){ var it=baseItem(); it.type="workout"; it.title="New Workout Routine"; it.workout={sessions:[],lastCompleted:null}; it.blocks=[textBlock("")]; it.body=""; return it; }
   var NOTE_INSERT_DEFAULTS={file:true,embed:true,link:true,paragraph:true,comment:true,prompt:true,heading:true,chapter:true,group:true,code:true};
+  var AGENT_NOTE_BLOCK_TYPES=["paragraph","heading","chapter","comment","prompt","group","code","embed","link"];
   function textBlock(text){ return {id:uid(),type:"text",text:text||"",html:escapeHtml(text||"").replace(/\n/g,"<br>")}; }
   function richTextToPlain(html){ var box=document.createElement("div"); box.innerHTML=html||""; return (box.innerText||box.textContent||"").replace(/\u00a0/g," "); }
   function sanitizeRichHtml(html){
@@ -1861,7 +1880,14 @@
   function isTodoNote(it){ return !!(it&&it.type==="note"&&it.todo); }
   function itemText(it){ var mod=itemModule(it); if(mod&&mod.text) return mod.text(it); if(it.type==="workout") return (it.blocks||[]).map(blockPlainText).filter(Boolean).join("\n"); if(it.type==="script") return (it.sections||[]).map(function(x){return x.body;}).join(" "); if(it.type==="todo") return (it.todos||[]).map(function(task){ return [task.text,taskDetailsText(task),(task.subtasks||[]).map(function(subtask){ return subtask.text||""; }).join(" ")].filter(Boolean).join(" "); }).join(" "); if(it.type==="audio") return (it.recordings||[]).map(function(recording){ return recording.name||""; }).join(" "); if(it.type==="agent") return [it.title,(it.agent||{}).longTermMemory,(it.agent||{}).shortTermMemory,(it.agent||{}).instructions].join(" "); if(it.type==="note"&&Array.isArray(it.blocks)) return it.blocks.map(blockPlainText).filter(Boolean).join("\n"); return it.body||""; }
   function itemWords(it){ return words(itemText(it)); }
-  function itemLabel(it){ var mod=itemModule(it); if(mod&&mod.label) return mod.label; return isTodoNote(it)||it.type==="todo"?"Todo":(it.type==="script"?"YouTube Script":(it.type==="audio"?"Audio":(it.type==="agent"?"Agent":(it.type==="workout"?"Workout Routine":"Note")))); }
+  function itemLabel(it){ var mod=itemModule(it); if(mod&&mod.label) return mod.label; return isTodoNote(it)||it.type==="todo"?"Todo":(it.type==="script"||it.template==="youtube-script"?"YouTube Script":(it.type==="audio"?"Audio":(it.type==="agent"?"Agent":(it.type==="workout"?"Workout Routine":"Note")))); }
+  function itemKindForAgent(it){
+    if(!it) return "note";
+    if(isTodoNote(it)||it.type==="todo") return "todo";
+    if(it.type==="script"||it.template==="youtube-script") return "script";
+    return it.type||"note";
+  }
+  function itemUsesNoteBlocks(it){ return !!(it&&(it.type==="note"||it.type==="workout")); }
   function dateKey(date){ var d=date instanceof Date?date:new Date(date); if(isNaN(d.getTime())) return ""; return d.getFullYear()+"-"+String(d.getMonth()+1).padStart(2,"0")+"-"+String(d.getDate()).padStart(2,"0"); }
   function dateFromKey(value){ if(!/^\d{4}-\d{2}-\d{2}$/.test(value||"")) return null; var d=new Date(value+"T00:00:00"); return isNaN(d.getTime())?null:d; }
   function dueDateLabel(value){
@@ -3368,16 +3394,25 @@
     return safeLinkUrl(raw);
   }
   function linkHostLabel(value){ try{ return new URL(value).hostname.replace(/^www\./i,""); }catch(error){ return ""; } }
-  function createNoteBlock(type){
-    if(type==="paragraph") return textBlock("");
-    if(type==="embed") return {id:uid(),type:"embed",provider:"youtube",url:"",videoId:"",start:0,width:100};
-    if(type==="link") return {id:uid(),type:"link",url:"",title:"",description:"",imageUrl:"",imageAttachmentId:"",width:100};
-    if(type==="comment") return {id:uid(),type:"comment",text:""};
-    if(type==="prompt") return {id:uid(),type:"prompt",text:""};
-    if(type==="heading") return {id:uid(),type:"heading",text:"",level:2};
-    if(type==="chapter") return chapterBlock("","");
-    if(type==="group") return {id:uid(),type:"group",title:"Untitled group",text:"",collapsed:false};
-    if(type==="code") return {id:uid(),type:"code",language:"javascript",code:""};
+  function createNoteBlock(type,seed){
+    seed=seed||{};
+    var text=typeof seed.text==="string"?seed.text:(typeof seed.code==="string"?seed.code:"");
+    if(type==="paragraph"||type==="text") return textBlock(text);
+    if(type==="embed"){
+      var embedUrl=cleanText(seed.url)||cleanText(text);
+      var info=videoEmbedInfo(embedUrl)||{};
+      return {id:uid(),type:"embed",provider:info.provider||"youtube",url:embedUrl,videoId:info.videoId||"",start:info.start||0,width:100};
+    }
+    if(type==="link"){
+      var href=safeLinkUrl(seed.url||text)||cleanText(seed.url||text);
+      return {id:uid(),type:"link",url:href,title:cleanText(seed.title)||"",description:"",imageUrl:"",imageAttachmentId:"",width:100};
+    }
+    if(type==="comment") return {id:uid(),type:"comment",text:text};
+    if(type==="prompt") return {id:uid(),type:"prompt",text:text};
+    if(type==="heading") return {id:uid(),type:"heading",text:text,level:Math.max(1,Math.min(3,Number(seed.level)||2))};
+    if(type==="chapter") return chapterBlock(cleanText(seed.title)||(text?"New chapter":""),text);
+    if(type==="group") return {id:uid(),type:"group",title:cleanText(seed.title)||"Untitled group",text:text,collapsed:false};
+    if(type==="code") return {id:uid(),type:"code",language:cleanText(seed.language)||"javascript",code:text};
     return null;
   }
   function focusNoteBlock(block){
@@ -3677,9 +3712,15 @@
       stage.appendChild(mind);
     } else {
       var edit=document.createElement("div"); edit.className="agent-edit";
-      function label(text){ var l=document.createElement("label"); l.textContent=text; edit.appendChild(l); return l; }
-      function field(text,key,placeholder){
-        var l=label(text), input=document.createElement("input");
+      function section(title,hint){
+        var box=document.createElement("section"); box.className="agent-edit-section";
+        var h=document.createElement("h3"); h.textContent=title; box.appendChild(h);
+        if(hint){ var p=document.createElement("p"); p.className="hint"; p.textContent=hint; box.appendChild(p); }
+        edit.appendChild(box); return box;
+      }
+      function labelOn(parent,text){ var l=document.createElement("label"); l.textContent=text; parent.appendChild(l); return l; }
+      function fieldOn(parent,text,key,placeholder){
+        var l=labelOn(parent,text), input=document.createElement("input");
         input.value=a[key]||""; input.placeholder=placeholder||"";
         input.oninput=function(){
           a[key]=input.value; it.updated=Date.now();
@@ -3688,32 +3729,31 @@
         };
         l.appendChild(input);
       }
-      function jsonField(text,key,hint){
-        var l=label(text), area=document.createElement("textarea");
+      function jsonFieldOn(parent,text,key,hint){
+        var l=labelOn(parent,text), area=document.createElement("textarea");
         area.className="ta"; area.spellcheck=true; area.value=a[key]||"";
         area.oninput=function(){ a[key]=area.value; it.updated=Date.now(); save(); };
         l.appendChild(area);
-        if(hint){ var small=document.createElement("small"); small.style.color="var(--ink-faint)"; small.textContent=hint; l.appendChild(small); }
+        if(hint){ var small=document.createElement("small"); small.textContent=hint; l.appendChild(small); }
       }
-      function modelPicker(title,key,hint){
+      function modelPickerOn(parent,title,key){
         var role=canonAgentRole(key==="subconsciousModel"||key==="listenModel"?"subconscious":"conscious");
-        var l=label(title), select=document.createElement("select");
+        var l=labelOn(parent,title), select=document.createElement("select");
         select.innerHTML='<option value="">Loading models…</option>'; select.disabled=true;
         l.appendChild(select);
         var custom=document.createElement("input"); custom.placeholder="Custom model id (optional)"; custom.value=a[key]||"";
         custom.oninput=function(){ assignAgentModel(a,role,custom.value); it.updated=Date.now(); save(); };
-        if(hint){ var small=document.createElement("small"); small.style.color="var(--ink-faint)"; small.textContent=hint; l.appendChild(small); }
         agentModels().then(function(ids){
           if(!select.isConnected) return;
           var groups=modelsForRole(role,ids), current=a[key]||"";
           var all=groups.suggested.concat(groups.extra);
           if(current&&all.indexOf(current)<0) groups.suggested.unshift(current);
           select.innerHTML="";
-          function addOption(parent,id){
+          function addOption(optParent,id){
             var option=document.createElement("option"); option.value=id;
             option.textContent=modelLabel(id)+( /\d{4}-\d{2}-\d{2}/.test(id)?" (snapshot — often fails)":"");
             if(id===current) option.selected=true;
-            parent.appendChild(option);
+            optParent.appendChild(option);
           }
           if(groups.extra.length){
             var suggested=document.createElement("optgroup"); suggested.label=role==="subconscious"?"Fast gatekeepers":"Thinking models";
@@ -3732,15 +3772,27 @@
         var sum=document.createElement("summary"); sum.textContent="Custom model id"; extra.appendChild(sum); extra.appendChild(custom);
         l.appendChild(extra);
       }
-      function toggleField(title,hint,key){
+      function toggleFieldOn(parent,title,hint,key){
         var row=document.createElement("div"); row.className="toggle-row";
         var copy=document.createElement("div"); copy.className="sl"; copy.appendChild(document.createTextNode(title));
         var small=document.createElement("small"); small.textContent=hint; copy.appendChild(small);
         var button=document.createElement("button"); button.type="button"; button.className="toggle"+(a[key]?" on":""); button.innerHTML="<b></b>";
         button.onclick=function(){ a[key]=!a[key]; button.classList.toggle("on",a[key]); it.updated=Date.now(); save(); };
-        row.appendChild(copy); row.appendChild(button); edit.appendChild(row);
+        row.appendChild(copy); row.appendChild(button); parent.appendChild(row);
+      }
+      function selectOn(parent,title,value,options,onChange){
+        var l=labelOn(parent,title), select=document.createElement("select");
+        options.forEach(function(opt){
+          var option=document.createElement("option"); option.value=opt[0]; option.textContent=opt[1];
+          if(String(value)===String(opt[0])) option.selected=true;
+          select.appendChild(option);
+        });
+        select.onchange=function(){ onChange(select.value); it.updated=Date.now(); save(); };
+        l.appendChild(select); return l;
       }
 
+      var overview=section("Overview","Local activity for this agent. Provider invoices stay on OpenAI and Gemini.");
+      var head=document.createElement("div"); head.className="agent-edit-head";
       var stats=document.createElement("div"); stats.className="agent-stats";
       [["Sessions",agentStatLabel(a.stats.sessions)],["Messages",agentStatLabel(a.stats.messages)],
        ["Edits applied",agentStatLabel(a.stats.edits)],["Calls",agentStatLabel(a.stats.calls)],
@@ -3750,8 +3802,11 @@
         var name=document.createElement("small"); name.textContent=pair[0];
         cell.appendChild(value); cell.appendChild(name); stats.appendChild(cell);
       });
-      edit.appendChild(stats);
-
+      head.appendChild(stats);
+      var usageBtn=document.createElement("button"); usageBtn.type="button"; usageBtn.className="b2"; usageBtn.textContent="Open usage";
+      usageBtn.onclick=function(){ openSettings("usage"); };
+      head.appendChild(usageBtn);
+      overview.appendChild(head);
       var readyList=document.createElement("ul"); readyList.className="agent-ready";
       [[!!currentUser,"Signed in, so keys and agents sync across your devices"],
        [!!runtimeApiKeys.openai||!!runtimeApiKeys.gemini,"A thinking key is set (OpenAI or Gemini)"],
@@ -3760,15 +3815,44 @@
        [agentSettings().defaultAgentId===it.id,"Set as the agent the microphone opens"]].forEach(function(pair){
         var li=document.createElement("li"); li.className=pair[0]?"":"todo"; li.textContent=pair[1]; readyList.appendChild(li);
       });
-      edit.appendChild(readyList);
+      overview.appendChild(readyList);
 
-      field("Agent name","name","Jarvis");
-      field("Greeting","greeting",AGENT_DEFAULT_GREETING);
+      var identity=section("Identity");
+      fieldOn(identity,"Agent name","name","Jarvis");
+      fieldOn(identity,"Greeting","greeting",AGENT_DEFAULT_GREETING);
+      fieldOn(identity,"Response style","responseStyle","Balanced");
+      var colorLabel=labelOn(identity,"Accent color"), colorRow=document.createElement("div"); colorRow.className="agent-color-row";
+      AGENT_ACCENT_SWATCHES.forEach(function(hex){
+        var swatch=document.createElement("button"); swatch.type="button"; swatch.className="agent-color-swatch"+(a.accentColor===hex?" on":""); swatch.style.background=hex; swatch.title=hex;
+        swatch.onclick=function(){ a.accentColor=a.accentColor===hex?"":hex; it.updated=Date.now(); persist(); renderMain(); };
+        colorRow.appendChild(swatch);
+      });
+      colorLabel.appendChild(colorRow);
 
-      modelPicker("Subconscious model","subconsciousModel","Fast gatekeeper. Decides whether to keep listening or hand the turn to the conscious model. Gemini Flash is a good default.");
-      modelPicker("Conscious model","consciousModel","The mind that writes the note, uses tools, and talks with you. GPT-5.6 Sol is a good default.");
+      var minds=section("Two minds","The subconscious decides whether to keep listening. The conscious model writes notes, creates prompts and other block types, and talks with you.");
+      var mindGrid=document.createElement("div"); mindGrid.className="agent-edit-minds";
+      var subCard=document.createElement("div"); subCard.className="agent-edit-mind";
+      var subTitle=document.createElement("h4"); subTitle.textContent="Subconscious"; subCard.appendChild(subTitle);
+      var subHint=document.createElement("p"); subHint.textContent="Fast gatekeeper. Gemini Flash is a good default."; subCard.appendChild(subHint);
+      modelPickerOn(subCard,"Model","subconsciousModel");
+      var silenceLabel=labelOn(subCard,"Pause before a decision"), silenceRow=document.createElement("div"); silenceRow.className="range-pair";
+      var silence=document.createElement("input"); silence.type="range"; silence.min="400"; silence.max="4000"; silence.step="100"; silence.value=String(a.silenceMs);
+      var silenceOut=document.createElement("output"); silenceOut.textContent=(a.silenceMs/1000).toFixed(1)+"s";
+      silence.oninput=function(){ a.silenceMs=Number(silence.value); silenceOut.textContent=(a.silenceMs/1000).toFixed(1)+"s"; it.updated=Date.now(); save(); };
+      silenceRow.appendChild(silence); silenceRow.appendChild(silenceOut); silenceLabel.appendChild(silenceRow);
+      var conCard=document.createElement("div"); conCard.className="agent-edit-mind";
+      var conTitle=document.createElement("h4"); conTitle.textContent="Conscious"; conCard.appendChild(conTitle);
+      var conHint=document.createElement("p"); conHint.textContent="Writes, searches, and uses tools. GPT-5.6 Sol is a good default."; conCard.appendChild(conHint);
+      modelPickerOn(conCard,"Model","consciousModel");
+      var tempLabel=labelOn(conCard,"Creativity"), tempRow=document.createElement("div"); tempRow.className="range-pair";
+      var temp=document.createElement("input"); temp.type="range"; temp.min="0"; temp.max="1.4"; temp.step="0.1"; temp.value=String(a.temperature);
+      var tempOut=document.createElement("output"); tempOut.textContent=a.temperature.toFixed(1);
+      temp.oninput=function(){ a.temperature=Number(temp.value); tempOut.textContent=a.temperature.toFixed(1); it.updated=Date.now(); save(); };
+      tempRow.appendChild(temp); tempRow.appendChild(tempOut); tempLabel.appendChild(tempRow);
+      mindGrid.appendChild(subCard); mindGrid.appendChild(conCard); minds.appendChild(mindGrid);
 
-      var voiceLabel=label("Spoken voice"), voiceSelect=document.createElement("select");
+      var voice=section("Voice & presence");
+      var voiceLabel=labelOn(voice,"Spoken voice"), voiceSelect=document.createElement("select");
       function fillVoices(){
         voiceSelect.innerHTML="";
         var shared=document.createElement("option"); shared.value=""; shared.textContent="Use the app’s voice (Settings → Voice)";
@@ -3783,70 +3867,29 @@
       fillVoices();
       voiceSelect.onchange=function(){ a.voiceId=voiceSelect.value; it.updated=Date.now(); save(); };
       voiceLabel.appendChild(voiceSelect);
-      var voiceHint=document.createElement("small"); voiceHint.style.color="var(--ink-faint)";
+      var voiceHint=document.createElement("small");
       voiceHint.textContent=runtimeApiKeys.elevenlabs?"Saved ElevenLabs voices are loaded in Settings → Voice.":"Add an ElevenLabs key to use any voice.";
       voiceLabel.appendChild(voiceHint);
-
-      field("Response style","responseStyle","Balanced");
-
-      var tempLabel=label("Creativity"), tempRow=document.createElement("div"); tempRow.className="range-pair";
-      var temp=document.createElement("input"); temp.type="range"; temp.min="0"; temp.max="1.4"; temp.step="0.1"; temp.value=String(a.temperature);
-      var tempOut=document.createElement("output"); tempOut.textContent=a.temperature.toFixed(1);
-      temp.oninput=function(){ a.temperature=Number(temp.value); tempOut.textContent=a.temperature.toFixed(1); it.updated=Date.now(); save(); };
-      tempRow.appendChild(temp); tempRow.appendChild(tempOut); tempLabel.appendChild(tempRow);
-
-      var silenceLabel=label("Pause before a subconscious decision"), silenceRow=document.createElement("div"); silenceRow.className="range-pair";
-      var silence=document.createElement("input"); silence.type="range"; silence.min="400"; silence.max="4000"; silence.step="100"; silence.value=String(a.silenceMs);
-      var silenceOut=document.createElement("output"); silenceOut.textContent=(a.silenceMs/1000).toFixed(1)+"s";
-      silence.oninput=function(){ a.silenceMs=Number(silence.value); silenceOut.textContent=(a.silenceMs/1000).toFixed(1)+"s"; it.updated=Date.now(); save(); };
-      silenceRow.appendChild(silence); silenceRow.appendChild(silenceOut); silenceLabel.appendChild(silenceRow);
-
-      var lookLabel=label("How it looks when talking to you");
-      var lookHint=document.createElement("small"); lookHint.style.color="var(--ink-faint)";
+      var lookLabel=labelOn(voice,"How it looks when talking to you");
+      var lookHint=document.createElement("small");
       lookHint.textContent=(AGENT_VOICE_STYLES.filter(function(style){ return style.id===a.animationStyle; })[0]||AGENT_VOICE_STYLES[0]).hint;
       lookLabel.appendChild(buildVoiceLookGrid(a,it,function(style){ lookHint.textContent=style.hint; }));
       lookLabel.appendChild(lookHint);
+      selectOn(voice,"Voice presence",a.voicePresence,AGENT_VOICE_PRESENCES.map(function(style){ return [style.id,style.name]; }),function(value){ a.voicePresence=value; });
+      selectOn(voice,"Read back",a.readBack,[["listen","Let the subconscious decide"],["after_edits","After writing into the note"],["always","Always speak replies"],["never","Never speak"]],function(value){ a.readBack=value; });
 
-      var presenceLabel=label("Voice presence"), presenceSelect=document.createElement("select");
-      AGENT_VOICE_PRESENCES.forEach(function(style){
-        var option=document.createElement("option"); option.value=style.id; option.textContent=style.name; if(style.id===a.voicePresence) option.selected=true; presenceSelect.appendChild(option);
-      });
-      presenceSelect.onchange=function(){ a.voicePresence=presenceSelect.value; it.updated=Date.now(); save(); };
-      presenceLabel.appendChild(presenceSelect);
+      var behave=section("Behaviour");
+      var approvalCurrent=typeof a.requireApproval==="boolean"?String(a.requireApproval):"";
+      selectOn(behave,"Edit permission",approvalCurrent,[["","Use Settings default"],["false","Work on the note without asking"],["true","Ask me to apply every edit"]],function(value){ a.requireApproval=value===""?null:value==="true"; });
+      toggleFieldOn(behave,"Capture transcribed audio in the open note","Keeps a collapsible group of everything you said, indented by pause.","transcribeToNote");
+      toggleFieldOn(behave,"Gemini Live ears","Stream the mic to Gemini so listening never stops while ElevenLabs talks. Falls back to the browser if Live is unavailable.","liveListen");
+      toggleFieldOn(behave,"Keep listening while speaking","So you can interrupt or keep rambling during a reply.","keepListeningWhileSpeaking");
+      toggleFieldOn(behave,"Barge in","If you start talking over it, cut the spoken reply and listen.","bargeIn");
 
-      var colorLabel=label("Accent color"), colorRow=document.createElement("div"); colorRow.className="agent-color-row";
-      AGENT_ACCENT_SWATCHES.forEach(function(hex){
-        var swatch=document.createElement("button"); swatch.type="button"; swatch.className="agent-color-swatch"+(a.accentColor===hex?" on":""); swatch.style.background=hex; swatch.title=hex;
-        swatch.onclick=function(){ a.accentColor=a.accentColor===hex?"":hex; it.updated=Date.now(); persist(); renderMain(); };
-        colorRow.appendChild(swatch);
-      });
-      colorLabel.appendChild(colorRow);
-
-      var readLabel=label("Read back"), readSelect=document.createElement("select");
-      [["listen","Let the subconscious decide"],["after_edits","After writing into the note"],["always","Always speak replies"],["never","Never speak"]].forEach(function(opt){
-        var option=document.createElement("option"); option.value=opt[0]; option.textContent=opt[1]; if(a.readBack===opt[0]) option.selected=true; readSelect.appendChild(option);
-      });
-      readSelect.onchange=function(){ a.readBack=readSelect.value; it.updated=Date.now(); save(); };
-      readLabel.appendChild(readSelect);
-
-      var approvalLabel=label("Edit permission"), approvalSelect=document.createElement("select");
-      [["","Use Settings default"],["false","Work on the note without asking"],["true","Ask me to apply every edit"]].forEach(function(opt){
-        var option=document.createElement("option"); option.value=opt[0]; option.textContent=opt[1];
-        var current=typeof a.requireApproval==="boolean"?String(a.requireApproval):"";
-        if(current===opt[0]) option.selected=true;
-        approvalSelect.appendChild(option);
-      });
-      approvalSelect.onchange=function(){ a.requireApproval=approvalSelect.value===""?null:approvalSelect.value==="true"; it.updated=Date.now(); save(); };
-      approvalLabel.appendChild(approvalSelect);
-
-      toggleField("Capture transcribed audio in the open note","Keeps a collapsible group of everything you said, indented by pause.","transcribeToNote");
-      toggleField("Gemini Live ears","Stream the mic to Gemini so listening never stops while ElevenLabs talks. Falls back to the browser if Live is unavailable.","liveListen");
-      toggleField("Keep listening while speaking","So you can interrupt or keep rambling during a reply.","keepListeningWhileSpeaking");
-      toggleField("Barge in","If you start talking over it, cut the spoken reply and listen.","bargeIn");
-
-      jsonField("Instructions","instructions","Plain text folded into the system prompt. This is not JSON.");
-      jsonField("Long-term memory","longTermMemory","Facts it should keep. You can edit this like a note; it can add lines too.");
-      jsonField("Short-term memory","shortTermMemory","Scratchpad for the current piece of work. Safe to clear.");
+      var memory=section("Instructions & memory","Tell it to draft Cursor prompts as prompt blocks, or to prefer chapters in scripts. This is plain text, not JSON.");
+      jsonFieldOn(memory,"Instructions","instructions","Folded into the system prompt for every turn.");
+      jsonFieldOn(memory,"Long-term memory","longTermMemory","Facts it should keep. You can edit this like a note; it can add lines too.");
+      jsonFieldOn(memory,"Short-term memory","shortTermMemory","Scratchpad for the current piece of work. Safe to clear.");
 
       var row=document.createElement("div"); row.className="btnrow";
       var makeDefault=document.createElement("button"); makeDefault.type="button"; makeDefault.className="b2 primary";
@@ -4542,7 +4585,11 @@
   }
 
   /* ---------- what the agent may look at and, once approved, change ---------- */
-  function isEditableBlock(block){ return !!block&&["text","heading","comment","prompt","chapter","group","code"].indexOf(block.type)>=0; }
+  function prettyBlockType(type){
+    return {paragraph:"Paragraph",text:"Paragraph",heading:"Heading",chapter:"Chapter",comment:"Comment",prompt:"Prompt",group:"Group",code:"Code",embed:"Embed",link:"Link"}[type]||"Paragraph";
+  }
+  function agentBlockTypeEnum(){ return AGENT_NOTE_BLOCK_TYPES.slice(); }
+  function isEditableBlock(block){ return !!block&&["text","heading","comment","prompt","chapter","group","code","embed","link"].indexOf(block.type)>=0; }
   function blockLabelFor(block,index){
     if(block.type==="heading") return "Heading";
     if(block.type==="comment") return "Comment";
@@ -4550,6 +4597,8 @@
     if(block.type==="chapter") return "Chapter — "+(cleanText(block.title)||"untitled");
     if(block.type==="group") return "Group — "+(cleanText(block.title)||"untitled");
     if(block.type==="code") return "Code";
+    if(block.type==="embed") return "Embed"+(block.videoId?" — "+embedProviderName(block):(block.url?" — "+block.url:""));
+    if(block.type==="link") return "Link"+(cleanText(block.title)?" — "+block.title:(block.url?" — "+block.url:""));
     return "Paragraph "+(index+1);
   }
   function collabTargets(it){
@@ -4565,21 +4614,28 @@
       (it.todos||[]).forEach(function(task,i){
         targets.push({id:task.id,kind:"task",task:task,text:task.text||"",label:"Task "+(i+1),inline:true});
         (task.blocks||[]).forEach(function(block,bi){
-          if(isEditableBlock(block)) targets.push({id:block.id,kind:"block",block:block,owner:task,text:block.text||"",label:"Task "+(i+1)+" · "+blockLabelFor(block,bi)});
+          if(isEditableBlock(block)) targets.push({id:block.id,kind:"block",block:block,owner:task,text:blockTextForAgent(block),label:"Task "+(i+1)+" · "+blockLabelFor(block,bi),inline:block.type==="heading"||block.type==="embed"||block.type==="link"});
         });
       });
-    } else if(it.type==="note"){
+    } else if(itemUsesNoteBlocks(it)){
       ensureNoteBlocks(it);
       it.blocks.forEach(function(block,i){
         if(isEditableBlock(block)){
-          targets.push({id:block.id,kind:"block",block:block,owner:it,text:block.type==="code"?(block.code||""):(block.text||""),label:blockLabelFor(block,i),inline:block.type==="heading"});
+          targets.push({id:block.id,kind:"block",block:block,owner:it,text:blockTextForAgent(block),label:blockLabelFor(block,i),inline:block.type==="heading"||block.type==="embed"||block.type==="link"});
           if(block.type==="chapter"||block.type==="group") targets.push({id:block.id+":title",kind:"block-title",block:block,owner:it,text:block.title||"",label:blockLabelFor(block,i)+" title",inline:true});
         }
       });
+    } else if(it.type==="code"){
+      targets.push({id:"body",kind:"body",text:it.code||"",label:"Code"});
     } else {
       targets.push({id:"body",kind:"body",text:it.body||"",label:"Body"});
     }
     return targets;
+  }
+  function blockTextForAgent(block){
+    if(block.type==="code") return block.code||"";
+    if(block.type==="embed"||block.type==="link") return block.url||"";
+    return block.text||"";
   }
   function joinText(before,after,inline){
     var head=String(before||""), tail=String(after||"");
@@ -4588,23 +4644,41 @@
     return head.replace(/\s+$/,"")+(inline?" ":"\n\n")+tail.replace(/^\s+/,"");
   }
   function setBlockText(block,text){
+    if(block.type==="embed"){
+      var info=videoEmbedInfo(text)||{};
+      block.url=cleanText(text);
+      block.provider=info.provider||block.provider||"youtube";
+      block.videoId=info.videoId||"";
+      block.start=info.start||0;
+      return;
+    }
+    if(block.type==="link"){
+      block.url=safeLinkUrl(text)||cleanText(text);
+      if(!cleanText(block.title)) block.title=linkHostLabel(block.url)||cleanText(text);
+      return;
+    }
     if(block.type==="text"||block.type==="chapter"){ block.html=escapeHtml(text).replace(/\n/g,"<br>"); if(block.type==="text") syncTextBlock(block); else block.text=richTextToPlain(block.html); }
     else if(block.type==="code") block.code=text;
     else block.text=text;
   }
   function writeTarget(it,target,text){
     if(target.kind==="title"){ it.title=text; return true; }
-    if(target.kind==="body"){ it.body=text; return true; }
+    if(target.kind==="body"){
+      if(it.type==="code") it.code=text;
+      else it.body=text;
+      return true;
+    }
     if(target.kind==="section"){ target.section.body=text; return true; }
     if(target.kind==="task"){ target.task.text=text; return true; }
     if(target.kind==="block"){ setBlockText(target.block,text); syncNoteBody(target.owner); return true; }
     if(target.kind==="block-title"){ target.block.title=text; syncNoteBody(target.owner); return true; }
     return false;
   }
-  function insertAfterTarget(it,afterId,text,blockType){
+  function insertAfterTarget(it,afterId,text,blockType,extra){
+    extra=extra||{};
     if(it.type==="script"){
       var sections=it.sections||(it.sections=[]), at=sections.findIndex(function(s){ return s.id===afterId; });
-      var section=sec("New chapter",text);
+      var section=sec(extra.blockTitle||"New chapter",text);
       if(at<0) sections.push(section); else sections.splice(at+1,0,section);
       return true;
     }
@@ -4614,15 +4688,19 @@
       if(taskAt<0) tasks.push(task); else tasks.splice(taskAt+1,0,task);
       return true;
     }
-    if(it.type==="note"){
+    if(itemUsesNoteBlocks(it)){
       ensureNoteBlocks(it);
-      var type=blockType||"paragraph", block=createNoteBlock(type)||textBlock(text);
-      if(block.type==="code") block.code=text;
-      else if(block.type==="chapter"){ block.title="New chapter"; setBlockText(block,text); }
-      else if(block.type==="group"){ block.title="Untitled group"; block.text=text; }
-      else setBlockText(block,text);
+      var type=blockType||"paragraph";
+      var block=createNoteBlock(type,{
+        text:text,
+        title:extra.blockTitle,
+        level:extra.headingLevel,
+        url:extra.url||((type==="embed"||type==="link")?text:""),
+        language:extra.language
+      })||textBlock(text);
       var blockAt=it.blocks.findIndex(function(b){ return b.id===afterId; });
       if(blockAt<0) it.blocks.push(block); else it.blocks.splice(blockAt+1,0,block);
+      syncNoteBody(it);
       return true;
     }
     it.body=joinText(it.body||"",text);
@@ -4646,12 +4724,14 @@
     lines.push("- If the user only wants feedback, an opinion, or an answer, reply in words and do not call propose_edits.");
     lines.push("- You can use search_notes to find notes by words in the title or body, and list_todos for open, overdue, or done todos. search_notes returns snippets; call request_note_access then read_notes only when you need the full text of a note that is not open.");
     lines.push("- Use list_notes to browse titles if you do not have a search query. Before reading any note that is not open, call request_note_access; the app will ask the user first. Only use read_notes after access is granted.");
-    lines.push("- When the user asks you to create a new note, call create_note. The app asks the user for confirmation before saving it.");
-    lines.push("- When they ask to add a todo, call create_todo. When they say they finished something, call update_todo with done=true. You can also set or clear a due date that way.");
+    lines.push("- When the user asks you to create a new note, todo, YouTube script, workout, audio item, code file, or another type, call create_note with the matching kind. Pass a blocks array for prompts, headings, chapters, comments, groups, code, embeds, and links instead of one blob of text. The app asks for confirmation, then opens the new item so you can keep editing it.");
+    lines.push("- When they ask to add a todo, call create_todo or create_note with kind todo. When they say they finished something, call update_todo with done=true. You can also set or clear a due date that way.");
     lines.push("- Use open_note to put a found note or todo on screen so you can edit it with propose_edits.");
+    lines.push("- Use list_item_types if you are unsure which kinds or block types this workspace supports.");
     lines.push("- Use set_task when you start a piece of work that will take more than one beat (structure a ramble, draft a Cursor prompt, rewrite a chapter). Keep the task list honest.");
     lines.push("- Only propose an edit when they asked for one, or when you offered and they agreed, or when they are clearly dictating content into the open note.");
-    lines.push("- You can create and edit the document's text blocks: paragraphs, headings, chapters, comments, prompts, collapsible groups, and code. Use propose_edits with insert_after and block_type to create one; use an existing target_id to edit one. File attachments cannot be created or changed by the assistant.");
+    lines.push("- Create and edit every note block the Insert menu offers: paragraphs, headings, chapters, comments, prompts, collapsible groups, code, YouTube/Vimeo embeds, and links. Use propose_edits with insert_after and block_type to create one; use an existing target_id to edit one. File attachments cannot be created or changed by the assistant.");
+    lines.push("- Cursor prompts, system prompts, and anything meant to be copied elsewhere belong in a prompt block. Do not dump them into a paragraph.");
     lines.push("- A collapsible group titled \""+TRANSCRIPT_GROUP_TITLE+"\" is the owner's raw speech. Append to it only when capturing dictation. Do not rewrite, summarize, or delete that group unless they ask. Put the structured note underneath it.");
     lines.push("- Keep spoken replies to one to three short sentences. They are read aloud, so use no markdown, lists, headings, or emoji — except when they asked you to read back what you wrote, in which case read the written wording.");
     lines.push(approval
@@ -4664,9 +4744,9 @@
       lines.push("");
       lines.push("EDITING RULES");
       lines.push("- Every editable piece of the open document is listed below with a target_id. Use those ids exactly and never invent one.");
-      lines.push('- "replace" needs the complete new text for that piece. "append" and "prepend" need only the new text. "insert_after" adds a new piece below the target_id you name, or below everything if you pass "end". For insert_after, set block_type to paragraph, heading, chapter, comment, prompt, group, or code when the new piece should not be a paragraph.');
+      lines.push('- "replace" needs the complete new text for that piece. "append" and "prepend" need only the new text. "insert_after" adds a new piece below the target_id you name, or below everything if you pass "end". For insert_after, set block_type to paragraph, heading, chapter, comment, prompt, group, code, embed, or link. For chapters and groups also set block_title. For headings set heading_level to 1, 2, or 3. For embeds and links set url (or put the URL in text).');
       lines.push('- "title" is always a valid target_id.');
-      lines.push('- Chapters and groups each expose two editable targets: one for their content and one ending in ":title" for their label. Preserve the requested block type; do not flatten structured content into JSON or a plain paragraph.');
+      lines.push('- Chapters and groups each expose two editable targets: one for their content and one ending in ":title" for their label. Preserve the requested block type; never flatten a prompt, chapter, or heading into a plain paragraph or JSON.');
       lines.push("- Change the fewest pieces that answer the request. Do not silently rewrite parts the user did not mention.");
       lines.push("- If the document is empty and the user has just rambled at you, propose a title plus clean prose paragraphs that keep every point they made. Leave the transcribed audio group as the raw ramble.");
     }
@@ -4695,7 +4775,7 @@
       var body=targets.map(function(t){ return "--- target_id: "+t.id+"\npart: "+t.label+"\ntext: "+(t.text?t.text:"(empty)"); }).join("\n");
       lines.push(body.length>COLLAB_CONTEXT_LIMIT?body.slice(0,COLLAB_CONTEXT_LIMIT)+"\n(document truncated — ask the user about parts you cannot see)":body);
     } else {
-      lines.push("No document is open, so propose_edits is unavailable until you open_note. You can still search_notes, list_todos, list_notes, request_note_access, read_notes, create_note, create_todo, update_todo, set_task, and remember.");
+      lines.push("No document is open, so propose_edits is unavailable until you open_note or create_note. You can still search_notes, list_todos, list_notes, list_item_types, request_note_access, read_notes, create_note, create_todo, update_todo, set_task, and remember.");
     }
     return lines.join("\n");
   }
@@ -4709,10 +4789,14 @@
         edits:{type:"array",description:"The changes, in document order.",items:{type:"object",properties:{
           target_id:{type:"string",description:'A target_id from the OPEN DOCUMENT list, "title", or "end" when inserting at the bottom.'},
           action:{type:"string",enum:["replace","append","prepend","insert_after"]},
-          text:{type:"string",description:"For replace, the complete new text. For the others, only the new text being added."},
-          block_type:{type:"string",enum:["paragraph","heading","chapter","comment","prompt","group","code"],description:"For insert_after only. Defaults to paragraph."},
+          text:{type:"string",description:"For replace, the complete new text. For the others, only the new text being added. For embed/link, the URL may go here or in url."},
+          block_type:{type:"string",enum:agentBlockTypeEnum(),description:"For insert_after only. Defaults to paragraph."},
+          block_title:{type:"string",description:"Chapter or group title when inserting or updating those blocks."},
+          heading_level:{type:"integer",description:"Heading size 1 (large), 2, or 3 (small)."},
+          url:{type:"string",description:"For embed or link blocks."},
+          language:{type:"string",description:"For code blocks: javascript, html, css, python, csharp, json, or sql."},
           note:{type:"string",description:"Optional one-line reason for this specific edit."}
-        },required:["target_id","action","text"]}}
+        },required:["target_id","action"]}}
       },required:["summary","edits"]}
     }});
     tools.push({type:"function",function:{
@@ -4743,7 +4827,7 @@
       description:"Search note titles, tags, and bodies. Returns matching ids, titles, and short snippets. Use this when the user asks you to find something. Does not require extra permission. Call read_notes only if you need the full text of a note that is not already open.",
       parameters:{type:"object",properties:{
         query:{type:"string",description:"Words to look for."},
-        type:{type:"string",enum:["all","note","todo","script","audio","workout"],description:"Optional type filter. Use todo for checklist notes."},
+        type:{type:"string",enum:["all"].concat(agentCreateKindEnum()),description:"Optional type filter. Use todo for checklist notes, script for YouTube scripts."},
         limit:{type:"integer",description:"Max results, default 12, max 20."}
       },required:["query"]}
     }});
@@ -4768,7 +4852,15 @@
       parameters:{type:"object",properties:{
         title:{type:"string",description:"Short todo title."},
         due_date:{type:"string",description:"Optional due date, YYYY-MM-DD or a phrase like tomorrow."},
-        detail:{type:"string",description:"Optional extra text stored in the todo."}
+        detail:{type:"string",description:"Optional extra text stored in the todo."},
+        blocks:{type:"array",description:"Optional structured blocks for the todo body (prompts, headings, and so on).",items:{type:"object",properties:{
+          type:{type:"string",enum:agentBlockTypeEnum()},
+          text:{type:"string"},
+          title:{type:"string"},
+          level:{type:"integer"},
+          url:{type:"string"},
+          language:{type:"string"}
+        }}}
       },required:["title"]}
     }});
     tools.push({type:"function",function:{
@@ -4787,9 +4879,28 @@
       parameters:{type:"object",properties:{note_ids:{type:"array",items:{type:"string"},description:"Approved note ids."}},required:["note_ids"]}
     }});
     tools.push({type:"function",function:{
+      name:"list_item_types",
+      description:"List the item kinds this workspace can create (note, todo, YouTube script, audio, workout, code, video, and others) plus the block types a note can contain (prompt, heading, chapter, and so on).",
+      parameters:{type:"object",properties:{}}
+    }});
+    tools.push({type:"function",function:{
       name:"create_note",
-      description:"Create a new plain note after asking the user for confirmation. Use this when the user explicitly asks you to save a new note.",
-      parameters:{type:"object",properties:{title:{type:"string",description:"Short note title."},content:{type:"string",description:"The note body."}},required:["title","content"]}
+      description:"Create a note, todo, YouTube script, workout, audio item, code file, or other enabled type after asking the user for confirmation. Prefer blocks so prompts, headings, chapters, comments, groups, code, embeds, and links are created as themselves rather than as a single paragraph. The new item is then opened so you can keep editing it.",
+      parameters:{type:"object",properties:{
+        title:{type:"string",description:"Short title."},
+        kind:{type:"string",enum:agentCreateKindEnum(),description:"What to create. Defaults to note."},
+        content:{type:"string",description:"Optional body when you are not passing blocks. For a Code item this is the source. For a todo this is extra detail."},
+        due_date:{type:"string",description:"For todos: YYYY-MM-DD or a phrase like tomorrow."},
+        language:{type:"string",description:"For Code items or code blocks: javascript, html, css, python, csharp, json, or sql."},
+        blocks:{type:"array",description:"Structured note blocks. Use this when the item should contain prompts, headings, chapters, or other Insert-menu types.",items:{type:"object",properties:{
+          type:{type:"string",enum:agentBlockTypeEnum()},
+          text:{type:"string",description:"Body of the block. For code blocks this is the source."},
+          title:{type:"string",description:"Chapter or group title."},
+          level:{type:"integer",description:"Heading size 1–3."},
+          url:{type:"string",description:"For embed or link."},
+          language:{type:"string",description:"For code blocks."}
+        }}}
+      },required:["title"]}
     }});
     return tools;
   }
@@ -5311,10 +5422,112 @@
     var text=itemText(it)||"";
     return (it.title?"Title: "+it.title+"\n":"")+(text.length>COLLAB_CONTEXT_LIMIT?text.slice(0,COLLAB_CONTEXT_LIMIT)+"\n[truncated]":text);
   }
+  function agentItemKinds(){
+    var kinds=[
+      {kind:"note",type:"note",label:"Note"},
+      {kind:"todo",type:"todo",label:"To-do"},
+      {kind:"script",type:"script",label:"YouTube script"},
+      {kind:"audio",type:"audio",label:"Audio"},
+      {kind:"workout",type:"workout",label:"Workout routine"}
+    ];
+    typeModuleList().forEach(function(def){
+      if(def&&typeof def.create==="function") kinds.push({kind:def.type,type:def.type,label:def.label||def.type,module:true});
+    });
+    return kinds;
+  }
+  function agentCreateKindEnum(){ return agentItemKinds().map(function(row){ return row.kind; }); }
+  function agentItemKind(kind){
+    var needle=String(kind||"note").toLowerCase();
+    if(needle==="youtube-script"||needle==="youtube"||needle==="youtube_script") needle="script";
+    if(needle==="to-do"||needle==="task"||needle==="tasks") needle="todo";
+    return agentItemKinds().filter(function(row){ return row.kind===needle; })[0]||agentItemKinds()[0];
+  }
+  function enableItemType(type){
+    if(type&&typeof state.enabledTypes[type]==="boolean") state.enabledTypes[type]=true;
+  }
+  function noteBlockFromAgent(raw){
+    if(!raw||typeof raw!=="object") return null;
+    var type=String(raw.type||raw.block_type||"paragraph").toLowerCase();
+    if(type==="text") type="paragraph";
+    if(AGENT_NOTE_BLOCK_TYPES.indexOf(type)<0) type="paragraph";
+    var text=typeof raw.text==="string"?raw.text:(typeof raw.content==="string"?raw.content:(typeof raw.code==="string"?raw.code:""));
+    return createNoteBlock(type,{
+      text:text,
+      title:raw.title||raw.block_title||"",
+      level:raw.level||raw.heading_level,
+      url:raw.url||"",
+      language:raw.language||""
+    });
+  }
+  function applyAgentBlocksToItem(it,rawBlocks,fallbackText){
+    if(!it||(!itemUsesNoteBlocks(it)&&it.type!=="note")) return;
+    var list=[];
+    (Array.isArray(rawBlocks)?rawBlocks:[]).forEach(function(raw){
+      var block=noteBlockFromAgent(raw);
+      if(block) list.push(block);
+    });
+    if(!list.length&&fallbackText) list.push(textBlock(String(fallbackText)));
+    if(!list.length) return;
+    it.blocks=list;
+    syncNoteBody(it);
+  }
+  function agentCreateConfirmText(spec,title,extra){
+    extra=extra||{};
+    var lines=["Create a new "+(spec&&spec.label||"note")+"?", "", title];
+    if(extra.due) lines.push("Due: "+extra.due);
+    if(extra.blocks&&extra.blocks.length){
+      lines.push("");
+      extra.blocks.slice(0,8).forEach(function(raw){
+        var type=prettyBlockType(raw&&(raw.type||raw.block_type)||"paragraph");
+        var bit=cleanText((raw&&(raw.title||raw.block_title||raw.text||raw.url||raw.content||raw.code))||"").slice(0,80);
+        lines.push("• "+type+(bit?": "+bit:""));
+      });
+      if(extra.blocks.length>8) lines.push("… +"+(extra.blocks.length-8)+" more");
+    } else if(extra.content){
+      lines.push("", String(extra.content).slice(0,800)+(String(extra.content).length>800?"…":""));
+    }
+    return lines.join("\n");
+  }
   function createAgentNote(title,content){
     var note=newNoteItem(); note.title=cleanText(title)||"New note"; note.blocks=[textBlock(content||"")]; syncNoteBody(note);
     state.items.unshift(note); state.currentId=note.id; note.updated=Date.now();
     persist(); renderAll(); return note;
+  }
+  function createAgentItem(kind,title,extra){
+    extra=extra||{};
+    var spec=agentItemKind(kind);
+    enableItemType(spec.type);
+    var it, blocks=Array.isArray(extra.blocks)?extra.blocks:[];
+    if(spec.kind==="todo"){
+      it=createAgentTodo(title,extra.due,extra.content);
+    } else if(spec.kind==="script"){
+      it=newYoutubeScriptNote();
+      it.title=cleanText(title)||"New YouTube script";
+      state.items.unshift(it); state.currentId=it.id;
+    } else if(spec.kind==="audio"){
+      it=newAudioItem();
+      it.title=cleanText(title)||"New audio";
+      state.items.unshift(it); state.currentId=it.id;
+    } else if(spec.kind==="workout"){
+      it=newWorkoutRoutine();
+      it.title=cleanText(title)||it.title;
+      state.items.unshift(it); state.currentId=it.id;
+    } else if(spec.module&&typeModule(spec.type)&&typeof typeModule(spec.type).create==="function"){
+      it=typeModule(spec.type).create();
+      it.title=cleanText(title)||it.title||("New "+spec.label);
+      if(spec.type==="code"){
+        if(extra.content) it.code=String(extra.content);
+        if(extra.language) it.language=String(extra.language);
+      }
+      state.items.unshift(it); state.currentId=it.id;
+    } else {
+      it=createAgentNote(title, blocks.length?"":extra.content);
+    }
+    if(blocks.length) applyAgentBlocksToItem(it, blocks, extra.content);
+    else if((spec.kind==="workout"||spec.kind==="script")&&extra.content) applyAgentBlocksToItem(it, [], extra.content);
+    it.updated=Date.now();
+    persist(); renderAll();
+    return it;
   }
   function agentSearchSnippet(text,query,width){
     var hay=String(text||"").replace(/\s+/g," ").trim();
@@ -5336,7 +5549,7 @@
     var words=q.split(/\s+/).filter(Boolean);
     var hits=[];
     searchableItems().forEach(function(it){
-      var kind=isTodoNote(it)||it.type==="todo"?"todo":it.type;
+      var kind=itemKindForAgent(it);
       if(want&&want!=="all"&&want!==kind) return;
       var title=it.title||"";
       var body=itemText(it)||"";
@@ -5522,19 +5735,32 @@
     var edits=[];
     (Array.isArray(rawEdits)?rawEdits:[]).forEach(function(raw){
       if(!raw||typeof raw!=="object") return;
-      var targetId=cleanText(raw.target_id), text=typeof raw.text==="string"?raw.text:"";
+      var targetId=cleanText(raw.target_id);
+      var text=typeof raw.text==="string"?raw.text:"";
+      var url=cleanText(raw.url);
+      var blockTitle=cleanText(raw.block_title||raw.title);
+      var headingLevel=Math.max(1,Math.min(3,Number(raw.heading_level||raw.level)||0))||0;
+      var language=cleanText(raw.language);
       var action=["replace","append","prepend","insert_after"].indexOf(raw.action)>=0?raw.action:"replace";
-      if(!targetId||!text) return;
-      var target=index[targetId];
+      if(!targetId) return;
+      var blockType=agentBlockTypeEnum().indexOf(raw.block_type)>=0?raw.block_type:"paragraph";
       if(action==="insert_after"){
+        if(!text&&url) text=url;
+        if(!text&&!blockTitle&&!url&&blockType==="paragraph") return;
+        var pretty=prettyBlockType(blockType);
+        var target=index[targetId];
         edits.push({targetId:targetId,action:action,after:text,before:"",note:cleanText(raw.note),
-          blockType:["paragraph","heading","chapter","comment","prompt","group","code"].indexOf(raw.block_type)>=0?raw.block_type:"paragraph",
-          label:target?target.label:(targetId==="end"?"End of document":"Unknown part"),
-          actionLabel:target?"new part after this":"added at the end"});
+          blockType:blockType,blockTitle:blockTitle,headingLevel:headingLevel||undefined,url:url,language:language,
+          label:(target?target.label+" → ":"")+"Insert "+pretty+(blockTitle?" — "+blockTitle:""),
+          actionLabel:"insert "+pretty.toLowerCase()});
         return;
       }
+      if(!text&&!url&&!blockTitle&&!headingLevel) return;
+      var target=index[targetId];
       if(!target) return;
+      if(!text&&url) text=url;
       edits.push({targetId:targetId,action:action,after:text,source:target.text,inline:target.inline,note:cleanText(raw.note),label:target.label,
+        blockType:target.block&&target.block.type,blockTitle:blockTitle,headingLevel:headingLevel||undefined,url:url,language:language,
         before:action==="replace"?target.text:"",
         actionLabel:action==="append"?"added to the end":action==="prepend"?"added at the start":"replaced"});
     });
@@ -5549,20 +5775,36 @@
     var index={}, applied=0, skipped=0;
     collabTargets(it).forEach(function(t){ index[t.id]=t; });
     proposal.edits.forEach(function(edit){
-      if(edit.action==="insert_after"){ if(insertAfterTarget(it,edit.targetId,edit.after,edit.blockType)) applied++; else skipped++; return; }
+      if(edit.action==="insert_after"){
+        if(insertAfterTarget(it,edit.targetId,edit.after,edit.blockType,{blockTitle:edit.blockTitle,headingLevel:edit.headingLevel,url:edit.url,language:edit.language})) applied++; else skipped++;
+        return;
+      }
       var target=index[edit.targetId];
       if(!target){ skipped++; return; }
-      var next=edit.action==="append"?joinText(target.text,edit.after,target.inline)
-        :edit.action==="prepend"?joinText(edit.after,target.text,target.inline)
-        :edit.after;
-      if(writeTarget(it,target,next)) applied++; else skipped++;
+      var extras=!!(edit.headingLevel||edit.blockTitle||edit.language||edit.url);
+      var shouldWrite=!(edit.action==="replace"&&!edit.after&&extras);
+      var ok=true;
+      if(shouldWrite){
+        var next=edit.action==="append"?joinText(target.text,edit.after,target.inline)
+          :edit.action==="prepend"?joinText(edit.after,target.text,target.inline)
+          :edit.after;
+        ok=writeTarget(it,target,next);
+      }
+      if(!ok){ skipped++; return; }
+      if(target.block){
+        if(edit.headingLevel&&target.block.type==="heading") target.block.level=edit.headingLevel;
+        if(edit.blockTitle&&(target.block.type==="chapter"||target.block.type==="group")) target.block.title=edit.blockTitle;
+        if(edit.language&&target.block.type==="code") target.block.language=edit.language;
+        if(edit.url&&(target.block.type==="embed"||target.block.type==="link")) setBlockText(target.block,edit.url);
+      }
+      applied++;
     });
     if(!applied){ pushCollabNote("Nothing could be applied — the document changed since this was suggested.",true); renderCollabLog(); return; }
-    if(it.type==="note") ensureNoteBlocks(it);
+    if(itemUsesNoteBlocks(it)) ensureNoteBlocks(it);
     if(it.type==="todo") (it.todos||[]).forEach(ensureTodoTaskDetails);
     touchContent(it); persist(); renderList();
     if(current()&&current().id===it.id){
-      if(it.type==="note"){ refreshNoteEditor(it); updateMeta(); flashAgentEdits(proposal.edits.map(function(edit){ return edit.targetId; })); }
+      if(itemUsesNoteBlocks(it)){ refreshNoteEditor(it); updateMeta(); flashAgentEdits(proposal.edits.map(function(edit){ return edit.targetId; })); }
       else renderMain();
     }
     markCompanionState("writing");
@@ -5674,11 +5916,12 @@
             }
           } else if(name==="create_todo"){
             var todoTitle=cleanText(args.title);
+            var todoExtra={due:args.due_date,content:args.detail,blocks:Array.isArray(args.blocks)?args.blocks:[]};
             if(!todoTitle) result="A title is required.";
-            else if(!window.confirm("Create a new todo?\n\n"+todoTitle+(args.due_date?"\nDue: "+args.due_date:"")+(args.detail?"\n\n"+cleanText(args.detail).slice(0,400):""))) result="The user cancelled todo creation.";
+            else if(!window.confirm(agentCreateConfirmText(agentItemKind("todo"),todoTitle,todoExtra))) result="The user cancelled todo creation.";
             else {
               backupBeforeAgentChange();
-              var createdTodo=createAgentTodo(todoTitle,args.due_date,args.detail);
+              var createdTodo=createAgentItem("todo",todoTitle,todoExtra);
               attachCollabDocument(createdTodo);
               retargetTurn(createdTodo);
               result="Created todo "+createdTodo.id+" titled \""+createdTodo.title+"\""+(createdTodo.dueDate?" due "+createdTodo.dueDate:"")+". "+openDocumentToolResult(createdTodo);
@@ -5702,13 +5945,26 @@
             var ids=(Array.isArray(args.note_ids)?args.note_ids:[]).map(cleanText).filter(Boolean), granted=collab.grantedNoteIds||{};
             var readable=(state.items||[]).filter(function(it){ return ids.indexOf(it.id)>=0&&granted[it.id]&&it.type!=="agent"; });
             result=readable.length?readable.map(noteTextForAgent).join("\n\n---\n\n"):"No approved notes matched. Ask for permission first.";
+          } else if(name==="list_item_types"){
+            result=JSON.stringify({
+              kinds:agentItemKinds().map(function(row){ return {kind:row.kind,label:row.label,enabled:!!state.enabledTypes[row.type]}; }),
+              note_blocks:agentBlockTypeEnum().map(function(type){ return {type:type,label:prettyBlockType(type)}; })
+            });
           } else if(name==="create_note"){
-            var noteTitle=cleanText(args.title), noteContent=typeof args.content==="string"?args.content.trim():"";
-            if(!noteTitle||!noteContent) result="A title and non-empty content are required.";
-            else if(window.confirm("Create a new note?\n\n"+noteTitle+"\n\n"+noteContent.slice(0,800)+(noteContent.length>800?"…":""))){
-              if(agentSettings().backupBeforeWork) captureAutoBackup(true,"agent");
-              var created=createAgentNote(noteTitle,noteContent); result="Created note "+created.id+" titled \""+created.title+"\".";
-            } else result="The user cancelled note creation.";
+            var spec=agentItemKind(args.kind);
+            var noteTitle=cleanText(args.title);
+            var extra={content:typeof args.content==="string"?args.content:"",due:args.due_date||args.due,blocks:Array.isArray(args.blocks)?args.blocks:[],language:args.language};
+            if(!noteTitle) result="A title is required.";
+            else if(!window.confirm(agentCreateConfirmText(spec,noteTitle,extra))) result="The user cancelled creation.";
+            else {
+              backupBeforeAgentChange();
+              var created=createAgentItem(spec.kind,noteTitle,extra);
+              attachCollabDocument(created);
+              retargetTurn(created);
+              var createdBits="Created "+(spec.label||"note").toLowerCase()+" "+created.id+" titled \""+created.title+"\".";
+              if(spec.kind==="audio"||spec.kind==="video"||spec.kind==="file"||spec.kind==="edit") createdBits+=" This type is a file container — add media in the editor. The title is set.";
+              result=createdBits+" "+openDocumentToolResult(created);
+            }
           } else if(name==="remember"){
             var key=cleanText(args.key), value=cleanText(args.value);
             if(key&&value){
@@ -6506,9 +6762,15 @@
     var summary=document.createElement("p"); summary.textContent=proposal.summary; card.appendChild(summary);
     proposal.edits.forEach(function(edit){
       var diff=document.createElement("div"); diff.className="collab-diff";
-      var label=document.createElement("em"); label.textContent=edit.label+" · "+edit.actionLabel; diff.appendChild(label);
+      var label=document.createElement("em");
+      label.appendChild(document.createTextNode(edit.label+" · "+edit.actionLabel));
+      if(edit.blockType&&edit.action==="insert_after"){
+        var kind=document.createElement("span"); kind.className="kind"; kind.textContent=prettyBlockType(edit.blockType);
+        label.appendChild(kind);
+      }
+      diff.appendChild(label);
       if(edit.before){ var was=document.createElement("span"); was.className="was"; was.textContent=edit.before; diff.appendChild(was); }
-      var now=document.createElement("span"); now.className="now"; now.textContent=edit.after; diff.appendChild(now);
+      var now=document.createElement("span"); now.className="now"; now.textContent=edit.after||edit.url||edit.blockTitle||""; diff.appendChild(now);
       if(edit.note){ var note=document.createElement("small"); note.textContent=edit.note; diff.appendChild(note); }
       card.appendChild(diff);
     });
@@ -6533,7 +6795,7 @@
     var copy=document.createElement("span");
     copy.textContent=doc
       ? "Ramble, ask for a rewrite, or talk it through. "+(agentItem?normalizeAgent(agentItem).name:"Your agent")+(agentRequiresApproval(agentItem)?" suggests changes; you decide what gets applied.":" can edit the note directly while you watch.")
-      : "No note, script, or todo is open, so this is a plain conversation. Open something first if you want it written into a note.";
+      : "No note is open, so this is a plain conversation. Ask me to create a note, todo, script, or prompt, or open something first if you want it written into a document.";
     box.appendChild(copy);
     return box;
   }
@@ -7974,18 +8236,25 @@
     var box=$("usageSettings"); if(!box) return;
     box.innerHTML="";
     var s=agentSettings(), usage=normalizeUsageStats(s.usage);
-    var summary=document.createElement("div"); summary.className="grp";
-    var heading=document.createElement("h4"); heading.textContent="All agents"; summary.appendChild(heading);
+    function usageSection(title){
+      var wrap=document.createElement("section"); wrap.className="usage-section";
+      var h=document.createElement("h4"); h.textContent=title; wrap.appendChild(h);
+      box.appendChild(wrap); return wrap;
+    }
+    var summary=usageSection("All agents");
     appendUsageCards(summary,usage);
     var byMind=document.createElement("p"); byMind.className="hint";
     byMind.textContent=usageLines(usage).split("\n").slice(1).join(" · ")||"No activity yet.";
     summary.appendChild(byMind);
-    box.appendChild(summary);
+    var providers=document.createElement("div"); providers.className="usage-providers";
+    [["https://platform.openai.com/usage","OpenAI usage"],["https://aistudio.google.com/usage","Gemini usage"]].forEach(function(pair){
+      var a=document.createElement("a"); a.href=pair[0]; a.target="_blank"; a.rel="noopener"; a.textContent=pair[1]; providers.appendChild(a);
+    });
+    summary.appendChild(providers);
 
     var agents=agentItems();
     if(agents.length){
-      var per=document.createElement("div"); per.className="grp";
-      var perTitle=document.createElement("h4"); perTitle.textContent="Per agent"; per.appendChild(perTitle);
+      var per=usageSection("Per agent");
       agents.forEach(function(item){
         var a=normalizeAgent(item);
         var row=document.createElement("div"); row.className="srow";
@@ -7993,21 +8262,26 @@
         copy.appendChild(document.createTextNode(a.name));
         var small=document.createElement("small"); small.textContent=formatTokenCount(a.stats.tokens)+" tokens · "+agentStatLabel(a.stats.calls)+" calls · "+agentMindSummary(a);
         copy.appendChild(small);
-        var open=document.createElement("button"); open.type="button"; open.className="b2"; open.textContent="Open";
-        open.onclick=function(){ state.currentId=item.id; $("settingsModal").classList.remove("open"); persist(); renderAll(); };
+        var open=document.createElement("button"); open.type="button"; open.className="b2"; open.textContent="Edit";
+        open.onclick=function(){ state.currentId=item.id; normalizeAgent(item).tab="edit"; $("settingsModal").classList.remove("open"); persist(); renderAll(); };
         row.appendChild(copy); row.appendChild(open); per.appendChild(row);
       });
-      box.appendChild(per);
     }
 
-    var recent=document.createElement("div"); recent.className="grp";
-    var recentTitle=document.createElement("h4"); recentTitle.textContent="Recent calls"; recent.appendChild(recentTitle);
-    appendUsageLog(recent,usage.recent);
-    box.appendChild(recent);
+    var models=Object.keys(usage.byModel||{}).sort(function(a,b){ return (usage.byModel[b].tokens||0)-(usage.byModel[a].tokens||0); });
+    if(models.length){
+      var modelBox=usageSection("By model");
+      models.forEach(function(id){
+        var row=document.createElement("div"); row.className="srow";
+        var copy=document.createElement("div"); copy.className="sl";
+        copy.appendChild(document.createTextNode(modelLabel(id)));
+        var small=document.createElement("small"); small.textContent=formatTokenCount(usage.byModel[id].tokens)+" tokens · "+agentStatLabel(usage.byModel[id].calls)+" calls";
+        copy.appendChild(small); row.appendChild(copy); modelBox.appendChild(row);
+      });
+    }
 
-    var links=document.createElement("p"); links.className="hint";
-    links.innerHTML='Provider invoices: <a href="https://platform.openai.com/usage" target="_blank" rel="noopener">OpenAI usage</a> · <a href="https://aistudio.google.com/usage" target="_blank" rel="noopener">Gemini usage</a>';
-    box.appendChild(links);
+    var recent=usageSection("Recent calls");
+    appendUsageLog(recent,usage.recent);
 
     var row=document.createElement("div"); row.className="btnrow";
     var reset=document.createElement("button"); reset.type="button"; reset.className="b2"; reset.textContent="Reset local counters";
