@@ -699,6 +699,7 @@
   .voice-stage{ display:grid; place-items:center; gap:14px; min-height:270px; text-align:center; color:var(--ink-dim); }
   .voice-orb{ width:118px; height:118px; border-radius:50%; background:radial-gradient(circle at 34% 28%,#fff 0, var(--accent) 12%, rgba(120,90,255,.44) 45%,transparent 70%); box-shadow:0 0 48px var(--accent-soft); }
   .agent-edit{ display:grid; gap:14px; } .agent-edit label{ display:grid; gap:6px; color:var(--ink-dim); font-size:.78rem; } .agent-edit input,.agent-edit select{ padding:10px; border:1px solid var(--line); border-radius:10px; color:var(--ink); background:rgba(255,255,255,.04); font:400 .82rem "DM Mono",monospace; } .agent-edit select{ cursor:pointer; }
+  .agent-edit select optgroup{ color:var(--ink-faint); font-weight:600; font-style:normal; } .agent-edit select option{ color:var(--ink); }
   .agent-edit textarea{ min-height:110px; }
   .agent-edit .range-pair{ display:flex; align-items:center; gap:12px; } .agent-edit .range-pair input[type="range"]{ flex:1; padding:0; }
   .agent-edit .range-pair output{ flex:none; min-width:38px; text-align:right; font:400 .78rem "DM Mono",monospace; color:var(--ink); }
@@ -1224,8 +1225,11 @@
   /* AI collaborator limits. Transcripts ride along in the synced state document,
      so they are capped hard in both directions. */
   var AGENT_DEFAULT_ID="__default_agent__", AGENT_DEFAULT_NAME="Assistant", AGENT_DEFAULT_MODEL="gpt-4o-mini";
-  var AGENT_LISTEN_MODEL="gpt-4o-mini", AGENT_WORK_MODEL="gpt-4o-mini", AGENT_COMPLEX_MODEL="gpt-4o";
-  var AGENT_GEMINI_LISTEN="gemini-2.5-flash", AGENT_FALLBACK_MODELS=["gpt-4o-mini","gpt-4o","gpt-4.1-mini"];
+  var AGENT_SUBCONSCIOUS_MODEL="gpt-5.6-luna", AGENT_CONSCIOUS_MODEL="gpt-5.6-sol";
+  var AGENT_LISTEN_MODEL=AGENT_SUBCONSCIOUS_MODEL, AGENT_WORK_MODEL=AGENT_CONSCIOUS_MODEL, AGENT_COMPLEX_MODEL=AGENT_CONSCIOUS_MODEL;
+  var AGENT_GEMINI_SUBCONSCIOUS="gemini-3.7-flash", AGENT_GEMINI_CONSCIOUS="gemini-2.5-pro";
+  var AGENT_GEMINI_LISTEN=AGENT_GEMINI_SUBCONSCIOUS;
+  var AGENT_FALLBACK_MODELS=["gpt-5.6-sol","gpt-5.6-luna","gpt-5.4","gpt-5","gpt-4.1","gpt-4o","gpt-4o-mini","gemini-3.7-flash","gemini-2.5-flash","gemini-2.5-pro"];
   var AGENT_GEMINI_LIVE_MODELS=["gemini-2.0-flash-live-001","gemini-live-2.5-flash-preview"];
   var AGENT_GEMINI_LIVE_WS="wss://generativelanguage.googleapis.com/ws/google.ai.generativelanguage.v1beta.GenerativeService.BidiGenerateContent";
   var AGENT_VOICE_STYLE_ALIASES={hud:"jarvis",pulse:"core",orb:"core",rings:"nova",halo:"radial"};
@@ -1245,15 +1249,22 @@
     {id:"companion",name:"Dock companion",hint:"Tiny face; the note stays fully visible"}
   ];
   var AGENT_MODEL_LABELS={
-    "gemini-2.5-flash":"Gemini 2.5 Flash","gemini-2.5-pro":"Gemini 2.5 Pro","gemini-2.0-flash":"Gemini 2.0 Flash","gemini-flash-latest":"Gemini Flash (latest)",
-    "gpt-4o-mini":"GPT-4o mini","gpt-4o":"GPT-4o","gpt-4.1-mini":"GPT-4.1 mini","gpt-4.1":"GPT-4.1",
-    "gpt-5-nano":"GPT-5 nano","gpt-5-mini":"GPT-5 mini","gpt-5":"GPT-5"
+    "gemini-3.7-flash":"Gemini 3.7 Flash","gemini-3.6-flash":"Gemini 3.6 Flash","gemini-3.5-flash":"Gemini 3.5 Flash",
+    "gemini-3-flash-preview":"Gemini 3 Flash (preview)","gemini-2.5-flash":"Gemini 2.5 Flash","gemini-2.5-flash-lite":"Gemini 2.5 Flash-Lite",
+    "gemini-2.5-pro":"Gemini 2.5 Pro","gemini-2.0-flash":"Gemini 2.0 Flash","gemini-flash-latest":"Gemini Flash (latest)",
+    "gpt-5.6-sol":"GPT-5.6 Sol","gpt-5.6-terra":"GPT-5.6 Terra","gpt-5.6-luna":"GPT-5.6 Luna","gpt-5.6":"GPT-5.6",
+    "gpt-5.4":"GPT-5.4","gpt-5.4-mini":"GPT-5.4 mini","gpt-5.4-nano":"GPT-5.4 nano",
+    "gpt-5.2":"GPT-5.2","gpt-5.1":"GPT-5.1","gpt-5":"GPT-5","gpt-5-mini":"GPT-5 mini","gpt-5-nano":"GPT-5 nano",
+    "gpt-4.1":"GPT-4.1","gpt-4.1-mini":"GPT-4.1 mini","gpt-4.1-nano":"GPT-4.1 nano",
+    "gpt-4o":"GPT-4o","gpt-4o-mini":"GPT-4o mini","o3":"o3","o4-mini":"o4-mini"
   };
   var AGENT_MODEL_SETS={
-    listen:["gemini-2.5-flash","gpt-4o-mini","gpt-4.1-mini","gpt-5-nano","gpt-5-mini"],
-    work:["gpt-4o-mini","gpt-4o","gpt-4.1-mini","gpt-4.1","gemini-2.5-flash","gpt-5-mini","gpt-5","gemini-2.5-pro"],
-    complex:["gpt-4o","gpt-4.1","gpt-5","gemini-2.5-pro","gpt-4o-mini","gemini-2.5-flash"]
+    subconscious:["gemini-3.7-flash","gemini-2.5-flash","gemini-2.5-flash-lite","gpt-5.6-luna","gpt-5.4-nano","gpt-5-nano","gpt-4.1-mini","gpt-4o-mini"],
+    conscious:["gpt-5.6-sol","gpt-5.6-terra","gpt-5.4","gpt-5.2","gpt-5","gemini-3.7-flash","gemini-2.5-pro","gpt-4.1","gpt-4o"]
   };
+  AGENT_MODEL_SETS.listen=AGENT_MODEL_SETS.subconscious;
+  AGENT_MODEL_SETS.work=AGENT_MODEL_SETS.conscious;
+  AGENT_MODEL_SETS.complex=AGENT_MODEL_SETS.conscious;
   var AGENT_VOICE_PRESENCES=[
     {id:"overlay",name:"Stage overlay",hint:"Cinematic layer over the note so you can still see edits"},
     {id:"cinema",name:"Cinema",hint:"Darker overlay for YouTube recordings"},
@@ -3560,8 +3571,11 @@
     summary.innerHTML="<span>"+todos.filter(function(x){return !x.done;}).length+" remaining</span><span>"+todos.filter(function(x){return x.done;}).length+" completed</span>";
     wrap.appendChild(summary); wrap.appendChild(list); return wrap;
   }
+  function agentMindSummary(a){
+    return modelLabel(a.subconsciousModel||a.listenModel)+" → "+modelLabel(a.consciousModel||a.workModel||a.model);
+  }
   function agentMetaText(it){
-    var a=normalizeAgent(it), bits=[a.listenModel+"→"+a.workModel];
+    var a=normalizeAgent(it), bits=[agentMindSummary(a)];
     if(agentSettings().defaultAgentId===it.id) bits.push("default");
     if(a.stats.messages) bits.push(a.stats.messages+" msg");
     return bits.join(" · ");
@@ -3583,7 +3597,7 @@
     hero.querySelector("h1").textContent=a.name;
     var ready=collabReadiness();
     if(a.accentColor) hero.style.setProperty("--agent-accent",a.accentColor);
-    hero.querySelector("p").textContent=ready.ok?(a.listenModel+" → "+a.workModel+" · "+(a.animationStyle||"jarvis")+" · "+agentStatLabel(a.stats.messages)+" messages"):"Needs setup — see the Edit tab";
+    hero.querySelector("p").textContent=ready.ok?(agentMindSummary(a)+" · "+(a.animationStyle||"jarvis")+" · "+agentStatLabel(a.stats.messages)+" messages"):"Needs setup — see the Edit tab";
     wrap.appendChild(hero);
     var tabs=document.createElement("div"); tabs.className="agent-tabs";
     [ ["chat","Chat"], ["voice","Voice"], ["mind","Mind"], ["edit","Edit"] ].forEach(function(tab){
@@ -3649,11 +3663,11 @@
         var pre=document.createElement("pre"); pre.textContent=body||"(empty)"; block.appendChild(pre);
         mind.appendChild(block);
       }
-      mindBlock("Now",(collab.voice&&collab.voice.active?"Listening":"Idle")+(collab.voice&&collab.voice.live&&collab.voice.live.ready?" · Live ears":"")+(collab.busy?" · work model running":"")+(collab.decisions.length?" · last: "+collab.decisions[collab.decisions.length-1].action:""));
-      mindBlock("Tasks",(a.tasks||[]).map(function(task){ return "["+task.status+"] "+task.title+(task.detail?" — "+task.detail:""); }).join("\n")||"No tasks yet. Voice sessions and the work model add them here.");
+      mindBlock("Now",(collab.voice&&collab.voice.active?"Listening":"Idle")+(collab.voice&&collab.voice.live&&collab.voice.live.ready?" · Live ears":"")+(collab.busy?" · conscious model running":"")+(collab.decisions.length?" · last: "+collab.decisions[collab.decisions.length-1].action:""));
+      mindBlock("Tasks",(a.tasks||[]).map(function(task){ return "["+task.status+"] "+task.title+(task.detail?" — "+task.detail:""); }).join("\n")||"No tasks yet. Voice sessions and the conscious model add them here.");
       mindBlock("Long-term memory",a.longTermMemory);
       mindBlock("Short-term memory",a.shortTermMemory);
-      mindBlock("Listen decisions",collab.decisions.slice(-8).map(function(d){ return d.action+" — "+d.reason+(d.complexity?" ("+d.complexity+")":""); }).join("\n")||"Turn on developer trace in Settings → AI collaborator to keep a live log while you talk.");
+      mindBlock("Subconscious decisions",collab.decisions.slice(-8).map(function(d){ return d.action+" — "+d.reason; }).join("\n")||"Turn on developer trace in Settings → AI collaborator to keep a live log while you talk.");
       stage.appendChild(mind);
     } else {
       var edit=document.createElement("div"); edit.className="agent-edit";
@@ -3676,26 +3690,37 @@
         if(hint){ var small=document.createElement("small"); small.style.color="var(--ink-faint)"; small.textContent=hint; l.appendChild(small); }
       }
       function modelPicker(title,key,hint){
-        var role=key==="listenModel"?"listen":key==="complexModel"?"complex":"work";
+        var role=canonAgentRole(key==="subconsciousModel"||key==="listenModel"?"subconscious":"conscious");
         var l=label(title), select=document.createElement("select");
         select.innerHTML='<option value="">Loading models…</option>'; select.disabled=true;
         l.appendChild(select);
         var custom=document.createElement("input"); custom.placeholder="Custom model id (optional)"; custom.value=a[key]||"";
-        custom.oninput=function(){ a[key]=cleanText(custom.value)||defaultWorkModel(); if(key==="workModel") a.model=a.workModel; it.updated=Date.now(); save(); };
+        custom.oninput=function(){ assignAgentModel(a,role,custom.value); it.updated=Date.now(); save(); };
         if(hint){ var small=document.createElement("small"); small.style.color="var(--ink-faint)"; small.textContent=hint; l.appendChild(small); }
         agentModels().then(function(ids){
           if(!select.isConnected) return;
-          var list=modelsForRole(role,ids);
-          if(a[key]&&list.indexOf(a[key])<0) list.unshift(a[key]);
+          var groups=modelsForRole(role,ids), current=a[key]||"";
+          var all=groups.suggested.concat(groups.extra);
+          if(current&&all.indexOf(current)<0) groups.suggested.unshift(current);
           select.innerHTML="";
-          list.forEach(function(id){
+          function addOption(parent,id){
             var option=document.createElement("option"); option.value=id;
             option.textContent=modelLabel(id)+( /\d{4}-\d{2}-\d{2}/.test(id)?" (snapshot — often fails)":"");
-            if(id===a[key]) option.selected=true;
-            select.appendChild(option);
-          });
+            if(id===current) option.selected=true;
+            parent.appendChild(option);
+          }
+          if(groups.extra.length){
+            var suggested=document.createElement("optgroup"); suggested.label=role==="subconscious"?"Fast gatekeepers":"Thinking models";
+            groups.suggested.forEach(function(id){ addOption(suggested,id); });
+            select.appendChild(suggested);
+            var extra=document.createElement("optgroup"); extra.label="Also available";
+            groups.extra.forEach(function(id){ addOption(extra,id); });
+            select.appendChild(extra);
+          } else {
+            groups.suggested.forEach(function(id){ addOption(select,id); });
+          }
           select.disabled=false;
-          select.onchange=function(){ a[key]=select.value; custom.value=select.value; if(key==="workModel") a.model=a.workModel; it.updated=Date.now(); save(); };
+          select.onchange=function(){ assignAgentModel(a,role,select.value); custom.value=select.value; it.updated=Date.now(); save(); };
         });
         var extra=document.createElement("details"); extra.className="model-custom";
         var sum=document.createElement("summary"); sum.textContent="Custom model id"; extra.appendChild(sum); extra.appendChild(custom);
@@ -3724,7 +3749,7 @@
       var readyList=document.createElement("ul"); readyList.className="agent-ready";
       [[!!currentUser,"Signed in, so keys and agents sync across your devices"],
        [!!runtimeApiKeys.openai||!!runtimeApiKeys.gemini,"A thinking key is set (OpenAI or Gemini)"],
-       [!!runtimeApiKeys.gemini,"Gemini key set — recommended for the fast listen model"],
+       [!!runtimeApiKeys.gemini,"Gemini key set — recommended for the subconscious model"],
        [!!runtimeApiKeys.elevenlabs,"ElevenLabs key set — spoken replies work"],
        [agentSettings().defaultAgentId===it.id,"Set as the agent the microphone opens"]].forEach(function(pair){
         var li=document.createElement("li"); li.className=pair[0]?"":"todo"; li.textContent=pair[1]; readyList.appendChild(li);
@@ -3734,9 +3759,8 @@
       field("Agent name","name","Jarvis");
       field("Greeting","greeting",AGENT_DEFAULT_GREETING);
 
-      modelPicker("Listen model","listenModel","Used when Live ears are off, or as a fallback. Fast and cheap. Gemini 2.5 Flash is a good default.");
-      modelPicker("Work model","workModel","Writes the note and talks with you. Used for normal requests.");
-      modelPicker("Complex model","complexModel","Used when the listen model flags a long ramble or a hard rewrite.");
+      modelPicker("Subconscious model","subconsciousModel","Fast gatekeeper. Decides whether to keep listening or hand the turn to the conscious model. Gemini Flash is a good default.");
+      modelPicker("Conscious model","consciousModel","The mind that writes the note, uses tools, and talks with you. GPT-5.6 Sol is a good default.");
 
       var voiceLabel=label("Spoken voice"), voiceSelect=document.createElement("select");
       function fillVoices(){
@@ -3765,7 +3789,7 @@
       temp.oninput=function(){ a.temperature=Number(temp.value); tempOut.textContent=a.temperature.toFixed(1); it.updated=Date.now(); save(); };
       tempRow.appendChild(temp); tempRow.appendChild(tempOut); tempLabel.appendChild(tempRow);
 
-      var silenceLabel=label("Pause before a listen decision"), silenceRow=document.createElement("div"); silenceRow.className="range-pair";
+      var silenceLabel=label("Pause before a subconscious decision"), silenceRow=document.createElement("div"); silenceRow.className="range-pair";
       var silence=document.createElement("input"); silence.type="range"; silence.min="400"; silence.max="4000"; silence.step="100"; silence.value=String(a.silenceMs);
       var silenceOut=document.createElement("output"); silenceOut.textContent=(a.silenceMs/1000).toFixed(1)+"s";
       silence.oninput=function(){ a.silenceMs=Number(silence.value); silenceOut.textContent=(a.silenceMs/1000).toFixed(1)+"s"; it.updated=Date.now(); save(); };
@@ -3793,7 +3817,7 @@
       colorLabel.appendChild(colorRow);
 
       var readLabel=label("Read back"), readSelect=document.createElement("select");
-      [["listen","Let the listen model decide"],["after_edits","After writing into the note"],["always","Always speak replies"],["never","Never speak"]].forEach(function(opt){
+      [["listen","Let the subconscious decide"],["after_edits","After writing into the note"],["always","Always speak replies"],["never","Never speak"]].forEach(function(opt){
         var option=document.createElement("option"); option.value=opt[0]; option.textContent=opt[1]; if(a.readBack===opt[0]) option.selected=true; readSelect.appendChild(option);
       });
       readSelect.onchange=function(){ a.readBack=readSelect.value; it.updated=Date.now(); save(); };
@@ -4272,9 +4296,11 @@
     var s=agentSettings();
     return agentById(s.activeAgentId)||agentById(s.defaultAgentId)||agentItems()[0]||defaultAgent();
   }
-  function defaultListenModel(){ return runtimeApiKeys.gemini?AGENT_GEMINI_LISTEN:AGENT_LISTEN_MODEL; }
-  function defaultWorkModel(){ return runtimeApiKeys.openai?AGENT_WORK_MODEL:(runtimeApiKeys.gemini?AGENT_GEMINI_LISTEN:AGENT_DEFAULT_MODEL); }
-  function defaultComplexModel(){ return runtimeApiKeys.openai?AGENT_COMPLEX_MODEL:defaultWorkModel(); }
+  function defaultSubconsciousModel(){ return runtimeApiKeys.gemini?AGENT_GEMINI_SUBCONSCIOUS:(runtimeApiKeys.openai?AGENT_SUBCONSCIOUS_MODEL:AGENT_DEFAULT_MODEL); }
+  function defaultConsciousModel(){ return runtimeApiKeys.openai?AGENT_CONSCIOUS_MODEL:(runtimeApiKeys.gemini?AGENT_GEMINI_CONSCIOUS:AGENT_DEFAULT_MODEL); }
+  function defaultListenModel(){ return defaultSubconsciousModel(); }
+  function defaultWorkModel(){ return defaultConsciousModel(); }
+  function defaultComplexModel(){ return defaultConsciousModel(); }
   function agentPlainMemory(text){
     var raw=typeof text==="string"?text:"";
     var trimmed=raw.trim();
@@ -4310,17 +4336,21 @@
     return AGENT_VOICE_STYLES.some(function(style){ return style.id===id; })?id:"jarvis";
   }
   function knownVoicePresence(id){ return AGENT_VOICE_PRESENCES.some(function(style){ return style.id===id; })?id:"overlay"; }
-  /* Older agent items stored a free-text voice name, JSON memory, and a single
-     model. Fold all of that forward so every read path can assume the full shape. */
+  /* Older agent items stored a free-text voice name, JSON memory, a single
+     model, then listen/work/complex. Fold all of that forward into
+     subconscious + conscious so every read path can assume the full shape. */
   function normalizeAgent(it){
     var a=(it.agent&&typeof it.agent==="object")?it.agent:(it.agent={});
     if(["chat","voice","mind","edit"].indexOf(a.tab)<0) a.tab="chat";
     if(typeof a.name!=="string"||!a.name.trim()) a.name=cleanText(it.title)||"New Agent";
-    if(typeof a.model!=="string"||!a.model.trim()) a.model=defaultWorkModel();
-    if(typeof a.workModel!=="string"||!a.workModel.trim()) a.workModel=a.model||defaultWorkModel();
-    if(typeof a.listenModel!=="string"||!a.listenModel.trim()) a.listenModel=defaultListenModel();
-    if(typeof a.complexModel!=="string"||!a.complexModel.trim()) a.complexModel=defaultComplexModel();
-    a.model=a.workModel;
+    if(typeof a.model!=="string"||!a.model.trim()) a.model=defaultConsciousModel();
+    if(typeof a.workModel!=="string"||!a.workModel.trim()) a.workModel=a.model||defaultConsciousModel();
+    if(typeof a.listenModel!=="string"||!a.listenModel.trim()) a.listenModel=defaultSubconsciousModel();
+    if(typeof a.consciousModel!=="string"||!a.consciousModel.trim()) a.consciousModel=a.workModel||a.model||a.complexModel||defaultConsciousModel();
+    if(typeof a.subconsciousModel!=="string"||!a.subconsciousModel.trim()) a.subconsciousModel=a.listenModel||defaultSubconsciousModel();
+    a.workModel=a.consciousModel;
+    a.listenModel=a.subconsciousModel;
+    a.model=a.consciousModel;
     if(typeof a.voiceId!=="string"){ var legacy=cleanText(a.voice); a.voiceId=/^[A-Za-z0-9]{18,}$/.test(legacy)?legacy:""; }
     delete a.voice;
     if(typeof a.responseStyle!=="string"||!a.responseStyle.trim()) a.responseStyle="Balanced";
@@ -4352,6 +4382,20 @@
     if(typeof a.stats.lastUsed!=="number") a.stats.lastUsed=0;
     a.chat=trimChatLog(a.chat);
     return a;
+  }
+  function canonAgentRole(role){
+    return role==="listen"||role==="subconscious"?"subconscious":"conscious";
+  }
+  function assignAgentModel(a,role,id){
+    var value=cleanText(id);
+    if(canonAgentRole(role)==="subconscious"){
+      a.subconsciousModel=value||defaultSubconsciousModel();
+      a.listenModel=a.subconsciousModel;
+    } else {
+      a.consciousModel=value||defaultConsciousModel();
+      a.workModel=a.consciousModel;
+      a.model=a.consciousModel;
+    }
   }
   function agentRequiresApproval(agentItem){
     var a=agentItem?normalizeAgent(agentItem):null;
@@ -4473,7 +4517,7 @@
   /* ---------- prompt ---------- */
   function collabSystemPrompt(agentItem,targetItem,targets){
     var a=normalizeAgent(agentItem), lines=[], approval=agentRequiresApproval(agentItem);
-    lines.push('You are "'+a.name+'", an AI collaborator inside Second Brain Notes. You are talking with the app\'s owner, often by voice, sometimes for a long ramble.');
+    lines.push('You are "'+a.name+'", the conscious mind of an AI collaborator inside Second Brain Notes. A faster subconscious may have already decided this turn is yours. You are talking with the app\'s owner, often by voice, sometimes for a long ramble.');
     lines.push("Response style: "+a.responseStyle+".");
     lines.push("The owner uses Cursor for coding. When they ask for help writing software, a prompt, a plan, or a spec, draft something they can paste into Cursor. Do not pretend you are running in Cursor yourself.");
     lines.push("");
@@ -4824,30 +4868,26 @@
   }
   function agentModelForRole(agentItem,role){
     var a=normalizeAgent(agentItem);
-    if(role==="listen") return a.listenModel||defaultListenModel();
-    if(role==="complex") return a.complexModel||a.workModel||defaultComplexModel();
-    return a.workModel||a.model||defaultWorkModel();
+    if(canonAgentRole(role)==="subconscious") return a.subconsciousModel||a.listenModel||defaultSubconsciousModel();
+    return a.consciousModel||a.workModel||a.model||defaultConsciousModel();
   }
   function agentFallbacks(role,chosen){
-    var list=[];
-    if(role==="listen"){
-      if(runtimeApiKeys.gemini&&chosen!==AGENT_GEMINI_LISTEN) list.push(AGENT_GEMINI_LISTEN);
-      if(runtimeApiKeys.openai) list.push("gpt-4o-mini");
-    } else {
-      if(runtimeApiKeys.openai){ list.push("gpt-4o-mini"); if(role==="complex") list.push("gpt-4o"); }
-      if(runtimeApiKeys.gemini) list.push(AGENT_GEMINI_LISTEN);
-    }
+    var list=canonAgentRole(role)==="subconscious"
+      ?[AGENT_GEMINI_SUBCONSCIOUS,"gemini-2.5-flash","gemini-flash-latest",AGENT_SUBCONSCIOUS_MODEL,"gpt-4o-mini"]
+      :[AGENT_CONSCIOUS_MODEL,"gpt-5.6-terra","gpt-5.4","gpt-5","gpt-4.1","gpt-4o","gpt-4o-mini",AGENT_GEMINI_CONSCIOUS,AGENT_GEMINI_SUBCONSCIOUS];
+    if(!runtimeApiKeys.gemini) list=list.filter(function(id){ return !isGeminiModel(id); });
+    if(!runtimeApiKeys.openai) list=list.filter(function(id){ return isGeminiModel(id); });
     return list.filter(function(id,index){ return id&&id!==chosen&&list.indexOf(id)===index; });
   }
   function agentCompletion(agentItem,messages,tools,role,extra){
-    var a=normalizeAgent(agentItem), model=agentModelForRole(agentItem,role||"work");
+    var a=normalizeAgent(agentItem), mind=canonAgentRole(role||"conscious"), model=agentModelForRole(agentItem,mind);
     extra=extra||{};
     return llmChat({
       model:model,
       messages:messages,
       tools:tools,
-      temperature:role==="listen"?0.1:a.temperature,
-      fallbacks:agentFallbacks(role||"work",model),
+      temperature:mind==="subconscious"?0.1:a.temperature,
+      fallbacks:agentFallbacks(mind,model),
       stream:!!extra.onDelta,
       onDelta:extra.onDelta
     });
@@ -4856,10 +4896,10 @@
     var source=itemText(note).replace(/\s+/g," ").trim().slice(0,12000);
     if(!source) return Promise.reject(new Error("The note is empty"));
     return llmChat({
-      model:defaultListenModel(),
+      model:defaultSubconsciousModel(),
       temperature:0.2,
       maxTokens:64,
-      fallbacks:["gpt-4o-mini",AGENT_GEMINI_LISTEN],
+      fallbacks:["gpt-4o-mini","gemini-2.5-flash",AGENT_GEMINI_SUBCONSCIOUS],
       messages:[
         {role:"system",content:"Create a concise, descriptive title for the user's note. Return only 1 to 6 words. Do not use quotation marks, markdown, or ending punctuation."},
         {role:"user",content:source}
@@ -4889,43 +4929,65 @@
     } else showToast(note.dueDate?"Added todo with due date":"Added note");
   }
   function agentModels(){
-    var extras=[];
-    if(runtimeApiKeys.gemini) extras.push(AGENT_GEMINI_LISTEN,"gemini-2.0-flash","gemini-2.5-pro","gemini-flash-latest");
-    extras=extras.concat(AGENT_FALLBACK_MODELS);
+    var extras=uniqueModelList((AGENT_MODEL_SETS.subconscious||[]).concat(AGENT_MODEL_SETS.conscious||[]).concat(AGENT_FALLBACK_MODELS)).filter(function(id){
+      if(!id) return false;
+      if(isGeminiModel(id)) return !!runtimeApiKeys.gemini;
+      return !!runtimeApiKeys.openai;
+    });
     if(agentModelCache) return Promise.resolve(agentModelCache);
+    return Promise.all([fetchOpenAIChatModels(),fetchGeminiChatModels()]).then(function(lists){
+      agentModelCache=uniqueModelList(extras.concat(lists[0]||[]).concat(lists[1]||[]));
+      return agentModelCache;
+    });
+  }
+  function fetchOpenAIChatModels(){
     var key=runtimeApiKeys.openai;
-    if(!key) return Promise.resolve(uniqueModelList(extras));
+    if(!key) return Promise.resolve([]);
     return fetch("https://api.openai.com/v1/models",{headers:{"Authorization":"Bearer "+key}}).then(function(response){
       if(!response.ok) throw new Error("Model list unavailable");
       return response.json();
     }).then(function(data){
-      var ids=(data&&data.data||[]).map(function(model){ return cleanText(model&&model.id); }).filter(isPickedChatModel);
-      agentModelCache=uniqueModelList(extras.concat(ids));
-      return agentModelCache;
-    }).catch(function(error){ console.warn("OpenAI model list unavailable:",error); return uniqueModelList(extras); });
+      return (data&&data.data||[]).map(function(model){ return cleanText(model&&model.id); }).filter(isPickedChatModel);
+    }).catch(function(error){ console.warn("OpenAI model list unavailable:",error); return []; });
+  }
+  function fetchGeminiChatModels(){
+    var key=runtimeApiKeys.gemini;
+    if(!key) return Promise.resolve([]);
+    return fetch("https://generativelanguage.googleapis.com/v1beta/models?pageSize=200&key="+encodeURIComponent(key)).then(function(response){
+      if(!response.ok) throw new Error("Gemini model list unavailable");
+      return response.json();
+    }).then(function(data){
+      return (data&&data.models||[]).map(function(model){
+        var methods=model&&model.supportedGenerationMethods||[];
+        if(methods.indexOf("generateContent")<0) return "";
+        return cleanText((model.name||"").replace(/^models\//,""));
+      }).filter(isPickedChatModel);
+    }).catch(function(error){ console.warn("Gemini model list unavailable:",error); return []; });
   }
   function isPickedChatModel(id){
     if(!id) return false;
     if(/\d{4}-\d{2}-\d{2}/.test(id)) return false;
-    if(/search-api|gpt-5-pro|chat-latest|realtime|audio|transcribe|embed|moderation|instruct|computer-use|sora|image|tts|whisper|dall-e|codex|chatgpt-|\bo[1-4]\b/i.test(id)) return false;
-    return /^(gpt-4o|gpt-4\.1|gpt-5|gemini)/i.test(id);
+    if(/realtime|audio|transcribe|embed|moderation|instruct|computer-use|sora|image|tts|whisper|dall-e|chatgpt-|search-preview|native-audio|live-|bidi|imagen|robotics/i.test(id)) return false;
+    return /^(o[1-4](-|$)|gpt-4o|gpt-4\.1|gpt-5|gemini)/i.test(id);
   }
   function modelLabel(id){ return AGENT_MODEL_LABELS[id]||id; }
   function modelsForRole(role,available){
-    var want=AGENT_MODEL_SETS[role]||AGENT_MODEL_SETS.work;
-    var have=available||[];
-    var out=[];
+    var mind=canonAgentRole(role);
+    var want=AGENT_MODEL_SETS[mind]||AGENT_MODEL_SETS.conscious;
+    var catalog=uniqueModelList((AGENT_MODEL_SETS.subconscious||[]).concat(AGENT_MODEL_SETS.conscious||[]).concat(available||[]));
+    var suggested=[], extra=[];
     want.forEach(function(id){
-      var gemini=/^gemini/i.test(id);
-      if(gemini&&!runtimeApiKeys.gemini) return;
-      if(!gemini&&!runtimeApiKeys.openai) return;
-      if(have.length&&have.indexOf(id)<0&&!gemini) return;
-      out.push(id);
+      if(isGeminiModel(id)&&!runtimeApiKeys.gemini) return;
+      if(!isGeminiModel(id)&&!runtimeApiKeys.openai) return;
+      suggested.push(id);
     });
-    have.forEach(function(id){
-      if(out.indexOf(id)<0&&isPickedChatModel(id)&&out.length<12) out.push(id);
+    catalog.forEach(function(id){
+      if(!id||suggested.indexOf(id)>=0||!isPickedChatModel(id)) return;
+      if(isGeminiModel(id)&&!runtimeApiKeys.gemini) return;
+      if(!isGeminiModel(id)&&!runtimeApiKeys.openai) return;
+      extra.push(id);
     });
-    return uniqueModelList(out);
+    return {suggested:uniqueModelList(suggested),extra:uniqueModelList(extra)};
   }
   function uniqueModelList(ids){
     var seen={}, out=[];
@@ -5222,8 +5284,8 @@
     if(!runtimeApiKeys.openai&&!runtimeApiKeys.gemini){ setCollabStatus("Add an OpenAI or Gemini API key in Settings → API keys.",true); return; }
     var targetItem=collabDocument(), targets=collabTargets(targetItem);
     var messages=collabApiMessages(agentItem,targetItem,targets), tools=collabTools(!!(targetItem&&targets.length)), turnProposals=[];
-    var role=opts.role==="complex"?"complex":"work";
-    collab.busy=true; updateCollabControls(); setCollabStatus(role==="complex"?"Working on the harder pass…":"Thinking…");
+    var role=canonAgentRole(opts.role||"conscious");
+    collab.busy=true; updateCollabControls(); setCollabStatus(role==="subconscious"?"Deciding whether to jump in…":"Thinking…");
     markCompanionState("thinking");
     var rounds=0, streamEntry=null, streamedText="";
     function onDelta(piece){
@@ -5412,14 +5474,14 @@
     var show=agentSettings().developerTrace;
     if(el){
       el.hidden=!show;
-      if(show) el.textContent=(decision.action||"?")+" · "+(decision.reason||"")+(decision.complexity?" · "+decision.complexity:"");
+      if(show) el.textContent=(decision.action||"?")+" · "+(decision.reason||"");
     }
     if(collab.host){
       var log=collab.host.querySelector(".collab-log");
       if(log&&show){
         var chip=document.createElement("div");
         chip.className="listen-chip "+(decision.action==="respond"?"respond":decision.action==="dictate_only"?"dictate":"keep");
-        chip.textContent="listen: "+(decision.action||"?")+(decision.reason?" — "+decision.reason:"");
+        chip.textContent="subconscious: "+(decision.action||"?")+(decision.reason?" — "+decision.reason:"");
         log.appendChild(chip); log.scrollTop=log.scrollHeight;
       }
     }
@@ -5553,23 +5615,21 @@
   function listenSystemPrompt(agentItem){
     var a=normalizeAgent(agentItem);
     return [
-      'You are the turn-taking mind of "'+a.name+'". You are fast, cheap, and not the one who writes the note.',
+      'You are the subconscious of "'+a.name+'". You never write the note and never talk to the owner.',
+      "Your only job is to decide whether the conscious mind should take this turn, or whether you should keep listening.",
       "The owner rambles, often for a long time, via speech-to-text or live audio. Pauses do not mean they are done.",
       "You may be listening to a live microphone. After each pause, output JSON only — no greeting, no markdown, no conversation.",
-      "Decide what should happen after this latest utterance.",
       "Return JSON only with keys:",
       'action: "keep_listening" | "respond" | "dictate_only"',
       "reason: short phrase",
-      'complexity: "small" | "normal" | "complex"',
-      "speak: true/false — whether the work model should talk out loud after acting",
+      "speak: true/false — whether the conscious model should talk out loud after acting",
       "read_back: true/false — whether to read the written note back",
       "compressed: cleaned-up version of what they said, keeping every point",
       "Rules:",
       "- keep_listening if the thought is incomplete, they are still listing, they said um/anyway/so, or they named you but have not finished.",
-      "- respond if they asked a question, addressed you by name with a request, said that's it / go / write that down, or clearly handed you work.",
+      "- respond if they asked a question, addressed you by name with a request, said that's it / go / write that down, or clearly handed you work. That passes the turn to the conscious model.",
       "- dictate_only if they are only dumping raw notes and do not want a reply yet.",
-      "- Prefer keep_listening when unsure.",
-      "- complexity complex means a long ramble that needs structuring, a Cursor prompt, or a multi-section rewrite."
+      "- Prefer keep_listening when unsure."
     ].join("\n");
   }
   function parseListenDecision(raw){
@@ -5583,7 +5643,6 @@
     return {
       action:action,
       reason:cleanText(parsed.reason)||(action==="keep_listening"?"still thinking":"ready"),
-      complexity:["small","normal","complex"].indexOf(parsed.complexity)>=0?parsed.complexity:"normal",
       speak:parsed.speak!==false,
       read_back:!!parsed.read_back,
       compressed:cleanText(parsed.compressed)
@@ -5595,9 +5654,9 @@
     var question=/[?]|(\b(can you|could you|would you|what if|how do|help me|jarvis)\b)/.test(text);
     var named=name&&text.indexOf(name)>=0;
     var incomplete=/\b(um+|uh+|so|anyway|and then|or maybe|wait|hold on)\b/.test(text)||/[,:]$/.test(text)||text.split(/\s+/).length<8;
-    if(done||((question||named)&&!incomplete)) return {action:"respond",reason:done?"they handed it over":"request detected",complexity:text.length>900?"complex":"normal",speak:true,read_back:false,compressed:buffer};
-    if(text.length>40&&!question&&!named) return {action:"dictate_only",reason:"sounds like dictation",complexity:"small",speak:false,read_back:false,compressed:buffer};
-    return {action:"keep_listening",reason:"incomplete thought",complexity:"small",speak:false,read_back:false,compressed:buffer};
+    if(done||((question||named)&&!incomplete)) return {action:"respond",reason:done?"they handed it over":"request detected",speak:true,read_back:false,compressed:buffer};
+    if(text.length>40&&!question&&!named) return {action:"dictate_only",reason:"sounds like dictation",speak:false,read_back:false,compressed:buffer};
+    return {action:"keep_listening",reason:"incomplete thought",speak:false,read_back:false,compressed:buffer};
   }
   function ingestVoiceUtterance(utterance,alreadyBuffered){
     var session=collab.voice; if(!session||!session.active) return "";
@@ -5631,7 +5690,7 @@
       return;
     }
     if(collab.busy){ collab.queuedUtterance=(collab.queuedUtterance?collab.queuedUtterance+"\n":"")+buffered; setVoiceStatus("Queued for when the current pass finishes"); return; }
-    agentTaskWrite(agentItem,decision.complexity==="complex"?"Structure this ramble":"Work on the note","running",decision.reason,agentModelForRole(agentItem,decision.complexity==="complex"?"complex":"work"));
+    agentTaskWrite(agentItem,"Work on the note","running",decision.reason,agentModelForRole(agentItem,"conscious"));
     handoffVoiceBuffer(decision.compressed||buffered,decision);
   }
   function considerVoiceTurn(utterance,alreadyBuffered){
@@ -5644,15 +5703,15 @@
     setVoiceStatus("Deciding whether to jump in…");
     var payload=[
       {role:"system",content:listenSystemPrompt(agentItem)},
-      {role:"user",content:"Latest utterance:\n"+text+"\n\nBuffered ramble so far:\n"+collab.voice.buffer.slice(-6000)+"\n\nAgent speaking: "+(!!collab.audio)+"\nWork model busy: "+!!collab.busy}
+      {role:"user",content:"Latest utterance:\n"+text+"\n\nBuffered ramble so far:\n"+collab.voice.buffer.slice(-6000)+"\n\nAgent speaking: "+(!!collab.audio)+"\nConscious model busy: "+!!collab.busy}
     ];
-    llmChat({model:agentModelForRole(agentItem,"listen"),messages:payload,json:true,temperature:0.1,maxTokens:220,fallbacks:agentFallbacks("listen",agentModelForRole(agentItem,"listen"))})
+    llmChat({model:agentModelForRole(agentItem,"subconscious"),messages:payload,json:true,temperature:0.1,maxTokens:220,fallbacks:agentFallbacks("subconscious",agentModelForRole(agentItem,"subconscious"))})
       .then(function(data){
         var message=data&&data.choices&&data.choices[0]&&data.choices[0].message;
         return parseListenDecision(message&&message.content);
       })
       .catch(function(error){
-        console.warn("Listen model failed, using heuristic:",error);
+        console.warn("Subconscious model failed, using heuristic:",error);
         return heuristicListenDecision(collab.voice.buffer,agentItem);
       })
       .then(function(decision){
@@ -5671,7 +5730,7 @@
     startCollabSession();
     pushCollabMessage("user",message);
     runCollabTurn({
-      role:decision&&decision.complexity==="complex"?"complex":"work",
+      role:"conscious",
       readBack:!!(decision&&decision.read_back)||a.readBack==="after_edits"||a.readBack==="always",
       forceSpeak:a.readBack==="never"?false:!(decision&&decision.speak===false)
     });
@@ -6044,7 +6103,7 @@
     var missing=[], warnings=[];
     if(!runtimeApiKeys.openai&&!runtimeApiKeys.gemini) missing.push(currentUser?"Add an OpenAI or Gemini API key in Settings → API keys.":"Sign in, then add an OpenAI or Gemini API key in Settings → API keys.");
     if(!runtimeApiKeys.elevenlabs) warnings.push("Add your ElevenLabs API key for spoken replies. Live listening can use Gemini or the browser without it.");
-    if(!runtimeApiKeys.gemini) warnings.push("A Gemini key turns on Live ears so listening never stops while it talks, and gives you the fast listen model.");
+    if(!runtimeApiKeys.gemini) warnings.push("A Gemini key turns on Live ears so listening never stops while it talks, and gives you a fast subconscious model.");
     return {missing:missing,warnings:warnings,ok:!missing.length};
   }
   function setCollabStatus(text,bad){
@@ -6165,7 +6224,7 @@
       collab.decisions.slice(-6).forEach(function(decision){
         var chip=document.createElement("div");
         chip.className="listen-chip "+(decision.action==="respond"?"respond":decision.action==="dictate_only"?"dictate":"keep");
-        chip.textContent="listen: "+(decision.action||"?")+(decision.reason?" — "+decision.reason:"");
+        chip.textContent="subconscious: "+(decision.action||"?")+(decision.reason?" — "+decision.reason:"");
         log.appendChild(chip);
       });
     }
@@ -6243,7 +6302,7 @@
     var avatar=$("collabAvatar"), name=$("collabName"), model=$("collabModel"), speak=$("collabSpeakBtn");
     if(avatar) avatar.textContent=(a?a.name:"A").trim().charAt(0).toUpperCase()||"A";
     if(name) name.textContent=a?a.name:"AI collaborator";
-    if(model) model.textContent=a?(a.listenModel+" → "+a.workModel+(a.complexModel&&a.complexModel!==a.workModel?" / "+a.complexModel:"")+(a.liveListen&&runtimeApiKeys.gemini?" · Live ears":"")):"No agent yet";
+    if(model) model.textContent=a?(agentMindSummary(a)+(a.liveListen&&runtimeApiKeys.gemini?" · Live ears":"")):"No agent yet";
     if(speak){
       var on=agentSettings().speakReplies;
       speak.classList.toggle("on",on);
@@ -7410,7 +7469,7 @@
     } else if(settingsPage==="voices"){
       content=settingsHeading("Voice",true)+'<p class="hint">Your saved, favorited, and added ElevenLabs voices appear here. Search by name or style, then choose one to use everywhere you listen in Second Brain.</p><div class="grp"><div class="srow"><div class="sl">Read chapter names aloud<small>Off by default. This controls both full-document and individual chapter Listen buttons.</small></div><button class="toggle" id="readChapterNamesToggle"><b></b></button></div></div><div class="agent-edit"><label>Voice<button class="voice-picker" id="elevenlabsVoicePicker" type="button" aria-expanded="false" disabled><span class="voice-picker-copy"><b>Loading voices…</b><small>Your saved ElevenLabs voices</small></span><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="m6 9 6 6 6-6"/></svg></button></label><div class="voice-picker-menu" id="elevenlabsVoiceMenu" hidden><input class="voice-search" id="elevenlabsVoiceSearch" type="search" autocomplete="off" placeholder="Search voices or styles"><div class="voice-options" id="elevenlabsVoiceOptions"></div></div><div id="customVoiceEntry" hidden><label>ElevenLabs Voice ID<input id="customElevenlabsVoiceId" type="text" autocomplete="off" placeholder="Paste a voice ID"></label><div class="btnrow"><button class="b2 primary" id="saveCustomVoiceBtn">Save to list &amp; select</button></div></div><p class="hint" id="voiceStatus">Loading your available voices…</p></div>';
     } else if(settingsPage==="collab"){
-      content=settingsHeading("AI collaborator",true)+'<p class="hint">Voice mode uses two models: a fast listen model that decides whether you are still rambling, and a work model that writes the note. Open a note first if you want it transcribed into a collapsible Transcribed audio group.</p><div class="agent-edit" id="collabSettings"></div>';
+      content=settingsHeading("AI collaborator",true)+'<p class="hint">Each agent has two minds: a subconscious that decides whether to keep listening or hand off, and a conscious that writes the note and talks with you. Open a note first if you want it transcribed into a collapsible Transcribed audio group.</p><div class="agent-edit" id="collabSettings"></div>';
     } else if(settingsPage==="manage"){
       content=settingsHeading("Manage",true)+'<p class="hint">Choose what appears under New and in a note’s Insert menu. Existing content is never removed when an option is turned off.</p><div class="grp"><div class="srow"><div class="sl">Notes<small>Flexible rich-text notes</small></div><button class="toggle" id="typeNote"><b></b></button></div><div class="srow"><div class="sl">YouTube Script<small>Chaptered note template</small></div><button class="toggle" id="typeScript"><b></b></button></div><div class="srow"><div class="sl">Audio<small>Record or upload audio clips</small></div><button class="toggle" id="typeAudio"><b></b></button></div><div class="srow"><div class="sl">Todos<small>A note with a completion checkbox</small></div><button class="toggle" id="typeTodo"><b></b></button></div><div class="srow"><div class="sl">Agent<small>AI collaborators you can talk to inside a note</small></div><button class="toggle" id="typeAgent"><b></b></button></div></div><div class="grp" id="moduleTypes"></div><div class="grp"><h4>Note insert menu</h4><div class="srow"><div class="sl">Photo, video, or file<small>Inline images and videos, plus any attachment</small></div><button class="toggle" id="insertFile"><b></b></button></div><div class="srow"><div class="sl">YouTube video<small>Paste a link and play it inside the note</small></div><button class="toggle" id="insertEmbed"><b></b></button></div><div class="srow"><div class="sl">Link with photo<small>A link card with your own picture, title, and summary</small></div><button class="toggle" id="insertLink"><b></b></button></div><div class="srow"><div class="sl">Paragraph<small>Rich text with bold, italic, and underline</small></div><button class="toggle" id="insertParagraph"><b></b></button></div><div class="srow"><div class="sl">Comment<small>A cue-style note to yourself</small></div><button class="toggle" id="insertComment"><b></b></button></div><div class="srow"><div class="sl">Prompt<small>A copy-ready prompt drafting box</small></div><button class="toggle" id="insertPrompt"><b></b></button></div><div class="srow"><div class="sl">Heading<small>Simple size picker when selected</small></div><button class="toggle" id="insertHeading"><b></b></button></div><div class="srow"><div class="sl">Chapter<small>Named section with its own Listen button</small></div><button class="toggle" id="insertChapter"><b></b></button></div><div class="srow"><div class="sl">Collapsible group<small>Hide supporting details until needed</small></div><button class="toggle" id="insertGroup"><b></b></button></div><div class="srow"><div class="sl">Code<small>Syntax-highlighted editor, preview, and run tools</small></div><button class="toggle" id="insertCode"><b></b></button></div></div>';
     } else { settingsPage="home"; renderSettingsPage(); return; }
@@ -7446,7 +7505,7 @@
     var readyList=document.createElement("ul"); readyList.className="agent-ready";
     [[!!currentUser,"Signed in — API keys and agents sync to your devices","Sign in from the sidebar so your API keys can sync here"],
      [!!runtimeApiKeys.openai||!!runtimeApiKeys.gemini,"A thinking key is set (OpenAI or Gemini)","Add an OpenAI or Gemini API key in Settings → API keys"],
-     [!!runtimeApiKeys.gemini,"Gemini key set — good for the fast listen model","Add a Gemini key if you want gemini-2.5-flash as the listener"],
+     [!!runtimeApiKeys.gemini,"Gemini key set — good for the subconscious model","Add a Gemini key if you want Gemini Flash as the subconscious"],
      [!!runtimeApiKeys.elevenlabs,"ElevenLabs key set — you can talk and it talks back","Add your ElevenLabs API key for spoken replies; listening can use the browser without it"],
      [!!agents.length,agents.length+" agent"+(agents.length===1?"":"s")+" available","Create an agent with New → Agent"]].forEach(function(row){
       var li=document.createElement("li"); li.className=row[0]?"":"todo"; li.textContent=row[0]?row[1]:row[2]; readyList.appendChild(li);
@@ -7461,7 +7520,7 @@
     } else {
       agents.forEach(function(agentItem){
         var a=normalizeAgent(agentItem), option=document.createElement("option");
-        option.value=agentItem.id; option.textContent=a.name+" · "+a.model;
+        option.value=agentItem.id; option.textContent=a.name+" · "+agentMindSummary(a);
         if(agentItem.id===(preferredAgent()||{}).id) option.selected=true;
         select.appendChild(option);
       });
@@ -7493,7 +7552,7 @@
     toggleRow("Ask before changing my text","When off, requested edits are applied automatically after a backup. Per-agent Edit permission can override this.","requireApproval");
     toggleRow("Back up before every session","Saves a restore point the moment a conversation starts and again before each Apply.","backupBeforeWork");
     toggleRow("Speak replies out loud","Uses this agent’s ElevenLabs voice. Turn off to read replies instead.","speakReplies");
-    toggleRow("Developer trace","Show the listen model’s keep-listening vs respond choices while you talk.","developerTrace");
+    toggleRow("Developer trace","Show the subconscious keep-listening vs respond choices while you talk.","developerTrace");
 
     var hidden=(state.items||[]).filter(function(item){ return item.hidden; });
     var hiddenBox=document.createElement("div"); hiddenBox.className="grp"; hiddenBox.style.margin="0";
@@ -7523,7 +7582,7 @@
       if(!s.defaultAgentId) s.defaultAgentId=agentItem.id;
       $("settingsModal").classList.remove("open");
       createItem(agentItem);
-      showToast("Agent created — set its model and voice in Edit");
+      showToast("Agent created — set its conscious and subconscious models in Edit");
     };
     row.appendChild(create);
     if(agents.length){
