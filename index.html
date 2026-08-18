@@ -694,7 +694,12 @@
   .agent-face-row{ display:flex; align-items:center; gap:12px; }
   .agent-face-preview{ width:64px; height:64px; border-radius:20px; flex:none; }
   .agent-face-actions{ display:flex; flex-wrap:wrap; gap:8px; }
-  .agent-hero h1{ margin:0; font-size:1.25rem; } .agent-hero p{ margin:3px 0 0; color:var(--ink-dim); font-size:.8rem; }
+  .agent-hero h1{ margin:0; font-size:1.25rem; } .agent-hero p{ margin:3px 0 0; color:var(--ink-dim); font-size:.8rem; line-height:1.45; }
+  .agent-hero-minds{ display:flex; flex-wrap:wrap; gap:6px; margin-top:8px; }
+  .mind-pill{ display:inline-flex; align-items:center; gap:6px; padding:4px 9px; border:1px solid var(--line); border-radius:999px; background:rgba(255,255,255,.04); color:var(--ink-dim); font:500 .68rem "DM Sans",sans-serif; }
+  .mind-pill b{ color:var(--ink); font-weight:600; }
+  .mind-pill.on{ border-color:var(--accent-line); background:var(--accent-soft); color:var(--accent); }
+  .mind-pill.on b{ color:var(--accent); }
   .agent-tabs{ display:flex; gap:6px; margin:16px 0; border-bottom:1px solid var(--line); }
   .agent-tabs button{ padding:9px 12px; border:0; border-bottom:2px solid transparent; color:var(--ink-dim); background:transparent; cursor:pointer; font:500 .82rem "DM Sans",sans-serif; }
   .agent-tabs button.on{ color:var(--ink); border-color:var(--accent); }
@@ -725,8 +730,9 @@
   .usage-section .hint{ margin:10px 0 0; }
   .usage-providers{ display:flex; flex-wrap:wrap; gap:10px 14px; margin-top:12px; }
   .usage-providers a{ color:var(--accent); font-size:.78rem; }
-  .agent-stats{ display:grid; gap:9px; grid-template-columns:repeat(auto-fit,minmax(112px,1fr)); }
-  .agent-stat{ padding:10px 12px; border:1px solid var(--line); border-radius:12px; background:rgba(255,255,255,.03); }
+  .agent-stats{ display:grid; gap:8px; grid-template-columns:repeat(3,minmax(0,1fr)); }
+  @media (max-width:520px){ .agent-stats{ grid-template-columns:repeat(2,minmax(0,1fr)); } }
+  .agent-stat{ padding:8px 10px; border:1px solid var(--line); border-radius:12px; background:rgba(255,255,255,.03); }
   .agent-stat b{ display:block; font-size:1.02rem; }
   .agent-stat small{ display:block; margin-top:2px; color:var(--ink-faint); font:400 .61rem "DM Mono",monospace; letter-spacing:.1em; text-transform:uppercase; }
   .usage-log{ display:grid; gap:7px; margin:0; padding:0; list-style:none; }
@@ -734,7 +740,7 @@
   .usage-log li span{ color:var(--ink-dim); } .usage-log li b{ font:500 .72rem "DM Mono",monospace; color:var(--ink); }
   .usage-log li small{ grid-column:1 / -1; color:var(--ink-faint); font:400 .64rem "DM Mono",monospace; }
   .agent-ready{ display:grid; gap:7px; margin:0; padding:0; list-style:none; }
-  .agent-ready li{ display:flex; align-items:flex-start; gap:8px; font-size:.79rem; line-height:1.5; color:var(--ink-dim); }
+  .agent-ready li{ display:flex; align-items:flex-start; gap:8px; font-size:.79rem; line-height:1.45; color:var(--ink-dim); overflow-wrap:anywhere; }
   .agent-ready li::before{ content:"✓"; flex:none; margin-top:1px; width:15px; color:#34d399; font-weight:700; }
   .agent-ready li.todo{ color:var(--ink); } .agent-ready li.todo::before{ content:"!"; color:#fbbf24; }
 
@@ -751,7 +757,7 @@
   .collab-head .agent-avatar{ width:34px; height:34px; border-radius:11px; font-size:.84rem; }
   .collab-id{ flex:1; min-width:0; }
   .collab-id b{ display:block; font-size:.88rem; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
-  .collab-id small{ display:block; margin-top:1px; color:var(--ink-faint); font:400 .64rem "DM Mono",monospace; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+  .collab-id small{ display:block; margin-top:1px; color:var(--ink-faint); font:400 .64rem "DM Sans",sans-serif; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
   .collab-head button{ flex:none; width:32px; height:32px; display:grid; place-items:center; padding:0; border:1px solid var(--line); border-radius:10px; background:rgba(255,255,255,.04); color:var(--ink-dim); cursor:pointer; }
   .collab-head button:hover{ color:var(--ink); background:rgba(255,255,255,.09); }
   .collab-head button.on{ color:var(--accent); border-color:var(--accent-line); background:var(--accent-soft); }
@@ -815,6 +821,13 @@
   .voice-choice-copy{ min-width:0; display:grid; gap:2px; } .voice-choice-copy b{ overflow:hidden; text-overflow:ellipsis; white-space:nowrap; font-size:.84rem; } .voice-choice-copy small{ overflow:hidden; text-overflow:ellipsis; white-space:nowrap; color:var(--ink-faint); font:400 .68rem "DM Mono",monospace; }
   .voice-choice-mark{ flex:none; color:var(--accent); font-size:.68rem; font-weight:700; } .voice-choice.custom .voice-choice-mark{ color:var(--ink-dim); font-size:1rem; }
   .voice-empty{ padding:18px 10px; color:var(--ink-faint); text-align:center; font-size:.78rem; }
+  .agent-voice-tools{ display:grid; gap:8px; width:100%; text-align:left; }
+  .voice-stage .agent-voice-tools{ width:min(100%,440px); }
+  .agent-voice-tools .voice-row{ display:flex; gap:8px; align-items:stretch; }
+  .agent-voice-tools .voice-row .voice-picker{ flex:1; min-width:0; }
+  .agent-voice-tools .voice-preview{ flex:none; height:auto; padding:0 14px; }
+  .agent-voice-custom{ display:grid; gap:8px; }
+  .agent-voice-custom[hidden]{ display:none; }
 
   /* ---------- Voice stage ----------
      A quiet full-screen presence. The default look is a talking orb / face;
@@ -839,6 +852,10 @@
   .voice-overlay-name{ display:inline-block; margin:0; padding:0; border:0; background:transparent; color:var(--ink); font:600 1.2rem "DM Sans",sans-serif; letter-spacing:.01em; text-shadow:0 8px 28px rgba(0,0,0,.45); cursor:pointer; }
   .voice-overlay-name:hover{ color:var(--accent); }
   .voice-overlay-status{ margin-top:6px; min-height:1.2em; color:var(--ink-dim); font:400 .88rem "DM Sans",sans-serif; }
+  .voice-overlay-mind{ display:inline-flex; align-items:center; gap:6px; margin-top:8px; padding:4px 10px; border:1px solid var(--line); border-radius:999px; background:rgba(0,0,0,.35); color:var(--ink-dim); font:500 .68rem "DM Sans",sans-serif; }
+  .voice-overlay-mind b{ color:var(--ink); font-weight:600; }
+  .voice-overlay.is-thinking .voice-overlay-mind,.voice-overlay.is-speaking .voice-overlay-mind{ border-color:var(--accent-line); color:var(--accent); }
+  .voice-overlay.is-thinking .voice-overlay-mind b,.voice-overlay.is-speaking .voice-overlay-mind b{ color:var(--accent); }
   .voice-overlay-link{ margin-top:4px; min-height:1em; color:var(--voice-accent,var(--accent)); font:400 .68rem "DM Sans",sans-serif; opacity:.7; }
   .voice-overlay-link:empty{ display:none; }
   .voice-overlay-transcript{ max-width:min(720px,92vw); max-height:22vh; overflow:auto; margin:14px 0 8px; padding:12px 16px;
@@ -978,12 +995,13 @@
   @keyframes auroraDrift{ from{ transform:translate(-4%,-2%) rotate(-4deg); } to{ transform:translate(5%,3%) rotate(5deg); } }
 
   .voice-look-grid{ display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:8px; }
-  .voice-look-card{ display:grid; gap:6px; padding:8px; border:1px solid var(--line); border-radius:14px; background:rgba(255,255,255,.03);
-    color:var(--ink); text-align:left; cursor:pointer; }
+  .voice-look-card{ display:grid; gap:5px; padding:8px; border:1px solid var(--line); border-radius:14px; background:rgba(255,255,255,.03);
+    color:var(--ink); text-align:left; cursor:pointer; min-width:0; }
   .voice-look-card.on{ border-color:var(--accent-line); box-shadow:0 0 0 3px var(--accent-soft); }
   .voice-look-card b{ font:600 .78rem "DM Sans",sans-serif; }
-  .voice-look-card small{ color:var(--ink-faint); font:400 .64rem "DM Sans",sans-serif; line-height:1.35; }
+  .voice-look-card small{ color:var(--ink-faint); font:400 .64rem "DM Sans",sans-serif; line-height:1.35; display:-webkit-box; -webkit-line-clamp:2; -webkit-box-orient:vertical; overflow:hidden; }
   .look-mini{ display:block; height:72px; border-radius:10px; background:#07070c; position:relative; overflow:hidden; }
+  @media (max-width:560px){ .look-mini{ height:54px; } .voice-look-card{ padding:7px; } }
   .look-mini-jarvis{ background:radial-gradient(circle at 50% 50%, var(--accent) 0 6%, transparent 7%), conic-gradient(from 200deg, transparent 70%, var(--accent) 88%, transparent 100%), #07070c; }
   .look-mini-jarvis::after{ content:""; position:absolute; inset:10px; border:1px solid var(--accent); border-radius:50%; opacity:.6; }
   .look-mini-iris{ background:radial-gradient(circle at 50% 50%, #fff 0 4%, var(--accent) 10%, #07070c 28%); }
@@ -1228,6 +1246,7 @@
     <div class="voice-overlay-copy">
       <button type="button" class="voice-overlay-name" id="voiceOverlayName" title="Customize this agent">Assistant</button>
       <div class="voice-overlay-status" id="voiceOverlayStatus" role="status" aria-live="polite">Listening</div>
+      <div class="voice-overlay-mind" id="voiceOverlayMind">Subconscious · listening</div>
       <div class="voice-overlay-link" id="voiceOverlayLink"></div>
     </div>
     <div class="voice-overlay-transcript" id="voiceOverlayTranscript"></div>
@@ -1301,7 +1320,7 @@
   /* =================== storage =================== */
   var KEY="astral-notes-v5", OLDS=["astral-notes-v4","astral-notes-v3"], CFGKEY="astral-fb-config", BACKUP_KEY="second-brain-auto-backups-v1", DOCUMENT_BACKUP_KEY="second-brain-document-backups-v1", DOCUMENT_BACKUP_ACTIVITY_KEY="second-brain-document-backup-activity-v1", BACKUP_LIMIT=10, DOCUMENT_BACKUP_LIMIT=25, AUTO_BACKUP_COOLDOWN=60*60*1000, DOCUMENT_AUTO_BACKUP_EDIT_LIMIT=20, DOCUMENT_AUTO_BACKUP_CHAR_LIMIT=750, DOCUMENT_AUTO_BACKUP_MAX_WAIT=15*60*1000, mem=null;
   var deviceBackups=[], documentBackups={}, documentBackupActivity={}, attachmentDbPromise=null, activeNoteTextBlock=null, draggedNoteBlock=null, activeAttachmentUploads={}, activeAudioRecorder=null;
-  var DEFAULT_ELEVENLABS_VOICE="21m00Tcm4TlvDq8ikWAM", CUSTOM_VOICE_OPTION="__elevenlabs_voice_id__";
+  var DEFAULT_ELEVENLABS_VOICE="21m00Tcm4TlvDq8ikWAM", CUSTOM_VOICE_OPTION="__elevenlabs_voice_id__", APP_VOICE_OPTION="__app_voice__";
   var runtimeApiKeys={openai:"",gemini:"",elevenlabs:"",elevenlabsVoice:DEFAULT_ELEVENLABS_VOICE,savedVoices:[],audio:null,audioUrl:null,ttsControl:null,ttsRequestId:0};
   /* AI collaborator limits. Transcripts ride along in the synced state document,
      so they are capped hard in both directions. */
@@ -1315,20 +1334,20 @@
   var AGENT_GEMINI_LIVE_WS="wss://generativelanguage.googleapis.com/ws/google.ai.generativelanguage.v1beta.GenerativeService.BidiGenerateContent";
   var AGENT_VOICE_STYLE_ALIASES={hud:"jarvis",pulse:"core",orb:"core",rings:"nova",halo:"radial"};
   var AGENT_VOICE_STYLES=[
-    {id:"face",name:"Face",hint:"A calm talking orb — add a photo in Identity if you want a real face"},
-    {id:"jarvis",name:"Jarvis HUD",hint:"Radar sweep, tick ring, live core — made for YouTube"},
-    {id:"iris",name:"Iris",hint:"An eye that opens when it listens and tightens when it talks"},
-    {id:"core",name:"Reactor core",hint:"Molten center with orbiting sparks"},
-    {id:"nova",name:"Nova",hint:"Shockwaves out from a white-hot center"},
-    {id:"radial",name:"Halo EQ",hint:"A ring of bars around the core, driven by your voice"},
-    {id:"plasma",name:"Plasma",hint:"Liquid light that pools and splits"},
-    {id:"constellation",name:"Constellation",hint:"Stars that connect when you speak"},
-    {id:"hex",name:"Hex grid",hint:"Tactical mesh with a traveling pulse"},
-    {id:"beam",name:"Light column",hint:"Hologram projector / tractor beam"},
-    {id:"aurora",name:"Aurora",hint:"Full-screen color wash"},
-    {id:"waveform",name:"Waveform",hint:"Classic bars that follow your voice"},
-    {id:"cinema",name:"Cinema lamp",hint:"Near-black frame with one growing lamp"},
-    {id:"companion",name:"Dock companion",hint:"Tiny face; the note stays fully visible"}
+    {id:"face",name:"Face",hint:"Talking orb. Add a photo in Identity for a real face."},
+    {id:"jarvis",name:"Jarvis HUD",hint:"Radar sweep and live core."},
+    {id:"iris",name:"Iris",hint:"An eye that opens as it listens."},
+    {id:"core",name:"Reactor core",hint:"Molten center with orbiting sparks."},
+    {id:"nova",name:"Nova",hint:"Shockwaves from a white-hot center."},
+    {id:"radial",name:"Halo EQ",hint:"A ring of bars driven by your voice."},
+    {id:"plasma",name:"Plasma",hint:"Liquid light that pools and splits."},
+    {id:"constellation",name:"Constellation",hint:"Stars that connect when you speak."},
+    {id:"hex",name:"Hex grid",hint:"Tactical mesh with a traveling pulse."},
+    {id:"beam",name:"Light column",hint:"Hologram projector beam."},
+    {id:"aurora",name:"Aurora",hint:"Full-screen color wash."},
+    {id:"waveform",name:"Waveform",hint:"Classic bars that follow your voice."},
+    {id:"cinema",name:"Cinema lamp",hint:"Near-black frame, one growing lamp."},
+    {id:"companion",name:"Dock companion",hint:"Tiny face; the note stays visible."}
   ];
   var AGENT_MODEL_LABELS={
     "gemini-3.7-flash":"Gemini 3.7 Flash","gemini-3.6-flash":"Gemini 3.6 Flash","gemini-3.5-flash":"Gemini 3.5 Flash",
@@ -1357,7 +1376,7 @@
   var COLLAB_HISTORY_LIMIT=24, COLLAB_MESSAGE_LIMIT=4000, COLLAB_CONTEXT_LIMIT=24000, COLLAB_PROPOSAL_CONTEXT_LIMIT=12000, COLLAB_TOOL_ROUNDS=8, COLLAB_SPEECH_CHUNK_LIMIT=2400;
   var LLM_REQUEST_MS=28000, LLM_STREAM_IDLE_MS=18000, LLM_DEFAULT_COMPLETION_TOKENS=4096;
   var TRANSCRIPT_GROUP_TITLE="Transcribed audio";
-  var AGENT_DEFAULT_INSTRUCTIONS="You are a personal assistant inside Second Brain Notes.\nThe owner often rambles through speech-to-text, sometimes for a long stretch. Clean that up without losing meaning, and never mock filler words.\nThey use Cursor for coding. Help them draft prompts, plans, and notes they can paste there.\nSearch their notes when they ask you to find something. Tick todos done, add new todos, and open a note when you need to work in it.\nCreate notes, todos, YouTube scripts, workouts, audio items, code files, and other types when asked. Put Cursor prompts in prompt blocks — never flatten them into ordinary paragraphs. Use headings, chapters, comments, groups, code, embeds, and links when those fit.\nKnow your own name and answer to it. Be direct, warm, and useful — more like a collaborator than a chatbot.\nWhen a session starts, offer to help. Ask one short question if you need a target; otherwise start working.";
+  var AGENT_DEFAULT_INSTRUCTIONS="You are a personal assistant inside Second Brain Notes. The owner often calls you Jarvis.\nThe owner often rambles through speech-to-text. Clean that up without losing meaning, and never mock filler words.\nThey use Cursor for coding. Help them draft prompts, plans, and notes they can paste there.\nBe useful first: search notes, tick todos, create items, and remember lasting facts without being asked twice.\nPut Cursor prompts in prompt blocks — never flatten them into ordinary paragraphs. Use headings, chapters, comments, groups, code, embeds, and links when those fit.\nKnow your own name and answer to Jarvis, assistant, or hey you. Be direct, warm, and useful — more like a collaborator than a chatbot.\nWhen a session starts, offer to help. Ask one short question if you need a target; otherwise start working.";
   var AGENT_DEFAULT_GREETING="What can I help you with today?";
   var canPersist=(function(){ try{ localStorage.setItem("__t","1"); localStorage.removeItem("__t"); return true; }catch(e){ return false; } })();
   function readKey(k){ if(canPersist){ try{ return JSON.parse(localStorage.getItem(k)); }catch(e){} } return null; }
@@ -3714,7 +3733,25 @@
     wrap.appendChild(summary); wrap.appendChild(list); return wrap;
   }
   function agentMindSummary(a){
-    return modelLabel(a.subconsciousModel||a.listenModel)+" → "+modelLabel(a.consciousModel||a.workModel||a.model);
+    return modelLabel(a.subconsciousModel||a.listenModel)+" listens · "+modelLabel(a.consciousModel||a.workModel||a.model)+" talks";
+  }
+  function currentAgentMind(){
+    if(talkingNow()||(collab.voice&&(collab.audio||collab.speakBufferSource))) return "conscious";
+    if(collab.busy) return "conscious";
+    if(collab.voice&&collab.voice.listenBusy) return "subconscious";
+    if(collab.voice&&collab.voice.active) return "subconscious";
+    return "";
+  }
+  function paintVoiceMind(){
+    var el=$("voiceOverlayMind"); if(!el) return;
+    var agentItem=collabAgent(), a=agentItem?normalizeAgent(agentItem):null;
+    var mind=currentAgentMind();
+    var sub=a?modelLabel(a.subconsciousModel||a.listenModel):"Subconscious";
+    var con=a?modelLabel(a.consciousModel||a.workModel||a.model):"Conscious";
+    if(mind==="conscious") el.innerHTML="Conscious · <b>"+con+"</b>";
+    else if(mind==="subconscious") el.innerHTML="Subconscious · <b>"+sub+"</b>";
+    else el.innerHTML="Subconscious · <b>"+sub+"</b>";
+    el.hidden=false;
   }
   function agentMetaText(it){
     var a=normalizeAgent(it), bits=[agentMindSummary(a)];
@@ -3740,7 +3777,15 @@
     hero.querySelector("h1").textContent=a.name;
     var ready=collabReadiness();
     if(a.accentColor) hero.style.setProperty("--agent-accent",a.accentColor);
-    hero.querySelector("p").textContent=ready.ok?(agentMindSummary(a)+" · "+(a.animationStyle||"face")+" · "+agentStatLabel(a.stats.messages)+" messages"):"Needs setup — see the Edit tab";
+    var lookName=(AGENT_VOICE_STYLES.filter(function(style){ return style.id===a.animationStyle; })[0]||{}).name||"Face";
+    hero.querySelector("p").textContent=ready.ok?(lookName+(a.stats.messages?" · "+agentStatLabel(a.stats.messages)+" messages":"")):"Needs setup — see the Edit tab";
+    var mindRow=document.createElement("div"); mindRow.className="agent-hero-minds";
+    var subPill=document.createElement("span"); subPill.className="mind-pill"+(currentAgentMind()==="subconscious"?" on":"");
+    subPill.innerHTML="Subconscious <b>"+modelLabel(a.subconsciousModel||a.listenModel)+"</b>";
+    var conPill=document.createElement("span"); conPill.className="mind-pill"+(currentAgentMind()==="conscious"?" on":"");
+    conPill.innerHTML="Conscious <b>"+modelLabel(a.consciousModel||a.workModel||a.model)+"</b>";
+    mindRow.appendChild(subPill); mindRow.appendChild(conPill);
+    hero.querySelector("div:last-child").appendChild(mindRow);
     wrap.appendChild(hero);
     var tabs=document.createElement("div"); tabs.className="agent-tabs";
     [ ["chat","Chat"], ["voice","Voice"], ["mind","Mind"], ["edit","Edit"] ].forEach(function(tab){
@@ -3776,8 +3821,9 @@
       var copy=document.createElement("div");
       var heading=document.createElement("b"); heading.textContent="Live voice with "+a.name;
       var detail=document.createElement("p");
-      detail.textContent="Talking uses this look. Face is a quiet orb; add a photo on Edit if you want a real face.";
+      detail.textContent="Pick a spoken voice just for this agent, then a look. Face is a quiet orb; add a photo on Edit for a real face.";
       copy.appendChild(heading); copy.appendChild(detail); stage.appendChild(copy);
+      stage.appendChild(mountAgentVoicePicker(it));
       var lookWrap=document.createElement("div"); lookWrap.style.margin="12px 0 18px";
       lookWrap.appendChild(buildVoiceLookGrid(a,it,function(style){ buildVoiceArt(style.id,preview,a); }));
       stage.appendChild(lookWrap);
@@ -3806,7 +3852,7 @@
         var pre=document.createElement("pre"); pre.textContent=body||"(empty)"; block.appendChild(pre);
         mind.appendChild(block);
       }
-      mindBlock("Now",(collab.voice&&collab.voice.active?"Listening":"Idle")+(collab.voice&&collab.voice.live&&collab.voice.live.ready?" · Live ears":"")+(collab.busy?" · conscious model running":"")+(collab.decisions.length?" · last: "+collab.decisions[collab.decisions.length-1].action:""));
+      mindBlock("Now",(collab.voice&&collab.voice.active?"Listening":"Idle")+(currentAgentMind()==="conscious"?" · conscious ("+modelLabel(a.consciousModel)+") working":currentAgentMind()==="subconscious"?" · subconscious ("+modelLabel(a.subconsciousModel)+") listening":"")+(collab.voice&&collab.voice.live&&collab.voice.live.ready?" · Live ears":"")+(collab.decisions.length?" · last: "+collab.decisions[collab.decisions.length-1].action:""));
       mindBlock("Tasks",(a.tasks||[]).map(function(task){ return "["+task.status+"] "+task.title+(task.detail?" — "+task.detail:""); }).join("\n")||"No tasks yet. Voice sessions and the conscious model add them here.");
       mindBlock("Long-term memory",a.longTermMemory);
       mindBlock("Short-term memory",a.shortTermMemory);
@@ -3913,8 +3959,8 @@
       var readyList=document.createElement("ul"); readyList.className="agent-ready";
       [[!!currentUser,"Signed in, so keys and agents sync across your devices"],
        [!!runtimeApiKeys.openai||!!runtimeApiKeys.gemini,"A thinking key is set (OpenAI or Gemini)"],
-       [!!runtimeApiKeys.gemini,"Gemini key set — recommended for the subconscious model"],
-       [!!runtimeApiKeys.elevenlabs,"ElevenLabs key set — spoken replies work"],
+       [!!runtimeApiKeys.gemini,"Gemini key set — optional, for Live ears and Gemini models"],
+       [!!runtimeApiKeys.elevenlabs,"ElevenLabs key set — this agent can have its own spoken voice"],
        [agentSettings().defaultAgentId===it.id,"Set as the agent the microphone opens"]].forEach(function(pair){
         var li=document.createElement("li"); li.className=pair[0]?"":"todo"; li.textContent=pair[1]; readyList.appendChild(li);
       });
@@ -3975,16 +4021,16 @@
       var mindGrid=document.createElement("div"); mindGrid.className="agent-edit-minds";
       var subCard=document.createElement("div"); subCard.className="agent-edit-mind";
       var subTitle=document.createElement("h4"); subTitle.textContent="Subconscious"; subCard.appendChild(subTitle);
-      var subHint=document.createElement("p"); subHint.textContent="Fast gatekeeper. Gemini Flash is a good default."; subCard.appendChild(subHint);
+      var subHint=document.createElement("p"); subHint.textContent="Listens and decides when to jump in. Fast models are best here."; subCard.appendChild(subHint);
       modelPickerOn(subCard,"Model","subconsciousModel");
-      var silenceLabel=labelOn(subCard,"Pause before a decision"), silenceRow=document.createElement("div"); silenceRow.className="range-pair";
+      var silenceLabel=labelOn(subCard,"Wait after you pause"), silenceRow=document.createElement("div"); silenceRow.className="range-pair";
       var silence=document.createElement("input"); silence.type="range"; silence.min="400"; silence.max="4000"; silence.step="100"; silence.value=String(a.silenceMs);
       var silenceOut=document.createElement("output"); silenceOut.textContent=(a.silenceMs/1000).toFixed(1)+"s";
       silence.oninput=function(){ a.silenceMs=Number(silence.value); silenceOut.textContent=(a.silenceMs/1000).toFixed(1)+"s"; it.updated=Date.now(); save(); };
       silenceRow.appendChild(silence); silenceRow.appendChild(silenceOut); silenceLabel.appendChild(silenceRow);
       var conCard=document.createElement("div"); conCard.className="agent-edit-mind";
       var conTitle=document.createElement("h4"); conTitle.textContent="Conscious"; conCard.appendChild(conTitle);
-      var conHint=document.createElement("p"); conHint.textContent="Writes, searches, and uses tools. GPT-5.6 Terra is a good default."; conCard.appendChild(conHint);
+      var conHint=document.createElement("p"); conHint.textContent="Talks, writes notes, searches, and uses tools."; conCard.appendChild(conHint);
       modelPickerOn(conCard,"Model","consciousModel");
       var tempLabel=labelOn(conCard,"Creativity"), tempRow=document.createElement("div"); tempRow.className="range-pair";
       var temp=document.createElement("input"); temp.type="range"; temp.min="0"; temp.max="1.4"; temp.step="0.1"; temp.value=String(a.temperature);
@@ -3993,25 +4039,8 @@
       tempRow.appendChild(temp); tempRow.appendChild(tempOut); tempLabel.appendChild(tempRow);
       mindGrid.appendChild(subCard); mindGrid.appendChild(conCard); minds.appendChild(mindGrid);
 
-      var voice=section("Voice & presence");
-      var voiceLabel=labelOn(voice,"Spoken voice"), voiceSelect=document.createElement("select");
-      function fillVoices(){
-        voiceSelect.innerHTML="";
-        var shared=document.createElement("option"); shared.value=""; shared.textContent="Use the app’s voice (Settings → Voice)";
-        voiceSelect.appendChild(shared);
-        getVoiceChoices(runtimeApiKeys.savedVoices,a.voiceId).choices.forEach(function(choice){
-          if(choice.id===CUSTOM_VOICE_OPTION) return;
-          var option=document.createElement("option"); option.value=choice.id; option.textContent=choice.name;
-          voiceSelect.appendChild(option);
-        });
-        voiceSelect.value=a.voiceId||"";
-      }
-      fillVoices();
-      voiceSelect.onchange=function(){ a.voiceId=voiceSelect.value; it.updated=Date.now(); save(); };
-      voiceLabel.appendChild(voiceSelect);
-      var voiceHint=document.createElement("small");
-      voiceHint.textContent=runtimeApiKeys.elevenlabs?"Saved ElevenLabs voices are loaded in Settings → Voice.":"Add an ElevenLabs key to use any voice.";
-      voiceLabel.appendChild(voiceHint);
+      var voice=section("Voice & presence","This agent’s spoken voice is separate from Settings → Voice, which is used for chapter Listen.");
+      voice.appendChild(mountAgentVoicePicker(it));
       var lookLabel=labelOn(voice,"How it looks when talking to you");
       var lookHint=document.createElement("small");
       lookHint.textContent=(AGENT_VOICE_STYLES.filter(function(style){ return style.id===a.animationStyle; })[0]||AGENT_VOICE_STYLES[0]).hint;
@@ -5004,8 +5033,18 @@
   function collabSystemPrompt(agentItem,targetItem,targets){
     var a=normalizeAgent(agentItem), lines=[], approval=agentRequiresApproval(agentItem);
     lines.push('You are "'+a.name+'", the conscious mind of an AI collaborator inside Second Brain Notes. A faster subconscious may have already decided this turn is yours. You are talking with the app\'s owner, often by voice, sometimes for a long ramble.');
+    lines.push("Also answer to Jarvis, assistant, and hey you, even if your display name is different.");
     lines.push("Response style: "+a.responseStyle+".");
     lines.push("The owner uses Cursor for coding. When they ask for help writing software, a prompt, a plan, or a spec, draft something they can paste into Cursor. Do not pretend you are running in Cursor yourself.");
+    lines.push("");
+    lines.push("RIGHT NOW");
+    try{ lines.push("Local time: "+new Date().toLocaleString([], {weekday:"short",month:"short",day:"numeric",hour:"numeric",minute:"2-digit"})); }catch(e){}
+    var snapshot=listTodosForAgent("open").slice(0,6);
+    if(snapshot.length){
+      lines.push("Open todos:");
+      snapshot.forEach(function(todo){ lines.push("- "+todo.title+(todo.due_label?" · due "+todo.due_label:"")+(todo.overdue?" (overdue)":"")); });
+    } else lines.push("No open todos.");
+    lines.push("Notes in the workspace: "+noteCatalog(false).length+".");
     lines.push("");
     lines.push("HOW YOU WORK");
     lines.push(approval
@@ -5033,6 +5072,8 @@
     lines.push("- Write proposed text in the user's own voice and formatting. Do not introduce styling the document does not already use.");
     lines.push("- Voice transcripts contain filler and misheard words. Read past them for intent and never quote the transcript back unless they ask.");
     lines.push("- If a request is ambiguous, ask one short question instead of guessing at a large rewrite.");
+    lines.push("- If they tell you a lasting preference, a name, a project, or a fact to keep, call remember with scope long. Do not wait to be asked.");
+    lines.push("- Prefer doing the work (search, todo, note) over explaining how you could do it.");
     if(targetItem&&targets.length){
       lines.push("");
       lines.push("EDITING RULES");
@@ -6660,6 +6701,7 @@
   function setVoiceStatus(text){
     var el=$("voiceOverlayStatus"); if(el) el.textContent=text||"";
     setCollabStatus(text||"");
+    paintVoiceMind();
   }
   function setVoiceLink(text){
     var el=$("voiceOverlayLink"); if(!el) return;
@@ -6700,6 +6742,8 @@
     }
     var editor=canvas.querySelector(".note-editor");
     if(editor) editor.classList.toggle("agent-writing",mode==="writing");
+    paintVoiceMind();
+    refreshCollabChrome();
   }
   function voiceArtPieces(count,cls){
     var html="";
@@ -6803,6 +6847,7 @@
     }
     var micBtn=$("voiceOverlayMic");
     if(micBtn){ micBtn.innerHTML=ICON_STOPSQ; }
+    paintVoiceMind();
   }
   function hideVoiceStage(){
     var overlay=$("voiceOverlay"), companion=$("voiceCompanion");
@@ -7572,7 +7617,7 @@
     var avatar=$("collabAvatar"), name=$("collabName"), model=$("collabModel"), speak=$("collabSpeakBtn");
     if(avatar) paintAgentAvatar(avatar, a);
     if(name) name.textContent=a?a.name:"AI collaborator";
-    if(model) model.textContent=a?(agentMindSummary(a)+(a.liveListen&&runtimeApiKeys.gemini?" · Live ears":"")):"No agent yet";
+    if(model) model.textContent=a?(agentMindSummary(a)+(currentAgentMind()==="conscious"?" · conscious now":currentAgentMind()==="subconscious"?" · subconscious now":"")+(a.liveListen&&runtimeApiKeys.gemini?" · Live ears":"")):"No agent yet";
     if(speak){
       var on=agentSettings().speakReplies;
       speak.classList.toggle("on",on);
@@ -8745,7 +8790,7 @@
     } else if(settingsPage==="keys"){
       content=settingsHeading("API keys",true)+'<p class="hint">Keys sync automatically to your signed-in account, so they are ready on your other signed-in devices. There is no separate vault passphrase to create or remember.</p><div class="agent-edit"><label>OpenAI (ChatGPT) API key<input id="openaiKey" type="password" autocomplete="off" placeholder="sk-…" disabled></label><label>Gemini API key<input id="geminiKey" type="password" autocomplete="off" placeholder="AIza…" disabled></label><label>ElevenLabs API key<input id="elevenlabsKey" type="password" autocomplete="off" placeholder="Your ElevenLabs key" disabled></label><p class="hint" id="apiKeyStatus">Sign in to add API keys.</p></div>';
     } else if(settingsPage==="voices"){
-      content=settingsHeading("Voice",true)+'<p class="hint">Your saved, favorited, and added ElevenLabs voices appear here. Search by name or style, then choose one to use everywhere you listen in Second Brain.</p><div class="grp"><div class="srow"><div class="sl">Read chapter names aloud<small>Off by default. This controls both full-document and individual chapter Listen buttons.</small></div><button class="toggle" id="readChapterNamesToggle"><b></b></button></div></div><div class="agent-edit"><label>Voice<button class="voice-picker" id="elevenlabsVoicePicker" type="button" aria-expanded="false" disabled><span class="voice-picker-copy"><b>Loading voices…</b><small>Your saved ElevenLabs voices</small></span><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="m6 9 6 6 6-6"/></svg></button></label><div class="voice-picker-menu" id="elevenlabsVoiceMenu" hidden><input class="voice-search" id="elevenlabsVoiceSearch" type="search" autocomplete="off" placeholder="Search voices or styles"><div class="voice-options" id="elevenlabsVoiceOptions"></div></div><div id="customVoiceEntry" hidden><label>ElevenLabs Voice ID<input id="customElevenlabsVoiceId" type="text" autocomplete="off" placeholder="Paste a voice ID"></label><div class="btnrow"><button class="b2 primary" id="saveCustomVoiceBtn">Save to list &amp; select</button></div></div><p class="hint" id="voiceStatus">Loading your available voices…</p></div>';
+      content=settingsHeading("Voice",true)+'<p class="hint">This is the app-wide Listen voice for chapters. Each agent can pick a different spoken voice on its Voice or Edit tab.</p><div class="grp"><div class="srow"><div class="sl">Read chapter names aloud<small>Off by default. This controls both full-document and individual chapter Listen buttons.</small></div><button class="toggle" id="readChapterNamesToggle"><b></b></button></div></div><div class="agent-edit"><label>Voice<button class="voice-picker" id="elevenlabsVoicePicker" type="button" aria-expanded="false" disabled><span class="voice-picker-copy"><b>Loading voices…</b><small>Your saved ElevenLabs voices</small></span><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="m6 9 6 6 6-6"/></svg></button></label><div class="voice-picker-menu" id="elevenlabsVoiceMenu" hidden><input class="voice-search" id="elevenlabsVoiceSearch" type="search" autocomplete="off" placeholder="Search voices or styles"><div class="voice-options" id="elevenlabsVoiceOptions"></div></div><div id="customVoiceEntry" hidden><label>ElevenLabs Voice ID<input id="customElevenlabsVoiceId" type="text" autocomplete="off" placeholder="Paste a voice ID"></label><div class="btnrow"><button class="b2 primary" id="saveCustomVoiceBtn">Save to list &amp; select</button></div></div><p class="hint" id="voiceStatus">Loading your available voices…</p></div>';
     } else if(settingsPage==="collab"){
       content=settingsHeading("AI collaborator",true)+'<p class="hint">Each agent has two minds: a subconscious that decides whether to keep listening or hand off, and a conscious that writes the note and talks with you. Open a note first if you want it transcribed into a collapsible Transcribed audio group.</p><div class="agent-edit" id="collabSettings"></div>';
     } else if(settingsPage==="usage"){
@@ -9043,6 +9088,146 @@
     if(selectedId&&!all[selectedId]) include({id:selectedId,name:"Saved voice",description:"Added with ElevenLabs Voice ID"});
     choices.sort(function(a,b){ if(a.id===DEFAULT_ELEVENLABS_VOICE) return -1; if(b.id===DEFAULT_ELEVENLABS_VOICE) return 1; return a.name.localeCompare(b.name); });
     return {all:all,choices:choices};
+  }
+  var elevenLabsVoiceCache={ts:0,promise:null,voices:[]};
+  function cachedElevenLabsVoices(){
+    if(elevenLabsVoiceCache.voices.length&&Date.now()-elevenLabsVoiceCache.ts<120000) return Promise.resolve(elevenLabsVoiceCache.voices);
+    if(elevenLabsVoiceCache.promise) return elevenLabsVoiceCache.promise;
+    if(!runtimeApiKeys.elevenlabs) return Promise.resolve(cleanSavedVoices(runtimeApiKeys.savedVoices));
+    elevenLabsVoiceCache.promise=getElevenLabsSavedVoices(runtimeApiKeys.elevenlabs).then(function(voices){
+      elevenLabsVoiceCache={ts:Date.now(),promise:null,voices:voices||[]};
+      runtimeApiKeys.savedVoices=cleanSavedVoices((runtimeApiKeys.savedVoices||[]).concat(voices));
+      return elevenLabsVoiceCache.voices;
+    }).catch(function(error){
+      elevenLabsVoiceCache.promise=null;
+      console.warn("ElevenLabs voice list failed:",error);
+      return cleanSavedVoices(runtimeApiKeys.savedVoices);
+    });
+    return elevenLabsVoiceCache.promise;
+  }
+  function effectiveAgentVoiceId(a){
+    return cleanText(a&&a.voiceId)||runtimeApiKeys.elevenlabsVoice||DEFAULT_ELEVENLABS_VOICE;
+  }
+  function previewAgentVoice(voiceId){
+    if(!runtimeApiKeys.elevenlabs){ showToast("Add an ElevenLabs API key first",true); return Promise.resolve(); }
+    var sample="Hey, it's me. This is how I'll sound when we talk.";
+    stopCollabSpeech();
+    var token=collab.speakToken;
+    return requestTtsAudio(sample,voiceId).then(function(blob){
+      if(token!==collab.speakToken) return;
+      unlockSpeechPlayback(playbackAudioContext());
+      return playTtsBlob(blob,token);
+    }).catch(function(error){
+      showToast((error&&error.message)||"Could not preview that voice",true);
+    });
+  }
+  function mountAgentVoicePicker(agentItem){
+    var a=normalizeAgent(agentItem);
+    var wrap=document.createElement("div"); wrap.className="agent-voice-tools";
+    var row=document.createElement("div"); row.className="voice-row";
+    var picker=document.createElement("button"); picker.type="button"; picker.className="voice-picker";
+    picker.innerHTML='<span class="voice-picker-copy"><b>Loading voices…</b><small>This agent’s spoken voice</small></span><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="m6 9 6 6 6-6"/></svg>';
+    picker.setAttribute("aria-expanded","false");
+    var previewBtn=document.createElement("button"); previewBtn.type="button"; previewBtn.className="b2 voice-preview"; previewBtn.textContent="Preview";
+    row.appendChild(picker); row.appendChild(previewBtn);
+    var menu=document.createElement("div"); menu.className="voice-picker-menu"; menu.hidden=true;
+    var search=document.createElement("input"); search.className="voice-search"; search.type="search"; search.placeholder="Search voices…";
+    var list=document.createElement("div"); list.className="voice-options";
+    var custom=document.createElement("div"); custom.className="agent-voice-custom"; custom.hidden=true;
+    var customInput=document.createElement("input"); customInput.placeholder="Paste an ElevenLabs voice ID";
+    var customSave=document.createElement("button"); customSave.type="button"; customSave.className="b2"; customSave.textContent="Use this voice ID";
+    custom.appendChild(customInput); custom.appendChild(customSave);
+    menu.appendChild(search); menu.appendChild(list); menu.appendChild(custom);
+    var status=document.createElement("small");
+    wrap.appendChild(row); wrap.appendChild(menu); wrap.appendChild(status);
+    var fetched=[];
+    function selectedId(){ return cleanText(a.voiceId); }
+    function paintPicker(){
+      var built=getVoiceChoices(fetched,selectedId()||runtimeApiKeys.elevenlabsVoice);
+      var pickerName=picker.querySelector("b"), pickerDetail=picker.querySelector("small");
+      if(!selectedId()){
+        var app=built.all[runtimeApiKeys.elevenlabsVoice]||built.all[DEFAULT_ELEVENLABS_VOICE];
+        pickerName.textContent="Same as Settings → Voice";
+        pickerDetail.textContent=app?("Currently "+app.name):"The app’s Listen voice";
+      } else {
+        var mine=built.all[selectedId()];
+        pickerName.textContent=mine?mine.name:"Custom voice";
+        pickerDetail.textContent=mine&&mine.detail?mine.detail:"This agent only";
+      }
+      list.innerHTML="";
+      addVoiceChoice(list,{id:APP_VOICE_OPTION,name:"Same as Settings → Voice",detail:"Chapter Listen and this agent share one voice"},!selectedId());
+      var filter=cleanText(search.value).toLowerCase(), shown=0;
+      built.choices.forEach(function(choice){
+        if(filter&&((choice.name+" "+choice.detail+" "+choice.id).toLowerCase().indexOf(filter)<0)) return;
+        addVoiceChoice(list,choice,choice.id===selectedId()); shown++;
+      });
+      var extra=document.createElement("button"); extra.type="button"; extra.className="voice-choice custom"; extra.setAttribute("data-voice-id",CUSTOM_VOICE_OPTION);
+      extra.innerHTML='<span class="voice-choice-copy"><b>ElevenLabs voice ID</b><small>Paste a voice ID to give this agent its own voice</small></span><span class="voice-choice-mark">＋</span>';
+      list.appendChild(extra);
+      if(!shown){ var empty=document.createElement("div"); empty.className="voice-empty"; empty.textContent="No saved voices match that search."; list.insertBefore(empty,extra); }
+    }
+    function setMenu(open){
+      menu.hidden=!open;
+      picker.classList.toggle("open",open);
+      picker.setAttribute("aria-expanded",open?"true":"false");
+      if(open) search.focus();
+    }
+    function choose(id){
+      a.voiceId=id===APP_VOICE_OPTION?"":id;
+      agentItem.updated=Date.now();
+      save();
+      setMenu(false);
+      custom.hidden=true;
+      paintPicker();
+      showToast(a.voiceId?"This agent now has its own voice":"This agent will use the app voice");
+    }
+    picker.onclick=function(){ if(picker.disabled) return; if(menu.hidden){ paintPicker(); setMenu(true); } else setMenu(false); };
+    search.oninput=paintPicker;
+    list.onclick=function(event){
+      var button=event.target.closest("[data-voice-id]");
+      if(!button||!list.contains(button)) return;
+      var id=button.getAttribute("data-voice-id");
+      if(id===CUSTOM_VOICE_OPTION){ custom.hidden=false; customInput.focus(); return; }
+      choose(id);
+    };
+    customSave.onclick=function(){
+      var id=cleanText(customInput.value);
+      if(!id){ status.textContent="Paste an ElevenLabs voice ID first."; customInput.focus(); return; }
+      customSave.disabled=true;
+      status.textContent="Checking that voice ID…";
+      findElevenLabsVoice(runtimeApiKeys.elevenlabs,id).then(function(voice){
+        if(!voice) throw new Error("Voice not found");
+        var saved=cleanSavedVoices((runtimeApiKeys.savedVoices||[]).concat([{id:id,name:cleanText(voice.name)||id}]));
+        runtimeApiKeys.savedVoices=saved;
+        saveVoiceSettings(runtimeApiKeys.elevenlabsVoice,saved).catch(function(){});
+        fetched=(fetched||[]).concat([voice]);
+        choose(id);
+        customInput.value="";
+        status.textContent="Saved "+(cleanText(voice.name)||"voice")+" for this agent.";
+      }).catch(function(error){
+        console.warn("ElevenLabs voice ID failed:",error);
+        status.textContent="That voice ID is not available to this ElevenLabs API key.";
+      }).then(function(){ customSave.disabled=false; });
+    };
+    previewBtn.onclick=function(){
+      previewBtn.disabled=true;
+      previewAgentVoice(effectiveAgentVoiceId(a)).then(function(){ previewBtn.disabled=false; });
+    };
+    if(!runtimeApiKeys.elevenlabs){
+      paintPicker();
+      picker.disabled=true;
+      previewBtn.disabled=true;
+      status.textContent="Add an ElevenLabs API key in Settings → API keys to give this agent its own voice.";
+      return wrap;
+    }
+    status.textContent="Loading your ElevenLabs voices…";
+    cachedElevenLabsVoices().then(function(voices){
+      if(!wrap.isConnected) return;
+      fetched=voices||[];
+      paintPicker();
+      status.textContent=fetched.length?"Pick a voice just for "+(a.name||"this agent")+".":"No saved ElevenLabs voices yet — paste a voice ID.";
+    });
+    return wrap;
   }
   function addVoiceChoice(list,choice,selected){
     var button=document.createElement("button"), copy=document.createElement("span"), name=document.createElement("b"), detail=document.createElement("small"), mark=document.createElement("span");
