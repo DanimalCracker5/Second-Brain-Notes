@@ -59,6 +59,20 @@ service cloud.firestore {
       }
     }
 
+    // Prepaid AI credits. Users may read their own balance and usage
+    // ledger. They cannot create, change, or delete it — only Cloud
+    // Functions using the Admin SDK may write, so a client cannot mint
+    // credits or shrink a charge.
+    match /billing/{userId} {
+      allow read: if request.auth != null && request.auth.uid == userId;
+      allow write: if false;
+
+      match /{document=**} {
+        allow read: if request.auth != null && request.auth.uid == userId;
+        allow write: if false;
+      }
+    }
+
     match /{document=**} {
       allow read, write: if false;
     }

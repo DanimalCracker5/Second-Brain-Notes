@@ -30,6 +30,8 @@
 <link rel="stylesheet" href="./video/video-editor.css?v=9">
 <!-- Code editor feature. Self-contained in code/ — see code/README.md. -->
 <link rel="stylesheet" href="./code/code-editor.css">
+<!-- Hosted AI credits client. Provider keys never enter this file. -->
+<script src="./hosted/hosted-ai.js"></script>
 
 <style>
   :root{
@@ -511,6 +513,24 @@
   .upcoming-button.on,.hidden-button.on{ color:var(--accent) !important; border-color:var(--accent-line) !important; background:var(--accent-soft) !important; box-shadow:0 0 0 3px rgba(255,255,255,.02); }
   .storage-usage{ position:relative; display:grid; grid-template-columns:16px minmax(0,1fr) max-content; align-items:center; gap:8px; width:100%; min-height:38px; padding:9px 10px; border:1px solid var(--line); border-radius:10px; color:var(--ink-dim); background:linear-gradient(135deg,rgba(255,255,255,.045),rgba(255,255,255,.018)); line-height:1; cursor:pointer; outline:none; transition:border-color .14s,background .14s; }
   .d-foot.has-account .storage-usage{ grid-column:1 / -1; grid-row:2; grid-template-columns:18px minmax(0,1fr) max-content; gap:10px; min-height:44px; padding:6px 12px; border-radius:12px; }
+  .d-foot.has-account.has-credits .credits-usage{ grid-column:1 / -1; grid-row:2; }
+  .d-foot.has-account.has-credits .storage-usage{ grid-row:3; }
+  .credits-usage{ position:relative; display:grid; grid-template-columns:16px minmax(0,1fr) max-content; align-items:center; gap:8px; width:100%; min-height:38px; padding:9px 10px; border:1px solid var(--line); border-radius:10px; color:var(--ink-dim); background:linear-gradient(135deg,rgba(255,255,255,.045),rgba(255,255,255,.018)); line-height:1; cursor:pointer; outline:none; transition:border-color .14s,background .14s; }
+  .d-foot.has-account .credits-usage{ grid-template-columns:18px minmax(0,1fr) max-content; gap:10px; min-height:44px; padding:6px 12px; border-radius:12px; }
+  .credits-usage:hover,.credits-usage:focus{ border-color:var(--accent-line); background:linear-gradient(135deg,var(--accent-soft),rgba(255,255,255,.035)); }
+  .credits-usage.low{ border-color:rgba(251,191,36,.45); }
+  .credits-usage svg{ width:16px; height:16px; color:var(--accent); }
+  .d-foot.has-account .credits-usage svg{ width:18px; height:18px; }
+  .credits-pack-row{ display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:8px; margin-top:12px; }
+  .credits-pack{ display:grid; gap:2px; padding:12px 12px 11px; border:1px solid var(--line); border-radius:14px; background:rgba(255,255,255,.03); color:var(--ink); text-align:left; cursor:pointer; }
+  .credits-pack:hover,.credits-pack:focus{ border-color:var(--accent-line); background:var(--accent-soft); }
+  .credits-pack b{ font-size:1.05rem; }
+  .credits-pack small{ color:var(--ink-faint); font:400 .68rem "DM Sans",sans-serif; }
+  .route-cards{ display:grid; gap:8px; }
+  .route-card{ display:grid; gap:4px; width:100%; padding:12px; border:1px solid var(--line); border-radius:14px; background:rgba(255,255,255,.03); color:inherit; text-align:left; cursor:pointer; }
+  .route-card.on{ border-color:var(--accent-line); background:var(--accent-soft); }
+  .route-card b{ font-size:.88rem; }
+  .route-card small{ color:var(--ink-dim); font:400 .76rem "DM Sans",sans-serif; line-height:1.45; }
   .storage-usage:hover,.storage-usage:focus{ border-color:var(--accent-line); background:linear-gradient(135deg,var(--accent-soft),rgba(255,255,255,.035)); }
   .storage-usage:focus-visible{ box-shadow:0 0 0 3px var(--accent-soft); }
   .storage-usage svg{ width:16px; height:16px; color:var(--accent); }
@@ -1342,6 +1362,9 @@
   var deviceBackups=[], documentBackups={}, documentBackupActivity={}, attachmentDbPromise=null, activeNoteTextBlock=null, draggedNoteBlock=null, activeAttachmentUploads={}, activeAudioRecorder=null;
   var DEFAULT_ELEVENLABS_VOICE="21m00Tcm4TlvDq8ikWAM", CUSTOM_VOICE_OPTION="__elevenlabs_voice_id__", APP_VOICE_OPTION="__app_voice__";
   var runtimeApiKeys={openai:"",gemini:"",elevenlabs:"",elevenlabsVoice:DEFAULT_ELEVENLABS_VOICE,savedVoices:[],audio:null,audioUrl:null,ttsControl:null,ttsRequestId:0};
+  var llmRoute="hosted";
+  var hostedBilling={status:"idle",balanceMicros:0,reservedMicros:0,lifetimePaidMicros:0,lifetimeBilledMicros:0,lifetimeProviderMicros:0,providerBudgetMicros:0,events:[],packs:[],markup:5};
+  var hostedBillingUnsub=null;
   /* AI collaborator limits. Transcripts ride along in the synced state document,
      so they are capped hard in both directions. */
   var AGENT_DEFAULT_ID="__default_agent__", AGENT_DEFAULT_NAME="Assistant", AGENT_DEFAULT_MODEL="gpt-4o-mini";
@@ -1386,7 +1409,8 @@
   var COLLAB_HISTORY_LIMIT=24, COLLAB_MESSAGE_LIMIT=4000, COLLAB_CONTEXT_LIMIT=24000, COLLAB_PROPOSAL_CONTEXT_LIMIT=12000, COLLAB_TOOL_ROUNDS=8, COLLAB_SPEECH_CHUNK_LIMIT=2400;
   var LLM_REQUEST_MS=28000, LLM_STREAM_IDLE_MS=18000, LLM_DEFAULT_COMPLETION_TOKENS=4096;
   var TRANSCRIPT_GROUP_TITLE="Transcribed audio";
-  var AGENT_DEFAULT_INSTRUCTIONS="You are a personal assistant inside Second Brain Notes. The owner often calls you Jarvis.\nThe owner often rambles through speech-to-text. Clean that up without losing meaning, and never mock filler words.\nThey use Cursor for coding. Help them draft prompts, plans, and notes they can paste there.\nBe useful first: search notes, tick todos, create items, and remember lasting facts without being asked twice.\nPut Cursor prompts in prompt blocks — never flatten them into ordinary paragraphs. Use headings, chapters, comments, groups, code, embeds, and links when those fit.\nKnow your own name and answer to Jarvis, assistant, or hey you. Be direct, warm, and useful — more like a collaborator than a chatbot.\nWhen a session starts, offer to help. Ask one short question if you need a target; otherwise start working.";
+  var AGENT_DEFAULT_INSTRUCTIONS="You are a personal assistant inside Second Brain Notes.\nThe owner often rambles through speech-to-text. Clean that up without losing meaning, and never mock filler words.\nThey use Cursor for coding. Help them draft prompts, plans, and notes they can paste there.\nBe useful first: search notes, tick todos, create items, and remember lasting facts without being asked twice.\nPut Cursor prompts in prompt blocks — never flatten them into ordinary paragraphs. Use headings, chapters, comments, groups, code, embeds, and links when those fit.\nKnow the name they gave you, and also answer to assistant or hey you. Be direct, warm, and useful — more like a collaborator than a chatbot.\nWhen a session starts, offer to help. Ask one short question if you need a target; otherwise start working.";
+  var AGENT_LEGACY_JARVIS_INSTRUCTIONS="You are a personal assistant inside Second Brain Notes. The owner often calls you Jarvis.\nThe owner often rambles through speech-to-text. Clean that up without losing meaning, and never mock filler words.\nThey use Cursor for coding. Help them draft prompts, plans, and notes they can paste there.\nBe useful first: search notes, tick todos, create items, and remember lasting facts without being asked twice.\nPut Cursor prompts in prompt blocks — never flatten them into ordinary paragraphs. Use headings, chapters, comments, groups, code, embeds, and links when those fit.\nKnow your own name and answer to Jarvis, assistant, or hey you. Be direct, warm, and useful — more like a collaborator than a chatbot.\nWhen a session starts, offer to help. Ask one short question if you need a target; otherwise start working.";
   var AGENT_DEFAULT_GREETING="";
   var canPersist=(function(){ try{ localStorage.setItem("__t","1"); localStorage.removeItem("__t"); return true; }catch(e){ return false; } })();
   function readKey(k){ if(canPersist){ try{ return JSON.parse(localStorage.getItem(k)); }catch(e){} } return null; }
@@ -2694,7 +2718,7 @@
        m.appendChild(mkItem(ICON_DOWNLOAD,"Save manual document backup",false,function(){ closeMenu(); saveManualDocumentBackup(it); }));
        m.appendChild(mkItem(ICON_NOTE,"Restore from backup",false,function(){ closeMenu(); openDocumentBackupHistory(it); }));
       if(it.type==="note"||it.type==="todo") m.appendChild(mkItem(isTodoNote(it)||it.type==="todo"?ICON_NOTE:ICON_TODO,isTodoNote(it)||it.type==="todo"?"Convert to note":"Convert to todo",false,function(){ closeMenu(); convertNoteTodo(it); }));
-      if(runtimeApiKeys.elevenlabs&&it.type!=="agent"&&ttsTextForItem(it).trim()) m.appendChild(mkItem(ICON_DOWNLOAD,"Download as audio",false,function(){ closeMenu(); downloadTts(it); }));
+      if(hasVoiceAccess()&&it.type!=="agent"&&ttsTextForItem(it).trim()) m.appendChild(mkItem(ICON_DOWNLOAD,"Download as audio",false,function(){ closeMenu(); downloadTts(it); }));
       m.appendChild(mkItem(ICON_UP,"Move up",false,function(){ closeMenu(); moveItem(it,-1); }));
       m.appendChild(mkItem(ICON_DOWN,"Move down",false,function(){ closeMenu(); moveItem(it,1); }));
       m.appendChild(sep());
@@ -3694,10 +3718,10 @@
     var title=document.createElement("input"); title.type="text"; title.className="note-chapter-title"; title.value=block.title||""; title.placeholder="Chapter name"; title.setAttribute("data-note-block",block.id);
     title.oninput=function(){ block.title=title.value; saveNoteBlockChange(note,block,false); };
     var listen=document.createElement("button"); listen.type="button"; listen.className="note-chapter-listen"; listen.textContent="Listen";
-    listen.style.display=runtimeApiKeys.elevenlabs&&ttsTextForChapter(block).trim()?"inline-flex":"none";
+    listen.style.display=hasVoiceAccess()&&ttsTextForChapter(block).trim()?"inline-flex":"none";
     listen.onclick=function(){ playTts(ttsTextForChapter(block).trim(),listen,listen); };
     var audioMenu=document.createElement("button"); audioMenu.type="button"; audioMenu.className="note-chapter-audio-menu"; audioMenu.textContent="…"; audioMenu.title="Section audio actions"; audioMenu.setAttribute("aria-label","Section audio actions");
-    audioMenu.style.display=runtimeApiKeys.elevenlabs&&ttsTextForChapter(block).trim()?"grid":"none";
+    audioMenu.style.display=hasVoiceAccess()&&ttsTextForChapter(block).trim()?"grid":"none";
     audioMenu.onclick=function(){ openMenu(audioMenu,function(menu){
        var menuTitle=document.createElement("div"); menuTitle.className="mtitle"; menuTitle.textContent="Section audio"; menu.appendChild(menuTitle);
        menu.appendChild(mkItem(ICON_DOWNLOAD,"Download section as audio",false,function(){ closeMenu(); downloadTtsText(ttsTextForChapter(block).trim(),audioFilenameForSection(note,block)); }));
@@ -3707,7 +3731,7 @@
     head.appendChild(index); head.appendChild(title); head.appendChild(listen); head.appendChild(audioMenu); wrap.appendChild(head);
     var bodyWrap=document.createElement("div"); bodyWrap.className="note-paragraph-wrap";
     var body=document.createElement("div"); body.className="note-paragraph"; body.contentEditable="true"; body.setAttribute("role","textbox"); body.setAttribute("aria-multiline","true"); body.setAttribute("data-note-block",block.id); body.setAttribute("data-placeholder","Write this chapter…"); body.innerHTML=block.html||"";
-    body.onpaste=pastePlainText; body.oninput=function(){ block.html=sanitizeRichHtml(body.innerHTML); block.text=richTextToPlain(block.html); var hasAudio=runtimeApiKeys.elevenlabs&&ttsTextForChapter(block).trim(); listen.style.display=hasAudio?"inline-flex":"none"; audioMenu.style.display=hasAudio?"grid":"none"; saveNoteBlockChange(note,block,false); };
+    body.onpaste=pastePlainText; body.oninput=function(){ block.html=sanitizeRichHtml(body.innerHTML); block.text=richTextToPlain(block.html); var hasAudio=hasVoiceAccess()&&ttsTextForChapter(block).trim(); listen.style.display=hasAudio?"inline-flex":"none"; audioMenu.style.display=hasAudio?"grid":"none"; saveNoteBlockChange(note,block,false); };
     bodyWrap.appendChild(body); wrap.appendChild(bodyWrap); wrap.appendChild(buildNoteBlockActions(note,block,"note-chapter-actions")); return wrap;
   }
   function buildNoteCode(note,block){
@@ -4042,7 +4066,7 @@
         l.appendChild(select); return l;
       }
 
-      var overview=section("Overview","Local activity for this agent. Provider invoices stay on OpenAI and Gemini.");
+      var overview=section("Overview",usingHostedAi()?"Hosted credits power this agent. Usage and dollar amounts are in Settings → Usage.":"Local activity for this agent. Provider invoices stay on OpenAI and Gemini unless you switch to hosted credits.");
       var head=document.createElement("div"); head.className="agent-edit-head";
       var stats=document.createElement("div"); stats.className="agent-stats";
       [["Sessions",agentStatLabel(a.stats.sessions)],["Messages",agentStatLabel(a.stats.messages)],
@@ -4059,17 +4083,17 @@
       head.appendChild(usageBtn);
       overview.appendChild(head);
       var readyList=document.createElement("ul"); readyList.className="agent-ready";
-      [[!!currentUser,"Signed in, so keys and agents sync across your devices"],
-       [!!runtimeApiKeys.openai||!!runtimeApiKeys.gemini,"A thinking key is set (OpenAI or Gemini)"],
-       [!!runtimeApiKeys.gemini,"Gemini key set — optional, for Live ears and Gemini models"],
-       [!!runtimeApiKeys.elevenlabs,"ElevenLabs key set — this agent can have its own spoken voice"],
+      [[!!currentUser,"Signed in, so agents sync across your devices"],
+       [hasThinkingAccess(),usingHostedAi()?"Hosted credits can think for this agent":"A thinking key is set (OpenAI or Gemini)"],
+       [hasVoiceAccess(),usingHostedAi()?"Hosted credits can speak and listen":"ElevenLabs key set — this agent can have its own spoken voice"],
+       [usingHostedAi()||!!runtimeApiKeys.gemini,usingHostedAi()?"Live ears stays off on hosted credits, so the Gemini key never enters the browser":"Gemini key set — optional, for Live ears and Gemini models"],
        [agentSettings().defaultAgentId===it.id,"Set as the agent the microphone opens"]].forEach(function(pair){
         var li=document.createElement("li"); li.className=pair[0]?"":"todo"; li.textContent=pair[1]; readyList.appendChild(li);
       });
       overview.appendChild(readyList);
 
       var identity=section("Identity");
-      fieldOn(identity,"Agent name","name","Jarvis");
+      fieldOn(identity,"Agent name","name","Give this agent a name");
       var faceLabel=labelOn(identity,"Face photo");
       var faceRow=document.createElement("div"); faceRow.className="agent-face-row";
       var facePreview=document.createElement("div"); facePreview.className="agent-avatar agent-face-preview";
@@ -4424,7 +4448,7 @@
       updateChapterTtsButton(listen,section);
       listen.onclick=function(){ playTts(ttsTextForSection(section).trim(),listen,listen.querySelector("span")); };
       var audioMenu=top.querySelector(".ch-audio-menu");
-      audioMenu.style.display=runtimeApiKeys.elevenlabs&&ttsTextForSection(section).trim()?"inline-grid":"none";
+      audioMenu.style.display=hasVoiceAccess()&&ttsTextForSection(section).trim()?"inline-grid":"none";
       audioMenu.onclick=function(){ openMenu(audioMenu,function(menu){
          var menuTitle=document.createElement("div"); menuTitle.className="mtitle"; menuTitle.textContent="Section audio"; menu.appendChild(menuTitle);
          menu.appendChild(mkItem(ICON_DOWNLOAD,"Download section as audio",false,function(){ closeMenu(); downloadTtsText(ttsTextForSection(section).trim(),audioFilenameForSection(it,section)); }));
@@ -4432,7 +4456,7 @@
          var remove=mkItem(ICON_DELETE,"Delete section",false,function(){ if(!confirm('Delete section "'+(section.title||"this section")+'"?')) return; if(it.sections.length<=1){ section.title=""; section.body=""; } else it.sections.splice(i,1); it.updated=Date.now(); closeMenu(); persist(); renderMain(); renderList(); showToast("Section deleted"); }); remove.className+=" danger"; menu.appendChild(remove);
        }); };
     }
-    body.oninput=function(){ section.body=body.value; it.updated=Date.now(); grow(body); count(); if(!isCue){ updateChapterTtsButton(top.querySelector(".ch-listen"),section); top.querySelector(".ch-audio-menu").style.display=runtimeApiKeys.elevenlabs&&ttsTextForSection(section).trim()?"inline-grid":"none"; } updateMeta(); save(); refreshListMeta(); };
+    body.oninput=function(){ section.body=body.value; it.updated=Date.now(); grow(body); count(); if(!isCue){ updateChapterTtsButton(top.querySelector(".ch-listen"),section); top.querySelector(".ch-audio-menu").style.display=hasVoiceAccess()&&ttsTextForSection(section).trim()?"inline-grid":"none"; } updateMeta(); save(); refreshListMeta(); };
 
     var up=foot.querySelector(".up"), down=foot.querySelector(".down");
     if(i===0) up.disabled=true;
@@ -4485,12 +4509,12 @@
   function ttsTextForChapter(block){ return [(state.readChapterNames?block.title:""),block.text].filter(Boolean).join(". "); }
   function updateTtsButton(it){
     var button=$("ttsBtn"); if(!button) return;
-    var visible=!!(runtimeApiKeys.elevenlabs&&it&&it.type!=="agent"&&ttsTextForItem(it).trim());
+    var visible=!!(hasVoiceAccess()&&it&&it.type!=="agent"&&ttsTextForItem(it).trim());
     button.style.display=visible?"inline-flex":"none";
   }
   function updateChapterTtsButton(button,section){
     if(!button) return;
-    button.style.display=runtimeApiKeys.elevenlabs&&ttsTextForSection(section).trim()?"inline-flex":"none";
+    button.style.display=hasVoiceAccess()&&ttsTextForSection(section).trim()?"inline-flex":"none";
   }
   function resetTtsControl(control){
     if(!control) return;
@@ -4508,9 +4532,26 @@
   /* voiceId is optional; agents pass their own so they keep a distinct voice
      from the global Listen voice. */
   function requestTtsAudio(text,voiceId){
-    if(!runtimeApiKeys.elevenlabs) return Promise.reject(new Error("Add your ElevenLabs API key in Settings → API keys."));
+    if(!hasVoiceAccess()) return Promise.reject(new Error("Add voice in Settings → AI credits, or paste an ElevenLabs key."));
     var watch=startLlmWatch(20000,0);
-    return fetch("https://api.elevenlabs.io/v1/text-to-speech/"+encodeURIComponent(cleanText(voiceId)||runtimeApiKeys.elevenlabsVoice||DEFAULT_ELEVENLABS_VOICE),{method:"POST",headers:{"Content-Type":"application/json","xi-api-key":runtimeApiKeys.elevenlabs,"Accept":"audio/mpeg"},body:JSON.stringify({text:text,model_id:"eleven_multilingual_v2"}),signal:watch.signal}).then(function(response){
+    var chosen=cleanText(voiceId)||runtimeApiKeys.elevenlabsVoice||DEFAULT_ELEVENLABS_VOICE;
+    if(usingHostedAi()){
+      var agentItem=collabAgent&&typeof collabAgent==="function"?collabAgent():null;
+      var a=agentItem?normalizeAgent(agentItem):null;
+      return hostedClient().tts(hostedIdToken,text,chosen,{agentId:agentItem&&agentItem.id||"",agentName:a?a.name:""},watch.signal).then(function(blob){
+        watch.close();
+        if(blob&&blob._hosted){
+          applyHostedBilling({balanceMicros:blob._hosted.balanceMicros});
+          if(blob._hosted.usage) rememberHostedUsage(blob._hosted.usage,agentItem);
+        }
+        return blob;
+      }).catch(function(error){
+        watch.close();
+        if(isAbortError(error)) throw new Error("Spoken audio took too long.");
+        throw error;
+      });
+    }
+    return fetch("https://api.elevenlabs.io/v1/text-to-speech/"+encodeURIComponent(chosen),{method:"POST",headers:{"Content-Type":"application/json","xi-api-key":runtimeApiKeys.elevenlabs,"Accept":"audio/mpeg"},body:JSON.stringify({text:text,model_id:"eleven_multilingual_v2"}),signal:watch.signal}).then(function(response){
       watch.close();
       if(!response.ok) return response.text().then(function(message){ throw new Error(message||"ElevenLabs request failed"); });
       return response.blob();
@@ -4554,7 +4595,7 @@
     return audioFilenameForItem({title:documentTitle+" - "+section,type:"note"});
   }
   function downloadTtsText(text,filename){
-    if(!runtimeApiKeys.elevenlabs||!text){ showToast("Add your ElevenLabs key in Settings first",true); return; }
+    if(!hasVoiceAccess()||!text){ showToast("Buy AI credits or add an ElevenLabs key in Settings first",true); return; }
     showToast("Preparing audio download...");
     requestTtsAudio(text).then(function(blob){
       var url=URL.createObjectURL(blob), link=document.createElement("a");
@@ -4570,7 +4611,7 @@
   function playTts(text,button,label){
     if(runtimeApiKeys.ttsControl&&runtimeApiKeys.ttsControl.button===button){ stopTts(); return; }
     stopTts(); stopCollabSpeech();
-    if(!runtimeApiKeys.elevenlabs||!text){ showToast("Add your ElevenLabs key in Settings first",true); return; }
+    if(!hasVoiceAccess()||!text){ showToast("Buy AI credits or add an ElevenLabs key in Settings first",true); return; }
     var requestId=runtimeApiKeys.ttsRequestId, control={button:button,label:label};
     runtimeApiKeys.ttsControl=control;
     button.disabled=true; label.textContent="Preparing…";
@@ -4609,10 +4650,10 @@
     sessionKey:"",grantedNoteIds:{},
     voice:null,decisions:[],queuedUtterance:""};
 
-  function defaultUsageStats(){ return {calls:0,tokens:0,inputTokens:0,outputTokens:0,byModel:{},byRole:{},recent:[]}; }
+  function defaultUsageStats(){ return {calls:0,tokens:0,inputTokens:0,outputTokens:0,billedMicros:0,providerMicros:0,byModel:{},byRole:{},recent:[]}; }
   function normalizeUsageStats(stats){
     var out=stats&&typeof stats==="object"?stats:defaultUsageStats();
-    ["calls","tokens","inputTokens","outputTokens"].forEach(function(key){ if(typeof out[key]!=="number"||!isFinite(out[key])) out[key]=0; });
+    ["calls","tokens","inputTokens","outputTokens","billedMicros","providerMicros"].forEach(function(key){ if(typeof out[key]!=="number"||!isFinite(out[key])) out[key]=0; });
     if(!out.byModel||typeof out.byModel!=="object") out.byModel={};
     if(!out.byRole||typeof out.byRole!=="object") out.byRole={};
     if(!Array.isArray(out.recent)) out.recent=[];
@@ -4636,8 +4677,8 @@
     var s=agentSettings();
     return agentById(s.activeAgentId)||agentById(s.defaultAgentId)||agentItems()[0]||defaultAgent();
   }
-  function defaultSubconsciousModel(){ return runtimeApiKeys.openai?AGENT_SUBCONSCIOUS_MODEL:(runtimeApiKeys.gemini?AGENT_GEMINI_SUBCONSCIOUS:AGENT_DEFAULT_MODEL); }
-  function defaultConsciousModel(){ return runtimeApiKeys.openai?AGENT_CONSCIOUS_MODEL:(runtimeApiKeys.gemini?AGENT_GEMINI_CONSCIOUS:AGENT_DEFAULT_MODEL); }
+  function defaultSubconsciousModel(){ return (usingHostedAi()||runtimeApiKeys.openai)?AGENT_SUBCONSCIOUS_MODEL:(runtimeApiKeys.gemini?AGENT_GEMINI_SUBCONSCIOUS:AGENT_DEFAULT_MODEL); }
+  function defaultConsciousModel(){ return (usingHostedAi()||runtimeApiKeys.openai)?AGENT_CONSCIOUS_MODEL:(runtimeApiKeys.gemini?AGENT_GEMINI_CONSCIOUS:AGENT_DEFAULT_MODEL); }
   function defaultListenModel(){ return defaultSubconsciousModel(); }
   function defaultWorkModel(){ return defaultConsciousModel(); }
   function defaultComplexModel(){ return defaultConsciousModel(); }
@@ -4809,7 +4850,7 @@
     if(typeof a.responseStyle!=="string"||!a.responseStyle.trim()) a.responseStyle="Balanced";
     if(typeof a.temperature!=="number"||!isFinite(a.temperature)) a.temperature=0.6;
     a.temperature=Math.max(0,Math.min(2,Math.round(a.temperature*10)/10));
-    if(typeof a.instructions!=="string"||a.instructions.trim()==="{}"||a.instructions.trim()==="") a.instructions=AGENT_DEFAULT_INSTRUCTIONS;
+    if(typeof a.instructions!=="string"||a.instructions.trim()==="{}"||a.instructions.trim()===""||a.instructions===AGENT_LEGACY_JARVIS_INSTRUCTIONS) a.instructions=AGENT_DEFAULT_INSTRUCTIONS;
     else a.instructions=agentPlainMemory(a.instructions)||a.instructions;
     a.longTermMemory=agentPlainMemory(typeof a.longTermMemory==="string"?a.longTermMemory:"");
     a.shortTermMemory=agentPlainMemory(typeof a.shortTermMemory==="string"?a.shortTermMemory:"");
@@ -4883,8 +4924,9 @@
     var model=entry.model||"unknown", role=entry.role||"conscious";
     if(!stats.byModel[model]||typeof stats.byModel[model]!=="object") stats.byModel[model]={calls:0,tokens:0,input:0,output:0};
     stats.byModel[model].calls+=1; stats.byModel[model].tokens+=entry.total; stats.byModel[model].input+=entry.input; stats.byModel[model].output+=entry.output;
-    if(!stats.byRole[role]||typeof stats.byRole[role]!=="object") stats.byRole[role]={calls:0,tokens:0};
+    if(!stats.byRole[role]||typeof stats.byRole[role]!=="object") stats.byRole[role]={calls:0,tokens:0,billedMicros:0};
     stats.byRole[role].calls+=1; stats.byRole[role].tokens+=entry.total;
+    if(entry.billedMicros) stats.byRole[role].billedMicros=(stats.byRole[role].billedMicros||0)+entry.billedMicros;
     stats.recent.push({ts:entry.ts,model:model,role:role,tokens:entry.total,input:entry.input,output:entry.output,agentId:entry.agentId||"",agentName:entry.agentName||""});
     if(stats.recent.length>40) stats.recent=stats.recent.slice(-40);
     return stats;
@@ -4893,7 +4935,7 @@
     var used=readLlmUsage(rawUsage);
     if(!used.total) return;
     var a=agentItem?normalizeAgent(agentItem):null;
-    var mind=role==="listen"||role==="subconscious"?"subconscious":role==="utility"?"utility":"conscious";
+    var mind=role==="listen"||role==="subconscious"?"subconscious":role==="utility"?"utility":role==="voice"?"voice":"conscious";
     var entry={ts:Date.now(),model:cleanText(model)||"unknown",role:mind,total:used.total,input:used.input,output:used.output,agentId:agentItem?agentItem.id:"",agentName:a?a.name:""};
     if(a){ a.stats=bumpUsageStats(a.stats,entry); if(agentItem) agentItem.updated=Date.now(); }
     var s=agentSettings(); s.usage=bumpUsageStats(s.usage,entry);
@@ -4917,8 +4959,8 @@
     ];
     var models=Object.keys(stats.byModel||{}).sort(function(a,b){ return (stats.byModel[b].tokens||0)-(stats.byModel[a].tokens||0); });
     if(models.length) lines.push(models.slice(0,6).map(function(id){ return modelLabel(id)+": "+formatTokenCount(stats.byModel[id].tokens); }).join("\n"));
-    var conscious=(stats.byRole.conscious||{}).tokens||0, sub=(stats.byRole.subconscious||{}).tokens||0;
-    if(conscious||sub) lines.push("Conscious "+formatTokenCount(conscious)+" · subconscious "+formatTokenCount(sub));
+    var conscious=(stats.byRole.conscious||{}).tokens||0, sub=(stats.byRole.subconscious||{}).tokens||0, voice=(stats.byRole.voice||{}).tokens||0;
+    if(conscious||sub||voice) lines.push("Conscious "+formatTokenCount(conscious)+" · subconscious "+formatTokenCount(sub)+(voice?" · voice "+formatTokenCount(voice):""));
     return lines.filter(Boolean).join("\n");
   }
   function appendUsageCards(parent,stats){
@@ -4943,7 +4985,7 @@
       var li=document.createElement("li");
       var label=document.createElement("span");
       label.textContent=(entry.agentName?entry.agentName+" · ":"")+modelLabel(entry.model||"")+" · "+(entry.role||"conscious");
-      var count=document.createElement("b"); count.textContent=formatTokenCount(entry.tokens)+" tok";
+      var count=document.createElement("b"); count.textContent=entry.billedMicros?hostedMoney(entry.billedMicros):formatTokenCount(entry.tokens)+" tok";
       var when=document.createElement("small"); when.textContent=formatUsageWhen(entry.ts)+(entry.input||entry.output?" · in "+formatTokenCount(entry.input)+" / out "+formatTokenCount(entry.output):"");
       li.appendChild(label); li.appendChild(count); li.appendChild(when); list.appendChild(li);
     });
@@ -5136,7 +5178,7 @@
   function collabSystemPrompt(agentItem,targetItem,targets){
     var a=normalizeAgent(agentItem), lines=[], approval=agentRequiresApproval(agentItem);
     lines.push('You are "'+a.name+'", the conscious mind of an AI collaborator inside Second Brain Notes. A faster subconscious may have already decided this turn is yours. You are talking with the app\'s owner, often by voice, sometimes for a long ramble.');
-    lines.push("Also answer to Jarvis, assistant, and hey you, even if your display name is different.");
+    lines.push("Answer to \""+a.name+"\", assistant, and hey you.");
     lines.push("Response style: "+a.responseStyle+".");
     lines.push("The owner uses Cursor for coding. When they ask for help writing software, a prompt, a plan, or a spec, draft something they can paste into Cursor. Do not pretend you are running in Cursor yourself.");
     lines.push("");
@@ -5344,6 +5386,54 @@
   }
 
   /* ---------- model and speech APIs ---------- */
+  function hostedClient(){ return window.SecondBrainHosted||null; }
+  function hostedConfigured(){ var client=hostedClient(); return !!(client&&client.configured()); }
+  function hasOwnThinkingKeys(){ return !!(runtimeApiKeys.openai||runtimeApiKeys.gemini); }
+  function hasOwnVoiceKey(){ return !!runtimeApiKeys.elevenlabs; }
+  function usingHostedAi(){ return !!currentUser&&hostedConfigured()&&llmRoute!=="own"; }
+  function hasThinkingAccess(){ return usingHostedAi()||hasOwnThinkingKeys(); }
+  function hasVoiceAccess(){ return usingHostedAi()||hasOwnVoiceKey(); }
+  function hostedMoney(micros){ var client=hostedClient(); return client?client.formatUsd(micros):"$0.00"; }
+  function hostedIdToken(){
+    if(!auth||!auth.currentUser) return Promise.reject(new Error("Sign in to use hosted AI credits."));
+    return auth.currentUser.getIdToken();
+  }
+  function applyHostedBilling(next){
+    if(!next||typeof next!=="object") return;
+    hostedBilling.status="ready";
+    ["balanceMicros","reservedMicros","lifetimePaidMicros","lifetimeBilledMicros","lifetimeProviderMicros","providerBudgetMicros","markup"].forEach(function(key){
+      if(typeof next[key]==="number"&&isFinite(next[key])) hostedBilling[key]=next[key];
+    });
+    if(Array.isArray(next.events)) hostedBilling.events=next.events;
+    if(Array.isArray(next.packs)&&next.packs.length) hostedBilling.packs=next.packs;
+    if(currentUser){
+      renderFoot();
+      var balanceEl=$("creditBalanceValue");
+      if(balanceEl) balanceEl.textContent=hostedMoney(hostedBilling.balanceMicros);
+      var budgetEl=$("creditBudgetValue");
+      if(budgetEl) budgetEl.textContent=hostedMoney(hostedBilling.providerBudgetMicros);
+    }
+  }
+  function rememberHostedUsage(entry,agentItem){
+    if(!entry||entry.kind==="purchase") return;
+    var client=hostedClient();
+    var role=client?client.roleBucket(entry.role,entry.kind):entry.role;
+    recordAgentUsage(agentItem,role,entry.model,{
+      prompt_tokens:entry.inputTokens||0,
+      completion_tokens:entry.outputTokens||0,
+      total_tokens:(entry.inputTokens||0)+(entry.outputTokens||0)
+    });
+    var stats=agentSettings().usage;
+    stats.billedMicros=(stats.billedMicros||0)+(Number(entry.billedMicros)||0);
+    stats.providerMicros=(stats.providerMicros||0)+(Number(entry.providerMicros)||0);
+  }
+  function hostedInsufficient(error){
+    return error&&(error.code==="INSUFFICIENT_CREDITS"||error.status===402||/more AI credits/i.test(error.message||""));
+  }
+  function hostedNeedsSetup(error){
+    return error&&(error.code==="NOT_CONFIGURED"||error.status===503);
+  }
+
   function isGeminiModel(id){ return /^gemini[-.]/i.test(id||""); }
   function isReasoningModel(id){ return /^(o[1-9]\b|gpt-5)/i.test(id||"")||/reason/i.test(id||""); }
   function llmCanStream(){
@@ -5408,7 +5498,7 @@
   }
   function openaiRequest(path,body,signal){
     var key=runtimeApiKeys.openai;
-    if(!key) return Promise.reject(new Error("Add your OpenAI API key in Settings → API keys."));
+    if(!key) return Promise.reject(new Error(usingHostedAi()?"Hosted credits could not reach that OpenAI helper.":"Add your OpenAI API key in Settings → Your own keys, or buy AI credits."));
     return fetch("https://api.openai.com/v1/"+path,{method:"POST",headers:{"Content-Type":"application/json","Authorization":"Bearer "+key},body:JSON.stringify(body),signal:signal}).then(function(response){
       return response.text().then(function(raw){
         var data=null;
@@ -5420,8 +5510,9 @@
     }).catch(function(error){ throw asLlmError(error); });
   }
   function geminiRequest(model,payload,signal){
+    if(usingHostedAi()) return Promise.reject(new Error("Hosted Gemini calls go through credits, not a browser key."));
     var key=runtimeApiKeys.gemini;
-    if(!key) return Promise.reject(new Error("Add your Gemini API key in Settings → API keys."));
+    if(!key) return Promise.reject(new Error("Add your Gemini API key in Settings → Your own keys, or buy AI credits."));
     var id=encodeURIComponent(model||AGENT_GEMINI_LISTEN);
     return fetch("https://generativelanguage.googleapis.com/v1beta/models/"+id+":generateContent?key="+encodeURIComponent(key),{
       method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify(payload),signal:signal
@@ -5543,7 +5634,7 @@
         work=openaiRequest("chat/completions",body,watch.signal);
       } else {
         var key=runtimeApiKeys.openai;
-        if(!key){ watch.close(); return Promise.reject(new Error("Add your OpenAI API key in Settings → API keys.")); }
+        if(!key){ watch.close(); return Promise.reject(new Error("Add your OpenAI API key in Settings → Your own keys, or buy AI credits.")); }
         work=fetch("https://api.openai.com/v1/chat/completions",{
           method:"POST",headers:{"Content-Type":"application/json","Authorization":"Bearer "+key},body:JSON.stringify(body),signal:watch.signal
         }).then(function(response){
@@ -5604,7 +5695,7 @@
         work=geminiRequest(id,payload,watch.signal).then(geminiToOpenAI);
       } else {
         var key=runtimeApiKeys.gemini;
-        if(!key){ watch.close(); return Promise.reject(new Error("Add your Gemini API key in Settings → API keys.")); }
+        if(!key){ watch.close(); return Promise.reject(new Error("Add your Gemini API key in Settings → Your own keys, or buy AI credits.")); }
         var url="https://generativelanguage.googleapis.com/v1beta/models/"+encodeURIComponent(id)+":streamGenerateContent?alt=sse&key="+encodeURIComponent(key);
         work=fetch(url,{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify(payload),signal:watch.signal}).then(function(response){
           var text=[], toolCalls=[], usage;
@@ -5629,12 +5720,45 @@
       });
     }
     function send(id,stream){
+      if(usingHostedAi()){
+        var watch=startLlmWatch(activeTimeout,0);
+        var budget=llmTokenBudget(opts,id)||opts.maxTokens||0;
+        var hostedBody={
+          model:id,
+          messages:messages,
+          tools:tools,
+          temperature:temperature,
+          json:useJson,
+          maxTokens:budget,
+          role:opts.usageRole||"conscious",
+          agentId:opts.agentItem&&opts.agentItem.id||"",
+          agentName:opts.agentItem?normalizeAgent(opts.agentItem).name:""
+        };
+        return hostedClient().chat(hostedIdToken,hostedBody,watch.signal).then(function(data){
+          watch.close();
+          if(data&&data.billing) applyHostedBilling(data.billing);
+          if(data&&data.hosted) rememberHostedUsage(data.hosted,opts.agentItem);
+          var message=data&&data.choices&&data.choices[0]&&data.choices[0].message;
+          if(message){
+            var text=openaiContentText(message.content)||cleanText(message.refusal);
+            if(text) message.content=text;
+          }
+          if(stream&&onDelta&&message&&message.content) onDelta(message.content);
+          if(!llmChoiceHasOutput(data)) throw new Error("The model returned an empty reply.");
+          if(data) data._hostedRecorded=true;
+          return data;
+        },function(error){
+          watch.close();
+          if(hostedInsufficient(error)) throw new Error(error.message||"You need more AI credits.");
+          throw asLlmError(error);
+        });
+      }
       var run;
       if(isGeminiModel(id)){
-        if(!runtimeApiKeys.gemini) return Promise.reject(new Error("Gemini model “"+id+"” needs a Gemini API key in Settings → API keys."));
+        if(!runtimeApiKeys.gemini) return Promise.reject(new Error("Gemini model “"+id+"” needs a Gemini API key in Settings → Your own keys."));
         run=viaGemini(id,stream);
       } else {
-        if(!runtimeApiKeys.openai) return Promise.reject(new Error("OpenAI model “"+id+"” needs an OpenAI API key in Settings → API keys."));
+        if(!runtimeApiKeys.openai) return Promise.reject(new Error("OpenAI model “"+id+"” needs an OpenAI API key in Settings → Your own keys."));
         run=viaOpenAI(id,true,true,stream);
       }
       return run.then(function(data){
@@ -5652,6 +5776,7 @@
       });
     }
     function rememberUsage(data,usedModel){
+      if(data&&data._hostedRecorded) return data;
       if(data) recordAgentUsage(opts.agentItem,opts.usageRole||"conscious",data._fallbackTo||usedModel,data.usage);
       return data;
     }
@@ -5684,8 +5809,8 @@
     var list=canonAgentRole(role)==="subconscious"
       ?[AGENT_GEMINI_SUBCONSCIOUS,"gemini-2.5-flash","gemini-flash-latest",AGENT_SUBCONSCIOUS_MODEL,"gpt-4o-mini"]
       :[AGENT_CONSCIOUS_MODEL,"gpt-5.6-terra","gpt-5.4","gpt-5","gpt-4.1","gpt-4o","gpt-4o-mini",AGENT_GEMINI_CONSCIOUS,AGENT_GEMINI_SUBCONSCIOUS];
-    if(!runtimeApiKeys.gemini) list=list.filter(function(id){ return !isGeminiModel(id); });
-    if(!runtimeApiKeys.openai) list=list.filter(function(id){ return isGeminiModel(id); });
+    if(!usingHostedAi()&&!runtimeApiKeys.gemini) list=list.filter(function(id){ return !isGeminiModel(id); });
+    if(!usingHostedAi()&&!runtimeApiKeys.openai) list=list.filter(function(id){ return isGeminiModel(id); });
     return list.filter(function(id,index){ return id&&id!==chosen&&list.indexOf(id)===index; });
   }
   function agentCompletion(agentItem,messages,tools,role,extra){
@@ -5736,7 +5861,7 @@
     noteSearch.value=""; state.noteSearch=""; noteSearchWrap.classList.remove("has-value");
     persist(); renderAll(); exitSidebarFocus(); app.classList.remove("open");
     var titleTarget=canvas.querySelector(".title"); if(titleTarget) titleTarget.focus();
-    if(runtimeApiKeys.openai){
+    if(runtimeApiKeys.openai||usingHostedAi()){
       showToast(note.dueDate?"Added with due date — generating a title":"Generating a title");
       generateNoteTitle(note).then(function(title){ if(title){ note.title=title; note.updated=Date.now(); persist(); renderMain(); renderList(); showToast("Title generated"); } }).catch(function(error){ console.warn("Quick note title generation failed:",error); showToast("Added note with a quick title",true); });
     } else showToast(note.dueDate?"Added todo with due date":"Added note");
@@ -5744,6 +5869,7 @@
   function agentModels(){
     var extras=uniqueModelList((AGENT_MODEL_SETS.subconscious||[]).concat(AGENT_MODEL_SETS.conscious||[]).concat(AGENT_FALLBACK_MODELS)).filter(function(id){
       if(!id) return false;
+      if(usingHostedAi()) return true;
       if(isGeminiModel(id)) return !!runtimeApiKeys.gemini;
       return !!runtimeApiKeys.openai;
     });
@@ -5790,14 +5916,14 @@
     var catalog=uniqueModelList((AGENT_MODEL_SETS.subconscious||[]).concat(AGENT_MODEL_SETS.conscious||[]).concat(available||[]));
     var suggested=[], extra=[];
     want.forEach(function(id){
-      if(isGeminiModel(id)&&!runtimeApiKeys.gemini) return;
-      if(!isGeminiModel(id)&&!runtimeApiKeys.openai) return;
+      if(!usingHostedAi()&&isGeminiModel(id)&&!runtimeApiKeys.gemini) return;
+      if(!usingHostedAi()&&!isGeminiModel(id)&&!runtimeApiKeys.openai) return;
       suggested.push(id);
     });
     catalog.forEach(function(id){
       if(!id||suggested.indexOf(id)>=0||!isPickedChatModel(id)) return;
-      if(isGeminiModel(id)&&!runtimeApiKeys.gemini) return;
-      if(!isGeminiModel(id)&&!runtimeApiKeys.openai) return;
+      if(!usingHostedAi()&&isGeminiModel(id)&&!runtimeApiKeys.gemini) return;
+      if(!usingHostedAi()&&!isGeminiModel(id)&&!runtimeApiKeys.openai) return;
       extra.push(id);
     });
     return {suggested:uniqueModelList(suggested),extra:uniqueModelList(extra)};
@@ -5834,13 +5960,22 @@
         });
       });
     }
+    if(usingHostedAi()){
+      var agentItem=collabAgent();
+      var a=agentItem?normalizeAgent(agentItem):null;
+      return hostedClient().stt(hostedIdToken,blob,{filename:name,agentId:agentItem&&agentItem.id||"",agentName:a?a.name:""}).then(function(data){
+        if(data&&data.billing) applyHostedBilling(data.billing);
+        if(data&&data.hosted) rememberHostedUsage(data.hosted,agentItem);
+        return cleanText(data&&data.text);
+      });
+    }
     if(runtimeApiKeys.elevenlabs) return viaElevenLabs().catch(function(error){
       if(!runtimeApiKeys.openai) throw error;
       console.warn("ElevenLabs transcription failed, falling back to OpenAI:",error);
       return viaOpenAI();
     });
     if(runtimeApiKeys.openai) return viaOpenAI();
-    return Promise.reject(new Error("Add an ElevenLabs or OpenAI key to use the microphone."));
+    return Promise.reject(new Error("Buy AI credits or add an ElevenLabs / OpenAI key to use the microphone."));
   }
 
   /* ---------- spoken replies ---------- */
@@ -6044,7 +6179,7 @@
       if(!surfaceAlive()) return Promise.resolve();
       var chunk=chunks.shift();
       if(!chunk){ finishOk(); return Promise.resolve(); }
-      var play=runtimeApiKeys.elevenlabs?requestTtsAudio(chunk,voiceId).then(function(blob){
+      var play=hasVoiceAccess()?requestTtsAudio(chunk,voiceId).then(function(blob){
         if(!surfaceAlive()) return;
         markSpeaking();
         return playTtsBlob(blob,token);
@@ -6577,7 +6712,7 @@
     var opts=options||{};
     var agentItem=collabAgent();
     if(!agentItem){ setCollabStatus("Create an agent first.",true); return; }
-    if(!runtimeApiKeys.openai&&!runtimeApiKeys.gemini){ setCollabStatus("Add an OpenAI or Gemini API key in Settings → API keys.",true); return; }
+    if(!hasThinkingAccess()){ setCollabStatus(usingHostedAi()?"Buy AI credits in Settings to keep talking.":"Add an OpenAI or Gemini API key, or buy AI credits in Settings.",true); return; }
     var targetItem=collabDocument(), targets=collabTargets(targetItem);
     var messages=collabApiMessages(agentItem,targetItem,targets), tools=collabTools(!!(targetItem&&targets.length)), turnProposals=[];
     var role=canonAgentRole(opts.role||"conscious");
@@ -7020,7 +7155,7 @@
       "- keep_listening if the thought is incomplete, they are still listing, they said um/anyway/so, or they named you but have not finished.",
       "- respond if they asked a question, addressed you by name with a request, said that's it / go / write that down, or clearly handed you work. That passes the turn to the conscious model.",
       "- Also respond to greetings and check-ins: hi, hey, what's going on, can you hear me, are you there.",
-      "- Treat Jarvis, assistant, and hey you as names for this agent in addition to \""+a.name+"\".",
+      "- Treat \""+a.name+"\", assistant, and hey you as names for this agent.",
       "- dictate_only if they are only dumping raw notes and do not want a reply yet.",
       "- Prefer keep_listening when unsure."
     ].join("\n");
@@ -7045,8 +7180,8 @@
   function heuristicListenDecision(buffer,agentItem){
     var text=cleanText(buffer).toLowerCase(), a=normalizeAgent(agentItem), name=(a.name||"").toLowerCase();
     var done=/\b(that'?s it|go ahead|write that|make the note|okay go|alright go|please write|do it)\b/.test(text);
-    var question=/[?]|(\b(can you|could you|would you|what if|how do|help me|jarvis|hear me|are you there|what'?s going on)\b)/.test(text);
-    var named=!!(name&&text.indexOf(name)>=0)||/\b(jarvis|assistant)\b/.test(text);
+    var question=/[?]|(\b(can you|could you|would you|what if|how do|help me|hear me|are you there|what'?s going on)\b)/.test(text);
+    var named=!!(name&&text.indexOf(name)>=0)||/\b(assistant)\b/.test(text);
     var incomplete=/\b(um+|uh+|so|anyway|and then|or maybe|wait|hold on)\b/.test(text)||/[,:]$/.test(text)||text.split(/\s+/).length<8;
     if(done||((question||named)&&!incomplete)) return {action:"respond",reason:done?"they handed it over":"request detected",speak:true,read_back:false,compressed:buffer};
     if(text.length>40&&!question&&!named) return {action:"dictate_only",reason:"sounds like dictation",speak:false,read_back:false,compressed:buffer};
@@ -7485,7 +7620,7 @@
     if(collab.voice&&collab.voice.active){ stopVoiceSession(); return; }
     if(activeAudioRecorder){ setCollabStatus("Finish the audio recording first.",true); return; }
     if(!navigator.mediaDevices||!navigator.mediaDevices.getUserMedia){ setCollabStatus("This browser can’t record audio.",true); return; }
-    if(!runtimeApiKeys.elevenlabs&&!runtimeApiKeys.openai&&!runtimeApiKeys.gemini){ setCollabStatus("Add an API key in Settings → API keys first.",true); return; }
+    if(!hasThinkingAccess()&&!hasVoiceAccess()){ setCollabStatus("Buy AI credits or add a key in Settings first.",true); return; }
     startCollabSession();
     setCollabStatus("Waiting for the microphone…");
     navigator.mediaDevices.getUserMedia({audio:{echoCancellation:true,noiseSuppression:true,autoGainControl:true}}).then(function(stream){
@@ -7504,7 +7639,7 @@
       updateCollabControls();
       var agentItem=collabAgent(), a=agentItem?normalizeAgent(agentItem):null;
       maybeGenerateContextGreeting(true);
-      var wantLive=!!(a&&a.liveListen&&runtimeApiKeys.gemini&&collab.voice.audioContext&&typeof collab.voice.audioContext.createScriptProcessor==="function");
+      var wantLive=!!(a&&a.liveListen&&runtimeApiKeys.gemini&&!usingHostedAi()&&collab.voice.audioContext&&typeof collab.voice.audioContext.createScriptProcessor==="function");
       if(wantLive){
         setVoiceStatus("Connecting…");
         setVoiceLink("");
@@ -7543,8 +7678,19 @@
   /* ---------- rendering ---------- */
   function collabReadiness(){
     var missing=[], warnings=[];
-    if(!runtimeApiKeys.openai&&!runtimeApiKeys.gemini) missing.push(currentUser?"Add an OpenAI or Gemini API key in Settings → API keys.":"Sign in, then add an OpenAI or Gemini API key in Settings → API keys.");
-    if(!runtimeApiKeys.elevenlabs) warnings.push("Add your ElevenLabs API key for spoken replies. Without it, the phone’s own voice is used as a backup.");
+    if(!currentUser) missing.push("Sign in so your notes and AI credits can sync.");
+    else if(usingHostedAi()){
+      if(hostedBilling.status==="ready"&&(hostedBilling.balanceMicros||0)<1000) missing.push("Buy AI credits to talk without pasting your own keys.");
+      else if(!hostedConfigured()) missing.push("Hosted AI credits are not configured on this site yet.");
+    } else if(!hasOwnThinkingKeys()) missing.push("Buy AI credits, or add an OpenAI or Gemini key in Settings → Your own keys.");
+    if(usingHostedAi()){
+      warnings.push("Spoken replies and listening use your credits. Live ears stays off on this path so the provider key never enters the browser.");
+    } else {
+      if(!runtimeApiKeys.elevenlabs) warnings.push("Add an ElevenLabs key for spoken replies, or switch to AI credits. Without either, the phone’s own voice is used as a backup.");
+      if(!runtimeApiKeys.gemini) warnings.push("Without a Gemini key, Live ears is off — it listens in turns instead of continuously. It can still hear you and talk back.");
+    }
+    return {missing:missing,warnings:warnings,ok:!missing.length};
+  }
     if(!runtimeApiKeys.gemini) warnings.push("Without a Gemini key, Live ears is off — it listens in turns instead of continuously. It can still hear you and talk back.");
     return {missing:missing,warnings:warnings,ok:!missing.length};
   }
@@ -7649,8 +7795,8 @@
       };
       row.appendChild(create);
     }
-    var keys=document.createElement("button"); keys.type="button"; keys.className="b2"; keys.textContent="Open API keys";
-    keys.onclick=function(){ openSettings("keys"); };
+    var keys=document.createElement("button"); keys.type="button"; keys.className="b2 primary"; keys.textContent=usingHostedAi()?"Buy AI credits":"Set up AI";
+    keys.onclick=function(){ openSettings(usingHostedAi()||!hasOwnThinkingKeys()?"credits":"keys"); };
     row.appendChild(keys);
     box.appendChild(row);
     return box;
@@ -7778,7 +7924,7 @@
     var avatar=$("collabAvatar"), name=$("collabName"), model=$("collabModel"), speak=$("collabSpeakBtn");
     if(avatar) paintAgentAvatar(avatar, a);
     if(name) name.textContent=a?a.name:"AI collaborator";
-    if(model) model.textContent=a?(agentMindSummary(a)+(currentAgentMind()==="conscious"?" · conscious now":currentAgentMind()==="subconscious"?" · subconscious now":"")+(a.liveListen&&runtimeApiKeys.gemini?" · Live ears":"")):"No agent yet";
+    if(model) model.textContent=a?(agentMindSummary(a)+(currentAgentMind()==="conscious"?" · conscious now":currentAgentMind()==="subconscious"?" · subconscious now":"")+(a.liveListen&&runtimeApiKeys.gemini&&!usingHostedAi()?" · Live ears":"")):"No agent yet";
     if(speak){
       var on=agentSettings().speakReplies;
       speak.classList.toggle("on",on);
@@ -8266,9 +8412,12 @@
     runtimeApiKeys.elevenlabs=cleanText(keys.elevenlabs);
     runtimeApiKeys.elevenlabsVoice=cleanText(voiceSettings.selectedVoiceId)||cleanText(keys.elevenlabsVoice)||DEFAULT_ELEVENLABS_VOICE;
     runtimeApiKeys.savedVoices=cleanSavedVoices(voiceSettings.savedVoices);
+    if(privateSettings&&(privateSettings.llmRoute==="hosted"||privateSettings.llmRoute==="own")) llmRoute=privateSettings.llmRoute;
+    else llmRoute=(runtimeApiKeys.openai||runtimeApiKeys.gemini||runtimeApiKeys.elevenlabs)?"own":"hosted";
     agentModelCache=null;
     updateTtsButton(current());
     if(collab.host) renderCollabSurface();
+    if(currentUser) renderFoot();
   }
   function resetApiSettings(){
     stopTts(); stopCollabSpeech(); closeCollabPanel();
@@ -8277,6 +8426,7 @@
     runtimeApiKeys.elevenlabs="";
     runtimeApiKeys.elevenlabsVoice=DEFAULT_ELEVENLABS_VOICE;
     runtimeApiKeys.savedVoices=[];
+    llmRoute="hosted";
     agentModelCache=null;
     updateTtsButton(current());
   }
@@ -8298,6 +8448,55 @@
   function savePrivateSettings(settings){
     if(!currentUser||!db) return Promise.reject(new Error("Sign in required"));
     return db.collection("users").doc(currentUser.uid).set({privateSettings:settings},{merge:true});
+  }
+  function saveLlmRoute(route){
+    llmRoute=route==="own"?"own":"hosted";
+    agentModelCache=null;
+    if(!currentUser||!db) return Promise.resolve();
+    return savePrivateSettings({llmRoute:llmRoute});
+  }
+  function stopHostedBillingSync(){
+    if(hostedBillingUnsub){ hostedBillingUnsub(); hostedBillingUnsub=null; }
+  }
+  function startHostedBillingSync(){
+    stopHostedBillingSync();
+    if(!currentUser||!db) return;
+    hostedBilling.status="loading";
+    hostedBillingUnsub=db.collection("billing").doc(currentUser.uid).onSnapshot(function(doc){
+      var data=doc.exists?doc.data():{};
+      var held=0;
+      (data.holds||[]).forEach(function(hold){ if(hold&&hold.status==="held") held+=Number(hold.estimateMicros)||0; });
+      applyHostedBilling({
+        balanceMicros:Math.max(0,(Number(data.balanceMicros)||0)-held),
+        reservedMicros:held,
+        lifetimePaidMicros:Number(data.lifetimePaidMicros)||0,
+        lifetimeBilledMicros:Number(data.lifetimeBilledMicros)||0,
+        lifetimeProviderMicros:Number(data.lifetimeProviderMicros)||0,
+        providerBudgetMicros:Math.floor(Math.max(0,(Number(data.balanceMicros)||0)-held)/5),
+        markup:5
+      });
+    },function(error){ console.warn("Credit balance sync failed:",error); hostedBilling.status="error"; });
+    refreshHostedLedger();
+  }
+  function refreshHostedLedger(){
+    if(!currentUser||!hostedConfigured()) return Promise.resolve();
+    return hostedClient().billing(hostedIdToken).then(function(data){
+      applyHostedBilling(data);
+      return data;
+    }).catch(function(error){
+      console.warn("Hosted usage ledger failed:",error);
+    });
+  }
+  function startHostedCheckout(packId){
+    if(!currentUser){ showToast("Sign in to buy AI credits",true); return; }
+    showToast("Opening checkout…");
+    hostedClient().checkout(hostedIdToken,packId).then(function(data){
+      if(data&&data.url) location.href=data.url;
+      else throw new Error("Checkout did not return a payment link.");
+    }).catch(function(error){
+      console.warn(error);
+      showToast(hostedNeedsSetup(error)?"Card payments are not configured on the server yet.":(error&&error.message)||"Could not start checkout.",true);
+    });
   }
   function parseCfg(text){
     if(!text) return null;
@@ -8334,11 +8533,11 @@
         currentUser=u;
         if(u){
           cloudSyncPaused=false;
-          setAuthGate(false); startApiSettingsSync(); startAccountUsageTracking(); renderFoot();
+          setAuthGate(false); startApiSettingsSync(); startHostedBillingSync(); startAccountUsageTracking(); renderFoot();
           loadCloud().then(openPendingInvite);
         } else {
           cloudSyncPaused=true; cloudSyncLoading=false;
-          stopAccountUsageTracking(); stopApiSettingsSync(); resetApiSettings();
+          stopAccountUsageTracking(); stopApiSettingsSync(); stopHostedBillingSync(); resetApiSettings();
           /* Firebase reports the signed-out state once on startup. Keep notes
              already on this device so their owner can choose how to sync them
              after signing in. A deliberate sign-out still clears this device. */
@@ -8916,13 +9115,25 @@
   /* =================== sidebar footer =================== */
   function renderFoot(){
     dfoot.innerHTML="";
-    dfoot.classList.toggle("has-account",!!currentUser);
+      dfoot.classList.toggle("has-account",!!currentUser);
+    dfoot.classList.toggle("has-credits",!!currentUser&&usingHostedAi());
     if(currentUser){
       var summary=document.createElement("div"); summary.className="account-summary";
       var who=document.createElement("div"); who.className="who";
       who.innerHTML=(currentUser.photoURL?'<img src="'+currentUser.photoURL+'" alt="">':'')+'<b></b>';
       who.querySelector("b").textContent=currentUser.displayName||currentUser.email||"Signed in";
       summary.appendChild(who);
+      if(usingHostedAi()){
+        var credits=document.createElement("div"); credits.className="credits-usage"+(hostedBilling.balanceMicros<100000?" low":""); credits.setAttribute("role","button"); credits.tabIndex=0;
+        credits.onclick=function(){ openSettings("credits"); }; credits.onkeydown=function(event){ if(event.key==="Enter"||event.key===" "){ event.preventDefault(); openSettings("credits"); } };
+        credits.innerHTML='<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="8"/><path d="M12 7v10M9.5 9.5c.6-1 1.6-1.5 2.5-1.5 1.4 0 2.5.8 2.5 2s-1.1 2-2.5 2h-1c-1.4 0-2.5.8-2.5 2s1.1 2 2.5 2c.9 0 1.9-.5 2.5-1.5"/></svg>';
+        var creditLabel=document.createElement("span"); creditLabel.className="storage-label";
+        var creditTitle=document.createElement("strong"); creditTitle.textContent="AI credits";
+        var creditCaption=document.createElement("small"); creditCaption.textContent=hostedBilling.balanceMicros<100000?"Buy more to keep talking":"Prepaid · 5× model cost";
+        creditLabel.appendChild(creditTitle); creditLabel.appendChild(creditCaption);
+        var creditValue=document.createElement("b"); creditValue.textContent=hostedBilling.status==="ready"||hostedBilling.balanceMicros?hostedMoney(hostedBilling.balanceMicros):"…";
+        credits.appendChild(creditLabel); credits.appendChild(creditValue); summary.appendChild(credits);
+      }
       var usage=document.createElement("div"); usage.className="storage-usage "+(accountUsage.status==="ready"?"":accountUsage.status==="error"?"unavailable":"calculating"); usage.setAttribute("aria-label",accountUsageTitle(accountUsage)); usage.setAttribute("aria-live","polite"); usage.setAttribute("role","button"); usage.setAttribute("aria-haspopup","dialog"); usage.tabIndex=0;
       usage.onclick=function(){ openSettings("account"); }; usage.onkeydown=function(event){ if(event.key==="Enter"||event.key===" "){ event.preventDefault(); openSettings("account"); } };
       usage.innerHTML='<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><ellipse cx="12" cy="5" rx="7" ry="3"/><path d="M5 5v7c0 1.7 3.1 3 7 3s7-1.3 7-3V5"/><path d="M5 12v7c0 1.7 3.1 3 7 3s7-1.3 7-3v-7"/></svg>';
@@ -8979,10 +9190,11 @@
         '<button data-settings="themes"><span><b>Themes</b><small>Choose your color palette</small></span><span class="arrow">›</span></button>'+
         '<button data-settings="backups"><span><b>Backups</b><small>Browse, restore, or create backups</small></span><span class="arrow">›</span></button>'+
         '<button data-settings="account"><span><b>Account &amp; sync</b><small>Cloud storage and sign-in</small></span><span class="arrow">›</span></button>'+
-        '<button data-settings="keys"><span><b>API keys</b><small>OpenAI, Gemini, and ElevenLabs keys synced to your account</small></span><span class="arrow">›</span></button>'+
+        '<button data-settings="credits"><span><b>AI credits</b><small>Talk without pasting keys — prepaid, 5× model cost</small></span><span class="arrow">›</span></button>'+
+        '<button data-settings="usage"><span><b>Usage</b><small>Tokens, dollars, conscious / subconscious / voice</small></span><span class="arrow">›</span></button>'+
+        '<button data-settings="keys"><span><b>Your own keys</b><small>Advanced: use OpenAI, Gemini, or ElevenLabs directly</small></span><span class="arrow">›</span></button>'+
         '<button data-settings="voices"><span><b>Voice</b><small>Choose from your saved ElevenLabs voices</small></span><span class="arrow">›</span></button>'+
         '<button data-settings="collab"><span><b>AI collaborator</b><small>Agents, voice intelligence, and hidden notes (also in the sidebar footer)</small></span><span class="arrow">›</span></button>'+
-        '<button data-settings="usage"><span><b>Usage</b><small>Tokens, calls, and recent model activity</small></span><span class="arrow">›</span></button>'+
         '<button data-settings="manage"><span><b>Manage</b><small>Choose which things New can create</small></span><span class="arrow">›</span></button></div><div class="grp"><h4>Editor behaviour</h4><div class="srow"><div class="sl">Open notes in the body<small>Focus the first editable block instead of the title. Turn off to start at the title.</small></div><button class="toggle" id="focusNoteBodyToggle"><b></b></button></div><div class="srow"><div class="sl">AI handoff in note menus<small>Copy or package a note, including attachment data, for Cursor, ChatGPT, or Claude.</small></div><button class="toggle" id="quickAiHandoffToggle"><b></b></button></div></div><div class="grp"><h4>AI text changes</h4><div class="srow"><div class="sl">Ask before changing my text<small>Keep AI edits as suggestions until you choose Apply.</small></div><button class="toggle" id="settingsRequireApprovalToggle"><b></b></button></div></div>';
     } else if(settingsPage==="appearance"){
       content=settingsHeading("Appearance",true)+'<div class="grp"><div class="srow"><div class="sl">Background movement<small>Slow drifting color that works on desktop and mobile</small></div><button class="toggle" id="motionToggle"><b></b></button></div></div><div class="grp"><div class="range-row"><label for="darknessRange"><span>Background darkness</span><output id="darknessOutput"></output></label><input id="darknessRange" type="range" min="0" max="100" step="1"><p class="hint">At 100%, the background is pure AMOLED black. Lower it to reveal more of the moving theme color while keeping the surface black.</p></div></div>';
@@ -8992,14 +9204,16 @@
       content=settingsHeading("Backups",true)+'<p class="hint">Automatic backups wait at least one hour after the latest backup, and only the 10 newest device backups are kept. Restore creates one local recovery point; it does not create another manual cloud backup.</p><div class="btnrow"><button class="b2 primary" id="backupNowBtn">Back up now</button><button class="b2" id="expBtn">Export current JSON</button><button class="b2" id="exportRestorePointsBtn">Download restore points JSON</button><button class="b2" id="impBtn">Import file</button><input type="file" id="impFile" accept="application/json" hidden></div><div class="grp"><h4>Restore points</h4><div class="backup-list" id="backupList"></div></div>';
     } else if(settingsPage==="account"){
       content=settingsHeading("Account &amp; sync",true)+'<div id="acctInner"></div>';
+    } else if(settingsPage==="credits"){
+      content=settingsHeading("AI credits",true)+'<p class="hint">Skip pasting provider keys. You buy credits here; we keep the API keys on the server and charge five dollars of credits for every dollar the models cost us.</p><div id="creditsSettings"></div>';
     } else if(settingsPage==="keys"){
-      content=settingsHeading("API keys",true)+'<p class="hint">Keys sync automatically to your signed-in account, so they are ready on your other signed-in devices. There is no separate vault passphrase to create or remember.</p><div class="agent-edit"><label>OpenAI (ChatGPT) API key<input id="openaiKey" type="password" autocomplete="off" placeholder="sk-…" disabled></label><label>Gemini API key<input id="geminiKey" type="password" autocomplete="off" placeholder="AIza…" disabled></label><label>ElevenLabs API key<input id="elevenlabsKey" type="password" autocomplete="off" placeholder="Your ElevenLabs key" disabled></label><p class="hint" id="apiKeyStatus">Sign in to add API keys.</p></div>';
+      content=settingsHeading("Your own keys",true)+'<p class="hint">Advanced. Keys sync to your signed-in account and are used from this browser, so anyone with the device can read them. Hosted credits never put our keys here.</p><div class="agent-edit"><label>OpenAI (ChatGPT) API key<input id="openaiKey" type="password" autocomplete="off" placeholder="sk-…" disabled></label><label>Gemini API key<input id="geminiKey" type="password" autocomplete="off" placeholder="AIza…" disabled></label><label>ElevenLabs API key<input id="elevenlabsKey" type="password" autocomplete="off" placeholder="Your ElevenLabs key" disabled></label><p class="hint" id="apiKeyStatus">Sign in to add API keys.</p></div>';
     } else if(settingsPage==="voices"){
       content=settingsHeading("Voice",true)+'<p class="hint">This is the app-wide Listen voice for chapters. Each agent can pick a different spoken voice on its Voice or Edit tab.</p><div class="grp"><div class="srow"><div class="sl">Read chapter names aloud<small>Off by default. This controls both full-document and individual chapter Listen buttons.</small></div><button class="toggle" id="readChapterNamesToggle"><b></b></button></div></div><div class="agent-edit"><label>Voice<button class="voice-picker" id="elevenlabsVoicePicker" type="button" aria-expanded="false" disabled><span class="voice-picker-copy"><b>Loading voices…</b><small>Your saved ElevenLabs voices</small></span><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="m6 9 6 6 6-6"/></svg></button></label><div class="voice-picker-menu" id="elevenlabsVoiceMenu" hidden><input class="voice-search" id="elevenlabsVoiceSearch" type="search" autocomplete="off" placeholder="Search voices or styles"><div class="voice-options" id="elevenlabsVoiceOptions"></div></div><div id="customVoiceEntry" hidden><label>ElevenLabs Voice ID<input id="customElevenlabsVoiceId" type="text" autocomplete="off" placeholder="Paste a voice ID"></label><div class="btnrow"><button class="b2 primary" id="saveCustomVoiceBtn">Save to list &amp; select</button></div></div><p class="hint" id="voiceStatus">Loading your available voices…</p></div>';
     } else if(settingsPage==="collab"){
       content=settingsHeading("AI collaborator",true)+'<p class="hint">Each agent has two minds: a subconscious that decides whether to keep listening or hand off, and a conscious that writes the note and talks with you. Open a note first if you want it transcribed into a collapsible Transcribed audio group.</p><div class="agent-edit" id="collabSettings"></div>';
     } else if(settingsPage==="usage"){
-      content=settingsHeading("Usage",true)+'<p class="hint">Second Brain counts tokens reported by OpenAI and Gemini for this account. Dollar charges still live on those providers’ dashboards — this is the local activity log.</p><div id="usageSettings"></div>';
+      content=settingsHeading("Usage",true)+'<p class="hint">Hosted credits show dollars we charged (5× provider cost) plus tokens. Your own keys still log tokens locally; provider invoices stay on OpenAI, Gemini, and ElevenLabs.</p><div id="usageSettings"></div>';
     } else if(settingsPage==="manage"){
       content=settingsHeading("Manage",true)+'<p class="hint">Choose what appears under New and in a note’s Insert menu. Existing content is never removed when an option is turned off.</p><div class="grp"><div class="srow"><div class="sl">Notes<small>Flexible rich-text notes</small></div><button class="toggle" id="typeNote"><b></b></button></div><div class="srow"><div class="sl">YouTube Script<small>Chaptered note template</small></div><button class="toggle" id="typeScript"><b></b></button></div><div class="srow"><div class="sl">Audio<small>Record or upload audio clips</small></div><button class="toggle" id="typeAudio"><b></b></button></div><div class="srow"><div class="sl">Todos<small>A note with a completion checkbox</small></div><button class="toggle" id="typeTodo"><b></b></button></div><div class="srow"><div class="sl">Agent<small>AI collaborators you can talk to inside a note</small></div><button class="toggle" id="typeAgent"><b></b></button></div></div><div class="grp" id="moduleTypes"></div><div class="grp"><h4>Note insert menu</h4><div class="srow"><div class="sl">Photo, video, or file<small>Inline images and videos, plus any attachment</small></div><button class="toggle" id="insertFile"><b></b></button></div><div class="srow"><div class="sl">YouTube video<small>Paste a link and play it inside the note</small></div><button class="toggle" id="insertEmbed"><b></b></button></div><div class="srow"><div class="sl">Link with photo<small>A link card with your own picture, title, and summary</small></div><button class="toggle" id="insertLink"><b></b></button></div><div class="srow"><div class="sl">Paragraph<small>Rich text with bold, italic, and underline</small></div><button class="toggle" id="insertParagraph"><b></b></button></div><div class="srow"><div class="sl">Comment<small>A cue-style note to yourself</small></div><button class="toggle" id="insertComment"><b></b></button></div><div class="srow"><div class="sl">Prompt<small>A copy-ready prompt drafting box</small></div><button class="toggle" id="insertPrompt"><b></b></button></div><div class="srow"><div class="sl">Heading<small>Simple size picker when selected</small></div><button class="toggle" id="insertHeading"><b></b></button></div><div class="srow"><div class="sl">Chapter<small>Named section with its own Listen button</small></div><button class="toggle" id="insertChapter"><b></b></button></div><div class="srow"><div class="sl">Collapsible group<small>Hide supporting details until needed</small></div><button class="toggle" id="insertGroup"><b></b></button></div><div class="srow"><div class="sl">Code<small>Syntax-highlighted editor, preview, and run tools</small></div><button class="toggle" id="insertCode"><b></b></button></div></div>';
     } else { settingsPage="home"; renderSettingsPage(); return; }
@@ -9018,6 +9232,7 @@
     if(settingsPage==="backups") setupBackupSettings();
     if(settingsPage==="account") renderAcct();
     if(settingsPage==="keys") setupApiKeySettings();
+    if(settingsPage==="credits") setupCreditsSettings();
     if(settingsPage==="voices") setupVoiceSettings();
     if(settingsPage==="collab") setupCollabSettings();
     if(settingsPage==="usage") setupUsageSettings();
@@ -9037,10 +9252,11 @@
     var agents=agentItems(), s=agentSettings();
 
     var readyList=document.createElement("ul"); readyList.className="agent-ready";
-    [[!!currentUser,"Signed in — API keys and agents sync to your devices","Sign in from the sidebar so your API keys can sync here"],
-     [!!runtimeApiKeys.openai||!!runtimeApiKeys.gemini,"A thinking key is set (OpenAI or Gemini)","Add an OpenAI or Gemini API key in Settings → API keys"],
-     [!!runtimeApiKeys.gemini,"Gemini key set — optional for Live ears and Gemini models","Add a Gemini key if you want Live ears or Gemini models"],
-     [!!runtimeApiKeys.elevenlabs,"ElevenLabs key set — you can talk and it talks back","Add your ElevenLabs API key for spoken replies. Without it, the phone’s own voice is used as a backup"],
+    [[!!currentUser,"Signed in — agents and credits sync to your devices","Sign in from the sidebar so credits and agents can sync here"],
+     [usingHostedAi()&&(hostedBilling.balanceMicros||0)>0,"Hosted credits are ready to think and speak","Buy AI credits in Settings → AI credits"],
+     [!usingHostedAi()&&hasOwnThinkingKeys(),"A thinking key is set (OpenAI or Gemini)","Add an OpenAI or Gemini key, or switch to AI credits"],
+     [!usingHostedAi()&&!!runtimeApiKeys.gemini,"Gemini key set — optional for Live ears and Gemini models","Add a Gemini key if you want Live ears or Gemini models"],
+     [!usingHostedAi()&&!!runtimeApiKeys.elevenlabs,"ElevenLabs key set — you can talk and it talks back","Add an ElevenLabs key for spoken replies, or use AI credits"],
      [!!agents.length,agents.length+" agent"+(agents.length===1?"":"s")+" available","Create an agent with New → Agent"]].forEach(function(row){
       var li=document.createElement("li"); li.className=row[0]?"":"todo"; li.textContent=row[0]?row[1]:row[2]; readyList.appendChild(li);
     });
@@ -9140,8 +9356,8 @@
       openAgent.onclick=function(){ openAgentEditor(preferredAgent()); };
       row.appendChild(openAgent);
     }
-    var keys=document.createElement("button"); keys.type="button"; keys.className="b2"; keys.textContent="API keys";
-    keys.onclick=function(){ settingsPage="keys"; renderSettingsPage(); };
+    var keys=document.createElement("button"); keys.type="button"; keys.className="b2"; keys.textContent=usingHostedAi()?"AI credits":"Your own keys";
+    keys.onclick=function(){ settingsPage=usingHostedAi()?"credits":"keys"; renderSettingsPage(); };
     row.appendChild(keys);
     var usageBtn=document.createElement("button"); usageBtn.type="button"; usageBtn.className="b2"; usageBtn.textContent="Usage";
     usageBtn.onclick=function(){ settingsPage="usage"; renderSettingsPage(); };
@@ -9149,8 +9365,72 @@
     box.appendChild(row);
 
     var note=document.createElement("p"); note.className="hint"; note.style.margin="4px 0 0";
-    note.textContent="Your keys are used straight from this browser, so treat them like any other saved password: anyone with access to a signed-in browser can read them from developer tools. Revoke and replace a key from the provider’s dashboard if a device is lost.";
+    note.textContent=usingHostedAi()
+      ?"Hosted credits keep provider keys on the server. Name this agent whatever you like — nothing here is branded with a default character name."
+      :"Your own keys are used straight from this browser, so treat them like any other saved password. Hosted credits never put our keys on this device.";
     box.appendChild(note);
+  }
+  function setupCreditsSettings(){
+    var box=$("creditsSettings"); if(!box) return;
+    box.innerHTML="";
+    if(!currentUser){
+      var sign=document.createElement("p"); sign.className="hint"; sign.textContent="Sign in first. Credits stay on your account, not this device.";
+      box.appendChild(sign);
+      return;
+    }
+    var summary=document.createElement("section"); summary.className="usage-section";
+    var h=document.createElement("h4"); h.textContent="Balance"; summary.appendChild(h);
+    var grid=document.createElement("div"); grid.className="agent-stats";
+    [["Credits left",hostedMoney(hostedBilling.balanceMicros),"creditBalanceValue"],
+     ["Model budget",hostedMoney(hostedBilling.providerBudgetMicros),"creditBudgetValue"],
+     ["Spent",hostedMoney(hostedBilling.lifetimeBilledMicros),""]].forEach(function(pair){
+      var cell=document.createElement("div"); cell.className="agent-stat";
+      var value=document.createElement("b"); value.id=pair[2]||""; value.textContent=pair[1];
+      var name=document.createElement("small"); name.textContent=pair[0];
+      cell.appendChild(value); cell.appendChild(name); grid.appendChild(cell);
+    });
+    summary.appendChild(grid);
+    var hint=document.createElement("p"); hint.className="hint";
+    hint.textContent="$5 of credits covers about $1 of OpenAI, Gemini, and ElevenLabs cost. The server holds credits before each call and settles the real 5× amount after, so a client cannot under-report tokens.";
+    summary.appendChild(hint);
+    box.appendChild(summary);
+
+    var route=document.createElement("section"); route.className="usage-section";
+    var routeH=document.createElement("h4"); routeH.textContent="How this device talks"; route.appendChild(routeH);
+    var cards=document.createElement("div"); cards.className="route-cards";
+    function routeCard(id,title,copy){
+      var button=document.createElement("button"); button.type="button"; button.className="route-card"+(llmRoute===id?" on":"");
+      var b=document.createElement("b"); b.textContent=title;
+      var small=document.createElement("small"); small.textContent=copy;
+      button.appendChild(b); button.appendChild(small);
+      button.onclick=function(){
+        saveLlmRoute(id).then(function(){
+          showToast(id==="hosted"?"Using prepaid credits":"Using your own keys");
+          renderSettingsPage();
+          if(collab.host) renderCollabSurface();
+        }).catch(function(){ showToast("Could not save that choice",true); });
+      };
+      cards.appendChild(button);
+    }
+    routeCard("hosted","Use AI credits","No keys to paste. Voice, conscious, and subconscious calls go through our server.");
+    routeCard("own","Use my own keys","You pay OpenAI, Gemini, and ElevenLabs directly. Live ears can stay on.");
+    route.appendChild(cards);
+    box.appendChild(route);
+
+    var buy=document.createElement("section"); buy.className="usage-section";
+    var buyH=document.createElement("h4"); buyH.textContent="Buy credits"; buy.appendChild(buyH);
+    var packs=document.createElement("div"); packs.className="credits-pack-row";
+    (hostedBilling.packs&&hostedBilling.packs.length?hostedBilling.packs:[{id:"credits_5",dollars:5,label:"$5"},{id:"credits_10",dollars:10,label:"$10"},{id:"credits_25",dollars:25,label:"$25"},{id:"credits_50",dollars:50,label:"$50"}]).forEach(function(pack){
+      var button=document.createElement("button"); button.type="button"; button.className="credits-pack";
+      var b=document.createElement("b"); b.textContent=pack.label||("$"+pack.dollars);
+      var small=document.createElement("small"); small.textContent="About $"+((pack.dollars||0)/5).toFixed(2)+" of model cost";
+      button.appendChild(b); button.appendChild(small);
+      button.onclick=function(){ startHostedCheckout(pack.id); };
+      packs.appendChild(button);
+    });
+    buy.appendChild(packs);
+    box.appendChild(buy);
+    refreshHostedLedger();
   }
   function setupUsageSettings(){
     var box=$("usageSettings"); if(!box) return;
@@ -9160,6 +9440,36 @@
       var wrap=document.createElement("section"); wrap.className="usage-section";
       var h=document.createElement("h4"); h.textContent=title; wrap.appendChild(h);
       box.appendChild(wrap); return wrap;
+    }
+    if(usingHostedAi()||(hostedBilling.events&&hostedBilling.events.length)){
+      var hosted=usageSection("Hosted credits");
+      var client=hostedClient();
+      var rollup=client?client.summarizeEvents(hostedBilling.events):{byRole:{},billedMicros:0,calls:0};
+      var grid=document.createElement("div"); grid.className="agent-stats";
+      [["Balance",hostedMoney(hostedBilling.balanceMicros)],["Charged to you",hostedMoney(hostedBilling.lifetimeBilledMicros)],["Provider cost",hostedMoney(hostedBilling.lifetimeProviderMicros)]].forEach(function(pair){
+        var cell=document.createElement("div"); cell.className="agent-stat";
+        var value=document.createElement("b"); value.textContent=pair[1];
+        var name=document.createElement("small"); name.textContent=pair[0];
+        cell.appendChild(value); cell.appendChild(name); grid.appendChild(cell);
+      });
+      hosted.appendChild(grid);
+      var roles=document.createElement("div"); roles.className="agent-stats"; roles.style.marginTop="8px";
+      [["Conscious","conscious"],["Subconscious","subconscious"],["Voice","voice"],["Other","utility"]].forEach(function(pair){
+        var stats=rollup.byRole[pair[1]]||{};
+        var cell=document.createElement("div"); cell.className="agent-stat";
+        var value=document.createElement("b"); value.textContent=hostedMoney(stats.billedMicros||0);
+        var name=document.createElement("small"); name.textContent=pair[0]+(stats.tokens?" · "+formatTokenCount(stats.tokens)+" tok":stats.chars?" · "+stats.chars+" chars":"");
+        cell.appendChild(value); cell.appendChild(name); roles.appendChild(cell);
+      });
+      hosted.appendChild(roles);
+      var hostedHint=document.createElement("p"); hostedHint.className="hint";
+      hostedHint.textContent="These dollar amounts are what we billed to your credits (5× the provider cost). They cannot be edited from this device.";
+      hosted.appendChild(hostedHint);
+      var buyRow=document.createElement("div"); buyRow.className="btnrow";
+      var buy=document.createElement("button"); buy.type="button"; buy.className="b2 primary"; buy.textContent="Buy credits";
+      buy.onclick=function(){ settingsPage="credits"; renderSettingsPage(); };
+      buyRow.appendChild(buy); hosted.appendChild(buyRow);
+      refreshHostedLedger();
     }
     var summary=usageSection("All agents");
     appendUsageCards(summary,usage);
@@ -9200,8 +9510,22 @@
       });
     }
 
-    var recent=usageSection("Recent calls");
-    appendUsageLog(recent,usage.recent);
+      if(hostedBilling.events&&hostedBilling.events.length){
+        var hostedRecent=usageSection("Recent hosted charges");
+        appendUsageLog(hostedRecent,hostedBilling.events.map(function(entry){
+          return {
+            ts:entry.ts,
+            model:entry.model,
+            role:entry.role||entry.kind,
+            tokens:(entry.inputTokens||0)+(entry.outputTokens||0),
+            input:entry.inputTokens,
+            output:entry.outputTokens,
+            billedMicros:entry.billedMicros,
+            agentName:entry.agentName,
+            kind:entry.kind
+          };
+        }));
+      }
 
     var row=document.createElement("div"); row.className="btnrow";
     var reset=document.createElement("button"); reset.type="button"; reset.className="b2"; reset.textContent="Reset local counters";
@@ -9262,7 +9586,7 @@
       var keys={version:1,openai:cleanText(openai.value),gemini:gemini?cleanText(gemini.value):"",elevenlabs:cleanText(eleven.value),updated:Date.now()};
       status.textContent="Saving and syncing…";
       savePrivateSettings({apiKeys:keys,apiVault:firebase.firestore.FieldValue.delete()}).then(function(){
-        applyApiSettings({apiKeys:keys,voiceSettings:{selectedVoiceId:runtimeApiKeys.elevenlabsVoice,savedVoices:runtimeApiKeys.savedVoices}});
+        applyApiSettings({apiKeys:keys,voiceSettings:{selectedVoiceId:runtimeApiKeys.elevenlabsVoice,savedVoices:runtimeApiKeys.savedVoices},llmRoute:llmRoute});
         if(status.isConnected) status.textContent="Saved. Your signed-in devices update automatically.";
       }).catch(function(error){ console.warn(error); if(status.isConnected) status.textContent="Could not sync API keys. Check your cloud connection."; });
     }
@@ -9300,6 +9624,20 @@
   function cachedElevenLabsVoices(){
     if(elevenLabsVoiceCache.voices.length&&Date.now()-elevenLabsVoiceCache.ts<120000) return Promise.resolve(elevenLabsVoiceCache.voices);
     if(elevenLabsVoiceCache.promise) return elevenLabsVoiceCache.promise;
+    if(!hasVoiceAccess()) return Promise.resolve(cleanSavedVoices(runtimeApiKeys.savedVoices));
+    if(usingHostedAi()){
+      elevenLabsVoiceCache.promise=hostedClient().voices(hostedIdToken).then(function(data){
+        var voices=data&&data.voices||[];
+        elevenLabsVoiceCache={ts:Date.now(),promise:null,voices:voices};
+        runtimeApiKeys.savedVoices=cleanSavedVoices((runtimeApiKeys.savedVoices||[]).concat(voices));
+        return voices;
+      }).catch(function(error){
+        elevenLabsVoiceCache.promise=null;
+        console.warn("Hosted voice list failed:",error);
+        return cleanSavedVoices(runtimeApiKeys.savedVoices);
+      });
+      return elevenLabsVoiceCache.promise;
+    }
     if(!runtimeApiKeys.elevenlabs) return Promise.resolve(cleanSavedVoices(runtimeApiKeys.savedVoices));
     elevenLabsVoiceCache.promise=getElevenLabsSavedVoices(runtimeApiKeys.elevenlabs).then(function(voices){
       elevenLabsVoiceCache={ts:Date.now(),promise:null,voices:voices||[]};
@@ -9316,7 +9654,7 @@
     return cleanText(a&&a.voiceId)||runtimeApiKeys.elevenlabsVoice||DEFAULT_ELEVENLABS_VOICE;
   }
   function previewAgentVoice(voiceId){
-    if(!runtimeApiKeys.elevenlabs){ showToast("Add an ElevenLabs API key first",true); return Promise.resolve(); }
+    if(!hasVoiceAccess()){ showToast("Buy AI credits or add an ElevenLabs key first",true); return Promise.resolve(); }
     var sample="Hey, it's me. This is how I'll sound when we talk.";
     stopCollabSpeech();
     var token=collab.speakToken;
@@ -9402,7 +9740,10 @@
       if(!id){ status.textContent="Paste an ElevenLabs voice ID first."; customInput.focus(); return; }
       customSave.disabled=true;
       status.textContent="Checking that voice ID…";
-      findElevenLabsVoice(runtimeApiKeys.elevenlabs,id).then(function(voice){
+      var lookup=usingHostedAi()
+        ? hostedClient().voices(hostedIdToken,id).then(function(data){ return data&&data.voices&&data.voices[0]; })
+        : findElevenLabsVoice(runtimeApiKeys.elevenlabs,id);
+      lookup.then(function(voice){
         if(!voice) throw new Error("Voice not found");
         var saved=cleanSavedVoices((runtimeApiKeys.savedVoices||[]).concat([{id:id,name:cleanText(voice.name)||id}]));
         runtimeApiKeys.savedVoices=saved;
@@ -9412,19 +9753,19 @@
         customInput.value="";
         status.textContent="Saved "+(cleanText(voice.name)||"voice")+" for this agent.";
       }).catch(function(error){
-        console.warn("ElevenLabs voice ID failed:",error);
-        status.textContent="That voice ID is not available to this ElevenLabs API key.";
+        console.warn("Voice ID failed:",error);
+        status.textContent="That voice ID could not be used.";
       }).then(function(){ customSave.disabled=false; });
     };
     previewBtn.onclick=function(){
       previewBtn.disabled=true;
       previewAgentVoice(effectiveAgentVoiceId(a)).then(function(){ previewBtn.disabled=false; });
     };
-    if(!runtimeApiKeys.elevenlabs){
+    if(!hasVoiceAccess()){
       paintPicker();
       picker.disabled=true;
       previewBtn.disabled=true;
-      status.textContent="Add an ElevenLabs API key in Settings → API keys to give this agent its own voice.";
+      status.textContent="Buy AI credits or add an ElevenLabs key to give this agent its own voice.";
       return wrap;
     }
     status.textContent="Loading your ElevenLabs voices…";
@@ -9432,7 +9773,7 @@
       if(!wrap.isConnected) return;
       fetched=voices||[];
       paintPicker();
-      status.textContent=fetched.length?"Pick a voice just for "+(a.name||"this agent")+".":"No saved ElevenLabs voices yet — paste a voice ID.";
+      status.textContent=fetched.length?"Pick a voice just for "+(a.name||"this agent")+".":"Paste a public ElevenLabs voice ID if you want a custom voice.";
     });
     return wrap;
   }
@@ -9505,7 +9846,7 @@
     }
     if(!userId||!db){
       render(currentVoiceId());
-      status.textContent="Sign in and add an ElevenLabs API key to choose a voice.";
+      status.textContent="Sign in to choose a voice with AI credits or your own ElevenLabs key.";
       return;
     }
     getPrivateSettings().then(function(settings){
@@ -9513,8 +9854,24 @@
       applyApiSettings(settings);
       var selectedId=currentVoiceId();
       render(selectedId);
+      if(usingHostedAi()){
+        status.textContent="Loading hosted voices…";
+        hostedClient().voices(hostedIdToken).then(function(data){
+          if(!picker.isConnected) return;
+          fetched=data&&data.voices||[];
+          render(selectedId);
+          picker.disabled=false;
+          status.textContent=fetched.length?"Hosted voices ready. Credits pay for spoken replies.":"Hosted voice is ready.";
+        }).catch(function(error){
+          console.warn(error);
+          render(selectedId);
+          picker.disabled=false;
+          status.textContent="Could not load hosted voices. You can still paste a public voice ID.";
+        });
+        return;
+      }
       if(!runtimeApiKeys.elevenlabs){
-        status.textContent="Add an ElevenLabs API key in API keys to load your saved voices.";
+        status.textContent="Buy AI credits, or add an ElevenLabs API key, to load voices.";
         return;
       }
       status.textContent="Loading your saved ElevenLabs voices…";
@@ -9544,10 +9901,13 @@
     save.onclick=function(){
       var id=cleanText(input.value);
       if(!id){ status.textContent="Paste an ElevenLabs Voice ID first."; input.focus(); return; }
-      if(!runtimeApiKeys.elevenlabs){ status.textContent="Add an ElevenLabs API key before saving a voice ID."; return; }
+      if(!hasVoiceAccess()){ status.textContent="Buy AI credits or add an ElevenLabs key before saving a voice ID."; return; }
       save.disabled=true;
       status.textContent="Checking that voice ID…";
-      findElevenLabsVoice(runtimeApiKeys.elevenlabs,id).then(function(voice){
+      var lookup=usingHostedAi()
+        ? hostedClient().voices(hostedIdToken,id).then(function(data){ return data&&data.voices&&data.voices[0]; })
+        : findElevenLabsVoice(runtimeApiKeys.elevenlabs,id);
+      lookup.then(function(voice){
         if(!voice) throw new Error("Voice not found");
         var saved=cleanSavedVoices(runtimeApiKeys.savedVoices.concat([{id:id,name:cleanText(voice.name)||id}]));
         return saveVoiceSettings(id,saved).then(function(){ return {saved:saved,voice:voice}; });
@@ -9727,6 +10087,14 @@
      loads if the cloud copy does not already have an agent. */
   trackTimeSpent();
   captureAutoBackup(false); applyTheme(0); syncMotion(); renderAll(); renderFoot(); initFirebase();
+  try{
+    var creditsFlag=(location.search||"").match(/[?&]credits=(success|cancel)/);
+    if(creditsFlag){
+      if(creditsFlag[1]==="success"){ openSettings("credits"); showToast("Credits are on the way — your balance updates after Stripe finishes."); }
+      else { openSettings("credits"); showToast("Checkout canceled. No credits were added."); }
+      if(history.replaceState) history.replaceState({},document.title,location.pathname+location.hash);
+    }
+  }catch(e){}
   window.__astral={ state:state, render:renderAll, api:runtimeApiKeys };
 })();
 </script>

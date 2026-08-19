@@ -1,0 +1,17 @@
+{
+  "name": "second-brain-hosted-ai",
+  "description": "Hosted AI proxy, credits, and Stripe checkout for Second Brain Notes",
+  "engines": {
+    "node": "20"
+  },
+  "main": "index.js",
+  "private": true,
+  "scripts": {
+    "test": "node --test pricing.test.js billing.test.js"
+  },
+  "dependencies": {
+    "firebase-admin": "^12.6.0",
+    "firebase-functions": "^6.1.0",
+    "stripe": "^16.12.0"
+  }
+}

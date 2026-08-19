@@ -44,6 +44,12 @@ within their own account path. Enumeration lets the in-app storage meter count
 the files actually retained in Cloud Storage, including any orphaned files that
 still consume storage. Device-only attachments still work without signing in.
 
+## Hosted AI credits
+
+To sell convenience (users talk without pasting their own provider keys),
+deploy Cloud Functions and the updated Firestore rules. See `docs/HOSTED_AI.md`.
+Never put OpenAI, Gemini, ElevenLabs, or Stripe secrets in this repo.
+
 ## Public view-only links
 
 The **Share** button on a note or video script creates a link to `shared.html`.
