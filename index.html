@@ -562,18 +562,34 @@
 
   /* ---------- floating menu ---------- */
   /* --menu-origin is set from openMenu so the pop scales out of the corner the
-     menu is actually anchored to, not always the top-left. */
-  .menu{ position:fixed; z-index:70; background:#0b0b0f; border:1px solid var(--line); border-radius:12px; padding:6px; box-shadow:0 18px 55px rgba(0,0,0,.7); min-width:200px; max-width:270px; transform-origin:var(--menu-origin,top left); animation:menuIn .19s cubic-bezier(.2,.95,.3,1.25) both; }
-  .menu > *{ animation:menuRow .26s cubic-bezier(.2,.9,.3,1) both; }
-  .menu > :nth-child(1){ animation-delay:.03s } .menu > :nth-child(2){ animation-delay:.05s } .menu > :nth-child(3){ animation-delay:.07s }
-  .menu > :nth-child(4){ animation-delay:.09s } .menu > :nth-child(5){ animation-delay:.105s } .menu > :nth-child(6){ animation-delay:.12s }
-  .menu > :nth-child(7){ animation-delay:.135s } .menu > :nth-child(n+8){ animation-delay:.15s }
+     menu is actually anchored to, not always the top-left. max-height + overflow
+     keep a long action list (the note pencil menu especially) inside the
+     viewport instead of running off the bottom of a phone with no way to
+     reach Delete / Hide. placeOpenMenu() tightens the pixel cap to whichever
+     side of the anchor has room. */
+  .menu{ position:fixed; z-index:70; display:flex; flex-direction:column; background:#0b0b0f; border:1px solid var(--line); border-radius:12px; padding:0; box-shadow:0 18px 55px rgba(0,0,0,.7); min-width:200px; max-width:270px; max-height:calc(100dvh - 20px - var(--safe-t) - var(--safe-b)); overflow:hidden; transform-origin:var(--menu-origin,top left); animation:menuIn .19s cubic-bezier(.2,.95,.3,1.25) both; }
+  /* Scroll lives on this inner pane so the open animation's transform on
+     .menu cannot freeze overflow the way it does on iOS when both share a
+     node. min-height:0 lets flex actually cap it to the parent's max-height. */
+  .menu-body{ flex:1 1 auto; min-height:0; padding:6px; overflow-x:hidden; overflow-y:auto; -webkit-overflow-scrolling:touch; overscroll-behavior:contain; touch-action:pan-y; }
+  .menu-body::-webkit-scrollbar{ width:8px; } .menu-body::-webkit-scrollbar-thumb{ background:rgba(255,255,255,.12); border-radius:8px; }
+  .menu-body > *{ animation:menuRow .26s cubic-bezier(.2,.9,.3,1) both; }
+  .menu-body > :nth-child(1){ animation-delay:.03s } .menu-body > :nth-child(2){ animation-delay:.05s } .menu-body > :nth-child(3){ animation-delay:.07s }
+  .menu-body > :nth-child(4){ animation-delay:.09s } .menu-body > :nth-child(5){ animation-delay:.105s } .menu-body > :nth-child(6){ animation-delay:.12s }
+  .menu-body > :nth-child(7){ animation-delay:.135s } .menu-body > :nth-child(n+8){ animation-delay:.15s }
   .menu .mtitle{ font-family:"DM Mono",monospace; font-size:.56rem; letter-spacing:.2em; text-transform:uppercase; color:var(--ink-faint); padding:6px 10px 4px; }
   .menu button.mi{ display:flex; align-items:center; gap:10px; width:100%; text-align:left; padding:9px 11px; background:none; border:none; color:var(--ink); font-size:.86rem; border-radius:8px; cursor:pointer; transition:background .14s,transform .14s,padding-left .14s; }
   .menu button.mi:hover{ background:rgba(255,255,255,.06); padding-left:14px; } .menu button.mi:active{ transform:scale(.98); } .menu button.mi svg{ width:16px; height:16px; color:var(--ink-dim); flex:none; transition:color .14s,transform .18s cubic-bezier(.2,.9,.3,1.4); }
   .menu button.mi:hover svg{ color:var(--accent); transform:scale(1.12); }
   .menu button.mi.danger{ color:#fca5a5; } .menu button.mi.danger svg{ color:#f87171; } .menu button.mi.danger:hover{ background:rgba(248,113,113,.12); }
   .menu button.mi .chk{ margin-left:auto; color:var(--accent); opacity:0; transform:scale(.6); transition:opacity .16s,transform .22s cubic-bezier(.2,1.4,.4,1); } .menu button.mi.on .chk{ opacity:1; transform:scale(1); }
+  .menu button.mi.has-sub .chk{ display:none; }
+  .menu button.mi .mi-more{ margin-left:auto; display:grid; place-items:center; color:var(--ink-faint); }
+  .menu button.mi .mi-more svg{ width:14px; height:14px; color:inherit; }
+  .menu .mi-split{ display:grid; grid-template-columns:1fr 1fr; gap:2px; }
+  .menu .mi-split button.mi{ justify-content:center; gap:6px; padding-left:8px; white-space:nowrap; }
+  .menu .mi-split button.mi:hover{ padding-left:8px; }
+  .menu .mi-split button.mi .chk{ display:none; }
   .menu .sep{ height:1px; background:var(--line); margin:5px 4px; }
   .menu .mrow{ padding:6px; } .menu .mrow input{ width:100%; background:rgba(255,255,255,.05); border:1px solid var(--line); border-radius:8px; color:var(--ink); padding:9px 10px; font-family:inherit; font-size:.85rem; outline:none; }
   .menu .mrow input:focus{ border-color:var(--accent-line); }
@@ -601,9 +617,9 @@
   .cal-nav:active{ transform:scale(.86); }
   .cal-dow{ display:grid; grid-template-columns:repeat(7,1fr); gap:2px; padding:0 4px 4px; }
   .cal-dow span{ text-align:center; font-family:"DM Mono",monospace; font-size:.56rem; letter-spacing:.1em; color:var(--ink-faint); }
-  /* Specific enough to beat the generic .menu > :nth-child() row delays, which
+  /* Specific enough to beat the generic .menu-body > :nth-child() row delays, which
      would otherwise stall the grid every time the month changes. */
-  .menu.calendar-menu > .cal-grid{ display:grid; grid-template-columns:repeat(7,1fr); gap:2px; padding:0 4px 4px; animation:calSwap .26s cubic-bezier(.2,.9,.3,1) both; animation-delay:0s; }
+  .menu.calendar-menu .cal-grid{ display:grid; grid-template-columns:repeat(7,1fr); gap:2px; padding:0 4px 4px; animation:calSwap .26s cubic-bezier(.2,.9,.3,1) both; animation-delay:0s; }
   .cal-cell{ aspect-ratio:1; min-height:32px; display:grid; place-items:center; border:1px solid transparent; border-radius:9px; background:none; color:var(--ink); cursor:pointer; font:500 .78rem "DM Sans",sans-serif; transition:background .14s,color .14s,border-color .14s; animation:dayIn .26s cubic-bezier(.2,.9,.3,1.15) both; animation-delay:calc(var(--d,0) * 7ms); }
   .cal-cell.blank{ animation:none; pointer-events:none; }
   .cal-cell.is-past{ color:var(--ink-faint); }
@@ -2341,6 +2357,7 @@
   var ICON_AUDIO='<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3v11a4 4 0 1 1-3-3.87V6l9-2v9a4 4 0 1 1-3-3.87V4.78z"/></svg>';
   var ICON_AGENT='<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="8" r="3.5"/><path d="M5 21c.8-4 3.2-6 7-6s6.2 2 7 6"/><path d="M19 5v4M17 7h4"/></svg>';
   var ICON_FOLDER='<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M3 7a2 2 0 0 1 2-2h4l2 2h8a2 2 0 0 1 2 2v8a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/></svg>';
+  var ICON_SPARK='<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 3l1.6 5.4L19 10l-5.4 1.6L12 17l-1.6-5.4L5 10l5.4-1.6Z"/><path d="M19 15l.7 2.3L22 18l-2.3.7L19 21l-.7-2.3L16 18l2.3-.7Z"/></svg>';
   var ICON_EYE='<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M2.5 12s3.5-6 9.5-6 9.5 6 9.5 6-3.5 6-9.5 6S2.5 12 2.5 12Z"/><circle cx="12" cy="12" r="2.5"/></svg>';
   var ICON_EYE_OFF='<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="m3 3 18 18"/><path d="M10.6 5.1A10.7 10.7 0 0 1 12 5c6 0 9.5 7 9.5 7a17.8 17.8 0 0 1-3.1 3.9M6.2 6.2C3.9 8 2.5 12 2.5 12S6 19 12 19c1.5 0 2.8-.4 3.9-.9"/><path d="M9.9 9.9a3 3 0 0 0 4.2 4.2"/></svg>';
 
@@ -2358,18 +2375,56 @@
     if(typeof onClose==="function") onClose();
   }
   function menuOutside(e){ if(openMenuEl && openMenuAnchor && openMenuAnchor.contains(e.target)) return; if(openMenuEl && !openMenuEl.contains(e.target)) closeMenu(); }
-  function openMenu(anchor,build){
-    closeMenu();
-    var m=document.createElement("div"); m.className="menu"; build(m); document.body.appendChild(m);
-    var r=anchor.getBoundingClientRect(), mw=m.offsetWidth||210, mh=m.offsetHeight||160;
-    var left=Math.min(r.left, window.innerWidth-mw-10); if(left<10) left=10;
-    var top=r.bottom+6, flipped=false;
-    if(top+mh>window.innerHeight-10){ top=Math.max(10,r.top-mh-6); flipped=true; }
+  /* Geometry only — placeOpenMenu applies this to the live node. Kept pure so
+     a tall pencil menu on a short phone is a unit-tested clamp, not a hope. */
+  function menuFit(r,natural,viewW,viewH,menuW){
+    var margin=10, gap=6, mw=menuW||210;
+    var spaceBelow=viewH-margin-(r.bottom+gap);
+    var spaceAbove=r.top-margin-gap;
+    var flipped=natural>spaceBelow && spaceAbove>spaceBelow;
+    var maxH=Math.min(Math.max(120, flipped?spaceAbove:spaceBelow), viewH-margin*2);
+    var height=Math.min(natural, maxH);
+    var left=Math.min(r.left, viewW-mw-margin);
+    if(left<margin) left=margin;
+    var top=flipped?Math.max(margin, r.top-height-gap):r.bottom+gap;
+    if(top+height>viewH-margin) top=Math.max(margin, viewH-margin-height);
+    if(top<margin) top=margin;
+    return {flipped:flipped, maxH:maxH, left:left, top:top, height:height, margin:margin, gap:gap};
+  }
+  function menuScrollBody(m){ return (m&&m.querySelector(".menu-body"))||m; }
+  function wrapMenuBody(m){
+    if(!m) return m;
+    var existing=m.firstElementChild;
+    if(existing&&existing.classList.contains("menu-body")&&m.children.length===1) return existing;
+    var body=document.createElement("div"); body.className="menu-body";
+    while(m.firstChild) body.appendChild(m.firstChild);
+    m.appendChild(body);
+    return body;
+  }
+  function placeOpenMenu(){
+    var m=openMenuEl, anchor=openMenuAnchor;
+    if(!m||!anchor) return;
+    var r=anchor.getBoundingClientRect(), viewH=window.innerHeight, viewW=window.innerWidth;
+    m.style.maxHeight="none";
+    var natural=m.offsetHeight||160, mw=m.offsetWidth||210;
+    var fit=menuFit(r,natural,viewW,viewH,mw);
+    m.style.maxHeight=fit.maxH+"px";
+    var mh=m.offsetHeight||fit.height;
+    var left=Math.min(r.left, viewW-mw-fit.margin);
+    if(left<fit.margin) left=fit.margin;
+    var top=fit.flipped?Math.max(fit.margin, r.top-mh-fit.gap):r.bottom+fit.gap;
+    if(top+mh>viewH-fit.margin) top=Math.max(fit.margin, viewH-fit.margin-mh);
+    if(top<fit.margin) top=fit.margin;
     m.style.left=left+"px"; m.style.top=top+"px";
     /* Scale the pop out of the corner nearest the button that opened it, so the
        menu reads as coming from the control rather than appearing at random. */
-    m.style.setProperty("--menu-origin",(flipped?"bottom ":"top ")+(left+mw/2>r.left+r.width/2?"left":"right"));
-     openMenuEl=m; openMenuAnchor=anchor;
+    m.style.setProperty("--menu-origin",(fit.flipped?"bottom ":"top ")+(left+mw/2>r.left+r.width/2?"left":"right"));
+  }
+  function openMenu(anchor,build){
+    closeMenu();
+    var m=document.createElement("div"); m.className="menu"; build(m); wrapMenuBody(m); document.body.appendChild(m);
+    openMenuEl=m; openMenuAnchor=anchor;
+    placeOpenMenu();
     anchor.classList.add("menu-open");
     setTimeout(function(){ document.addEventListener("mousedown",menuOutside,true); },0);
     /* Menus whose first input is secondary (a "create new tag" box, say) opt out
@@ -2377,7 +2432,15 @@
     if(!m.hasAttribute("data-noautofocus")){ var inp=m.querySelector("input"); if(inp) inp.focus(); }
     return m;
   }
+  window.addEventListener("resize",function(){ if(openMenuEl) placeOpenMenu(); });
   function mkItem(iconHtml,label,on,onclick){ var b=document.createElement("button"); b.className="mi"+(on?" on":""); b.innerHTML=iconHtml+'<span>'+escapeHtml(label)+'</span><span class="chk">✓</span>'; b.onclick=onclick; return b; }
+  function mkMoreItem(iconHtml,label,onclick){
+    var b=mkItem(iconHtml,label,false,onclick);
+    b.className+=" has-sub";
+    var more=document.createElement("span"); more.className="mi-more"; more.innerHTML=ICON_CHEV_RIGHT; b.appendChild(more);
+    return b;
+  }
+  function menuTitle(text){ var title=document.createElement("div"); title.className="mtitle"; title.textContent=text; return title; }
   function sep(){ var s=document.createElement("div"); s.className="sep"; return s; }
 
   /* =================== sidebar =================== */
@@ -2698,34 +2761,58 @@
     });
   }
   function openItemActions(anchor,it){
-    openMenu(anchor,function(m){
-      var title=document.createElement("div"); title.className="mtitle"; title.textContent=itemLabel(it)+" actions"; m.appendChild(title);
-       if(it.type!=="agent"){
-         m.appendChild(mkItem(ICON_NOTE,"Add or edit tags",false,function(){ closeMenu(); setTimeout(function(){ openTagPick(anchor,it); },0); }));
-         m.appendChild(mkItem(ICON_CALENDAR,it.dueDate?"Change due date":"Add due date",false,function(){ closeMenu(); setTimeout(function(){ openTodoDueDatePicker(anchor,it); },0); }));
-         if(state.quickAiHandoff){
-           m.appendChild(sep());
-           var contextTitle=document.createElement("div"); contextTitle.className="mtitle"; contextTitle.textContent="Bring note contents into"; m.appendChild(contextTitle);
-           m.appendChild(mkItem("","Copy as AI context",false,function(){ closeMenu(); copyNoteToAi(it,"","Context"); }));
-           m.appendChild(mkItem("","ChatGPT",false,function(){ closeMenu(); copyNoteToAi(it,"https://chatgpt.com/","ChatGPT context"); }));
-           m.appendChild(mkItem("","Claude",false,function(){ closeMenu(); copyNoteToAi(it,"https://claude.ai/new","Claude context"); }));
-           m.appendChild(mkItem("","Cursor",false,function(){ closeMenu(); copyNoteToAi(it,"https://cursor.com/","Cursor context"); }));
-           m.appendChild(mkItem(ICON_DOWNLOAD,"Download context package + photos",false,function(){ closeMenu(); downloadNoteAiPackage(it); }));
-           m.appendChild(sep());
-         }
-       }
-       m.appendChild(mkItem(ICON_DUPLICATE,"Duplicate",false,function(){ closeMenu(); duplicateItem(it); }));
-       m.appendChild(mkItem(ICON_DOWNLOAD,"Save manual document backup",false,function(){ closeMenu(); saveManualDocumentBackup(it); }));
-       m.appendChild(mkItem(ICON_NOTE,"Restore from backup",false,function(){ closeMenu(); openDocumentBackupHistory(it); }));
+    showItemActions(anchor,it,"root");
+  }
+  /* The pencil menu used to dump every action into one column — AI handoff
+     alone is five rows — so on a phone the list ran past the viewport and
+     could not scroll. Nested views keep every action, just not all at once. */
+  function showItemActions(anchor,it,view){
+    function fill(m){
+      if(view==="ai"){
+        m.appendChild(mkItem(ICON_CHEV_LEFT,itemLabel(it)+" actions",false,function(){ showItemActions(anchor,it,"root"); }));
+        m.appendChild(menuTitle("Bring note contents into"));
+        m.appendChild(mkItem(ICON_COPY,"Copy as AI context",false,function(){ closeMenu(); copyNoteToAi(it,"","Context"); }));
+        m.appendChild(mkItem(ICON_SPARK,"ChatGPT",false,function(){ closeMenu(); copyNoteToAi(it,"https://chatgpt.com/","ChatGPT context"); }));
+        m.appendChild(mkItem(ICON_SPARK,"Claude",false,function(){ closeMenu(); copyNoteToAi(it,"https://claude.ai/new","Claude context"); }));
+        m.appendChild(mkItem(ICON_SPARK,"Cursor",false,function(){ closeMenu(); copyNoteToAi(it,"https://cursor.com/","Cursor context"); }));
+        m.appendChild(mkItem(ICON_DOWNLOAD,"Download context package + photos",false,function(){ closeMenu(); downloadNoteAiPackage(it); }));
+        return;
+      }
+      if(view==="backup"){
+        m.appendChild(mkItem(ICON_CHEV_LEFT,itemLabel(it)+" actions",false,function(){ showItemActions(anchor,it,"root"); }));
+        m.appendChild(menuTitle("Document backup"));
+        m.appendChild(mkItem(ICON_DOWNLOAD,"Save manual document backup",false,function(){ closeMenu(); saveManualDocumentBackup(it); }));
+        m.appendChild(mkItem(ICON_NOTE,"Restore from backup",false,function(){ closeMenu(); openDocumentBackupHistory(it); }));
+        return;
+      }
+      m.appendChild(menuTitle(itemLabel(it)+" actions"));
+      if(it.type!=="agent"){
+        m.appendChild(mkItem(ICON_NOTE,"Add or edit tags",false,function(){ closeMenu(); setTimeout(function(){ openTagPick(anchor,it); },0); }));
+        m.appendChild(mkItem(ICON_CALENDAR,it.dueDate?"Change due date":"Add due date",false,function(){ closeMenu(); setTimeout(function(){ openTodoDueDatePicker(anchor,it); },0); }));
+        if(state.quickAiHandoff) m.appendChild(mkMoreItem(ICON_SPARK,"Bring into AI",function(){ showItemActions(anchor,it,"ai"); }));
+      }
+      m.appendChild(sep());
+      m.appendChild(mkItem(ICON_DUPLICATE,"Duplicate",false,function(){ closeMenu(); duplicateItem(it); }));
+      m.appendChild(mkMoreItem(ICON_DOWNLOAD,"Document backup",function(){ showItemActions(anchor,it,"backup"); }));
       if(it.type==="note"||it.type==="todo") m.appendChild(mkItem(isTodoNote(it)||it.type==="todo"?ICON_NOTE:ICON_TODO,isTodoNote(it)||it.type==="todo"?"Convert to note":"Convert to todo",false,function(){ closeMenu(); convertNoteTodo(it); }));
-      if(hasVoiceAccess()&&it.type!=="agent"&&ttsTextForItem(it).trim()) m.appendChild(mkItem(ICON_DOWNLOAD,"Download as audio",false,function(){ closeMenu(); downloadTts(it); }));
-      m.appendChild(mkItem(ICON_UP,"Move up",false,function(){ closeMenu(); moveItem(it,-1); }));
-      m.appendChild(mkItem(ICON_DOWN,"Move down",false,function(){ closeMenu(); moveItem(it,1); }));
+      if(hasVoiceAccess()&&it.type!=="agent"&&ttsTextForItem(it).trim()) m.appendChild(mkItem(ICON_AUDIO,"Download as audio",false,function(){ closeMenu(); downloadTts(it); }));
+      var split=document.createElement("div"); split.className="mi-split";
+      split.appendChild(mkItem(ICON_UP,"Move up",false,function(){ closeMenu(); moveItem(it,-1); }));
+      split.appendChild(mkItem(ICON_DOWN,"Move down",false,function(){ closeMenu(); moveItem(it,1); }));
+      m.appendChild(split);
       m.appendChild(sep());
       m.appendChild(mkItem(it.hidden?ICON_EYE:ICON_EYE_OFF,it.hidden?"Show in notes list":"Hide from notes list",false,function(){ closeMenu(); it.hidden=!it.hidden; it.updated=Date.now(); persist(); renderList(); renderMain(); showToast(it.hidden?"Hidden — open Hidden in the sidebar footer to find it":"Shown in the notes list"); }));
       m.appendChild(mkItem(it.locked?ICON_UNLOCK:ICON_LOCK,it.locked?"Unlock deletion":"Lock from deletion",false,function(){ toggleItemLock(it); }));
       if(!it.locked){ var remove=mkItem(ICON_DELETE,"Delete",false,function(){ closeMenu(); delItem(it.id); }); remove.className+=" danger"; m.appendChild(remove); }
-    });
+    }
+    if(openMenuEl&&openMenuAnchor===anchor){
+      var body=menuScrollBody(openMenuEl);
+      body.innerHTML="";
+      fill(body);
+      placeOpenMenu();
+      return;
+    }
+    openMenu(anchor,fill);
   }
   function convertNoteTodo(it){
     if(!it||!(it.type==="note"||it.type==="todo")) return;
