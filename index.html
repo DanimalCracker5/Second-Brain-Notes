@@ -5086,6 +5086,8 @@
       });
     } else if(itemUsesNoteBlocks(it)){
       ensureNoteBlocks(it);
+      var bodyText=itemText(it)||"";
+      targets.push({id:"body",label:"Whole note body",kind:"body",text:bodyText.length>1600?bodyText.slice(0,1600)+"\n[truncated — use paragraph target_ids for the rest]":bodyText});
       it.blocks.forEach(function(block,i){
         if(isEditableBlock(block)){
           targets.push({id:block.id,kind:"block",block:block,owner:it,text:blockTextForAgent(block),label:blockLabelFor(block,i),inline:block.type==="heading"||block.type==="embed"||block.type==="link"});
@@ -5128,10 +5130,121 @@
     else if(block.type==="code") block.code=text;
     else block.text=text;
   }
+  function parseToolArguments(raw){
+    if(!raw) return {};
+    if(typeof raw==="object"&&!Array.isArray(raw)) return raw;
+    var text=String(raw).trim();
+    if(!text) return {};
+    try{ return JSON.parse(text); }catch(e){}
+    var start=text.indexOf("{"), end=text.lastIndexOf("}");
+    if(start>=0&&end>start){
+      var sliced=text.slice(start,end+1);
+      try{ return JSON.parse(sliced); }catch(e){}
+      try{ return JSON.parse(sliced.replace(/,\s*([}\]])/g,"$1")); }catch(e){}
+    }
+    return {};
+  }
+  function agentEditText(raw){
+    if(raw==null) return "";
+    if(typeof raw==="string") return raw;
+    if(typeof raw==="number"||typeof raw==="boolean") return String(raw);
+    if(Array.isArray(raw)) return raw.map(agentEditText).filter(Boolean).join("\n");
+    if(typeof raw==="object"){
+      if(typeof raw.text==="string") return raw.text;
+      if(typeof raw.content==="string") return raw.content;
+      if(typeof raw.body==="string") return raw.body;
+      if(typeof raw.detail==="string") return raw.detail;
+    }
+    return "";
+  }
+  function emptyPlaceholderTextBlock(it){
+    var textBlocks=(it&&it.blocks||[]).filter(function(block){ return block&&block.type==="text"; });
+    if(textBlocks.length!==1) return null;
+    if(cleanText(textBlocks[0].text)||cleanText(textBlocks[0].html)) return null;
+    var extras=(it.blocks||[]).filter(function(block){ return block&&block.type!=="text"&&block.type!=="attachment"; });
+    return extras.length?null:textBlocks[0];
+  }
+  function writeNoteBody(it,text,mode){
+    ensureNoteBlocks(it);
+    var empty=emptyPlaceholderTextBlock(it);
+    mode=mode||"replace";
+    if(mode==="replace"&&empty){
+      setBlockText(empty,text);
+      syncNoteBody(it);
+      return true;
+    }
+    var firstText=null, lastText=null;
+    (it.blocks||[]).forEach(function(block){
+      if(block.type==="text"){
+        if(!firstText) firstText=block;
+        lastText=block;
+      }
+    });
+    if(mode==="append"){
+      if(lastText&&!cleanText(lastText.text)) setBlockText(lastText,text);
+      else if(lastText) setBlockText(lastText,joinText(lastText.text||"",text,false));
+      else it.blocks.push(textBlock(text));
+      syncNoteBody(it);
+      return true;
+    }
+    if(mode==="prepend"){
+      if(firstText) setBlockText(firstText,joinText(text,firstText.text||"",false));
+      else it.blocks.unshift(textBlock(text));
+      syncNoteBody(it);
+      return true;
+    }
+    var onlySimple=(it.blocks||[]).every(function(block){ return !block||block.type==="text"||block.type==="attachment"; });
+    if(onlySimple){
+      if(!firstText) it.blocks.unshift(textBlock(text));
+      else {
+        setBlockText(firstText,text);
+        it.blocks=it.blocks.filter(function(block){ return block===firstText||block.type==="attachment"; });
+        if(it.blocks.indexOf(firstText)<0) it.blocks.unshift(firstText);
+      }
+      syncNoteBody(it);
+      return true;
+    }
+    if(firstText) setBlockText(firstText,text);
+    else it.blocks.push(textBlock(text));
+    syncNoteBody(it);
+    return true;
+  }
+  function firstWritableTarget(targets){
+    var i, target;
+    for(i=0;i<(targets||[]).length;i++){
+      target=targets[i];
+      if(target.kind==="block"&&target.block&&target.block.type==="text") return target;
+    }
+    for(i=0;i<(targets||[]).length;i++){
+      target=targets[i];
+      if(target.kind==="body"||target.kind==="block"||target.kind==="task") return target;
+    }
+    return null;
+  }
+  function resolveAgentTargetId(rawId,targets,action){
+    var id=cleanText(rawId), index={};
+    (targets||[]).forEach(function(target){ index[target.id]=target; });
+    if(id&&index[id]) return id;
+    var lower=id.toLowerCase();
+    if(lower==="end"||lower==="bottom"||lower==="footer") return "end";
+    if(!id||["body","content","note","text","paragraph","paragraph 1","paragraph1","main","document","todo","description","details","detail","entry"].indexOf(lower)>=0||/^paragraph\s*\d+$/i.test(id)){
+      if(index.body) return "body";
+      var first=firstWritableTarget(targets);
+      if(first) return first.id;
+      return action==="insert_after"?"end":"body";
+    }
+    if(lower==="start"||lower==="top"||lower==="beginning"){
+      var start=firstWritableTarget(targets);
+      return start?start.id:(index.body?"body":"end");
+    }
+    var labelHit=(targets||[]).filter(function(target){ return cleanText(target.label).toLowerCase()===lower; })[0];
+    return labelHit?labelHit.id:id;
+  }
   function writeTarget(it,target,text){
     if(target.kind==="title"){ it.title=text; return true; }
     if(target.kind==="body"){
       if(it.type==="code") it.code=text;
+      else if(itemUsesNoteBlocks(it)) writeNoteBody(it,text,"replace");
       else it.body=text;
       return true;
     }
@@ -5158,6 +5271,12 @@
     if(itemUsesNoteBlocks(it)){
       ensureNoteBlocks(it);
       var type=blockType||"paragraph";
+      var emptyText=emptyPlaceholderTextBlock(it);
+      if(emptyText&&text&&(type==="paragraph"||type==="text"||!blockType)){
+        setBlockText(emptyText,text);
+        syncNoteBody(it);
+        return true;
+      }
       var block=createNoteBlock(type,{
         text:text,
         title:extra.blockTitle,
@@ -5193,22 +5312,23 @@
     lines.push("");
     lines.push("HOW YOU WORK");
     lines.push(approval
-      ? "- You cannot write into the document yourself. To change anything you must call propose_edits; the app then shows a before/after preview with Apply and Discard. Only the user can apply it."
-      : "- You are allowed to edit the open document yourself. Call propose_edits; the app applies those edits automatically after saving a backup. Do not ask them to approve each change.");
+      ? "- You cannot write into the document yourself. To change anything you must call update_open_document or propose_edits; the app then shows a before/after preview with Apply and Discard. Only the user can apply it."
+      : "- You are allowed to edit the open document yourself. Call update_open_document or propose_edits; the app applies those edits automatically after saving a backup. Do not ask them to approve each change.");
     lines.push(approval
       ? "- Never say you have changed, updated, fixed, or saved anything. Say you have drafted or suggested it and it is waiting for them."
-      : "- After proposing an edit, you may say it is already in the note. Keep working unless they stop you.");
+      : "- After a write tool result says Saved, you may say it is already in the note. If the tool failed, say the note was not changed. Do not ask them to approve each change.");
     lines.push("- If the user only wants feedback, an opinion, or an answer, reply in words and do not call propose_edits.");
     lines.push("- You can use search_notes to find notes by words in the title or body, and list_todos for open, overdue, or done todos. search_notes returns snippets; call request_note_access then read_notes only when you need the full text of a note that is not open.");
     lines.push("- Use list_notes to browse titles if you do not have a search query. Before reading any note that is not open, call request_note_access; the app will ask the user first. Only use read_notes after access is granted.");
     lines.push("- When the user asks you to create a new note, todo, YouTube script, workout, audio item, code file, or another type, call create_note with the matching kind. Pass a blocks array for prompts, headings, chapters, comments, groups, code, embeds, and links instead of one blob of text. The app asks for confirmation, then opens the new item so you can keep editing it.");
     lines.push("- When they ask to add a todo, call create_todo or create_note with kind todo. When they say they finished something, call update_todo with done=true. You can also set or clear a due date that way.");
-    lines.push("- Use open_note to put a found note or todo on screen so you can edit it with propose_edits.");
+    lines.push("- Use open_note to put a found note or todo on screen so you can edit it.");
     lines.push("- Use list_item_types if you are unsure which kinds or block types this workspace supports.");
     lines.push("- Use set_task when you start a piece of work that will take more than one beat (structure a ramble, draft a Cursor prompt, rewrite a chapter). Keep the task list honest.");
-    lines.push("- Only propose an edit when they asked for one, or when you offered and they agreed, or when they are clearly dictating content into the open note.");
-    lines.push("- A request to add, capture, write, update, or remove note content is not complete until you call propose_edits. Never merely describe the change or claim it happened. If the tool call fails, say plainly that the note was not changed.");
-    lines.push("- Create and edit every note block the Insert menu offers: paragraphs, headings, chapters, comments, prompts, collapsible groups, code, YouTube/Vimeo embeds, and links. Use propose_edits with insert_after and block_type to create one; use an existing target_id to edit one. File attachments cannot be created or changed by the assistant.");
+    lines.push("- Only edit when they asked for one, or when you offered and they agreed, or when they are clearly dictating content into the open note.");
+    lines.push("- A request to add, capture, write, update, or remove note content is not complete until you call update_open_document or propose_edits and the tool result says it was saved. Never merely describe the change or claim it happened. If the tool call fails, say plainly that the note was not changed.");
+    lines.push("- To fill or rewrite the open note or todo, call update_open_document with the exact wording. Use mode replace on an empty note and append to add to existing text. You may also set title. That is the normal way to put words into the note.");
+    lines.push("- Create and edit every note block the Insert menu offers: paragraphs, headings, chapters, comments, prompts, collapsible groups, code, YouTube/Vimeo embeds, and links. Use propose_edits with insert_after and block_type to create one; use an existing target_id, or \"body\", to edit one. File attachments cannot be created or changed by the assistant.");
     lines.push("- Cursor prompts, system prompts, and anything meant to be copied elsewhere belong in a prompt block. Do not dump them into a paragraph.");
     lines.push("- A collapsible group titled \""+TRANSCRIPT_GROUP_TITLE+"\" is the owner's raw speech. Append to it only when capturing dictation. Do not rewrite, summarize, or delete that group unless they ask. Put the structured note underneath it.");
     lines.push("- Keep spoken replies to one to three short sentences. They are read aloud, so use no markdown, lists, headings, or emoji — except when they asked you to read back what you wrote, in which case read the written wording.");
@@ -5223,7 +5343,8 @@
     if(targetItem&&targets.length){
       lines.push("");
       lines.push("EDITING RULES");
-      lines.push("- Every editable piece of the open document is listed below with a target_id. Use those ids exactly and never invent one.");
+      lines.push("- Every editable piece of the open document is listed below with a target_id. Use those ids exactly when you need a specific block. \"body\" always writes the main note text. \"title\" always changes the title. \"end\" inserts at the bottom.");
+      lines.push('- Prefer update_open_document for ordinary wording. Use propose_edits when you need headings, chapters, comments, prompts, groups, code, embeds, or links.');
       lines.push('- "replace" needs the complete new text for that piece. "append" and "prepend" need only the new text. "insert_after" adds a new piece below the target_id you name, or below everything if you pass "end". For insert_after, set block_type to paragraph, heading, chapter, comment, prompt, group, code, embed, or link. For chapters and groups also set block_title. For headings set heading_level to 1, 2, or 3. For embeds and links set url (or put the URL in text).');
       lines.push('- "title" is always a valid target_id.');
       lines.push('- Chapters and groups each expose two editable targets: one for their content and one ending in ":title" for their label. Preserve the requested block type; never flatten a prompt, chapter, or heading into a plain paragraph or JSON.');
@@ -5255,19 +5376,28 @@
       var body=targets.map(function(t){ return "--- target_id: "+t.id+"\npart: "+t.label+"\ntext: "+(t.text?t.text:"(empty)"); }).join("\n");
       lines.push(body.length>COLLAB_CONTEXT_LIMIT?body.slice(0,COLLAB_CONTEXT_LIMIT)+"\n(document truncated — ask the user about parts you cannot see)":body);
     } else {
-      lines.push("No document is open, so propose_edits is unavailable until you open_note or create_note. You can still search_notes, list_todos, list_notes, list_item_types, request_note_access, read_notes, create_note, create_todo, update_todo, set_task, and remember.");
+      lines.push("No document is open, so update_open_document and propose_edits are unavailable until you open_note or create_note. You can still search_notes, list_todos, list_notes, list_item_types, request_note_access, read_notes, create_note, create_todo, update_todo, set_task, and remember.");
     }
     return lines.join("\n");
   }
   function collabTools(hasDocument){
     var tools=[];
     if(hasDocument) tools.push({type:"function",function:{
+      name:"update_open_document",
+      description:"Write into the currently open note or todo. Use this whenever the user asks you to put, add, save, or update words in the open document. Prefer this over propose_edits for ordinary paragraphs.",
+      parameters:{type:"object",properties:{
+        text:{type:"string",description:"The wording to put in the note body."},
+        title:{type:"string",description:"Optional new title."},
+        mode:{type:"string",enum:["replace","append","prepend"],description:"replace fills or rewrites the body (default, and required for an empty note). append adds to the end. prepend adds at the start."}
+      },required:["text"]}
+    }});
+    if(hasDocument) tools.push({type:"function",function:{
       name:"propose_edits",
       description:"Propose one or more changes to the open document. Depending on agent settings these apply automatically or wait for Apply.",
       parameters:{type:"object",properties:{
         summary:{type:"string",description:"One short sentence describing the change, shown above the preview."},
         edits:{type:"array",description:"The changes, in document order.",items:{type:"object",properties:{
-          target_id:{type:"string",description:'A target_id from the OPEN DOCUMENT list, "title", or "end" when inserting at the bottom.'},
+          target_id:{type:"string",description:'A target_id from the OPEN DOCUMENT list. Use "body" for the main note text, "title" for the title, or "end" when inserting at the bottom.'},
           action:{type:"string",enum:["replace","append","prepend","insert_after"]},
           text:{type:"string",description:"For replace, the complete new text. For the others, only the new text being added. For embed/link, the URL may go here or in url."},
           block_type:{type:"string",enum:agentBlockTypeEnum(),description:"For insert_after only. Defaults to paragraph."},
@@ -5323,7 +5453,9 @@
         todo_id:{type:"string",description:"Id from list_todos or search_notes."},
         query:{type:"string",description:"Title or words to match if you do not have an id."},
         done:{type:"boolean",description:"True to complete, false to reopen."},
-        due_date:{type:"string",description:"YYYY-MM-DD, a phrase like tomorrow, or clear."}
+        due_date:{type:"string",description:"YYYY-MM-DD, a phrase like tomorrow, or clear."},
+        detail:{type:"string",description:"Optional new body text for the todo note."},
+        text:{type:"string",description:"Alias for detail."}
       }}
     }});
     tools.push({type:"function",function:{
@@ -6552,7 +6684,7 @@
   function openDocumentToolResult(it){
     var targets=collabTargets(it);
     var list=targets.slice(0,48).map(function(target){ return target.id+" · "+target.label; }).join("\n");
-    return "Opened \""+(it.title||"Untitled")+"\" ("+itemLabel(it)+"). propose_edits can now use these target_ids:\n"+(list||"(empty document)");
+    return "Opened \""+(it.title||"Untitled")+"\" ("+itemLabel(it)+"). Call update_open_document to put wording in it, or propose_edits with these target_ids:\n"+(list||"body · Whole note body\ntitle · Title");
   }
   function createAgentTodo(title,dueText,detail){
     var todo=newTodoItem();
@@ -6635,16 +6767,17 @@
     var index={};
     targets.forEach(function(t){ index[t.id]=t; });
     var edits=[];
-    (Array.isArray(rawEdits)?rawEdits:[]).forEach(function(raw){
+    var list=Array.isArray(rawEdits)?rawEdits:(rawEdits&&typeof rawEdits==="object"?[rawEdits]:[]);
+    list.forEach(function(raw){
       if(!raw||typeof raw!=="object") return;
-      var targetId=cleanText(raw.target_id);
-      var text=typeof raw.text==="string"?raw.text:"";
+      var action=["replace","append","prepend","insert_after"].indexOf(raw.action)>=0?raw.action:"replace";
+      var targetId=resolveAgentTargetId(raw.target_id||raw.targetId||raw.id,targets,action);
+      var text=agentEditText(raw.text!=null?raw.text:(raw.content!=null?raw.content:(raw.body!=null?raw.body:raw.new_text)));
       var url=cleanText(raw.url);
       var blockTitle=cleanText(raw.block_title||raw.title);
       var headingLevel=Math.max(1,Math.min(3,Number(raw.heading_level||raw.level)||0))||0;
       var language=cleanText(raw.language);
-      var action=["replace","append","prepend","insert_after"].indexOf(raw.action)>=0?raw.action:"replace";
-      if(!targetId) return;
+      if(!targetId) targetId=action==="insert_after"?"end":"body";
       var blockType=agentBlockTypeEnum().indexOf(raw.block_type)>=0?raw.block_type:"paragraph";
       if(action==="insert_after"){
         if(!text&&url) text=url;
@@ -6658,21 +6791,50 @@
         return;
       }
       if(!text&&!url&&!blockTitle&&!headingLevel) return;
-      var target=index[targetId];
-      if(!target) return;
+      var resolved=index[targetId];
+      if(!resolved&&targetId==="body"){
+        resolved=firstWritableTarget(targets);
+        if(resolved) targetId=resolved.id;
+      }
+      if(!resolved){
+        resolved=firstWritableTarget(targets);
+        if(!resolved) return;
+        targetId=resolved.id;
+        if(action==="replace"&&resolved.kind==="block"&&cleanText(resolved.text)) action="append";
+      }
       if(!text&&url) text=url;
-      edits.push({targetId:targetId,action:action,after:text,source:target.text,inline:target.inline,note:cleanText(raw.note),label:target.label,
-        blockType:target.block&&target.block.type,blockTitle:blockTitle,headingLevel:headingLevel||undefined,url:url,language:language,
-        before:action==="replace"?target.text:"",
+      edits.push({targetId:targetId,action:action,after:text,source:resolved.text,inline:resolved.inline,note:cleanText(raw.note),label:resolved.label,
+        blockType:resolved.block&&resolved.block.type,blockTitle:blockTitle,headingLevel:headingLevel||undefined,url:url,language:language,
+        before:action==="replace"?resolved.text:"",
         actionLabel:action==="append"?"added to the end":action==="prepend"?"added at the start":"replaced"});
     });
     if(!edits.length) return null;
     return {id:uid(),ts:Date.now(),summary:cleanText(summary)||"Suggested change",edits:edits,state:"pending"};
   }
+  function refreshOpenItemAfterAgent(it,flashIds){
+    persist();
+    renderList();
+    updateCollabContextLabel();
+    if(!it||!current()||current().id!==it.id) return;
+    var editor=canvas.querySelector('.note-editor[data-note-id="'+it.id+'"]');
+    if(itemUsesNoteBlocks(it)&&editor){
+      refreshNoteEditor(it);
+      var titleEl=canvas.querySelector("textarea.title, .title");
+      if(titleEl&&"value" in titleEl) titleEl.value=it.title||"";
+      updateMeta();
+      flashAgentEdits(flashIds);
+    } else if(collab.hostKind!=="stage"){
+      renderMain();
+    } else {
+      refreshNoteEditor(it);
+      updateMeta();
+      flashAgentEdits(flashIds);
+    }
+  }
   function applyProposal(proposal){
-    var it=collabDocument();
-    if(!it){ proposal.state="discarded"; pushCollabNote("That document is no longer open, so nothing was changed.",true); renderCollabLog(); return; }
-    if(it.locked){ pushCollabNote("This item is locked. Unlock it first.",true); return; }
+    var it=collabDocument()||(current()&&current().type!=="agent"?current():null);
+    if(!it){ proposal.state="discarded"; pushCollabNote("That document is no longer open, so nothing was changed.",true); renderCollabLog(); return {ok:false,applied:0,error:"The open document is gone."}; }
+    if(it.locked){ proposal.state="discarded"; pushCollabNote("This item is locked. Unlock it first.",true); renderCollabLog(); return {ok:false,applied:0,error:"This item is locked."}; }
     if(agentSettings().backupBeforeWork) captureAutoBackup(true,"agent");
     var index={}, applied=0, skipped=0;
     collabTargets(it).forEach(function(t){ index[t.id]=t; });
@@ -6681,7 +6843,7 @@
         if(insertAfterTarget(it,edit.targetId,edit.after,edit.blockType,{blockTitle:edit.blockTitle,headingLevel:edit.headingLevel,url:edit.url,language:edit.language})) applied++; else skipped++;
         return;
       }
-      var target=index[edit.targetId];
+      var target=index[edit.targetId]||(edit.targetId==="body"?index.body:null)||firstWritableTarget(collabTargets(it));
       if(!target){ skipped++; return; }
       var extras=!!(edit.headingLevel||edit.blockTitle||edit.language||edit.url);
       var shouldWrite=!(edit.action==="replace"&&!edit.after&&extras);
@@ -6690,7 +6852,8 @@
         var next=edit.action==="append"?joinText(target.text,edit.after,target.inline)
           :edit.action==="prepend"?joinText(edit.after,target.text,target.inline)
           :edit.after;
-        ok=writeTarget(it,target,next);
+        if(target.kind==="body"&&itemUsesNoteBlocks(it)) ok=writeNoteBody(it,edit.after,edit.action==="append"||edit.action==="prepend"?edit.action:"replace");
+        else ok=writeTarget(it,target,next);
       }
       if(!ok){ skipped++; return; }
       if(target.block){
@@ -6701,20 +6864,43 @@
       }
       applied++;
     });
-    if(!applied){ pushCollabNote("Nothing could be applied — the document changed since this was suggested.",true); renderCollabLog(); return; }
+    if(!applied){ proposal.state="discarded"; pushCollabNote("Nothing could be applied — the document changed since this was suggested.",true); renderCollabLog(); return {ok:false,applied:0,error:"No matching parts of the note could be updated."}; }
     if(itemUsesNoteBlocks(it)) ensureNoteBlocks(it);
     if(it.type==="todo") (it.todos||[]).forEach(ensureTodoTaskDetails);
-    touchContent(it); persist(); renderList();
-    if(current()&&current().id===it.id){
-      if(itemUsesNoteBlocks(it)){ refreshNoteEditor(it); updateMeta(); flashAgentEdits(proposal.edits.map(function(edit){ return edit.targetId; })); }
-      else renderMain();
-    }
+    touchContent(it);
+    refreshOpenItemAfterAgent(it,proposal.edits.map(function(edit){ return edit.targetId==="body"?"":edit.targetId; }));
     markCompanionState("writing");
     var agentItem=collabAgent();
     if(agentItem) normalizeAgent(agentItem).stats.edits+=applied;
     proposal.state="applied";
     pushCollabNote(applied+" change"+(applied===1?"":"s")+" applied"+(agentSettings().backupBeforeWork?" — a backup was saved first":"")+(skipped?". "+skipped+" could not be matched.":"."));
     renderCollabLog();
+    return {ok:true,applied:applied,skipped:skipped,text:noteTextForAgent(it)};
+  }
+  function writeOpenDocument(it,extra){
+    extra=extra||{};
+    if(!it) return {ok:false,error:"No document is open. Call open_note first."};
+    if(it.locked) return {ok:false,error:"This item is locked. Unlock it first."};
+    var title=typeof extra.title==="string"?cleanText(extra.title):"";
+    var text=agentEditText(extra.text!=null?extra.text:(extra.content!=null?extra.content:extra.detail));
+    var mode=cleanText(extra.mode).toLowerCase();
+    if(mode!=="append"&&mode!=="prepend") mode="replace";
+    if(!title&&text==="") return {ok:false,error:"Provide text and/or title."};
+    if(agentSettings().backupBeforeWork) captureAutoBackup(true,"agent");
+    if(title) it.title=title;
+    if(extra.text!=null||extra.content!=null||extra.detail!=null||text){
+      if(itemUsesNoteBlocks(it)) writeNoteBody(it,text,mode);
+      else if(it.type==="code") it.code=mode==="append"?joinText(it.code||"",text):mode==="prepend"?joinText(text,it.code||""):text;
+      else it.body=mode==="append"?joinText(it.body||"",text):mode==="prepend"?joinText(text,it.body||""):text;
+    }
+    if(itemUsesNoteBlocks(it)) ensureNoteBlocks(it);
+    touchContent(it);
+    refreshOpenItemAfterAgent(it,[]);
+    var agentItem=collabAgent();
+    if(agentItem) normalizeAgent(agentItem).stats.edits+=1;
+    pushCollabNote("Updated "+itemLabel(it).toLowerCase()+": "+(cleanText(it.title)||"Untitled"));
+    if(collab.host) renderCollabLog();
+    return {ok:true,text:noteTextForAgent(it)};
   }
   function flashAgentEdits(ids){
     (ids||[]).forEach(function(id){
@@ -6728,6 +6914,25 @@
   }
 
   /* ---------- a turn ---------- */
+  function lastCollabUserText(){
+    var log=collabConversation();
+    for(var i=log.length-1;i>=0;i--) if(log[i]&&log[i].role==="user") return log[i].text||"";
+    return "";
+  }
+  function looksLikeNoteWriteRequest(text){
+    var value=text||"";
+    if(/\b(put|add|write|save|update|edit|insert|capture|fill)\b/i.test(value)&&/\b(note|todo|document|it|there|this)\b/i.test(value)) return true;
+    if(/\b(into the note|to the note|on the note)\b/i.test(value)) return true;
+    return false;
+  }
+  function looksLikeNoteWriteClaim(text){
+    var value=cleanText(text);
+    if(!value) return false;
+    if(/\b(added|updated|edited|saved|changed|wrote|inserted|put)\b[^.]{0,120}\b(note|document|todo|entry|point|text|content|it)\b/i.test(value)) return true;
+    if(/\b(it'?s|it is) (done|in|saved|there)\b/i.test(value)) return true;
+    if(/\bi (added|updated|saved|wrote|put)\b/i.test(value)) return true;
+    return false;
+  }
   function collabApiMessages(agentItem,targetItem,targets){
     var messages=[{role:"system",content:collabSystemPrompt(agentItem,targetItem,targets)}];
     collabConversation().forEach(function(entry){
@@ -6740,13 +6945,18 @@
     var agentItem=collabAgent();
     if(!agentItem){ setCollabStatus("Create an agent first.",true); return; }
     if(!hasThinkingAccess()){ setCollabStatus(usingHostedAi()?"Buy AI credits in Settings to keep talking.":"Add an OpenAI or Gemini API key, or buy AI credits in Settings.",true); return; }
-    var targetItem=collabDocument(), targets=collabTargets(targetItem);
-    var messages=collabApiMessages(agentItem,targetItem,targets), tools=collabTools(!!(targetItem&&targets.length)), turnProposals=[];
+    var targetItem=collabDocument();
+    if(!targetItem&&collab.mode==="document"&&current()&&current().type!=="agent"){
+      targetItem=current();
+      collab.itemId=targetItem.id;
+    }
+    var targets=collabTargets(targetItem);
+    var messages=collabApiMessages(agentItem,targetItem,targets), tools=collabTools(!!(targetItem&&targets.length)), turnProposals=[], turnWrites=0;
     var role=canonAgentRole(opts.role||"conscious");
     collab.busy=true; updateCollabControls(); setCollabStatus(role==="subconscious"?"Deciding whether to jump in…":"Thinking…");
     if(agentSettings().speakReplies) unlockSpeechPlayback(playbackAudioContext());
     markCompanionState("thinking");
-    var rounds=0, streamEntry=null, streamedText="";
+    var rounds=0, streamEntry=null, streamedText="", nudgedWrite=false;
     function onDelta(piece){
       if(!piece) return;
       streamedText+=piece;
@@ -6772,13 +6982,44 @@
         var choice=data&&data.choices&&data.choices[0], message=choice&&choice.message;
         if(!message) throw new Error("The model returned no reply.");
         var calls=Array.isArray(message.tool_calls)?message.tool_calls:[];
-        if(!calls.length) return cleanText(message.content)||cleanText(message.refusal);
+        if(!calls.length){
+          var spoken=cleanText(message.content)||cleanText(message.refusal);
+          if(targetItem&&!nudgedWrite&&rounds<COLLAB_TOOL_ROUNDS&&(looksLikeNoteWriteRequest(lastCollabUserText())||looksLikeNoteWriteClaim(spoken))){
+            nudgedWrite=true;
+            dropStream();
+            messages.push({role:"assistant",content:message.content||spoken||""});
+            messages.push({role:"user",content:"The open note was not changed. You must call update_open_document or propose_edits now with the exact wording. Use target_id \"body\" for the note text and \"title\" for the title. Do not claim the edit happened until the tool result says it was saved."});
+            return step();
+          }
+          return spoken;
+        }
         dropStream();
         messages.push({role:"assistant",content:message.content||null,tool_calls:calls});
         calls.forEach(function(call){
-          var name=call&&call.function&&call.function.name, args={}, result="Done.";
-          try{ args=JSON.parse(call.function.arguments||"{}"); }catch(e){ args={}; }
-          if(name==="propose_edits"){
+          var name=call&&call.function&&call.function.name, args=parseToolArguments(call&&call.function&&call.function.arguments), result="Done.";
+          if(name==="update_open_document"){
+            var writeTargetItem=targetItem||collabDocument();
+            if(!writeTargetItem) result="No document is open. Call open_note first.";
+            else if(agentRequiresApproval(agentItem)){
+              var preview=buildProposal(cleanText(args.title)?"Update title and body":"Update the open note",[
+                args.title?{target_id:"title",action:"replace",text:args.title}:null,
+                {target_id:"body",action:args.mode==="append"?"append":args.mode==="prepend"?"prepend":"replace",text:agentEditText(args.text!=null?args.text:args.content)}
+              ].filter(Boolean),targets);
+              if(!preview) result="No usable text was in that call. Pass text to write into the note.";
+              else {
+                collab.proposals.push(preview); turnProposals.push(preview);
+                renderCollabLog();
+                result="Preview shown to the user with Apply and Discard buttons. The app will read the exact proposed wording aloud and remind them it is waiting for approval.";
+              }
+            } else {
+              var written=writeOpenDocument(writeTargetItem,args);
+              if(written.ok){
+                turnWrites++;
+                retargetTurn(writeTargetItem);
+                result="Saved. The open document is now:\n"+written.text;
+              } else result=written.error||"The note was not changed.";
+            }
+          } else if(name==="propose_edits"){
             var proposal=buildProposal(args.summary,args.edits,targets);
             if(proposal){
               collab.proposals.push(proposal); turnProposals.push(proposal);
@@ -6786,11 +7027,16 @@
                 renderCollabLog();
                 result="Preview shown to the user with Apply and Discard buttons. The app will read the exact proposed wording aloud and remind them it is waiting for approval.";
               } else {
-                applyProposal(proposal);
-                result="The proposal was applied automatically after saving a backup.";
+                var applied=applyProposal(proposal);
+                if(applied&&applied.ok){
+                  turnWrites++;
+                  result="Saved. The open document is now:\n"+(applied.text||noteTextForAgent(targetItem));
+                } else {
+                  result=(applied&&applied.error)||"The note was not changed. Call update_open_document with the exact wording, or propose_edits with target_id \"body\".";
+                }
               }
             }
-            else result="No usable edits were in that call. Check that every target_id came from the OPEN DOCUMENT list.";
+            else result="No usable edits were in that call. Call update_open_document with the text, or propose_edits using target_id \"body\" or \"title\".";
           } else if(name==="list_notes"){
             result=JSON.stringify(noteCatalog(!!args.include_agents));
           } else if(name==="search_notes"){
@@ -6800,21 +7046,27 @@
             result=JSON.stringify(listTodosForAgent(args.filter));
           } else if(name==="update_todo"){
             var matches=findTodosForAgent(args.todo_id||args.query);
+            var todoBody=agentEditText(args.detail!=null?args.detail:args.text);
             if(!matches.length) result="No todo matched. Use list_todos or search_notes first.";
             else if(matches.length>1&&!args.todo_id) result="Multiple todos matched. Ask the user which one, or call again with todo_id: "+JSON.stringify(matches.slice(0,8).map(todoRecord));
-            else if(typeof args.done!=="boolean"&&args.due_date==null) result="Set done and/or due_date.";
+            else if(typeof args.done!=="boolean"&&args.due_date==null&&!todoBody) result="Set done, due_date, and/or detail.";
             else {
               var targetTodo=matches[0];
               var changeBits=[];
               if(typeof args.done==="boolean") changeBits.push(args.done?"mark done":"reopen");
               if(args.due_date!=null) changeBits.push(cleanText(args.due_date)==="clear"||!cleanText(args.due_date)?"clear due date":"due "+cleanText(args.due_date));
+              if(todoBody) changeBits.push("update body");
               var label=(targetTodo.title||"Untitled todo")+(changeBits.length?" — "+changeBits.join(", "):"");
-              if(!confirmAgentChange(agentItem,"Update this todo?\n\n"+label)) result="The user cancelled the todo update.";
+              if(!confirmAgentChange(agentItem,"Update this todo?\n\n"+label+(todoBody?"\n\n"+todoBody.slice(0,400):""))) result="The user cancelled the todo update.";
               else {
                 backupBeforeAgentChange();
                 var updated=applyTodoUpdate(targetTodo,args.done,args.due_date==null?null:args.due_date);
+                if(todoBody){
+                  var bodyWrite=writeOpenDocument(targetTodo,{text:todoBody,mode:cleanText(itemText(targetTodo))?"append":"replace"});
+                  if(bodyWrite.ok) turnWrites++;
+                }
                 pushCollabNote((updated.done?"Completed":"Updated")+" todo: "+updated.title+(updated.due?" · due "+updated.due_label:""));
-                result="Updated: "+JSON.stringify(updated);
+                result="Updated: "+JSON.stringify(updated)+(todoBody?"\n"+noteTextForAgent(targetTodo):"");
               }
             }
           } else if(name==="create_todo"){
@@ -6888,14 +7140,15 @@
     step().then(function(reply){
       collab.busy=false; updateCollabControls();
       var a=normalizeAgent(agentItem);
-      var text=turnProposals.length?proposalSpokenReply(turnProposals):cleanText(reply);
+      var spokenProposals=turnProposals.filter(function(proposal){ return proposal.state==="applied"||proposal.state==="pending"; });
+      var text=spokenProposals.length?proposalSpokenReply(spokenProposals):cleanText(reply);
       var shouldSpeak=opts.forceSpeak;
       if(typeof shouldSpeak!=="boolean"){
         shouldSpeak=agentSettings().speakReplies;
         if(a.readBack==="never") shouldSpeak=false;
-        else if(a.readBack==="after_edits") shouldSpeak=shouldSpeak&&!!turnProposals.length;
+        else if(a.readBack==="after_edits") shouldSpeak=shouldSpeak&&!!spokenProposals.length;
       }
-      if(!turnProposals.length&&targetItem&&/\b(added|updated|edited|saved|changed)\b[^.]{0,80}\b(note|document|entry|point|text|content)\b/i.test(cleanText(reply))){
+      if(!turnWrites&&!spokenProposals.length&&targetItem&&looksLikeNoteWriteClaim(text)){
         pushCollabNote("No note edit was received from the agent, so the document was not changed. Ask it to try the edit again.",true);
       }
       var emptyVoice=!text&&collab.voice&&collab.voice.active;
