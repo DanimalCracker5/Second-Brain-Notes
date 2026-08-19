@@ -199,6 +199,21 @@ function sanitizeTools(tools) {
   });
 }
 
+function sanitizeToolChoice(raw, tools) {
+  if (!tools.length) return undefined;
+  const names = {};
+  tools.forEach(function (tool) {
+    if (tool && tool.function && tool.function.name) names[tool.function.name] = true;
+  });
+  if (raw && typeof raw === "object") {
+    const name = String(raw.function && raw.function.name || raw.name || "").slice(0, 64);
+    if (name && names[name]) return { type: "function", function: { name: name } };
+  }
+  if (raw === "required" || raw === "any") return "required";
+  if (typeof raw === "string" && names[raw]) return { type: "function", function: { name: raw } };
+  return "auto";
+}
+
 function openaiToGeminiTools(tools) {
   const decls = sanitizeTools(tools).map(function (tool) {
     return {
@@ -317,6 +332,7 @@ async function handleChat(req, res, user) {
   const role = body.role === "subconscious" || body.role === "utility" ? body.role : "conscious";
   const messages = sanitizeMessages(body.messages);
   const tools = sanitizeTools(body.tools);
+  const toolChoice = sanitizeToolChoice(body.toolChoice || body.tool_choice, tools);
   const maxTokens = pricing.clampOutputTokens(body.maxTokens || body.max_tokens, role);
   const temperature = typeof body.temperature === "number" ? Math.max(0, Math.min(2, body.temperature)) : undefined;
   const estimate = pricing.estimateChatHoldMicros(model, messages, maxTokens, role);
@@ -329,11 +345,19 @@ async function handleChat(req, res, user) {
       if (typeof temperature === "number") payload.generationConfig.temperature = temperature;
       if (body.json) payload.generationConfig.responseMimeType = "application/json";
       const geminiTools = openaiToGeminiTools(tools);
-      if (geminiTools.length) payload.tools = geminiTools;
+      if (geminiTools.length) {
+        payload.tools = geminiTools;
+        if (toolChoice && toolChoice !== "auto") {
+          const forced = toolChoice.function && toolChoice.function.name;
+          payload.toolConfig = forced
+            ? { functionCallingConfig: { mode: "ANY", allowedFunctionNames: [forced] } }
+            : { functionCallingConfig: { mode: "ANY" } };
+        }
+      }
       data = await callGeminiChat(model, payload);
     } else {
       const payload = { model: model, messages: messages };
-      if (tools.length) { payload.tools = tools; payload.tool_choice = "auto"; }
+      if (tools.length) { payload.tools = tools; payload.tool_choice = toolChoice || "auto"; }
       if (body.json) payload.response_format = { type: "json_object" };
       if (typeof temperature === "number") payload.temperature = temperature;
       if (/^(o[1-9]\b|gpt-5)/i.test(model)) payload.max_completion_tokens = maxTokens;
