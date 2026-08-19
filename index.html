@@ -126,6 +126,9 @@
 
   .meta{ font-family:"DM Mono",monospace; font-size:.72rem; color:var(--ink-faint); margin:0 0 26px; }
   .meta b{ color:var(--ink-dim); font-weight:500; }
+  .due-prominent{ display:inline-flex; align-items:center; gap:7px; margin:0 0 18px; padding:8px 11px; border:1px solid var(--accent-line); border-radius:10px; color:var(--accent); background:var(--accent-soft); cursor:pointer; font:600 .76rem "DM Mono",monospace; }
+  .due-prominent.overdue{ color:#fecaca; border-color:rgba(248,113,113,.45); background:rgba(248,113,113,.12); }
+  .due-prominent svg{ width:15px; height:15px; }
 
   .note-editor{ display:grid; gap:4px; padding-bottom:24px; }
   .note-editor-tools{ display:flex; justify-content:flex-end; margin:-7px 0 6px; }
@@ -401,6 +404,12 @@
   /* Five children (dot, name, count, hide, edit) need five columns — with four
      the edit button wrapped onto a second row and doubled the chip's height. */
   .tagcloud{ display:grid; gap:2px; padding:2px 10px 10px; }
+  .typecloud{ display:grid; gap:2px; padding:2px 10px 10px; }
+  .typecloud.is-collapsed{ display:none; }
+  .type-filter{ display:flex; align-items:center; gap:8px; width:100%; min-height:31px; padding:0 9px; border:1px solid transparent; border-radius:9px; color:var(--ink-dim); background:transparent; cursor:pointer; font:600 .79rem "DM Sans",sans-serif; text-align:left; }
+  .type-filter:hover,.type-filter.active{ color:var(--ink); border-color:var(--line); background:rgba(255,255,255,.05); }
+  .type-filter.active{ color:var(--accent); border-color:var(--accent-line); background:var(--accent-soft); }
+  .type-filter svg{ width:14px; height:14px; }
   .tg{ position:relative; display:grid; grid-template-columns:auto minmax(0,1fr) auto auto auto; align-items:center; gap:8px; width:100%; min-height:31px; padding:0 3px 0 9px; border-radius:9px; color:var(--ink-dim); background:transparent; border:1px solid transparent; cursor:pointer; isolation:isolate; transition:color .16s ease,border-color .16s ease,transform .16s cubic-bezier(.2,.9,.3,1.2); }
   /* Each row tints itself with its own tag colour instead of the theme accent,
      so the list reads as a legend for the dots beside every note. */
@@ -470,7 +479,7 @@
   .d-item .dot{ width:6px; height:6px; border-radius:50%; flex:none; }
   .d-item .item-lock{ display:grid; place-items:center; color:var(--accent); }
   .d-item .item-lock svg{ width:12px; height:12px; }
-  .d-item .dx{ width:30px; height:30px; display:grid; place-items:center; opacity:0; border:none; background:none; color:var(--ink-faint); cursor:pointer; padding:0; border-radius:7px; }
+  .d-item .dx{ width:30px; height:30px; display:grid; place-items:center; opacity:1; border:1px solid var(--line); background:rgba(255,255,255,.035); color:var(--ink-dim); cursor:pointer; padding:0; border-radius:7px; }
   .d-item .dx svg{ width:15px; height:15px; }
   .d-item:hover .dx,.d-item:focus-within .dx{ opacity:1; } .d-item .dx:hover,.d-item .dx:focus-visible{ color:var(--accent); background:var(--accent-soft); outline:none; }
   .d-item.todo-done .dx{ opacity:1; color:#f87171; }
@@ -802,6 +811,15 @@
   .collab-foot button svg{ width:18px; height:18px; }
   .collab-foot .send{ color:#08080a; background:var(--accent); border-color:transparent; }
   .collab-foot .mic.on{ color:#08080a; background:#f87171; border-color:transparent; animation:micpulse 1.5s ease-in-out infinite; }
+  .collab-tasks{ margin:0 0 9px; padding:8px 10px; border:1px solid var(--line); border-radius:11px; background:rgba(255,255,255,.025); }
+  .collab-tasks summary{ color:var(--ink-dim); cursor:pointer; font:600 .7rem "DM Mono",monospace; }
+  .collab-task-list{ display:grid; gap:5px; margin-top:8px; }
+  .collab-task-row{ display:flex; align-items:center; gap:7px; }
+  .collab-task-row button{ flex:none; border:1px solid var(--line); border-radius:7px; padding:4px 7px; color:var(--ink-dim); background:rgba(255,255,255,.04); cursor:pointer; font-size:.68rem; }
+  .collab-task-row span{ flex:1; min-width:0; color:var(--ink); font-size:.75rem; }
+  .collab-task-row.done span{ color:var(--ink-faint); text-decoration:line-through; }
+  .collab-task-add{ display:flex; gap:6px; margin-top:7px; }
+  .collab-task-add input{ flex:1; min-width:0; border:1px solid var(--line); border-radius:7px; padding:6px 8px; color:var(--ink); background:rgba(0,0,0,.18); }
   @keyframes micpulse{ 0%,100%{ box-shadow:0 0 0 0 rgba(248,113,113,.5); } 50%{ box-shadow:0 0 0 9px rgba(248,113,113,0); } }
   .agent-stage .collab-body{ min-height:330px; }
   .agent-stage .collab-log{ padding:0 0 12px; }
@@ -1184,6 +1202,8 @@
     <div class="d-scroll">
       <div class="sec-h"><button class="section-toggle" id="tagsToggleBtn" type="button" aria-controls="tags" aria-expanded="true" title="Collapse tags"><span>Tags</span><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m6 9 6 6 6-6"/></svg></button><button id="addTagBtn" title="New tag">＋</button></div>
       <div id="tags"></div>
+      <div class="sec-h"><button class="section-toggle" id="typesToggleBtn" type="button" aria-controls="types" aria-expanded="true" title="Collapse types"><span>Types</span><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m6 9 6 6 6-6"/></svg></button></div>
+      <div class="typecloud" id="types"></div>
       <div class="sec-h"><span id="listLabel">All notes</span><div class="list-tools"><button id="selectNotesBtn" title="Select notes" aria-label="Select notes">✓</button><button id="listToolsBtn" title="Filter and sort" aria-label="Filter and sort notes">⇅</button></div></div>
       <label class="note-search" id="noteSearchWrap"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="11" cy="11" r="6"/><path d="m16 16 4 4"/></svg><input id="noteSearch" type="search" autocomplete="off" placeholder="Search notes…" aria-label="Search notes"><button class="quick-add-note" id="quickAddNoteBtn" type="button" title="Add note from search" aria-label="Add note from search">＋</button><button id="clearNoteSearch" type="button" aria-label="Clear note search">×</button></label>
       <div class="d-list" id="list"></div>
@@ -1334,20 +1354,10 @@
   var AGENT_GEMINI_LIVE_WS="wss://generativelanguage.googleapis.com/ws/google.ai.generativelanguage.v1beta.GenerativeService.BidiGenerateContent";
   var AGENT_VOICE_STYLE_ALIASES={hud:"jarvis",pulse:"core",orb:"core",rings:"nova",halo:"radial"};
   var AGENT_VOICE_STYLES=[
-    {id:"face",name:"Face",hint:"Talking orb. Add a photo in Identity for a real face."},
-    {id:"jarvis",name:"Jarvis HUD",hint:"Radar sweep and live core."},
-    {id:"iris",name:"Iris",hint:"An eye that opens as it listens."},
-    {id:"core",name:"Reactor core",hint:"Molten center with orbiting sparks."},
-    {id:"nova",name:"Nova",hint:"Shockwaves from a white-hot center."},
-    {id:"radial",name:"Halo EQ",hint:"A ring of bars driven by your voice."},
-    {id:"plasma",name:"Plasma",hint:"Liquid light that pools and splits."},
-    {id:"constellation",name:"Constellation",hint:"Stars that connect when you speak."},
-    {id:"hex",name:"Hex grid",hint:"Tactical mesh with a traveling pulse."},
-    {id:"beam",name:"Light column",hint:"Hologram projector beam."},
-    {id:"aurora",name:"Aurora",hint:"Full-screen color wash."},
-    {id:"waveform",name:"Waveform",hint:"Classic bars that follow your voice."},
-    {id:"cinema",name:"Cinema lamp",hint:"Near-black frame, one growing lamp."},
-    {id:"companion",name:"Dock companion",hint:"Tiny face; the note stays visible."}
+    {id:"face",name:"Face",hint:"A simple animated face. Add a photo in Identity to personalize it."},
+    {id:"core",name:"Soft orb",hint:"A calm orb that gently breathes while the agent talks."},
+    {id:"waveform",name:"Waveform",hint:"Simple bars that follow the conversation."},
+    {id:"companion",name:"Dock companion",hint:"A small animated face while the note stays visible."}
   ];
   var AGENT_MODEL_LABELS={
     "gemini-3.7-flash":"Gemini 3.7 Flash","gemini-3.6-flash":"Gemini 3.6 Flash","gemini-3.5-flash":"Gemini 3.5 Flash",
@@ -1377,7 +1387,7 @@
   var LLM_REQUEST_MS=28000, LLM_STREAM_IDLE_MS=18000, LLM_DEFAULT_COMPLETION_TOKENS=4096;
   var TRANSCRIPT_GROUP_TITLE="Transcribed audio";
   var AGENT_DEFAULT_INSTRUCTIONS="You are a personal assistant inside Second Brain Notes. The owner often calls you Jarvis.\nThe owner often rambles through speech-to-text. Clean that up without losing meaning, and never mock filler words.\nThey use Cursor for coding. Help them draft prompts, plans, and notes they can paste there.\nBe useful first: search notes, tick todos, create items, and remember lasting facts without being asked twice.\nPut Cursor prompts in prompt blocks — never flatten them into ordinary paragraphs. Use headings, chapters, comments, groups, code, embeds, and links when those fit.\nKnow your own name and answer to Jarvis, assistant, or hey you. Be direct, warm, and useful — more like a collaborator than a chatbot.\nWhen a session starts, offer to help. Ask one short question if you need a target; otherwise start working.";
-  var AGENT_DEFAULT_GREETING="What can I help you with today?";
+  var AGENT_DEFAULT_GREETING="";
   var canPersist=(function(){ try{ localStorage.setItem("__t","1"); localStorage.removeItem("__t"); return true; }catch(e){ return false; } })();
   function readKey(k){ if(canPersist){ try{ return JSON.parse(localStorage.getItem(k)); }catch(e){} } return null; }
   function migrate(){
@@ -1389,7 +1399,7 @@
   }
   function loadLocal(){ var v=readKey(KEY); if(v&&v.items) return v; if(!canPersist&&mem) return mem; return migrate(); }
   function setSaveState(label,kind){ var el=$("saveState"); if(!el) return; el.textContent=label; el.className="save-state"+(kind?" "+kind:""); }
-  function backupPayload(){ return { app:"second-brain", version:15, items:state.items, folders:state.folders, tags:state.tags, preferences:{theme:state.theme,motion:state.motion,darkness:state.darkness,enabledTypes:state.enabledTypes,typeDefaults:state.typeDefaults,noteInsertOptions:state.noteInsertOptions,tagsCollapsed:state.tagsCollapsed,allNotesName:state.allNotesName,readChapterNames:state.readChapterNames,agentSettings:agentSettings()}, created:Date.now() }; }
+  function backupPayload(){ return { app:"second-brain", version:16, items:state.items, folders:state.folders, tags:state.tags, preferences:{theme:state.theme,motion:state.motion,darkness:state.darkness,enabledTypes:state.enabledTypes,typeDefaults:state.typeDefaults,noteInsertOptions:state.noteInsertOptions,tagsCollapsed:state.tagsCollapsed,typesCollapsed:state.typesCollapsed,focusNoteBody:state.focusNoteBody,quickAiHandoff:state.quickAiHandoff,allNotesName:state.allNotesName,readChapterNames:state.readChapterNames,agentSettings:agentSettings()}, created:Date.now() }; }
   function autoBackups(){ return deviceBackups; }
   function backupSnapshot(data){
     try{ return JSON.parse(JSON.stringify(data)); }catch(e){ console.warn("Backup snapshot could not be copied:",e); return data; }
@@ -1664,7 +1674,7 @@
     if(!it||typeof it!=="object") return;
     it.version=Math.max(1,Number(it.version)||Number(it.updated)||1);
     it.versionChangedAt=Number(it.versionChangedAt)||Number(it.updated)||Date.now();
-    if(it.todo&&typeof it.dueDate!=="string") it.dueDate="";
+    if(typeof it.dueDate!=="string") it.dueDate="";
   }
   function rawStateBackupPayload(data){
     data=data||{};
@@ -1676,7 +1686,7 @@
     if(it.iconColor&&!cleanIconColor(it.iconColor)) delete it.iconColor;
     if(it.type==="script") migrateScriptToNote(it);
     if(it.type==="todo") migrateTodoToNote(it);
-    if(it.todo&&typeof it.dueDate!=="string") it.dueDate="";
+    if(typeof it.dueDate!=="string") it.dueDate="";
     if(it.type==="note"){ ensureNoteBlocks(it); if(it.todo){ it.done=!!it.done; if(!it.done) it.completed=null; } }
     if(it.type==="audio") ensureAudioItem(it);
     if(it.type==="agent") normalizeAgent(it);
@@ -1801,6 +1811,10 @@
   state.noteInsertOptions=state.noteInsertOptions||{};
   Object.keys(NOTE_INSERT_DEFAULTS).forEach(function(type){ if(typeof state.noteInsertOptions[type]!=="boolean") state.noteInsertOptions[type]=NOTE_INSERT_DEFAULTS[type]; });
   if(typeof state.tagsCollapsed!=="boolean") state.tagsCollapsed=false;
+  if(typeof state.typesCollapsed!=="boolean") state.typesCollapsed=false;
+  if(typeof state.focusNoteBody!=="boolean") state.focusNoteBody=true;
+  if(typeof state.quickAiHandoff!=="boolean") state.quickAiHandoff=true;
+  state.filterType=typeof state.filterType==="string"?state.filterType:"";
   state.allNotesName=typeof state.allNotesName==="string"&&state.allNotesName.trim()?state.allNotesName.trim():"All notes";
   if(state.mobileFolderFocus!==undefined) delete state.mobileFolderFocus;
   if(typeof state.readChapterNames!=="boolean") state.readChapterNames=false;
@@ -1812,6 +1826,7 @@
   state.upcomingSort=normalizeUpcomingSort(state.upcomingSort);
   state.upcomingFilter=normalizeUpcomingFilter(state.upcomingFilter);
   agentSettings();
+  if(state.agentEditDefaultsVersion!==1){ agentSettings().requireApproval=false; state.agentEditDefaultsVersion=1; }
   if(typeof state.pendingCloudSync!=="boolean") state.pendingCloudSync=false;
   deviceBackups=(readKey(BACKUP_KEY)||[]).sort(function(a,b){ return (b.created||0)-(a.created||0); }).slice(0,BACKUP_LIMIT);
   documentBackups=readKey(DOCUMENT_BACKUP_KEY)||{};
@@ -1829,7 +1844,7 @@
   if(!state.currentId || !state.items.some(function(i){return i.id===state.currentId;})) state.currentId=state.items[0].id;
 
   function blankDeviceState(){
-    return {items:[],folders:[],tags:[],currentId:null,motion:true,theme:"nebula",darkness:82,enabledTypes:defaultEnabledTypes(),typeDefaults:TYPE_DEFAULTS_VERSION,noteInsertOptions:{file:true,paragraph:true,comment:true,prompt:true,heading:true,chapter:true,group:true,code:true},tagsCollapsed:false,allNotesName:"All notes",readChapterNames:false,filterTag:null,sidebarView:"all",tagAssignMode:false,noteSearch:"",listSort:"updated",upcomingSort:"due",upcomingFilter:{range:"all",tagId:null,showDone:false},version:1,agentSettings:defaultAgentSettings(),pendingCloudSync:false,syncBaseline:null};
+    return {items:[],folders:[],tags:[],currentId:null,motion:true,theme:"nebula",darkness:82,enabledTypes:defaultEnabledTypes(),typeDefaults:TYPE_DEFAULTS_VERSION,noteInsertOptions:{file:true,paragraph:true,comment:true,prompt:true,heading:true,chapter:true,group:true,code:true},tagsCollapsed:false,typesCollapsed:false,focusNoteBody:true,quickAiHandoff:true,allNotesName:"All notes",readChapterNames:false,filterTag:null,filterType:"",sidebarView:"all",tagAssignMode:false,noteSearch:"",listSort:"updated",upcomingSort:"due",upcomingFilter:{range:"all",tagId:null,showDone:false},version:1,agentSettings:defaultAgentSettings(),pendingCloudSync:false,syncBaseline:null};
   }
   function clearAttachmentStore(){
     if(!window.indexedDB) return;
@@ -1903,6 +1918,7 @@
       else if(it.hidden) return false;
       if(!hiddenView){
         if(!ignoreTagFilter && state.filterTag && (it.tagIds||[]).indexOf(state.filterTag)<0) return false;
+        if(!ignoreTagFilter && state.filterType && itemKindForAgent(it)!==state.filterType) return false;
         /* Hidden tags act like an archive from the All notes view. Selecting a
            specific tag still lets the user inspect it and make it visible again. */
         if(!ignoreTagFilter && !state.filterTag && (it.tagIds||[]).some(function(id){ var tag=tagById(id); return tag&&tag.hidden; })) return false;
@@ -1917,6 +1933,12 @@
       if(state.listSort==="manual") return (typeof a.manualOrder==="number"?a.manualOrder:state.items.indexOf(a))-(typeof b.manualOrder==="number"?b.manualOrder:state.items.indexOf(b));
       if(state.listSort==="title") return (a.title||"").localeCompare(b.title||"");
       if(state.listSort==="tag"){ var byTag=firstTagName(a).localeCompare(firstTagName(b)); return byTag||((b.updated||0)-(a.updated||0)); }
+      if(state.listSort==="due"){
+        var ad=itemDueDate(a), bd=itemDueDate(b);
+        if(ad&&!bd) return -1;
+        if(!ad&&bd) return 1;
+        return (ad||"").localeCompare(bd||"")||((b.updated||0)-(a.updated||0));
+      }
       if(state.listSort==="timeSpent") return (Number(b.timeSpentMs)||0)-(Number(a.timeSpentMs)||0)||((b.updated||0)-(a.updated||0));
       return (b.updated||0)-(a.updated||0);
     });
@@ -2374,21 +2396,33 @@
         clearTimeout(tagCloseTimer);
         state.filterTag=state.filterTag===tag.id?null:tag.id;
         if(state.sidebarView==="hidden") state.sidebarView="all";
-        state.tagsCollapsed=false;
         persist(); renderAll();
         var picked=tagsEl.querySelector('.tg.active');
         if(picked) picked.classList.add("tag-pick");
-        tagCloseTimer=setTimeout(function(){
-          state.tagsCollapsed=true;
-          persist();
-          renderTags();
-        },560);
       };
       chip.querySelector(".visibility").onclick=function(event){ event.stopPropagation(); tag.hidden=!tag.hidden; persist(); renderAll(); showToast(tag.hidden?"Tagged notes hidden from All notes":"Tagged notes shown in All notes"); };
       chip.querySelector(".edit").onclick=function(event){ event.stopPropagation(); openTagEditor(event.currentTarget,tag); };
       cloud.appendChild(chip);
     });
     tagsEl.appendChild(cloud);
+  }
+  function renderTypes(){
+    var el=$("types"), toggle=$("typesToggleBtn"); if(!el) return;
+    el.innerHTML=""; el.classList.toggle("is-collapsed",state.typesCollapsed);
+    if(toggle){ toggle.setAttribute("aria-expanded",state.typesCollapsed?"false":"true"); toggle.title=state.typesCollapsed?"Expand types":"Collapse types"; }
+    var seen={}, rows=[];
+    state.items.forEach(function(item){
+      var kind=itemKindForAgent(item);
+      if(seen[kind]) return;
+      seen[kind]=true; rows.push({kind:kind,label:itemLabel(item),icon:item.type==="agent"?ICON_AGENT:(isTodoNote(item)||item.type==="todo"?ICON_TODO:ICON_NOTE)});
+    });
+    rows.sort(function(a,b){ return a.label.localeCompare(b.label); });
+    rows.forEach(function(row){
+      var button=document.createElement("button"); button.type="button"; button.className="type-filter"+(state.filterType===row.kind?" active":"");
+      button.innerHTML=row.icon+"<span></span>"; button.querySelector("span").textContent=row.label;
+      button.onclick=function(){ state.filterType=state.filterType===row.kind?"":row.kind; persist(); renderAll(); };
+      el.appendChild(button);
+    });
   }
   function tagUseCount(tagId){ return state.items.reduce(function(total,item){ return total+((item.tagIds||[]).indexOf(tagId)>=0?1:0); },0); }
   function tagDefaultHex(hue){ var h=((Number(hue)||0)%360+360)%360, c=.65*.62, x=c*(1-Math.abs((h/60)%2-1)), m=.62-c, rgb=h<60?[c,x,0]:h<120?[x,c,0]:h<180?[0,c,x]:h<240?[0,x,c]:h<300?[x,0,c]:[c,0,x]; return "#"+rgb.map(function(v){ return Math.round((v+m)*255).toString(16).padStart(2,"0"); }).join(""); }
@@ -2458,7 +2492,7 @@
         m.appendChild(sep());
         var st=document.createElement("div"); st.className="mtitle"; st.textContent="Sort hidden notes"; m.appendChild(st);
         m.appendChild(mkItem("","Custom order",state.listSort==="manual",function(){ state.listSort="manual"; closeMenu(); persist(); renderList(); }));
-        [["updated","Recently updated"],["timeSpent","Most time spent"],["title","Title A–Z"],["tag","Tag A–Z"]].forEach(function(opt){
+        [["updated","Recently updated"],["due","Due date · soonest"],["timeSpent","Most time spent"],["title","Title A–Z"],["tag","Tag A–Z"]].forEach(function(opt){
           m.appendChild(mkItem("",opt[1],state.listSort===opt[0],function(){ state.listSort=opt[0]; closeMenu(); persist(); renderList(); }));
         });
       });
@@ -2474,7 +2508,7 @@
       m.appendChild(tagBox); m.appendChild(sep());
       var st=document.createElement("div"); st.className="mtitle"; st.textContent="Sort notes"; m.appendChild(st);
       m.appendChild(mkItem("","Custom order",state.listSort==="manual",function(){ state.listSort="manual"; closeMenu(); persist(); renderList(); }));
-      [["updated","Recently updated"],["timeSpent","Most time spent"],["title","Title A–Z"],["tag","Tag A–Z"]].forEach(function(opt){
+      [["updated","Recently updated"],["due","Due date · soonest"],["timeSpent","Most time spent"],["title","Title A–Z"],["tag","Tag A–Z"]].forEach(function(opt){
         m.appendChild(mkItem("",opt[1],state.listSort===opt[0],function(){ state.listSort=opt[0]; closeMenu(); persist(); renderList(); }));
       });
     });
@@ -2607,9 +2641,55 @@
     modal.classList.add("open");
     renderDocumentBackupList(item,list);
   }
+  function noteContextText(item){
+    var tags=(item.tagIds||[]).map(function(id){ var tag=tagById(id); return tag&&tag.name; }).filter(Boolean);
+    var lines=["# "+(cleanText(item.title)||"Untitled "+itemLabel(item).toLowerCase()),"Type: "+itemLabel(item)];
+    if(tags.length) lines.push("Tags: "+tags.join(", "));
+    if(item.dueDate) lines.push("Due: "+item.dueDate+" ("+dueDateLabel(item.dueDate)+")");
+    lines.push("",itemText(item)||"(empty note)");
+    var files=contentFiles(item).filter(function(file){ return file&&file.name; });
+    if(files.length) lines.push("","Attachments:",files.map(function(file){ return "- "+file.name+(file.type?" ("+file.type+")":""); }).join("\n"));
+    return lines.join("\n");
+  }
+  function copyNoteToAi(item,url,label){
+    var opened=url?window.open(url,"_blank","noopener"):null;
+    copy(noteContextText(item),function(){ showToast((label||"Note context")+" copied"+(opened?" — paste it in the opened AI":"")); });
+  }
+  function fileAsDataUrl(file){
+    return new Promise(function(resolve){
+      if(!file){ resolve(""); return; }
+      var reader=new FileReader(); reader.onload=function(){ resolve(String(reader.result||"")); }; reader.onerror=function(){ resolve(""); }; reader.readAsDataURL(file);
+    });
+  }
+  function downloadNoteAiPackage(item){
+    var descriptors=contentFiles(item).filter(function(file){ return file&&file.id; });
+    Promise.all(descriptors.map(function(file){
+      var ownerId=file.sourceNoteId||item.id;
+      return readAttachmentFile(ownerId,file.sourceAttachmentId||file.id).then(fileAsDataUrl).catch(function(){ return ""; }).then(function(data){
+        return {name:file.name||"Attachment",type:file.type||"",data:data||file.inlineData||""};
+      });
+    })).then(function(files){
+      var payload={app:"second-brain",exportType:"ai-context-package",exported:Date.now(),context:noteContextText(item),item:backupSnapshot(item),attachments:files};
+      downloadJson(payload,(cleanText(item.title)||"note").replace(/[^a-z0-9_-]+/gi,"-").replace(/^-|-$/g,"").toLowerCase()+"-ai-context.json","AI context package downloaded");
+    });
+  }
   function openItemActions(anchor,it){
     openMenu(anchor,function(m){
       var title=document.createElement("div"); title.className="mtitle"; title.textContent=itemLabel(it)+" actions"; m.appendChild(title);
+       if(it.type!=="agent"){
+         m.appendChild(mkItem(ICON_NOTE,"Add or edit tags",false,function(){ closeMenu(); setTimeout(function(){ openTagPick(anchor,it); },0); }));
+         m.appendChild(mkItem(ICON_CALENDAR,it.dueDate?"Change due date":"Add due date",false,function(){ closeMenu(); setTimeout(function(){ openTodoDueDatePicker(anchor,it); },0); }));
+         if(state.quickAiHandoff){
+           m.appendChild(sep());
+           var contextTitle=document.createElement("div"); contextTitle.className="mtitle"; contextTitle.textContent="Bring note contents into"; m.appendChild(contextTitle);
+           m.appendChild(mkItem("","Copy as AI context",false,function(){ closeMenu(); copyNoteToAi(it,"","Context"); }));
+           m.appendChild(mkItem("","ChatGPT",false,function(){ closeMenu(); copyNoteToAi(it,"https://chatgpt.com/","ChatGPT context"); }));
+           m.appendChild(mkItem("","Claude",false,function(){ closeMenu(); copyNoteToAi(it,"https://claude.ai/new","Claude context"); }));
+           m.appendChild(mkItem("","Cursor",false,function(){ closeMenu(); copyNoteToAi(it,"https://cursor.com/","Cursor context"); }));
+           m.appendChild(mkItem(ICON_DOWNLOAD,"Download context package + photos",false,function(){ closeMenu(); downloadNoteAiPackage(it); }));
+           m.appendChild(sep());
+         }
+       }
        m.appendChild(mkItem(ICON_DUPLICATE,"Duplicate",false,function(){ closeMenu(); duplicateItem(it); }));
        m.appendChild(mkItem(ICON_DOWNLOAD,"Save manual document backup",false,function(){ closeMenu(); saveManualDocumentBackup(it); }));
        m.appendChild(mkItem(ICON_NOTE,"Restore from backup",false,function(){ closeMenu(); openDocumentBackupHistory(it); }));
@@ -2647,7 +2727,7 @@
       selectNotesBtn.textContent=state.selectingNotes?(state.selectedItemIds.length?(state.tagAssignMode?assignLabel:"Tag "+state.selectedItemIds.length):"Cancel"):(state.filterTag?"＋":"✓");
       selectNotesBtn.title=state.selectingNotes?(state.selectedItemIds.length?(state.tagAssignMode?"Add selected notes to this tag":"Tag selected notes"):"Cancel selection"):(state.filterTag?"Add notes to this tag":"Select notes");
     }
-    var lbl = state.sidebarView==="upcoming"?"Upcoming":(state.sidebarView==="hidden"?"Hidden":(state.filterTag ? ((tagById(state.filterTag)||{}).name||"Tag") : allNotesTitle()));
+    var lbl = state.sidebarView==="upcoming"?"Upcoming":(state.sidebarView==="hidden"?"Hidden":(state.filterTag ? ((tagById(state.filterTag)||{}).name||"Tag") : (state.filterType?(state.filterType.charAt(0).toUpperCase()+state.filterType.slice(1)):allNotesTitle())));
     if(state.tagAssignMode&&state.filterTag) lbl="Add to "+((tagById(state.filterTag)||{}).name||"tag");
     listLabel.textContent=lbl+"  ·  "+items.length;
     var upcoming=state.sidebarView==="upcoming", hiddenView=state.sidebarView==="hidden", activeFilters=upcoming?upcomingFilterCount():0;
@@ -2687,6 +2767,7 @@
       var mod=itemModule(it);
       var icon=mod&&mod.icon?mod.icon:(it.type==="script"?ICON_SCRIPT:(todoItem?ICON_TODO:(it.type==="audio"?ICON_AUDIO:(it.type==="agent"?ICON_AGENT:ICON_NOTE))));
       var metaText=mod&&mod.meta?mod.meta(it):(it.type==="script"?((it.sections||[]).filter(function(s){return s.kind!=="cue";}).length+" ch · "+itemWords(it)+" words"):(todoItem?todoMetaText(it):(it.type==="audio"?audioMetaText(it):(it.type==="agent"?agentMetaText(it):itemWords(it)+" words"))));
+      if(it.dueDate&&!todoItem) metaText="Due "+dueDateLabel(it.dueDate)+" · "+metaText;
       var iconColor=itemIconColor(it), iconStyle=iconColor?' style="color:'+iconColor+'"':"", todoStyle=iconColor?' style="border-color:'+iconColor+';'+(it.done?'background:'+iconColor+';color:#08080b;':'color:'+iconColor+';')+'"':"";
       var leading=todoItem?'<button class="side-todo-check'+(it.done?" done":"")+'"'+todoStyle+' aria-label="'+(it.done?"Mark incomplete":"Mark complete")+'">'+(it.done?"✓":"")+'</button>':'<span class="item-icon"'+iconStyle+'>'+icon+'</span>';
       var deleteLabel=todoItem&&it.done?"Delete?":"✕";
@@ -2712,7 +2793,7 @@
       el.querySelector(".dx").onclick=function(e){ e.stopPropagation(); if(todoItem&&it.done) delItem(it.id,"Delete this completed todo? This can't be undone."); else openItemActions(e.currentTarget,it); };
       return el;
   }
-  function renderAll(){ renderTags(); renderList(); renderMain(); }
+  function renderAll(){ renderTags(); renderTypes(); renderList(); renderMain(); }
   function addSelectedNotesToTag(){
     var tag=tagById(state.filterTag), selected=state.items.filter(function(item){ return state.selectedItemIds.indexOf(item.id)>=0; });
     if(!tag||!selected.length) return;
@@ -2756,7 +2837,7 @@
     var mod=itemModule(it);
     /* Only a genuine change of document slides in. renderMain also reruns for
        in-place edits, and animating those would fight the caret. */
-    var entering=it.id!==lastMainId?" enter":""; lastMainId=it.id;
+    var isEntering=it.id!==lastMainId, entering=isEntering?" enter":""; lastMainId=it.id;
     var sheet=document.createElement("div"); sheet.className="sheet"+entering;
     $("copyAll").style.display=(mod&&mod.hideCopy)||it.type==="agent"||it.type==="audio"?"none":"";
 
@@ -2800,6 +2881,12 @@
     }
 
     sheet.appendChild(buildAssign(it));
+    if(it.dueDate){
+      var prominentDue=document.createElement("button"); prominentDue.type="button"; prominentDue.className="due-prominent"+(dueDateClass(it.dueDate)?" "+dueDateClass(it.dueDate):"");
+      prominentDue.innerHTML=ICON_CALENDAR+"<span>Due "+dueDateLabel(it.dueDate)+"</span>";
+      prominentDue.onclick=function(){ openTodoDueDatePicker(prominentDue,it); };
+      sheet.appendChild(prominentDue);
+    }
     var meta=document.createElement("div"); meta.className="meta"; meta.id="meta"; sheet.appendChild(meta);
 
     if(it.type==="script"){
@@ -2828,6 +2915,15 @@
     for(var i=0;i<tas.length;i++) grow(tas[i]);
     updateMeta();
     syncCollabToCurrentItem();
+    if(isEntering){
+      setTimeout(function(){
+        if(!current()||current().id!==it.id) return;
+        if(state.focusNoteBody&&itemUsesNoteBlocks(it)){
+          var body=canvas.querySelector('.note-editor[data-note-id="'+it.id+'"] [contenteditable="true"], .note-editor[data-note-id="'+it.id+'"] input, .note-editor[data-note-id="'+it.id+'"] textarea');
+          if(body) body.focus();
+        } else ti.focus();
+      },0);
+    }
   }
   function buildWorkoutRoutine(it){
     var wrap=document.createElement("section"); wrap.className="workout-routine";
@@ -3547,11 +3643,17 @@
   function saveNoteBlockChange(note,block,immediate){
     syncNoteBody(note); touchContent(note); updateMeta(); refreshListMeta(); if(immediate) persist(); else save();
   }
+  function pastePlainText(event){
+    var data=event.clipboardData&&event.clipboardData.getData("text/plain");
+    if(data==null) return;
+    event.preventDefault();
+    document.execCommand("insertText",false,data.replace(/\r\n?/g,"\n"));
+  }
   function buildNoteParagraph(note,block){
     var wrap=document.createElement("div"); wrap.className="note-paragraph-wrap";
     var field=document.createElement("div"); field.className="note-paragraph"; field.contentEditable="true"; field.setAttribute("role","textbox"); field.setAttribute("aria-multiline","true"); field.setAttribute("data-note-block",block.id); field.setAttribute("data-placeholder","Start writing…"); field.innerHTML=block.html||"";
     function changed(){ block.html=sanitizeRichHtml(field.innerHTML); block.text=richTextToPlain(block.html); saveNoteBlockChange(note,block,false); rememberNoteTextSelection(note,block,field); }
-    field.oninput=changed; field.onfocus=function(){ rememberNoteTextSelection(note,block,field); }; field.onkeyup=function(){ rememberNoteTextSelection(note,block,field); }; field.onmouseup=function(){ rememberNoteTextSelection(note,block,field); };
+    field.oninput=changed; field.onpaste=pastePlainText; field.onfocus=function(){ rememberNoteTextSelection(note,block,field); }; field.onkeyup=function(){ rememberNoteTextSelection(note,block,field); }; field.onmouseup=function(){ rememberNoteTextSelection(note,block,field); };
     var formatTrigger=document.createElement("button"); formatTrigger.type="button"; formatTrigger.className="note-format-trigger"; formatTrigger.title="Show text formatting"; formatTrigger.setAttribute("aria-label","Show text formatting"); formatTrigger.setAttribute("aria-expanded","false"); formatTrigger.innerHTML=ICON_EDIT;
     function setFormatOpen(open){ wrap.classList.toggle("format-open",open); formatTrigger.title=open?"Hide text formatting":"Show text formatting"; formatTrigger.setAttribute("aria-label",formatTrigger.title); formatTrigger.setAttribute("aria-expanded",open?"true":"false"); }
     formatTrigger.onmousedown=function(event){ event.preventDefault(); };
@@ -3605,7 +3707,7 @@
     head.appendChild(index); head.appendChild(title); head.appendChild(listen); head.appendChild(audioMenu); wrap.appendChild(head);
     var bodyWrap=document.createElement("div"); bodyWrap.className="note-paragraph-wrap";
     var body=document.createElement("div"); body.className="note-paragraph"; body.contentEditable="true"; body.setAttribute("role","textbox"); body.setAttribute("aria-multiline","true"); body.setAttribute("data-note-block",block.id); body.setAttribute("data-placeholder","Write this chapter…"); body.innerHTML=block.html||"";
-    body.oninput=function(){ block.html=sanitizeRichHtml(body.innerHTML); block.text=richTextToPlain(block.html); var hasAudio=runtimeApiKeys.elevenlabs&&ttsTextForChapter(block).trim(); listen.style.display=hasAudio?"inline-flex":"none"; audioMenu.style.display=hasAudio?"grid":"none"; saveNoteBlockChange(note,block,false); };
+    body.onpaste=pastePlainText; body.oninput=function(){ block.html=sanitizeRichHtml(body.innerHTML); block.text=richTextToPlain(block.html); var hasAudio=runtimeApiKeys.elevenlabs&&ttsTextForChapter(block).trim(); listen.style.display=hasAudio?"inline-flex":"none"; audioMenu.style.display=hasAudio?"grid":"none"; saveNoteBlockChange(note,block,false); };
     bodyWrap.appendChild(body); wrap.appendChild(bodyWrap); wrap.appendChild(buildNoteBlockActions(note,block,"note-chapter-actions")); return wrap;
   }
   function buildNoteCode(note,block){
@@ -3638,7 +3740,7 @@
     details.setAttribute("data-group-id",block.id);
     if(cleanText(block.title).toLowerCase()===TRANSCRIPT_GROUP_TITLE.toLowerCase()) details.setAttribute("data-transcript-group","true");
     var summary=document.createElement("summary"), title=document.createElement("input"); title.type="text"; title.value=block.title||"Untitled group"; title.setAttribute("data-note-block",block.id); title.onclick=function(event){ event.stopPropagation(); }; title.oninput=function(){ block.title=title.value; saveNoteBlockChange(note,block,false); }; summary.appendChild(title);
-    var body=document.createElement("div"); body.className="note-group-body"; body.contentEditable="true"; body.setAttribute("role","textbox"); body.setAttribute("aria-multiline","true"); body.setAttribute("data-group-body",block.id); body.textContent=block.text||""; body.oninput=function(){ block.text=body.innerText||body.textContent||""; saveNoteBlockChange(note,block,false); };
+    var body=document.createElement("div"); body.className="note-group-body"; body.contentEditable="true"; body.setAttribute("role","textbox"); body.setAttribute("aria-multiline","true"); body.setAttribute("data-group-body",block.id); body.textContent=block.text||""; body.onpaste=pastePlainText; body.oninput=function(){ block.text=body.innerText||body.textContent||""; saveNoteBlockChange(note,block,false); };
     details.ontoggle=function(){ block.collapsed=!details.open; touchContent(note); persist(); }; details.appendChild(summary); details.appendChild(body); return details;
   }
   function buildNoteBlock(note,block){
@@ -4007,7 +4109,6 @@
       var faceHint=document.createElement("small");
       faceHint.textContent="Shown on the collaborator, the dock companion, and the Face look. Cropped square and stored with this agent.";
       faceLabel.appendChild(faceHint);
-      fieldOn(identity,"Greeting","greeting",AGENT_DEFAULT_GREETING);
       fieldOn(identity,"Response style","responseStyle","Balanced");
       var colorLabel=labelOn(identity,"Accent color"), colorRow=document.createElement("div"); colorRow.className="agent-color-row";
       AGENT_ACCENT_SWATCHES.forEach(function(hex){
@@ -4091,7 +4192,7 @@
     var m=node.querySelector(".dt-meta .m");
     var mod=itemModule(it);
     if(m&&isTodoNote(it)){ m.textContent=todoMetaText(it); return; }
-    if(m) m.textContent=mod&&mod.meta?mod.meta(it):(isTodoNote(it)?(it.done?"Completed":"Open"):(it.type==="script"?((it.sections||[]).filter(function(s){return s.kind!=="cue";}).length+" ch · "+itemWords(it)+" words"):(it.type==="todo"?((it.todos||[]).filter(function(x){return !x.done;}).length+" left"):(it.type==="audio"?audioMetaText(it):(it.type==="agent"?agentMetaText(it):itemWords(it)+" words")))));
+    if(m){ var text=mod&&mod.meta?mod.meta(it):(isTodoNote(it)?(it.done?"Completed":"Open"):(it.type==="script"?((it.sections||[]).filter(function(s){return s.kind!=="cue";}).length+" ch · "+itemWords(it)+" words"):(it.type==="todo"?((it.todos||[]).filter(function(x){return !x.done;}).length+" left"):(it.type==="audio"?audioMetaText(it):(it.type==="agent"?agentMetaText(it):itemWords(it)+" words"))))); m.textContent=it.dueDate&&it.type!=="todo"?"Due "+dueDateLabel(it.dueDate)+" · "+text:text; }
   }
 
   function buildAssign(it){
@@ -4104,7 +4205,7 @@
       wrap.appendChild(colorButton);
     }
 
-    if(isTodoNote(it)||it.type==="todo"){
+    if(it.type!=="agent"){
       var dueButton=document.createElement("button"); dueButton.type="button"; dueButton.className="todo-due"+(dueDateClass(it.dueDate)?" "+dueDateClass(it.dueDate):""); dueButton.innerHTML=ICON_CALENDAR+'<span>'+(it.dueDate?dueDateLabel(it.dueDate):"Add due date")+'</span>'; dueButton.title=it.dueDate?"Change due date":"Add due date";
       dueButton.onclick=function(){ openTodoDueDatePicker(dueButton,it); };
       wrap.appendChild(dueButton);
@@ -4267,7 +4368,7 @@
         inp.value="";
         var existing=state.tags.find(function(tag){ return (tag.name||"").toLowerCase()===name.toLowerCase(); });
         if(existing){ setPicked(existing.id,true); return; }
-        var nt={id:uid(),name:name,hue:TAG_HUES[state.tags.length%TAG_HUES.length]};
+        var nt={id:uid(),name:name,hue:0,color:"#000000"};
         state.tags.push(nt);
         if(empty.parentNode) empty.parentNode.removeChild(empty);
         addRow(nt);
@@ -4444,7 +4545,7 @@
       });
       m.appendChild(box); m.appendChild(sep());
       var row=document.createElement("div"); row.className="mrow"; var input=document.createElement("input"); input.placeholder="Create and apply tag…";
-      input.onkeydown=function(e){ if(e.key==="Enter"&&input.value.trim()){ var tag={id:uid(),name:input.value.trim().replace(/^#+/,""),hue:TAG_HUES[state.tags.length%TAG_HUES.length]}; state.tags.push(tag); selected.forEach(function(item){ item.tagIds=item.tagIds||[]; if(item.tagIds.indexOf(tag.id)<0) item.tagIds.push(tag.id); item.updated=Date.now(); }); closeMenu(); persist(); renderAll(); showToast("Tag created and applied"); } };
+      input.onkeydown=function(e){ if(e.key==="Enter"&&input.value.trim()){ var tag={id:uid(),name:input.value.trim().replace(/^#+/,""),hue:0,color:"#000000"}; state.tags.push(tag); selected.forEach(function(item){ item.tagIds=item.tagIds||[]; if(item.tagIds.indexOf(tag.id)<0) item.tagIds.push(tag.id); item.updated=Date.now(); }); closeMenu(); persist(); renderAll(); showToast("Tag created and applied"); } };
       row.appendChild(input); m.appendChild(row);
     });
   }
@@ -4502,7 +4603,7 @@
   var ICON_STOPSQ='<svg viewBox="0 0 24 24" fill="currentColor" stroke="none"><rect x="7" y="7" width="10" height="10" rx="2"/></svg>';
   var ICON_DOC='<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M14 3H7a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V8z"/><path d="M14 3v5h5"/></svg>';
   var agentModelCache=null;
-  var collab={open:false,host:null,hostKind:null,mode:"document",agentId:"",itemId:"",draft:"",busy:false,
+  var collab={open:false,host:null,hostKind:null,mode:"document",agentId:"",itemId:"",draft:"",busy:false,greetingKey:"",
     notes:[],proposals:[],recorder:null,recorderStream:null,recorderStop:false,
     audio:null,audioUrl:null,unlockedAudio:null,speakToken:0,speakCtx:null,speakSource:null,speakAnalyser:null,speakBufferSource:null,artRaf:0,voiceAmp:0.22,
     sessionKey:"",grantedNoteIds:{},
@@ -4712,7 +4813,7 @@
     else a.instructions=agentPlainMemory(a.instructions)||a.instructions;
     a.longTermMemory=agentPlainMemory(typeof a.longTermMemory==="string"?a.longTermMemory:"");
     a.shortTermMemory=agentPlainMemory(typeof a.shortTermMemory==="string"?a.shortTermMemory:"");
-    if(typeof a.greeting!=="string") a.greeting=AGENT_DEFAULT_GREETING;
+    a.greeting="";
     a.animationStyle=knownVoiceStyle(a.animationStyle);
     a.voicePresence=knownVoicePresence(a.voicePresence==="cinema"?"cinema":a.voicePresence);
     if(a.animationStyle==="companion"&&a.voicePresence==="overlay") a.voicePresence="companion";
@@ -4873,7 +4974,7 @@
     agentItem.updated=Date.now();
     save();
     renderVoiceChrome();
-    if(collab.host) renderCollabLog();
+    if(collab.host){ renderCollabLog(); refreshCollabTaskPanel(); }
     return task;
   }
   function agentTaskUpsertRunning(agentItem,title,detail,model){
@@ -4886,6 +4987,7 @@
       agentItem.updated=Date.now();
       save();
       renderVoiceChrome();
+      refreshCollabTaskPanel();
       return existing;
     }
     return agentTaskWrite(agentItem,label,"running",detail,model);
@@ -4903,6 +5005,7 @@
       agentItem.updated=Date.now();
       save();
       renderVoiceChrome();
+      refreshCollabTaskPanel();
     }
   }
 
@@ -5062,6 +5165,7 @@
     lines.push("- Use list_item_types if you are unsure which kinds or block types this workspace supports.");
     lines.push("- Use set_task when you start a piece of work that will take more than one beat (structure a ramble, draft a Cursor prompt, rewrite a chapter). Keep the task list honest.");
     lines.push("- Only propose an edit when they asked for one, or when you offered and they agreed, or when they are clearly dictating content into the open note.");
+    lines.push("- A request to add, capture, write, update, or remove note content is not complete until you call propose_edits. Never merely describe the change or claim it happened. If the tool call fails, say plainly that the note was not changed.");
     lines.push("- Create and edit every note block the Insert menu offers: paragraphs, headings, chapters, comments, prompts, collapsible groups, code, YouTube/Vimeo embeds, and links. Use propose_edits with insert_after and block_type to create one; use an existing target_id to edit one. File attachments cannot be created or changed by the assistant.");
     lines.push("- Cursor prompts, system prompts, and anything meant to be copied elsewhere belong in a prompt block. Do not dump them into a paragraph.");
     lines.push("- A collapsible group titled \""+TRANSCRIPT_GROUP_TITLE+"\" is the owner's raw speech. Append to it only when capturing dictation. Do not rewrite, summarize, or delete that group unless they ask. Put the structured note underneath it.");
@@ -5977,6 +6081,36 @@
     var agentItem=collabAgent();
     return agentItem?normalizeAgent(agentItem).chat:[];
   }
+  function contextualGreetingFallback(item){
+    if(!item) return "I’m ready for a new conversation.";
+    var title=cleanText(item.title), text=cleanText(itemText(item)).replace(/\s+/g," ");
+    var topic=title||text.slice(0,72)||("this "+itemLabel(item).toLowerCase());
+    return "I’ve read "+(title?'“'+topic+'”':topic)+". What would you like me to add, organize, or revise?";
+  }
+  function maybeGenerateContextGreeting(speak){
+    var agentItem=collabAgent(), item=collabDocument(), log=collabConversation();
+    if(!agentItem||log.length) return Promise.resolve("");
+    var key=collabSessionKey();
+    if(collab.greetingKey===key) return Promise.resolve("");
+    collab.greetingKey=key;
+    if(!runtimeApiKeys.openai&&!runtimeApiKeys.gemini){
+      var fallback=contextualGreetingFallback(item); pushCollabMessage("agent",fallback); if(speak&&agentSettings().speakReplies) speakCollab(fallback); return Promise.resolve(fallback);
+    }
+    var context=item?noteContextText(item).slice(0,5000):"No note is attached.";
+    var messages=[
+      {role:"system",content:"Write one warm sentence greeting the owner. Base it specifically on the attached note: mention its actual subject or a concrete detail, then offer a relevant next action. Do not use a generic greeting. No markdown."},
+      {role:"user",content:context}
+    ];
+    return agentCompletion(agentItem,messages,[],"conscious").then(function(data){
+      if(collabSessionKey()!==key||collabConversation().length) return "";
+      var message=data&&data.choices&&data.choices[0]&&data.choices[0].message;
+      var greeting=cleanText(openaiContentText(message&&message.content))||contextualGreetingFallback(item);
+      pushCollabMessage("agent",greeting); if(speak&&agentSettings().speakReplies) speakCollab(greeting); return greeting;
+    }).catch(function(){
+      if(collabSessionKey()!==key||collabConversation().length) return "";
+      var fallback=contextualGreetingFallback(item); pushCollabMessage("agent",fallback); if(speak&&agentSettings().speakReplies) speakCollab(fallback); return fallback;
+    });
+  }
   function pushCollabMessage(role,text){
     var log=collabConversation(), doc=collabDocument(), agentItem=collabAgent();
     log.push({role:role,text:String(text||"").slice(0,COLLAB_MESSAGE_LIMIT),ts:Date.now()});
@@ -6594,10 +6728,12 @@
       var text=turnProposals.length?proposalSpokenReply(turnProposals):cleanText(reply);
       var shouldSpeak=opts.forceSpeak;
       if(typeof shouldSpeak!=="boolean"){
+        shouldSpeak=agentSettings().speakReplies&&opts.readBack!==false;
         if(a.readBack==="never") shouldSpeak=false;
-        else if(a.readBack==="always") shouldSpeak=true;
-        else if(a.readBack==="after_edits") shouldSpeak=!!turnProposals.length;
-        else shouldSpeak=opts.readBack!==false;
+        else if(a.readBack==="after_edits") shouldSpeak=shouldSpeak&&!!turnProposals.length;
+      }
+      if(!turnProposals.length&&targetItem&&/\b(added|updated|edited|saved|changed)\b[^.]{0,80}\b(note|document|entry|point|text|content)\b/i.test(cleanText(reply))){
+        pushCollabNote("No note edit was received from the agent, so the document was not changed. Ask it to try the edit again.",true);
       }
       var emptyVoice=!text&&collab.voice&&collab.voice.active;
       if(emptyVoice){
@@ -7367,10 +7503,7 @@
       startVoiceAnalyserLoop();
       updateCollabControls();
       var agentItem=collabAgent(), a=agentItem?normalizeAgent(agentItem):null;
-      if(a&&a.greeting&&!collabConversation().length){
-        pushCollabMessage("agent",a.greeting);
-        if(agentSettings().speakReplies) speakCollab(a.greeting);
-      }
+      maybeGenerateContextGreeting(true);
       var wantLive=!!(a&&a.liveListen&&runtimeApiKeys.gemini&&collab.voice.audioContext&&typeof collab.voice.audioContext.createScriptProcessor==="function");
       if(wantLive){
         setVoiceStatus("Connecting…");
@@ -7433,7 +7566,7 @@
       mic.title=mic.getAttribute("aria-label");
     }
     if(send) send.disabled=(collab.busy&&!(collab.voice&&collab.voice.active))||!cleanText(input&&input.value);
-    if(input) input.disabled=!!collab.recorder&&!(collab.voice&&collab.voice.active);
+    if(input) input.disabled=false;
   }
   function collabMessageNode(entry){
     var node=document.createElement("div");
@@ -7560,6 +7693,32 @@
     var label=collab.host&&collab.host.querySelector(".collab-context span");
     if(label) label.textContent=collabContextText();
   }
+  function renderCollabTaskPanel(panel){
+    if(!panel) return;
+    var agentItem=collabAgent(), a=agentItem?normalizeAgent(agentItem):null;
+    panel.innerHTML="";
+    var summary=document.createElement("summary");
+    var openCount=(a&&a.tasks||[]).filter(function(task){ return task.status!=="done"; }).length;
+    summary.textContent="Shared agent tasks · "+openCount+" open"; panel.appendChild(summary);
+    var list=document.createElement("div"); list.className="collab-task-list";
+    (a&&a.tasks||[]).slice(-12).forEach(function(task){
+      var row=document.createElement("div"); row.className="collab-task-row "+task.status;
+      var toggle=document.createElement("button"); toggle.type="button"; toggle.textContent=task.status==="done"?"✓":"○";
+      toggle.title=task.status==="done"?"Reopen task":"Complete task";
+      toggle.onclick=function(){ task.status=task.status==="done"?"pending":"done"; agentItem.updated=Date.now(); persist(); renderCollabTaskPanel(panel); renderVoiceChrome(); };
+      var text=document.createElement("span"); text.textContent=task.title+(task.detail?" — "+task.detail:"");
+      var remove=document.createElement("button"); remove.type="button"; remove.textContent="×"; remove.title="Remove task";
+      remove.onclick=function(){ a.tasks=a.tasks.filter(function(entry){ return entry.id!==task.id; }); agentItem.updated=Date.now(); persist(); renderCollabTaskPanel(panel); renderVoiceChrome(); };
+      row.appendChild(toggle); row.appendChild(text); row.appendChild(remove); list.appendChild(row);
+    });
+    var add=document.createElement("div"); add.className="collab-task-add";
+    var input=document.createElement("input"); input.placeholder="Add a shared task…";
+    var button=document.createElement("button"); button.type="button"; button.textContent="Add";
+    function create(){ var title=cleanText(input.value); if(!title) return; agentTaskWrite(agentItem,title,"pending","","user"); input.value=""; renderCollabTaskPanel(panel); }
+    button.onclick=create; input.onkeydown=function(event){ if(event.key==="Enter"){ event.preventDefault(); create(); } };
+    add.appendChild(input); add.appendChild(button); list.appendChild(add); panel.appendChild(list);
+  }
+  function refreshCollabTaskPanel(){ renderCollabTaskPanel(collab.host&&collab.host.querySelector(".collab-tasks")); }
   function renderCollabSurface(container,kind){
     var host=container||collab.host;
     if(!host||!host.isConnected) return;
@@ -7584,6 +7743,7 @@
     };
     context.appendChild(clear);
     host.appendChild(context);
+    var tasks=document.createElement("details"); tasks.className="collab-tasks"; tasks.open=true; host.appendChild(tasks); renderCollabTaskPanel(tasks);
 
     var log=document.createElement("div"); log.className="collab-log"; host.appendChild(log);
     var status=document.createElement("div"); status.className="collab-status"; status.setAttribute("role","status"); status.setAttribute("aria-live","polite"); host.appendChild(status);
@@ -7602,6 +7762,7 @@
     function submit(){
       var text=cleanText(input.value);
       if(!text||collab.busy) return;
+      if(agentSettings().speakReplies) unlockSpeechPlayback(playbackAudioContext());
       input.value=""; collab.draft=""; input.style.height="auto";
       sendCollabMessage(text);
       updateCollabControls();
@@ -7670,6 +7831,7 @@
     if(collab.hostKind==="stage") renderMain();
     renderCollabSurface($("collabPanelBody"),"panel");
     startCollabSession();
+    if(!opts.listen) maybeGenerateContextGreeting(false);
     var input=collab.host&&collab.host.querySelector(".collab-foot textarea");
     if(input&&!opts.listen) setTimeout(function(){ input.focus(); },260);
     if(opts.listen) setTimeout(function(){ toggleCollabMic(); },260);
@@ -7689,7 +7851,7 @@
     if(collab.voice&&collab.voice.active){ stopVoiceSession(); if(collab.open) closeCollabPanel(); return; }
     if(collab.open){ closeCollabPanel(); return; }
     var readiness=collabReadiness();
-    openCollabPanel({listen:true});
+    openCollabPanel();
     if(!readiness.ok&&!agentItems().length) setCollabStatus("");
   }
   /* Each note keeps its own thread, so following the open item is the expected
@@ -7710,6 +7872,7 @@
     var s=agentSettings();
     s.speakReplies=!s.speakReplies;
     if(!s.speakReplies) stopCollabSpeech();
+    else unlockSpeechPlayback(playbackAudioContext());
     persist(); refreshCollabChrome();
   };
   if($("voiceOverlayEnd")) $("voiceOverlayEnd").onclick=function(){ stopVoiceSession(); };
@@ -7774,11 +7937,12 @@
       var t=document.createElement("div"); t.className="mtitle"; t.textContent="New tag"; m.appendChild(t);
       var row=document.createElement("div"); row.className="mrow";
       var inp=document.createElement("input"); inp.placeholder="Tag name…";
-      inp.onkeydown=function(e){ if(e.key==="Enter"&&inp.value.trim()){ state.tags.push({id:uid(),name:inp.value.trim().replace(/^#+/,""),hue:TAG_HUES[state.tags.length%TAG_HUES.length]}); closeMenu(); persist(); renderTags(); showToast("Tag created"); } };
+      inp.onkeydown=function(e){ if(e.key==="Enter"&&inp.value.trim()){ state.tags.push({id:uid(),name:inp.value.trim().replace(/^#+/,""),hue:0,color:"#000000"}); closeMenu(); persist(); renderTags(); showToast("Tag created"); } };
       row.appendChild(inp); m.appendChild(row);
     });
   };
   $("tagsToggleBtn").onclick=function(){ state.tagsCollapsed=!state.tagsCollapsed; persist(); renderTags(); };
+  $("typesToggleBtn").onclick=function(){ state.typesCollapsed=!state.typesCollapsed; persist(); renderTypes(); };
   if(noteSearch){
     noteSearch.value=state.noteSearch||"";
     noteSearchWrap.classList.toggle("has-value",!!noteSearch.value);
@@ -7810,7 +7974,7 @@
       } else {
         clearTimeout(tagCloseTimer);
         state.filterTag=null;
-        state.tagsCollapsed=false;
+        state.filterType="";
         state.selectingNotes=false;
         state.selectedItemIds=[];
         state.tagAssignMode=false;
@@ -7841,14 +8005,11 @@
   function setOverlaySidebarOpen(open){
     if(!usesOverlaySidebar()) return;
     app.classList.remove("sidebar-collapsed");
-    if(open&&state.tagsCollapsed){ state.tagsCollapsed=false; persist(); renderTags(); }
     app.classList.toggle("open",open);
   }
   menuBtn.onclick=function(){
     if(usesOverlaySidebar()) setOverlaySidebarOpen(!app.classList.contains("open"));
     else {
-      var opening=app.classList.contains("sidebar-collapsed");
-      if(opening&&state.tagsCollapsed){ state.tagsCollapsed=false; persist(); renderTags(); }
       app.classList.toggle("sidebar-collapsed");
     }
   };
@@ -8456,6 +8617,9 @@
     }
     if(prefs.noteInsertOptions&&typeof prefs.noteInsertOptions==="object") Object.keys(NOTE_INSERT_DEFAULTS).forEach(function(type){ if(typeof prefs.noteInsertOptions[type]==="boolean") state.noteInsertOptions[type]=prefs.noteInsertOptions[type]; });
     if(typeof prefs.tagsCollapsed==="boolean") state.tagsCollapsed=prefs.tagsCollapsed;
+    if(typeof prefs.typesCollapsed==="boolean") state.typesCollapsed=prefs.typesCollapsed;
+    if(typeof prefs.focusNoteBody==="boolean") state.focusNoteBody=prefs.focusNoteBody;
+    if(typeof prefs.quickAiHandoff==="boolean") state.quickAiHandoff=prefs.quickAiHandoff;
     if(typeof prefs.allNotesName==="string"&&prefs.allNotesName.trim()) state.allNotesName=prefs.allNotesName.trim();
     if(typeof prefs.readChapterNames==="boolean") state.readChapterNames=prefs.readChapterNames;
     if(prefs.agentSettings&&typeof prefs.agentSettings==="object"){
@@ -8819,7 +8983,7 @@
         '<button data-settings="voices"><span><b>Voice</b><small>Choose from your saved ElevenLabs voices</small></span><span class="arrow">›</span></button>'+
         '<button data-settings="collab"><span><b>AI collaborator</b><small>Agents, voice intelligence, and hidden notes (also in the sidebar footer)</small></span><span class="arrow">›</span></button>'+
         '<button data-settings="usage"><span><b>Usage</b><small>Tokens, calls, and recent model activity</small></span><span class="arrow">›</span></button>'+
-        '<button data-settings="manage"><span><b>Manage</b><small>Choose which things New can create</small></span><span class="arrow">›</span></button></div><div class="grp"><h4>AI text changes</h4><div class="srow"><div class="sl">Ask before changing my text<small>Keep AI edits as suggestions until you choose Apply.</small></div><button class="toggle" id="settingsRequireApprovalToggle"><b></b></button></div></div>';
+        '<button data-settings="manage"><span><b>Manage</b><small>Choose which things New can create</small></span><span class="arrow">›</span></button></div><div class="grp"><h4>Editor behaviour</h4><div class="srow"><div class="sl">Open notes in the body<small>Focus the first editable block instead of the title. Turn off to start at the title.</small></div><button class="toggle" id="focusNoteBodyToggle"><b></b></button></div><div class="srow"><div class="sl">AI handoff in note menus<small>Copy or package a note, including attachment data, for Cursor, ChatGPT, or Claude.</small></div><button class="toggle" id="quickAiHandoffToggle"><b></b></button></div></div><div class="grp"><h4>AI text changes</h4><div class="srow"><div class="sl">Ask before changing my text<small>Keep AI edits as suggestions until you choose Apply.</small></div><button class="toggle" id="settingsRequireApprovalToggle"><b></b></button></div></div>';
     } else if(settingsPage==="appearance"){
       content=settingsHeading("Appearance",true)+'<div class="grp"><div class="srow"><div class="sl">Background movement<small>Slow drifting color that works on desktop and mobile</small></div><button class="toggle" id="motionToggle"><b></b></button></div></div><div class="grp"><div class="range-row"><label for="darknessRange"><span>Background darkness</span><output id="darknessOutput"></output></label><input id="darknessRange" type="range" min="0" max="100" step="1"><p class="hint">At 100%, the background is pure AMOLED black. Lower it to reveal more of the moving theme color while keeping the surface black.</p></div></div>';
     } else if(settingsPage==="themes"){
@@ -8860,9 +9024,11 @@
     if(settingsPage==="manage") setupManageSettings();
   }
   function setupHomeSettings(){
-    var approval=$("settingsRequireApprovalToggle"); if(!approval) return;
+    var approval=$("settingsRequireApprovalToggle"), focusBody=$("focusNoteBodyToggle"), handoff=$("quickAiHandoffToggle"); if(!approval) return;
     var settings=agentSettings(); approval.classList.toggle("on",settings.requireApproval);
     approval.onclick=function(){ settings.requireApproval=!settings.requireApproval; approval.classList.toggle("on",settings.requireApproval); persist(); showToast(settings.requireApproval?"AI will ask before changing text":"AI changes will apply after a backup"); };
+    if(focusBody){ focusBody.classList.toggle("on",state.focusNoteBody); focusBody.onclick=function(){ state.focusNoteBody=!state.focusNoteBody; focusBody.classList.toggle("on",state.focusNoteBody); persist(); }; }
+    if(handoff){ handoff.classList.toggle("on",state.quickAiHandoff); handoff.onclick=function(){ state.quickAiHandoff=!state.quickAiHandoff; handoff.classList.toggle("on",state.quickAiHandoff); persist(); }; }
   }
   function setupCollabSettings(){
     var box=$("collabSettings"); if(!box) return;
