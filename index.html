@@ -479,7 +479,7 @@
   .d-item .dot{ width:6px; height:6px; border-radius:50%; flex:none; }
   .d-item .item-lock{ display:grid; place-items:center; color:var(--accent); }
   .d-item .item-lock svg{ width:12px; height:12px; }
-  .d-item .dx{ width:30px; height:30px; display:grid; place-items:center; opacity:0; border:none; background:none; color:var(--ink-faint); cursor:pointer; padding:0; border-radius:7px; }
+  .d-item .dx{ width:30px; height:30px; display:grid; place-items:center; opacity:.58; border:none; background:none; color:var(--ink-faint); cursor:pointer; padding:0; border-radius:7px; }
   .d-item .dx svg{ width:15px; height:15px; }
   .d-item:hover .dx,.d-item:focus-within .dx{ opacity:1; } .d-item .dx:hover,.d-item .dx:focus-visible{ color:var(--accent); background:var(--accent-soft); outline:none; }
   .d-item.todo-done .dx{ opacity:1; color:#f87171; }
@@ -2915,11 +2915,13 @@
     for(var i=0;i<tas.length;i++) grow(tas[i]);
     updateMeta();
     syncCollabToCurrentItem();
-    if(isEntering&&state.focusNoteBody&&itemUsesNoteBlocks(it)){
+    if(isEntering){
       setTimeout(function(){
         if(!current()||current().id!==it.id) return;
-        var body=canvas.querySelector('.note-editor[data-note-id="'+it.id+'"] [contenteditable="true"], .note-editor[data-note-id="'+it.id+'"] input, .note-editor[data-note-id="'+it.id+'"] textarea');
-        if(body) body.focus();
+        if(state.focusNoteBody&&itemUsesNoteBlocks(it)){
+          var body=canvas.querySelector('.note-editor[data-note-id="'+it.id+'"] [contenteditable="true"], .note-editor[data-note-id="'+it.id+'"] input, .note-editor[data-note-id="'+it.id+'"] textarea');
+          if(body) body.focus();
+        } else ti.focus();
       },0);
     }
   }
@@ -7741,7 +7743,7 @@
     };
     context.appendChild(clear);
     host.appendChild(context);
-    var tasks=document.createElement("details"); tasks.className="collab-tasks"; tasks.open=false; host.appendChild(tasks); renderCollabTaskPanel(tasks);
+    var tasks=document.createElement("details"); tasks.className="collab-tasks"; tasks.open=true; host.appendChild(tasks); renderCollabTaskPanel(tasks);
 
     var log=document.createElement("div"); log.className="collab-log"; host.appendChild(log);
     var status=document.createElement("div"); status.className="collab-status"; status.setAttribute("role","status"); status.setAttribute("aria-live","polite"); host.appendChild(status);
