@@ -8228,6 +8228,35 @@
   }
   $("gateSignIn").onclick=signIn;
   function hasContent(items){ return items && items.some(function(s){ var mod=itemModule(s); if(mod&&mod.hasContent&&mod.hasContent(s)) return true; return (s.title&&s.title.trim())||itemText(s).trim()||itemHasAttachments(s); }); }
+  /* Fresh devices (and every iPhone sign-in after Safari drops the session)
+     start with an empty Untitled note plus the built-in Assistant. Those are
+     not the owner's notes — asking to merge them is why this prompt returned
+     on every login. */
+  function isSeedDeviceItem(item){
+    if(!item) return true;
+    if(item.type==="agent"&&item.id===AGENT_DEFAULT_ID) return true;
+    return !hasContent([item]);
+  }
+  function unlinkedDeviceItems(deviceItems,cloudItems){
+    var byId={};
+    (cloudItems||[]).forEach(function(item){ if(item&&item.id) byId[item.id]=item; });
+    return (deviceItems||[]).filter(function(item){
+      if(isSeedDeviceItem(item)) return false;
+      var remote=item.id&&byId[item.id];
+      if(remote&&itemSyncSignature(remote)===itemSyncSignature(item)) return false;
+      return true;
+    });
+  }
+  function accountLinkStorageKey(userId){ return "second-brain-cloud-linked-"+(userId||(currentUser&&currentUser.uid)||""); }
+  function rememberedAccountLink(userId){
+    if(!canPersist) return "";
+    try{ return localStorage.getItem(accountLinkStorageKey(userId))||""; }catch(e){ return ""; }
+  }
+  function rememberAccountLink(choice,userId){
+    var id=userId||(currentUser&&currentUser.uid);
+    if(!canPersist||!id) return;
+    try{ localStorage.setItem(accountLinkStorageKey(id),choice||"linked"); }catch(e){}
+  }
   function cloneData(value){ return JSON.parse(JSON.stringify(value||{})); }
   function stableStringify(value){
     if(value===null||typeof value!=="object") return JSON.stringify(value);
@@ -8368,7 +8397,7 @@
       var copy=cloneData(tag); usedTagIds[copy.id]=copy; tagIds[tag.id]=copy.id; merged.tags.push(copy);
     });
     (device.items||[]).forEach(function(item){
-      if(!item) return;
+      if(!item||isSeedDeviceItem(item)) return;
       var copy=cloneData(item), existing=copy.id&&usedItemIds[copy.id];
       if(existing&&itemSyncSignature(existing)===itemSyncSignature(copy)) return;
       if(existing||!copy.id){ do{ copy.id=uid(); }while(usedItemIds[copy.id]); }
@@ -8389,13 +8418,13 @@
     $("accountMergeModal").classList.remove("open");
     if(action==="merge"){
       var merged=mergeDeviceDataIntoCloud(choice.cloud,choice.device);
-      finishCloudLoad({cloud:choice.cloud,data:merged,conflicts:[],needsCloudWrite:true},"Merged this device's notes into your account");
+      finishCloudLoad({cloud:choice.cloud,data:merged,conflicts:[],needsCloudWrite:true},"Merged this device's notes into your account","merge");
     } else {
-      finishCloudLoad({cloud:choice.cloud,data:cloneData(choice.cloud),conflicts:[],needsCloudWrite:false},"Used the notes already in your account");
+      finishCloudLoad({cloud:choice.cloud,data:cloneData(choice.cloud),conflicts:[],needsCloudWrite:false},"Used the notes already in your account","account");
     }
   }
   function showAccountMergeChoice(cloud){
-    var device=syncDataFromState(), deviceCount=countContentItems(device.items), cloudCount=countContentItems(cloud.items), box=$("accountMergeBox");
+    var device=syncDataFromState(), deviceCount=unlinkedDeviceItems(device.items,cloud.items).length, cloudCount=countContentItems(cloud.items), box=$("accountMergeBox");
     accountMergeChoice={cloud:cloneData(cloud),device:device};
     box.innerHTML="";
     var heading=document.createElement("div"); heading.className="mh";
@@ -8452,6 +8481,7 @@
     var result=conflictResolution;
     conflictResolution=null;
     $("syncConflictModal").classList.remove("open");
+    rememberAccountLink("linked");
     useData(result.data);
     if(result.needsCloudWrite){
       /* Keep the last confirmed cloud baseline until this write succeeds, so a
@@ -8508,8 +8538,9 @@
     renderConflictResolution();
     $("syncConflictModal").classList.add("open");
   }
-  function finishCloudLoad(result,message){
+  function finishCloudLoad(result,message,linkChoice){
     useData(result.data);
+    rememberAccountLink(linkChoice||"linked");
     if(result.needsCloudWrite){
       recordSyncBaseline(result.cloud,result.cloud.updated||Date.now());
       state.pendingCloudSync=true; state.lastLocalChange=Date.now(); captureAutoBackup(false);
@@ -8552,11 +8583,20 @@
       var cloudHas=cloud&&Array.isArray(cloud.items);
       if(cloudHas){
         /* A first sign-in has no baseline that can tell whether the device
-           copy belongs to this account. Never replace non-empty device notes
-           without letting their owner choose to merge or use the account copy. */
-        if(!hasUsableSyncBaseline()&&hasContent(state.items)){
-          if(hasContent(cloud.items)) showAccountMergeChoice(cloud);
-          else finishCloudLoad({cloud:cloud,data:mergeDeviceDataIntoCloud(cloud,syncDataFromState()),conflicts:[],needsCloudWrite:true},"Synced this device's notes to your account");
+           copy belongs to this account. Never replace notes the owner actually
+           wrote without letting them choose to merge or use the account copy.
+           Empty Untitled notes and the built-in Assistant are seeded on every
+           fresh load, so they must not trigger that choice. */
+        var unlinked=unlinkedDeviceItems(state.items,cloud.items);
+        if(!hasUsableSyncBaseline()&&unlinked.length){
+          if(!hasContent(cloud.items)){
+            finishCloudLoad({cloud:cloud,data:mergeDeviceDataIntoCloud(cloud,syncDataFromState()),conflicts:[],needsCloudWrite:true},"Synced this device's notes to your account","merge");
+          } else {
+            var remembered=rememberedAccountLink();
+            if(remembered==="merge") finishCloudLoad({cloud:cloud,data:mergeDeviceDataIntoCloud(cloud,syncDataFromState()),conflicts:[],needsCloudWrite:true},"Merged this device's notes into your account","merge");
+            else if(remembered==="account") finishCloudLoad({cloud:cloud,data:cloneData(cloud),conflicts:[],needsCloudWrite:false},"Used the notes already in your account","account");
+            else showAccountMergeChoice(cloud);
+          }
         } else {
           var result=reconcileWithCloud(cloud);
           if(result.conflicts.length) showConflictResolution(result);
@@ -8568,6 +8608,7 @@
           if(canPersist){ try{ localStorage.setItem(KEY,JSON.stringify(state)); }catch(e){} }
           renderAll();
         }
+        rememberAccountLink("linked");
         cloudSyncLoading=false; saveCloudNow(); showToast("Cloud sync is ready");
       }
     }).then(function(){ trimCloudBackups(); }).catch(function(e){ cloudSyncLoading=false; console.warn(e); showToast("Couldn’t read cloud data — check Firestore rules",true); });
@@ -9514,10 +9555,11 @@
   $("settingsModal").onclick=function(e){ if(e.target===$("settingsModal")) $("settingsModal").classList.remove("open"); };
 
   /* =================== boot =================== */
+  /* Do not seed the built-in Assistant before sign-in. That item has a title,
+     so it counted as 1 unlinked note and the merge prompt appeared every time
+     this device had to log in again. useData() creates it after the account
+     loads if the cloud copy does not already have an agent. */
   trackTimeSpent();
-  var hadAgents=!!agentItems().length;
-  ensureBuiltinAgent();
-  if(!hadAgents&&agentItems().length) persist();
   captureAutoBackup(false); applyTheme(0); syncMotion(); renderAll(); renderFoot(); initFirebase();
   window.__astral={ state:state, render:renderAll, api:runtimeApiKeys };
 })();
