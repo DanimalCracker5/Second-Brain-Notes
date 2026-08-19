@@ -5994,6 +5994,21 @@
     }
     return collab.unlockedAudio;
   }
+  function keepSpeechPlaybackAlive(){
+    var ac=playbackAudioContext();
+    if(!ac) return;
+    if(ac.state==="suspended") ac.resume().catch(function(){});
+    if(collab.speakKeepAlive) return;
+    try{
+      var osc=ac.createOscillator();
+      var gain=ac.createGain();
+      gain.gain.value=0;
+      osc.connect(gain);
+      gain.connect(ac.destination);
+      osc.start();
+      collab.speakKeepAlive={osc:osc,gain:gain};
+    }catch(e){}
+  }
   function unlockSpeechPlayback(ctx){
     if(ctx) collab.speakCtx=ctx;
     var ac=playbackAudioContext()||ctx;
@@ -6007,6 +6022,7 @@
         }
       }catch(e){}
     }
+    keepSpeechPlaybackAlive();
     try{
       if(window.speechSynthesis){
         var warm=new SpeechSynthesisUtterance(" ");
@@ -6085,8 +6101,11 @@
       if(collab.audioUrl) URL.revokeObjectURL(collab.audioUrl);
       collab.audioUrl=URL.createObjectURL(blob);
       var audio=unlockedHtmlAudio();
+      try{ audio.pause(); }catch(e){}
+      audio.muted=false;
       audio.volume=1;
       audio.src=collab.audioUrl;
+      try{ audio.load(); }catch(e){}
       collab.audio=audio;
       audio.onended=function(){
         if(token!==collab.speakToken){ resolve(); return; }
@@ -6102,7 +6121,12 @@
   function playTtsBlob(blob,token){
     var ctx=playbackAudioContext();
     if(ctx&&ctx.state==="suspended") ctx.resume().catch(function(){});
-    if(!ctx) return playHtmlAudio(blob,token);
+    /* Live voice keeps a running AudioContext for the face analyser. Chat
+       replies arrive after an async TTS round-trip, and iPhone Safari will
+       not start a BufferSource then — play through the unlocked <audio>
+       element instead, the same path Preview already uses. */
+    var liveVoice=collab.voice&&collab.voice.active&&ctx&&ctx.state==="running";
+    if(!liveVoice) return playHtmlAudio(blob,token);
     return blob.arrayBuffer().then(function(raw){
       if(token!==collab.speakToken) return;
       return decodeAudioBuffer(ctx,raw).then(function(buffer){
@@ -6160,9 +6184,12 @@
     var spoken=cleanText(text);
     if(!agentSettings().speakReplies||!spoken) return Promise.resolve();
     var agentItem=collabAgent(); if(!agentItem) return Promise.resolve();
+    unlockSpeechPlayback(playbackAudioContext());
     stopTts(); stopCollabSpeech();
-    var token=collab.speakToken, chunks=splitCollabSpeech(spoken), voiceId=normalizeAgent(agentItem).voiceId;
-    function surfaceAlive(){ return token===collab.speakToken&&(collab.host||(collab.voice&&collab.voice.active)); }
+    var token=collab.speakToken, chunks=splitCollabSpeech(spoken), voiceId=effectiveAgentVoiceId(normalizeAgent(agentItem));
+    /* Chat remounts (create_note, applyProposal, API-key sync) clear collab.host
+       while TTS is still in flight. Keep speaking until this turn is stopped. */
+    function surfaceAlive(){ return token===collab.speakToken; }
     function markSpeaking(){
       setCollabStatus("Speaking…");
       markCompanionState("speaking");
@@ -6717,6 +6744,7 @@
     var messages=collabApiMessages(agentItem,targetItem,targets), tools=collabTools(!!(targetItem&&targets.length)), turnProposals=[];
     var role=canonAgentRole(opts.role||"conscious");
     collab.busy=true; updateCollabControls(); setCollabStatus(role==="subconscious"?"Deciding whether to jump in…":"Thinking…");
+    if(agentSettings().speakReplies) unlockSpeechPlayback(playbackAudioContext());
     markCompanionState("thinking");
     var rounds=0, streamEntry=null, streamedText="";
     function onDelta(piece){
@@ -6863,7 +6891,7 @@
       var text=turnProposals.length?proposalSpokenReply(turnProposals):cleanText(reply);
       var shouldSpeak=opts.forceSpeak;
       if(typeof shouldSpeak!=="boolean"){
-        shouldSpeak=agentSettings().speakReplies&&opts.readBack!==false;
+        shouldSpeak=agentSettings().speakReplies;
         if(a.readBack==="never") shouldSpeak=false;
         else if(a.readBack==="after_edits") shouldSpeak=shouldSpeak&&!!turnProposals.length;
       }
@@ -7689,9 +7717,6 @@
       if(!runtimeApiKeys.elevenlabs) warnings.push("Add an ElevenLabs key for spoken replies, or switch to AI credits. Without either, the phone’s own voice is used as a backup.");
       if(!runtimeApiKeys.gemini) warnings.push("Without a Gemini key, Live ears is off — it listens in turns instead of continuously. It can still hear you and talk back.");
     }
-    return {missing:missing,warnings:warnings,ok:!missing.length};
-  }
-    if(!runtimeApiKeys.gemini) warnings.push("Without a Gemini key, Live ears is off — it listens in turns instead of continuously. It can still hear you and talk back.");
     return {missing:missing,warnings:warnings,ok:!missing.length};
   }
   function setCollabStatus(text,bad){
@@ -8528,7 +8553,23 @@
     try{
       if(!firebase.apps || !firebase.apps.length) firebase.initializeApp(cfg);
       auth=firebase.auth(); db=firebase.firestore(); storage=typeof firebase.storage==="function"?firebase.storage():null; fbReady=true;
+      var authWaitTimer=setTimeout(function(){
+        if(currentUser) return;
+        var status=$("authGateStatus");
+        if(status&&/Checking your secure session/i.test(status.textContent||"")){
+          setAuthGate(true,"Tap Sign in with Google to continue.");
+        }
+      },3500);
+      auth.getRedirectResult().then(function(result){
+        if(result&&result.user) setAuthGate(true,"Signing you in…");
+      }).catch(function(e){
+        console.warn(e);
+        var message=authErrorMessage(e);
+        setAuthGate(true,message,e&&e.code!=="auth/popup-closed-by-user");
+        showToast(message,e&&e.code!=="auth/popup-closed-by-user");
+      });
       auth.onAuthStateChanged(function(u){
+        clearTimeout(authWaitTimer);
         var signedOutUser=currentUser;
         currentUser=u;
         if(u){
@@ -8553,6 +8594,12 @@
     }
     renderFoot();
   }
+  function prefersRedirectSignIn(){
+    var ua=navigator.userAgent||"";
+    if(/iPhone|iPad|iPod/i.test(ua)) return true;
+    return navigator.platform==="MacIntel"&&navigator.maxTouchPoints>1;
+  }
+  function googleAuthProvider(){ return new firebase.auth.GoogleAuthProvider(); }
   function authErrorMessage(e){
     var code=e&&e.code||"";
     if(location.protocol==="file:") return "Open the app with Start Second Brain.cmd so Google sign-in has a valid web address";
@@ -8576,14 +8623,27 @@
       showToast(authErrorMessage(),true);
       return;
     }
-    if(button){ button.disabled=true; $("gateSignInLabel").textContent="Opening secure sign-in…"; }
-    setAuthGate(true,"Continue in the Google window to unlock your notes.");
-    auth.signInWithPopup(new firebase.auth.GoogleAuthProvider()).catch(function(e){
+    var provider=googleAuthProvider();
+    function fail(e){
       console.warn(e);
       var message=authErrorMessage(e);
       if(button){ button.disabled=false; $("gateSignInLabel").textContent="Sign in with Google"; }
       setAuthGate(true,message,e&&e.code!=="auth/popup-closed-by-user");
       showToast(message,e&&e.code!=="auth/popup-closed-by-user");
+    }
+    if(button){ button.disabled=true; $("gateSignInLabel").textContent="Opening secure sign-in…"; }
+    if(prefersRedirectSignIn()){
+      setAuthGate(true,"Taking you to Google…");
+      auth.signInWithRedirect(provider).catch(fail);
+      return;
+    }
+    setAuthGate(true,"Continue in the Google window to unlock your notes.");
+    auth.signInWithPopup(provider).catch(function(e){
+      if(e&&(e.code==="auth/popup-blocked"||e.code==="auth/operation-not-supported-in-this-environment")){
+        setAuthGate(true,"Taking you to Google…");
+        return auth.signInWithRedirect(provider);
+      }
+      fail(e);
     });
   }
   $("gateSignIn").onclick=signIn;
