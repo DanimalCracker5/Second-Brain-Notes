@@ -50,6 +50,13 @@ vm.createContext(sandbox);
 ].forEach(function (pair) {
   vm.runInContext(grab(pair[0], pair[1]), sandbox, { filename: pair[0] });
 });
+sandbox.itemUsesNoteBlocks = function (it) { return !!(it && (it.type === "note" || it.type === "workout")); };
+sandbox.createNoteBlock = function (type, seed) { return sandbox.textBlock(seed && seed.text || ""); };
+sandbox.sec = function () { return {}; };
+sandbox.newTask = function () { return { text: "" }; };
+sandbox.ensureTodoTaskDetails = function () {};
+vm.runInContext(grab("insertAfterTarget", "collabSystemPrompt"), sandbox, { filename: "insertAfterTarget" });
+vm.runInContext(grab("looksLikeNoteWriteClaim", "collabApiMessages"), sandbox, { filename: "looksLikeNoteWriteClaim" });
 
 test("parseToolArguments accepts objects, JSON, and trailing commas", function () {
   assert.deepEqual(sandbox.parseToolArguments({ text: "Hi" }), { text: "Hi" });
@@ -98,4 +105,17 @@ test("writeNoteBody keeps a transcript group when replacing", function () {
   assert.equal(note.blocks[0].text, "Cleaned up todo.");
   assert.equal(note.blocks[1].type, "group");
   assert.equal(note.blocks[1].text, "raw ramble");
+});
+
+test("insertAfterTarget fills the empty placeholder instead of adding a second paragraph", function () {
+  const note = { type: "note", todo: true, blocks: [{ id: "p1", type: "text", text: "", html: "" }] };
+  sandbox.insertAfterTarget(note, "end", "When I get home, pull in and merge everything from the Hub.", "paragraph", {});
+  assert.equal(note.blocks.length, 1);
+  assert.equal(note.blocks[0].id, "p1");
+  assert.equal(note.blocks[0].text, "When I get home, pull in and merge everything from the Hub.");
+});
+
+test("looksLikeNoteWriteClaim catches I-added replies", function () {
+  assert.equal(sandbox.looksLikeNoteWriteClaim("Yes, it's done now. I added: 'When I get home, pull in and merge everything from the Hub.'"), true);
+  assert.equal(sandbox.looksLikeNoteWriteClaim("I can help with that tomorrow."), false);
 });
