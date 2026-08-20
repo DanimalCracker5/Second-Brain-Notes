@@ -43,7 +43,8 @@ vm.createContext(sandbox);
 [
   ["parseToolArguments", "agentEditText"],
   ["agentEditText", "emptyPlaceholderTextBlock"],
-  ["emptyPlaceholderTextBlock", "writeNoteBody"],
+  ["emptyPlaceholderTextBlock", "noteBodyIsVisuallyEmpty"],
+  ["noteBodyIsVisuallyEmpty", "writeNoteBody"],
   ["firstWritableTarget", "resolveAgentTargetId"],
   ["resolveAgentTargetId", "writeTarget"],
   ["writeNoteBody", "firstWritableTarget"]
@@ -56,7 +57,7 @@ sandbox.sec = function () { return {}; };
 sandbox.newTask = function () { return { text: "" }; };
 sandbox.ensureTodoTaskDetails = function () {};
 vm.runInContext(grab("insertAfterTarget", "collabSystemPrompt"), sandbox, { filename: "insertAfterTarget" });
-vm.runInContext(grab("looksLikeNoteWriteClaim", "collabApiMessages"), sandbox, { filename: "looksLikeNoteWriteClaim" });
+vm.runInContext(grab("looksLikeNoteWriteRequest", "collabApiMessages"), sandbox, { filename: "looksLikeNoteWriteRequest" });
 
 test("parseToolArguments accepts objects, JSON, and trailing commas", function () {
   assert.deepEqual(sandbox.parseToolArguments({ text: "Hi" }), { text: "Hi" });
@@ -117,5 +118,45 @@ test("insertAfterTarget fills the empty placeholder instead of adding a second p
 
 test("looksLikeNoteWriteClaim catches I-added replies", function () {
   assert.equal(sandbox.looksLikeNoteWriteClaim("Yes, it's done now. I added: 'When I get home, pull in and merge everything from the Hub.'"), true);
+  assert.equal(sandbox.looksLikeNoteWriteClaim("Got it — I'll turn the note into a simple reminder to buy something sweet."), true);
   assert.equal(sandbox.looksLikeNoteWriteClaim("I can help with that tomorrow."), false);
+});
+
+test("looksLikeNoteWriteRequest catches change-it and that's-the-whole-note", function () {
+  assert.equal(sandbox.looksLikeNoteWriteRequest("Change it; that's what I asked you to do, isn't it?"), true);
+  assert.equal(sandbox.looksLikeNoteWriteRequest("That's the whole note."), true);
+  assert.equal(sandbox.looksLikeNoteWriteRequest("What's the weather?"), false);
+});
+
+test("fallbackNoteWriteText skips meta follow-ups and uses the dictated wording", function () {
+  const log = [
+    { role: "user", text: "Buy something sweet when I get home." },
+    { role: "assistant", text: "I'll turn the note into a reminder." },
+    { role: "user", text: "That's the whole note." },
+    { role: "user", text: "Did you write that?" },
+    { role: "user", text: "Change it." }
+  ];
+  assert.equal(sandbox.fallbackNoteWriteText(log), "Buy something sweet when I get home.");
+});
+
+test("noteBodyIsVisuallyEmpty treats an empty paragraph as empty even with a transcript group", function () {
+  const empty = { type: "note", blocks: [{ id: "p1", type: "text", text: "", html: "" }] };
+  const withTranscript = {
+    type: "note",
+    blocks: [
+      { id: "p1", type: "text", text: "", html: "" },
+      { id: "g1", type: "group", title: "Transcribed audio", text: "raw ramble" }
+    ]
+  };
+  const filled = { type: "note", blocks: [{ id: "p1", type: "text", text: "Buy sweets", html: "Buy sweets" }] };
+  assert.equal(sandbox.noteBodyIsVisuallyEmpty(empty), true);
+  assert.equal(sandbox.noteBodyIsVisuallyEmpty(withTranscript), true);
+  assert.equal(sandbox.noteBodyIsVisuallyEmpty(filled), false);
+});
+
+test("shouldForceNoteWrite treats follow-ups on an empty note as a write", function () {
+  const empty = { type: "note", blocks: [{ id: "p1", type: "text", text: "", html: "" }] };
+  assert.equal(sandbox.shouldForceNoteWrite(empty, "Change it."), true);
+  assert.equal(sandbox.shouldForceNoteWrite(empty, "Did you write that?"), true);
+  assert.equal(sandbox.shouldForceNoteWrite(empty, "What's the weather?"), false);
 });

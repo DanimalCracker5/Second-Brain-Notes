@@ -4751,7 +4751,7 @@
   var collab={open:false,host:null,hostKind:null,mode:"document",agentId:"",itemId:"",draft:"",busy:false,greetingKey:"",
     notes:[],proposals:[],recorder:null,recorderStream:null,recorderStop:false,
     audio:null,audioUrl:null,unlockedAudio:null,speakToken:0,speakCtx:null,speakSource:null,speakAnalyser:null,speakBufferSource:null,artRaf:0,voiceAmp:0.22,
-    sessionKey:"",grantedNoteIds:{},
+    sessionKey:"",grantedNoteIds:{},pendingDictation:"",
     voice:null,decisions:[],queuedUtterance:""};
 
   function defaultUsageStats(){ return {calls:0,tokens:0,inputTokens:0,outputTokens:0,billedMicros:0,providerMicros:0,byModel:{},byRole:{},recent:[]}; }
@@ -5268,6 +5268,19 @@
     var extras=(it.blocks||[]).filter(function(block){ return block&&block.type!=="text"&&block.type!=="attachment"; });
     return extras.length?null:textBlocks[0];
   }
+  function noteBodyIsVisuallyEmpty(it){
+    if(!it) return true;
+    if(emptyPlaceholderTextBlock(it)) return true;
+    var blocks=it.blocks||[];
+    if(blocks.length){
+      var visible=blocks.filter(function(block){
+        return block&&(block.type==="text"||block.type==="chapter"||block.type==="comment"||block.type==="prompt"||block.type==="heading"||block.type==="code");
+      });
+      if(!visible.length) return !cleanText(it.body||it.code||"");
+      return visible.every(function(block){ return !cleanText(block.text)&&!cleanText(block.html)&&!cleanText(block.code); });
+    }
+    return !cleanText(it.body||it.code||"");
+  }
   function writeNoteBody(it,text,mode){
     ensureNoteBlocks(it);
     var empty=emptyPlaceholderTextBlock(it);
@@ -5418,6 +5431,7 @@
     lines.push(approval
       ? "- You cannot write into the document yourself. To change anything you must call update_open_document or propose_edits; the app then shows a before/after preview with Apply and Discard. Only the user can apply it."
       : "- You are allowed to edit the open document yourself. Call update_open_document or propose_edits; the app applies those edits automatically after saving a backup. Do not ask them to approve each change.");
+    lines.push("- If update_open_document is in your tool list, it is available on this turn. Call it. Never say the note-editing tool is unavailable, missing, or off.");
     lines.push(approval
       ? "- Never say you have changed, updated, fixed, or saved anything. Say you have drafted or suggested it and it is waiting for them."
       : "- After a write tool result says Saved, you may say it is already in the note. If the tool failed, say the note was not changed. Do not ask them to approve each change.");
@@ -5430,7 +5444,7 @@
     lines.push("- Use list_item_types if you are unsure which kinds or block types this workspace supports.");
     lines.push("- Use set_task when you start a piece of work that will take more than one beat (structure a ramble, draft a Cursor prompt, rewrite a chapter). Keep the task list honest.");
     lines.push("- Only edit when they asked for one, or when you offered and they agreed, or when they are clearly dictating content into the open note.");
-    lines.push("- A request to add, capture, write, update, or remove note content is not complete until you call update_open_document or propose_edits and the tool result says it was saved. Never merely describe the change or claim it happened. If the tool call fails, say plainly that the note was not changed.");
+    lines.push("- A request to add, capture, write, update, change, or remove note content is not complete until you call update_open_document or propose_edits and the tool result says it was saved. Never merely describe the change. Phrases like \"that's the whole note\", \"change it\", and \"write that\" are write requests.");
     lines.push("- To fill or rewrite the open note or todo, call update_open_document with the exact wording. Use mode replace on an empty note and append to add to existing text. You may also set title. That is the normal way to put words into the note.");
     lines.push("- Create and edit every note block the Insert menu offers: paragraphs, headings, chapters, comments, prompts, collapsible groups, code, YouTube/Vimeo embeds, and links. Use propose_edits with insert_after and block_type to create one; use an existing target_id, or \"body\", to edit one. File attachments cannot be created or changed by the assistant.");
     lines.push("- Cursor prompts, system prompts, and anything meant to be copied elsewhere belong in a prompt block. Do not dump them into a paragraph.");
@@ -5480,7 +5494,7 @@
       var body=targets.map(function(t){ return "--- target_id: "+t.id+"\npart: "+t.label+"\ntext: "+(t.text?t.text:"(empty)"); }).join("\n");
       lines.push(body.length>COLLAB_CONTEXT_LIMIT?body.slice(0,COLLAB_CONTEXT_LIMIT)+"\n(document truncated — ask the user about parts you cannot see)":body);
     } else {
-      lines.push("No document is open, so update_open_document and propose_edits are unavailable until you open_note or create_note. You can still search_notes, list_todos, list_notes, list_item_types, request_note_access, read_notes, create_note, create_todo, update_todo, set_task, and remember.");
+      lines.push("No document is attached yet. If they want something written down, call create_note or open_note, then update_open_document. Do not say you cannot edit — open or create the note first. You can still search_notes, list_todos, list_notes, list_item_types, request_note_access, read_notes, create_todo, update_todo, set_task, and remember.");
     }
     return lines.join("\n");
   }
@@ -5852,7 +5866,10 @@
     function openaiBody(id,withTemperature,withTools,stream){
       var body={model:id,messages:messages};
       var budget=llmTokenBudget(opts,id);
-      if(withTools&&tools.length){ body.tools=tools; body.tool_choice="auto"; }
+      if(withTools&&tools.length){
+        body.tools=tools;
+        body.tool_choice=opts.toolChoice&&opts.toolChoice!=="auto"?opts.toolChoice:"auto";
+      }
       if(useJson) body.response_format={type:"json_object"};
       if(withTemperature&&typeof temperature==="number"&&!isReasoningModel(id)) body.temperature=temperature;
       if(budget){
@@ -5904,6 +5921,10 @@
           return viaOpenAI(id,withTemperature,withTools,stream);
         }
         if(withTemperature&&/temperature/i.test(text)) return viaOpenAI(id,false,withTools,stream);
+        if(withTools&&opts.toolChoice&&opts.toolChoice!=="auto"&&/tool_choice/i.test(text)){
+          opts.toolChoice="auto";
+          return viaOpenAI(id,withTemperature,true,stream);
+        }
         if(withTools&&(/tools?|tool_choice|functions?/i.test(text)||/not supported/i.test(text))) return viaOpenAI(id,withTemperature,false,stream);
         if(stream){
           console.warn("OpenAI stream failed, retrying without stream:",error);
@@ -5920,7 +5941,12 @@
       if(budget) payload.generationConfig.maxOutputTokens=budget;
       if(useJson) payload.generationConfig.responseMimeType="application/json";
       var geminiTools=openaiToolsToGemini(tools);
-      if(geminiTools.length) payload.tools=geminiTools;
+      if(geminiTools.length){
+        payload.tools=geminiTools;
+        var forced=opts.toolChoice&&opts.toolChoice.function&&opts.toolChoice.function.name;
+        if(forced) payload.toolConfig={functionCallingConfig:{mode:"ANY",allowedFunctionNames:[forced]}};
+        else if(opts.toolChoice==="required"||opts.toolChoice==="any") payload.toolConfig={functionCallingConfig:{mode:"ANY"}};
+      }
       return payload;
     }
     function viaGemini(id,stream){
@@ -5963,6 +5989,7 @@
           model:id,
           messages:messages,
           tools:tools,
+          toolChoice:opts.toolChoice||"auto",
           temperature:temperature,
           json:useJson,
           maxTokens:budget,
@@ -5986,6 +6013,12 @@
         },function(error){
           watch.close();
           if(hostedInsufficient(error)) throw new Error(error.message||"You need more AI credits.");
+          var text=(error&&error.message)||"";
+          if(opts.toolChoice&&opts.toolChoice!=="auto"&&!opts._toolChoiceRetried&&(/tool_choice|tools?|functions?/i.test(text))){
+            opts._toolChoiceRetried=true;
+            opts.toolChoice="auto";
+            return send(id,stream);
+          }
           throw asLlmError(error);
         });
       }
@@ -6056,6 +6089,7 @@
       model:model,
       messages:messages,
       tools:tools,
+      toolChoice:extra.toolChoice,
       temperature:mind==="subconscious"?0.1:a.temperature,
       fallbacks:agentFallbacks(mind,model),
       stream:!!extra.onDelta,
@@ -6471,6 +6505,12 @@
   function collabDocument(){
     if(collab.mode!=="document"||!collab.itemId) return null;
     var it=(state.items||[]).find(function(x){ return x.id===collab.itemId; });
+    return (it&&it.type!=="agent")?it:null;
+  }
+  function collabWritableItem(){
+    var doc=collabDocument();
+    if(doc) return doc;
+    var it=typeof current==="function"?current():null;
     return (it&&it.type!=="agent")?it:null;
   }
   function collabConversation(){
@@ -6936,7 +6976,7 @@
     }
   }
   function applyProposal(proposal){
-    var it=collabDocument()||(current()&&current().type!=="agent"?current():null);
+    var it=collabWritableItem();
     if(!it){ proposal.state="discarded"; pushCollabNote("That document is no longer open, so nothing was changed.",true); renderCollabLog(); return {ok:false,applied:0,error:"The open document is gone."}; }
     if(it.locked){ proposal.state="discarded"; pushCollabNote("This item is locked. Unlock it first.",true); renderCollabLog(); return {ok:false,applied:0,error:"This item is locked."}; }
     if(agentSettings().backupBeforeWork) captureAutoBackup(true,"agent");
@@ -7002,8 +7042,11 @@
     refreshOpenItemAfterAgent(it,[]);
     var agentItem=collabAgent();
     if(agentItem) normalizeAgent(agentItem).stats.edits+=1;
-    pushCollabNote("Updated "+itemLabel(it).toLowerCase()+": "+(cleanText(it.title)||"Untitled"));
-    if(collab.host) renderCollabLog();
+    if(typeof collab!=="undefined"&&collab) collab.pendingDictation="";
+    if(!extra.quiet){
+      pushCollabNote("Updated "+itemLabel(it).toLowerCase()+": "+(cleanText(it.title)||"Untitled"));
+      if(collab.host) renderCollabLog();
+    }
     return {ok:true,text:noteTextForAgent(it)};
   }
   function flashAgentEdits(ids){
@@ -7025,9 +7068,14 @@
   }
   function looksLikeNoteWriteRequest(text){
     var value=text||"";
-    if(/\b(put|add|write|save|update|edit|insert|capture|fill)\b/i.test(value)&&/\b(note|todo|document|it|there|this)\b/i.test(value)) return true;
-    if(/\b(into the note|to the note|on the note)\b/i.test(value)) return true;
+    if(/\b(put|add|write|save|update|edit|insert|capture|fill|change|rewrite|replace|fix)\b/i.test(value)&&/\b(note|todo|document|it|there|this|that)\b/i.test(value)) return true;
+    if(/\b(into the note|to the note|on the note|the whole note|that'?s (the )?(whole |entire )?note)\b/i.test(value)) return true;
+    if(/\b(change it|write that|write it|put it in|make the note|save that)\b/i.test(value)) return true;
     return false;
+  }
+  function looksLikeNoteWriteQuestion(text){
+    var value=cleanText(text);
+    return /\b(did you|have you|was it|is it)\b/i.test(value)&&/\b(write|wrote|written|save|saved|change|changed|put|added)\b/i.test(value);
   }
   function looksLikeNoteWriteClaim(text){
     var value=cleanText(text);
@@ -7035,6 +7083,39 @@
     if(/\b(added|updated|edited|saved|changed|wrote|inserted|put)\b[^.]{0,120}\b(note|document|todo|entry|point|text|content|it)\b/i.test(value)) return true;
     if(/\b(it'?s|it is) (done|in|saved|there)\b/i.test(value)) return true;
     if(/\bi (added|updated|saved|wrote|put)\b/i.test(value)) return true;
+    if(/\b(i('ll| will)|going to)\b.{0,80}\b(turn|write|add|put|update|change|make)\b/i.test(value)) return true;
+    return false;
+  }
+  function isMetaNoteWriteUtterance(text){
+    var value=cleanText(text);
+    if(!value) return true;
+    if(looksLikeNoteWriteQuestion(value)) return true;
+    if(/^(change it|do it|write that|write it|save it|go ahead|please( do)?|yes|yeah|yep|yup|ok|okay|sure|that'?s it|that'?s the whole note|the whole note|put it in|make the change)[.!?]*$/i.test(value)) return true;
+    return false;
+  }
+  function fallbackNoteWriteText(log){
+    var pending=typeof collab!=="undefined"&&collab?cleanText(collab.pendingDictation):"";
+    if(pending) return pending;
+    log=log||(typeof collabConversation==="function"?collabConversation():[]);
+    var i, text;
+    for(i=log.length-1;i>=0;i--){
+      if(!log[i]||log[i].role!=="user") continue;
+      text=cleanText(log[i].text);
+      if(text&&!isMetaNoteWriteUtterance(text)) return text;
+    }
+    return "";
+  }
+  function defaultNoteWriteMode(it,userText){
+    if(noteBodyIsVisuallyEmpty(it)) return "replace";
+    if(/\b(add|append|also)\b/i.test(userText||"")) return "append";
+    return "replace";
+  }
+  function shouldForceNoteWrite(it,userText,opts){
+    if(!it) return false;
+    opts=opts||{};
+    if(opts.requireWrite) return true;
+    if(looksLikeNoteWriteRequest(userText)&&!looksLikeNoteWriteQuestion(userText)) return true;
+    if(noteBodyIsVisuallyEmpty(it)&&(looksLikeNoteWriteQuestion(userText)||isMetaNoteWriteUtterance(userText))) return true;
     return false;
   }
   function collabApiMessages(agentItem,targetItem,targets){
@@ -7049,14 +7130,13 @@
     var agentItem=collabAgent();
     if(!agentItem){ setCollabStatus("Create an agent first.",true); return; }
     if(!hasThinkingAccess()){ setCollabStatus(usingHostedAi()?"Buy AI credits in Settings to keep talking.":"Add an OpenAI or Gemini API key, or buy AI credits in Settings.",true); return; }
-    var targetItem=collabDocument();
-    if(!targetItem&&collab.mode==="document"&&current()&&current().type!=="agent"){
-      targetItem=current();
-      collab.itemId=targetItem.id;
-    }
+    var targetItem=collabWritableItem();
     var targets=collabTargets(targetItem);
     var messages=collabApiMessages(agentItem,targetItem,targets), tools=collabTools(!!(targetItem&&targets.length)), turnProposals=[], turnWrites=0;
     var role=canonAgentRole(opts.role||"conscious");
+    var userText=lastCollabUserText();
+    var forceWrite=shouldForceNoteWrite(targetItem,userText,opts)&&!!(targetItem&&targets.length);
+    var toolChoice=forceWrite?{type:"function",function:{name:"update_open_document"}}:"auto";
     collab.busy=true; updateCollabControls(); setCollabStatus(role==="subconscious"?"Deciding whether to jump in…":"Thinking…");
     if(agentSettings().speakReplies) unlockSpeechPlayback(playbackAudioContext());
     markCompanionState("thinking");
@@ -7079,7 +7159,7 @@
     }
     function step(){
       rounds++;
-      return agentCompletion(agentItem,messages,tools,role,{onDelta:onDelta}).then(function(data){
+      return agentCompletion(agentItem,messages,tools,role,{onDelta:onDelta,toolChoice:toolChoice}).then(function(data){
         if(data&&data._fallbackTo){
           pushCollabNote((data._fallbackError||"That model failed")+" — used "+data._fallbackTo+" for this turn instead. Your saved model was not changed.");
         }
@@ -7088,11 +7168,14 @@
         var calls=Array.isArray(message.tool_calls)?message.tool_calls:[];
         if(!calls.length){
           var spoken=cleanText(message.content)||cleanText(message.refusal);
-          if(targetItem&&!nudgedWrite&&rounds<COLLAB_TOOL_ROUNDS&&(looksLikeNoteWriteRequest(lastCollabUserText())||looksLikeNoteWriteClaim(spoken))){
+          var wantsWrite=forceWrite||looksLikeNoteWriteRequest(lastCollabUserText())||looksLikeNoteWriteQuestion(lastCollabUserText())||looksLikeNoteWriteClaim(spoken)||!!cleanText(collab.pendingDictation);
+          if(targetItem&&!nudgedWrite&&rounds<COLLAB_TOOL_ROUNDS&&wantsWrite){
             nudgedWrite=true;
             dropStream();
             messages.push({role:"assistant",content:message.content||spoken||""});
-            messages.push({role:"user",content:"The open note was not changed. You must call update_open_document or propose_edits now with the exact wording. Use target_id \"body\" for the note text and \"title\" for the title. Do not claim the edit happened until the tool result says it was saved."});
+            var wording=fallbackNoteWriteText()||lastCollabUserText();
+            messages.push({role:"user",content:"The open note was not changed. Call update_open_document now with this wording:\n"+(wording||"(use the owner's last dictated note)")+"\nUse mode replace if the note body is empty. update_open_document is available on this turn. Do not say the editing tool is unavailable, and do not claim the edit happened until the tool result says Saved."});
+            toolChoice={type:"function",function:{name:"update_open_document"}};
             return step();
           }
           return spoken;
@@ -7102,7 +7185,7 @@
         calls.forEach(function(call){
           var name=call&&call.function&&call.function.name, args=parseToolArguments(call&&call.function&&call.function.arguments), result="Done.";
           if(name==="update_open_document"){
-            var writeTargetItem=targetItem||collabDocument();
+            var writeTargetItem=targetItem||collabWritableItem();
             if(!writeTargetItem) result="No document is open. Call open_note first.";
             else if(agentRequiresApproval(agentItem)){
               var preview=buildProposal(cleanText(args.title)?"Update title and body":"Update the open note",[
@@ -7252,6 +7335,18 @@
         if(a.readBack==="never") shouldSpeak=false;
         else if(a.readBack==="after_edits") shouldSpeak=shouldSpeak&&!!spokenProposals.length;
       }
+      if(!turnWrites&&!spokenProposals.length&&targetItem&&shouldForceNoteWrite(targetItem,lastCollabUserText(),opts)&&!agentRequiresApproval(agentItem)){
+        var fallback=fallbackNoteWriteText();
+        if(fallback){
+          var recovered=writeOpenDocument(targetItem,{text:fallback,mode:defaultNoteWriteMode(targetItem,lastCollabUserText())});
+          if(recovered&&recovered.ok){
+            turnWrites++;
+            if(!text||looksLikeNoteWriteClaim(text)||/tool isn'?t available|not available|was not changed/i.test(text)){
+              text="It's in the note now.";
+            }
+          }
+        }
+      }
       if(!turnWrites&&!spokenProposals.length&&targetItem&&looksLikeNoteWriteClaim(text)){
         pushCollabNote("No note edit was received from the agent, so the document was not changed. Ask it to try the edit again.",true);
       }
@@ -7304,12 +7399,27 @@
   function sendCollabMessage(text){
     var message=cleanText(text);
     if(!message||collab.busy) return;
+    if(!isMetaNoteWriteUtterance(message)) rememberPendingDictation(message);
     startCollabSession();
     pushCollabMessage("user",message);
     runCollabTurn();
   }
 
   /* ---------- transcribed audio in the open note ---------- */
+  function rememberPendingDictation(text){
+    var value=cleanText(text);
+    if(value) collab.pendingDictation=value;
+  }
+  function captureDictationIntoNote(text){
+    rememberPendingDictation(text);
+    var note=collabWritableItem();
+    var value=cleanText(text);
+    if(!note||!value) return false;
+    if(agentRequiresApproval(collabAgent())) return false;
+    if(!noteBodyIsVisuallyEmpty(note)) return false;
+    var written=writeOpenDocument(note,{text:value,mode:"replace",quiet:true});
+    return !!(written&&written.ok);
+  }
   function ensureTranscriptGroup(note){
     if(!note||note.type!=="note") return null;
     ensureNoteBlocks(note);
@@ -7340,7 +7450,7 @@
     return true;
   }
   function appendTranscriptUtterance(text,continuing){
-    var note=collabDocument();
+    var note=collabWritableItem();
     var agentItem=collabAgent(), a=agentItem?normalizeAgent(agentItem):null;
     if(!note||!a||!a.transcribeToNote||note.type!=="note") return;
     var existed=note.blocks.some(function(block){ return block.type==="group"&&cleanText(block.title).toLowerCase()===TRANSCRIPT_GROUP_TITLE.toLowerCase(); });
@@ -7600,7 +7710,8 @@
     setVoiceTranscriptPreview(buffered);
     if(decision.action==="dictate_only"){
       setVoiceStatus("Listening");
-      pushCollabNote("Dictation captured without a reply.");
+      if(captureDictationIntoNote(buffered)) pushCollabNote("Captured into the note without a reply.");
+      else pushCollabNote("Dictation captured without a reply.");
       return;
     }
     if(collab.busy){ collab.queuedUtterance=(collab.queuedUtterance?collab.queuedUtterance+"\n":"")+buffered; setVoiceStatus("One moment"); return; }
@@ -7641,6 +7752,7 @@
     var agentItem=collabAgent(); if(!agentItem) return;
     var a=normalizeAgent(agentItem);
     var message=cleanText(text); if(!message||collab.busy){ if(message) collab.queuedUtterance=(collab.queuedUtterance?collab.queuedUtterance+"\n":"")+message; return; }
+    rememberPendingDictation(message);
     startCollabSession();
     pushCollabMessage("user",message);
     runCollabTurn({
@@ -8213,7 +8325,7 @@
   /* Builds the whole surface into `container`; the dock and an Agent item's
      Chat tab both call this, so there is only one chat implementation. */
   function collabContextText(){
-    var doc=collabDocument();
+    var doc=collabWritableItem();
     return doc?itemLabel(doc)+" · "+(cleanText(doc.title)||"Untitled")
       :collab.mode==="document"?"No document open — this is a plain conversation":"Direct conversation — no document attached";
   }
