@@ -58,6 +58,9 @@ sandbox.newTask = function () { return { text: "" }; };
 sandbox.ensureTodoTaskDetails = function () {};
 vm.runInContext(grab("insertAfterTarget", "collabSystemPrompt"), sandbox, { filename: "insertAfterTarget" });
 vm.runInContext(grab("looksLikeNoteWriteRequest", "collabApiMessages"), sandbox, { filename: "looksLikeNoteWriteRequest" });
+sandbox.collab = { pendingDictation: "" };
+sandbox.collabConversation = function () { return sandbox._chatLog || []; };
+sandbox.itemText = function (it) { return (it && it.body) || ((it && it.blocks) || []).map(function (b) { return b.text || ""; }).join("\n"); };
 
 test("parseToolArguments accepts objects, JSON, and trailing commas", function () {
   assert.deepEqual(sandbox.parseToolArguments({ text: "Hi" }), { text: "Hi" });
@@ -159,8 +162,26 @@ test("shouldForceNoteWrite treats follow-ups on an empty note as a write", funct
   assert.equal(sandbox.shouldForceNoteWrite(empty, "Change it."), true);
   assert.equal(sandbox.shouldForceNoteWrite(empty, "Did you write that?"), true);
   assert.equal(sandbox.shouldForceNoteWrite(empty, "Note that the shared tasks list is excessive"), true);
+  assert.equal(sandbox.shouldForceNoteWrite(empty, "Please. Prototype an intro / hook"), true);
   assert.equal(sandbox.shouldForceNoteWrite(empty, "What's the weather?"), false);
   assert.equal(sandbox.shouldForceNoteWrite(empty, "Why"), false);
+});
+
+test("short tone answers are not treated as note content", function () {
+  sandbox._chatLog = [
+    { role: "user", text: "Please. Prototype an intro / hook" },
+    { role: "assistant", text: "What tone should the hook have—cinematic, casual, or energetic?" },
+    { role: "user", text: "Casual" }
+  ];
+  sandbox.collab.pendingDictation = "";
+  assert.equal(sandbox.looksLikeGenerativeNoteRequest("Please. Prototype an intro / hook"), true);
+  assert.equal(sandbox.looksLikeClarifyingAnswer("Casual"), true);
+  assert.equal(sandbox.looksLikeDirectNoteContent("Casual"), false);
+  assert.equal(sandbox.looksLikeDirectNoteContent("Please. Prototype an intro / hook"), false);
+  assert.equal(sandbox.looksLikeDirectNoteContent("Note that the shared tasks list is excessive"), true);
+  assert.equal(sandbox.fallbackNoteWriteText(sandbox._chatLog), "");
+  assert.equal(sandbox.recentGenerativeNoteRequest(sandbox._chatLog), true);
+  assert.equal(sandbox.shouldForceNoteWrite({ type: "note", blocks: [{ id: "p1", type: "text", text: "", html: "" }] }, "Casual"), true);
 });
 
 test("looksLikeNoteToolDenial catches the Luna refusal", function () {
