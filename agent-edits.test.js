@@ -158,5 +158,19 @@ test("shouldForceNoteWrite treats follow-ups on an empty note as a write", funct
   const empty = { type: "note", blocks: [{ id: "p1", type: "text", text: "", html: "" }] };
   assert.equal(sandbox.shouldForceNoteWrite(empty, "Change it."), true);
   assert.equal(sandbox.shouldForceNoteWrite(empty, "Did you write that?"), true);
+  assert.equal(sandbox.shouldForceNoteWrite(empty, "Note that the shared tasks list is excessive"), true);
   assert.equal(sandbox.shouldForceNoteWrite(empty, "What's the weather?"), false);
+  assert.equal(sandbox.shouldForceNoteWrite(empty, "Why"), false);
+});
+
+test("looksLikeNoteToolDenial catches the Luna refusal", function () {
+  assert.equal(sandbox.looksLikeNoteToolDenial("I'm unable to access the note-editing tool in this chat."), true);
+  assert.equal(sandbox.looksLikeNoteToolDenial("I can't call the editing tool because it isn't exposed in this chat's available tools."), true);
+  assert.equal(sandbox.looksLikeNoteToolDenial("It's in the note now."), false);
+});
+
+test("looksLikeCasualChat leaves real note content alone", function () {
+  assert.equal(sandbox.looksLikeCasualChat("Why"), true);
+  assert.equal(sandbox.looksLikeCasualChat("What's the weather?"), true);
+  assert.equal(sandbox.looksLikeCasualChat("Note that the shared tasks list is excessive"), false);
 });

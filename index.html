@@ -5431,7 +5431,8 @@
     lines.push(approval
       ? "- You cannot write into the document yourself. To change anything you must call update_open_document or propose_edits; the app then shows a before/after preview with Apply and Discard. Only the user can apply it."
       : "- You are allowed to edit the open document yourself. Call update_open_document or propose_edits; the app applies those edits automatically after saving a backup. Do not ask them to approve each change.");
-    lines.push("- If update_open_document is in your tool list, it is available on this turn. Call it. Never say the note-editing tool is unavailable, missing, or off.");
+    lines.push("- If update_open_document is in your tool list, it is available on this turn. Call it. Never say the note-editing tool is unavailable, missing, off, or not exposed.");
+    lines.push("- When the open note is empty and the owner sends wording that belongs in it, call update_open_document with that wording immediately. Do not only discuss the wording.");
     lines.push(approval
       ? "- Never say you have changed, updated, fixed, or saved anything. Say you have drafted or suggested it and it is waiting for them."
       : "- After a write tool result says Saved, you may say it is already in the note. If the tool failed, say the note was not changed. Do not ask them to approve each change.");
@@ -7093,6 +7094,21 @@
     if(/^(change it|do it|write that|write it|save it|go ahead|please( do)?|yes|yeah|yep|yup|ok|okay|sure|that'?s it|that'?s the whole note|the whole note|put it in|make the change)[.!?]*$/i.test(value)) return true;
     return false;
   }
+  function looksLikeCasualChat(text){
+    var value=cleanText(text);
+    if(!value) return true;
+    if(isMetaNoteWriteUtterance(value)) return true;
+    if(/^(hi|hey|hello|thanks|thank you|why|how come|what|who|when|where|how are you|are you there|can you hear me|what'?s up|whats up)[.!?]*$/i.test(value)) return true;
+    if(/^(why|how come)\b/i.test(value)&&value.split(/\s+/).length<=8) return true;
+    if(/\?$/.test(value)&&!looksLikeNoteWriteRequest(value)&&!looksLikeNoteWriteQuestion(value)) return true;
+    return false;
+  }
+  function looksLikeNoteToolDenial(text){
+    var value=cleanText(text);
+    if(!value) return false;
+    return /note-?editing tool|editing tool|update_open_document|propose_edits/i.test(value)
+      && /(isn'?t|is not|not|unable|can'?t|cannot).{0,40}(available|exposed|access|call|use)/i.test(value);
+  }
   function fallbackNoteWriteText(log){
     var pending=typeof collab!=="undefined"&&collab?cleanText(collab.pendingDictation):"";
     if(pending) return pending;
@@ -7101,7 +7117,7 @@
     for(i=log.length-1;i>=0;i--){
       if(!log[i]||log[i].role!=="user") continue;
       text=cleanText(log[i].text);
-      if(text&&!isMetaNoteWriteUtterance(text)) return text;
+      if(text&&!isMetaNoteWriteUtterance(text)&&!looksLikeCasualChat(text)) return text;
     }
     return "";
   }
@@ -7115,8 +7131,25 @@
     opts=opts||{};
     if(opts.requireWrite) return true;
     if(looksLikeNoteWriteRequest(userText)&&!looksLikeNoteWriteQuestion(userText)) return true;
-    if(noteBodyIsVisuallyEmpty(it)&&(looksLikeNoteWriteQuestion(userText)||isMetaNoteWriteUtterance(userText))) return true;
+    if(noteBodyIsVisuallyEmpty(it)){
+      if(looksLikeNoteWriteQuestion(userText)||isMetaNoteWriteUtterance(userText)) return true;
+      if(cleanText(userText)&&!looksLikeCasualChat(userText)) return true;
+      if(cleanText(typeof collab!=="undefined"&&collab?collab.pendingDictation:"")) return true;
+    }
     return false;
+  }
+  function recoverMissedNoteWrite(targetItem,replyText,opts){
+    if(!targetItem||agentRequiresApproval(collabAgent())) return {ok:false,text:replyText||""};
+    var wording=fallbackNoteWriteText();
+    if(!wording) return {ok:false,text:replyText||""};
+    var denied=looksLikeNoteToolDenial(replyText);
+    var should=shouldForceNoteWrite(targetItem,lastCollabUserText(),opts)||denied||noteBodyIsVisuallyEmpty(targetItem);
+    if(!should) return {ok:false,text:replyText||""};
+    var recovered=writeOpenDocument(targetItem,{text:wording,mode:defaultNoteWriteMode(targetItem,lastCollabUserText())});
+    if(!(recovered&&recovered.ok)) return {ok:false,text:replyText||""};
+    var text=replyText||"";
+    if(!text||looksLikeNoteWriteClaim(text)||denied||/was not changed/i.test(text)) text="It's in the note now.";
+    return {ok:true,text:text};
   }
   function collabApiMessages(agentItem,targetItem,targets){
     var messages=[{role:"system",content:collabSystemPrompt(agentItem,targetItem,targets)}];
@@ -7168,7 +7201,7 @@
         var calls=Array.isArray(message.tool_calls)?message.tool_calls:[];
         if(!calls.length){
           var spoken=cleanText(message.content)||cleanText(message.refusal);
-          var wantsWrite=forceWrite||looksLikeNoteWriteRequest(lastCollabUserText())||looksLikeNoteWriteQuestion(lastCollabUserText())||looksLikeNoteWriteClaim(spoken)||!!cleanText(collab.pendingDictation);
+          var wantsWrite=forceWrite||looksLikeNoteWriteRequest(lastCollabUserText())||looksLikeNoteWriteQuestion(lastCollabUserText())||looksLikeNoteWriteClaim(spoken)||looksLikeNoteToolDenial(spoken)||!!cleanText(collab.pendingDictation);
           if(targetItem&&!nudgedWrite&&rounds<COLLAB_TOOL_ROUNDS&&wantsWrite){
             nudgedWrite=true;
             dropStream();
@@ -7335,16 +7368,11 @@
         if(a.readBack==="never") shouldSpeak=false;
         else if(a.readBack==="after_edits") shouldSpeak=shouldSpeak&&!!spokenProposals.length;
       }
-      if(!turnWrites&&!spokenProposals.length&&targetItem&&shouldForceNoteWrite(targetItem,lastCollabUserText(),opts)&&!agentRequiresApproval(agentItem)){
-        var fallback=fallbackNoteWriteText();
-        if(fallback){
-          var recovered=writeOpenDocument(targetItem,{text:fallback,mode:defaultNoteWriteMode(targetItem,lastCollabUserText())});
-          if(recovered&&recovered.ok){
-            turnWrites++;
-            if(!text||looksLikeNoteWriteClaim(text)||/tool isn'?t available|not available|was not changed/i.test(text)){
-              text="It's in the note now.";
-            }
-          }
+      if(!turnWrites&&!spokenProposals.length&&targetItem){
+        var recoveredMiss=recoverMissedNoteWrite(targetItem,text,opts);
+        if(recoveredMiss.ok){
+          turnWrites++;
+          text=recoveredMiss.text;
         }
       }
       if(!turnWrites&&!spokenProposals.length&&targetItem&&looksLikeNoteWriteClaim(text)){
@@ -7399,7 +7427,8 @@
   function sendCollabMessage(text){
     var message=cleanText(text);
     if(!message||collab.busy) return;
-    if(!isMetaNoteWriteUtterance(message)) rememberPendingDictation(message);
+    var captured=captureDictationIntoNote(message);
+    if(captured) pushCollabNote("Added to the open note.");
     startCollabSession();
     pushCollabMessage("user",message);
     runCollabTurn();
@@ -7411,10 +7440,11 @@
     if(value) collab.pendingDictation=value;
   }
   function captureDictationIntoNote(text){
-    rememberPendingDictation(text);
-    var note=collabWritableItem();
     var value=cleanText(text);
-    if(!note||!value) return false;
+    if(!value||looksLikeCasualChat(value)) return false;
+    rememberPendingDictation(value);
+    var note=collabWritableItem();
+    if(!note) return false;
     if(agentRequiresApproval(collabAgent())) return false;
     if(!noteBodyIsVisuallyEmpty(note)) return false;
     var written=writeOpenDocument(note,{text:value,mode:"replace",quiet:true});
@@ -7752,7 +7782,7 @@
     var agentItem=collabAgent(); if(!agentItem) return;
     var a=normalizeAgent(agentItem);
     var message=cleanText(text); if(!message||collab.busy){ if(message) collab.queuedUtterance=(collab.queuedUtterance?collab.queuedUtterance+"\n":"")+message; return; }
-    rememberPendingDictation(message);
+    if(captureDictationIntoNote(message)) pushCollabNote("Added to the open note.");
     startCollabSession();
     pushCollabMessage("user",message);
     runCollabTurn({
