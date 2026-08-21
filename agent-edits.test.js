@@ -57,7 +57,7 @@ sandbox.sec = function () { return {}; };
 sandbox.newTask = function () { return { text: "" }; };
 sandbox.ensureTodoTaskDetails = function () {};
 vm.runInContext(grab("insertAfterTarget", "collabSystemPrompt"), sandbox, { filename: "insertAfterTarget" });
-vm.runInContext(grab("looksLikeNoteWriteRequest", "collabApiMessages"), sandbox, { filename: "looksLikeNoteWriteRequest" });
+vm.runInContext(grab("looksLikeEditCapabilityQuestion", "collabApiMessages"), sandbox, { filename: "looksLikeEditCapabilityQuestion" });
 sandbox.collab = { pendingDictation: "" };
 sandbox.collabConversation = function () { return sandbox._chatLog || []; };
 sandbox.itemText = function (it) { return (it && it.body) || ((it && it.blocks) || []).map(function (b) { return b.text || ""; }).join("\n"); };
@@ -187,7 +187,29 @@ test("short tone answers are not treated as note content", function () {
 test("looksLikeNoteToolDenial catches the Luna refusal", function () {
   assert.equal(sandbox.looksLikeNoteToolDenial("I'm unable to access the note-editing tool in this chat."), true);
   assert.equal(sandbox.looksLikeNoteToolDenial("I can't call the editing tool because it isn't exposed in this chat's available tools."), true);
+  assert.equal(sandbox.looksLikeNoteToolDenial("I'm sorry, but I can't access the note-editing action in this turn."), true);
   assert.equal(sandbox.looksLikeNoteToolDenial("It's in the note now."), false);
+});
+
+test("capability questions are not dumped into the note", function () {
+  const empty = { type: "note", blocks: [{ id: "p1", type: "text", text: "", html: "" }] };
+  assert.equal(sandbox.looksLikeEditCapabilityQuestion("What bro can you edit it or not"), true);
+  assert.equal(sandbox.looksLikeNoteWriteRequest("What bro can you edit it or not"), false);
+  assert.equal(sandbox.looksLikeDirectNoteContent("What bro can you edit it or not"), false);
+  sandbox._chatLog = [
+    { role: "user", text: "Please. Prototype an intro / hook" },
+    { role: "assistant", text: "What tone should the hook have?" },
+    { role: "user", text: "Casual" },
+    { role: "user", text: "Make a better hook" },
+    { role: "user", text: "What bro can you edit it or not" }
+  ];
+  sandbox.collab.pendingDictation = "";
+  assert.equal(sandbox.fallbackNoteWriteText(sandbox._chatLog), "");
+  assert.equal(sandbox.lastGenerativeNoteRequest(sandbox._chatLog), "Make a better hook");
+  assert.equal(sandbox.shouldForceNoteWrite(empty, "What bro can you edit it or not"), true);
+  assert.equal(sandbox.looksLikeEchoedUserText("What bro can you edit it or not", "What bro can you edit it or not"), true);
+  assert.equal(sandbox.extractDraftedNoteCopy("I'm sorry, but I can't access the note-editing action in this turn.", "Make a better hook"), "");
+  assert.equal(sandbox.extractDraftedNoteCopy("A kid finds a cartridge labeled First Look and the screen never loads.", "Make a better hook"), "A kid finds a cartridge labeled First Look and the screen never loads.");
 });
 
 test("looksLikeCasualChat leaves real note content alone", function () {

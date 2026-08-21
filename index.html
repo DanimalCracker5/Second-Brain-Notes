@@ -5431,7 +5431,7 @@
     lines.push(approval
       ? "- You cannot write into the document yourself. To change anything you must call update_open_document or propose_edits; the app then shows a before/after preview with Apply and Discard. Only the user can apply it."
       : "- You are allowed to edit the open document yourself. Call update_open_document or propose_edits; the app applies those edits automatically after saving a backup. Do not ask them to approve each change.");
-    lines.push("- If update_open_document is in your tool list, it is available on this turn. Call it. Never say the note-editing tool is unavailable, missing, off, or not exposed.");
+    lines.push("- If update_open_document is in your tool list, it is available on this turn. Call it. Never say the note-editing tool or action is unavailable, missing, off, or not exposed. If a tool call fails, still output the full new note wording in your reply so the app can save it.");
     lines.push("- When the owner asks you to prototype, draft, or write an intro/hook/outline, call update_open_document with the full drafted wording. A short preference like \"casual\" is tone only — never save that word alone as the note.");
     lines.push("- When the open note is empty and the owner is dictating their own wording (not asking you to invent copy), call update_open_document with that wording.");
     lines.push(approval
@@ -5871,6 +5871,7 @@
       if(withTools&&tools.length){
         body.tools=tools;
         body.tool_choice=opts.toolChoice&&opts.toolChoice!=="auto"?opts.toolChoice:"auto";
+        if(opts.toolChoice&&opts.toolChoice!=="auto") body.parallel_tool_calls=false;
       }
       if(useJson) body.response_format={type:"json_object"};
       if(withTemperature&&typeof temperature==="number"&&!isReasoningModel(id)) body.temperature=temperature;
@@ -5923,11 +5924,11 @@
           return viaOpenAI(id,withTemperature,withTools,stream);
         }
         if(withTemperature&&/temperature/i.test(text)) return viaOpenAI(id,false,withTools,stream);
-        if(withTools&&opts.toolChoice&&opts.toolChoice!=="auto"&&/tool_choice/i.test(text)){
+        if(withTools&&opts.toolChoice&&opts.toolChoice!=="auto"&&/invalid tool_choice|unsupported tool_choice/i.test(text)){
           opts.toolChoice="auto";
           return viaOpenAI(id,withTemperature,true,stream);
         }
-        if(withTools&&(/tools?|tool_choice|functions?/i.test(text)||/not supported/i.test(text))) return viaOpenAI(id,withTemperature,false,stream);
+        if(withTools&&!opts.keepTools&&(/tools?|tool_choice|functions?/i.test(text)||/not supported/i.test(text))) return viaOpenAI(id,withTemperature,false,stream);
         if(stream){
           console.warn("OpenAI stream failed, retrying without stream:",error);
           return viaOpenAI(id,withTemperature,withTools,false);
@@ -6016,7 +6017,7 @@
           watch.close();
           if(hostedInsufficient(error)) throw new Error(error.message||"You need more AI credits.");
           var text=(error&&error.message)||"";
-          if(opts.toolChoice&&opts.toolChoice!=="auto"&&!opts._toolChoiceRetried&&(/tool_choice|tools?|functions?/i.test(text))){
+          if(opts.toolChoice&&opts.toolChoice!=="auto"&&!opts._toolChoiceRetried&&(/invalid tool_choice|unsupported tool_choice/i.test(text))){
             opts._toolChoiceRetried=true;
             opts.toolChoice="auto";
             return send(id,stream);
@@ -6092,6 +6093,7 @@
       messages:messages,
       tools:tools,
       toolChoice:extra.toolChoice,
+      keepTools:!!(extra.toolChoice&&extra.toolChoice!=="auto"),
       temperature:mind==="subconscious"?0.1:a.temperature,
       fallbacks:agentFallbacks(mind,model),
       stream:!!extra.onDelta,
@@ -7068,8 +7070,17 @@
     for(var i=log.length-1;i>=0;i--) if(log[i]&&log[i].role==="user") return log[i].text||"";
     return "";
   }
+  function looksLikeEditCapabilityQuestion(text){
+    var value=cleanText(text);
+    if(!value) return false;
+    if(/\b(can you|could you|are you able to|are you gonna|are you going to|will you|do you)\b.{0,48}\b(edit|write|change|update|access|save)\b/i.test(value)) return true;
+    if(/\b(edit|write|change).{0,24}\b(or not|or what)\b/i.test(value)) return true;
+    if(/\b(able to edit|access the note|note-?editing (tool|action)|editing (tool|action))\b/i.test(value)&&/\?|or not/i.test(value)) return true;
+    return false;
+  }
   function looksLikeNoteWriteRequest(text){
     var value=text||"";
+    if(looksLikeEditCapabilityQuestion(value)) return false;
     if(/\b(put|add|write|save|update|edit|insert|capture|fill|change|rewrite|replace|fix)\b/i.test(value)&&/\b(note|todo|document|it|there|this|that)\b/i.test(value)) return true;
     if(/\b(into the note|to the note|on the note|the whole note|that'?s (the )?(whole |entire )?note)\b/i.test(value)) return true;
     if(/\b(change it|write that|write it|put it in|make the note|save that)\b/i.test(value)) return true;
@@ -7091,7 +7102,7 @@
   function isMetaNoteWriteUtterance(text){
     var value=cleanText(text);
     if(!value) return true;
-    if(looksLikeNoteWriteQuestion(value)) return true;
+    if(looksLikeNoteWriteQuestion(value)||looksLikeEditCapabilityQuestion(value)) return true;
     if(/^(change it|do it|write that|write it|save it|go ahead|please( do)?|yes|yeah|yep|yup|ok|okay|sure|that'?s it|that'?s the whole note|the whole note|put it in|make the change)[.!?]*$/i.test(value)) return true;
     return false;
   }
@@ -7149,8 +7160,69 @@
   function looksLikeNoteToolDenial(text){
     var value=cleanText(text);
     if(!value) return false;
-    return /note-?editing tool|editing tool|update_open_document|propose_edits/i.test(value)
-      && /(isn'?t|is not|not|unable|can'?t|cannot).{0,40}(available|exposed|access|call|use)/i.test(value);
+    if(/note-?editing (tool|action)|editing (tool|action)|update_open_document|propose_edits/i.test(value)
+      && /(isn'?t|is not|not|unable|can'?t|cannot).{0,48}(available|exposed|access|call|use)/i.test(value)) return true;
+    if(/\b(can'?t|cannot|unable to)\b.{0,48}\b(edit(ing)?|access|call|use)\b.{0,32}\b(note|document|tool|action)\b/i.test(value)) return true;
+    if(/\b(not|isn'?t) (available|exposed|in your tool list|on this turn)\b/i.test(value)&&/\b(edit|tool|action|document)\b/i.test(value)) return true;
+    return false;
+  }
+  function looksLikeEchoedUserText(reply,userText){
+    function norm(value){ return cleanText(value).toLowerCase().replace(/[^\w\s]/g,"").replace(/\s+/g," "); }
+    var a=norm(reply), b=norm(userText);
+    if(!a||!b) return false;
+    if(a===b) return true;
+    if(b.length>=12&&(a===b||a.indexOf(b)===0)&&a.length<=b.length+16) return true;
+    return false;
+  }
+  function extractDraftedNoteCopy(reply,userText){
+    var value=cleanText(reply);
+    if(!value) return "";
+    if(looksLikeEchoedUserText(value,userText)||looksLikeNoteToolDenial(value)||looksLikeEditCapabilityQuestion(value)) return "";
+    if(/^(i('m| am) sorry|that was my mistake|i should have|i can'?t|i cannot|i'?m unable|i do not have|i don't have)\b/i.test(value)) return "";
+    if(looksLikeNoteWriteClaim(value)&&value.split(/\s+/).length<28) return "";
+    if(/\?$/.test(value)&&value.split(/\s+/).length<=18) return "";
+    value=value.replace(/^(here('s| is)|i (drafted|wrote|updated|applied)|updated( the note)?)\s*[:.\-–—]\s*/i,"");
+    if(value.length<24||looksLikeClarifyingAnswer(value)) return "";
+    return value;
+  }
+  function lastGenerativeNoteRequest(log){
+    log=log||(typeof collabConversation==="function"?collabConversation():[]);
+    var i, text;
+    for(i=log.length-1;i>=0;i--){
+      if(!log[i]||log[i].role!=="user") continue;
+      text=cleanText(log[i].text);
+      if(looksLikeGenerativeNoteRequest(text)) return text;
+      if(looksLikeDirectNoteContent(text)) return "";
+    }
+    return "";
+  }
+  function recentNoteWriteContext(log){
+    log=log||(typeof collabConversation==="function"?collabConversation():[]);
+    var bits=[], i;
+    for(i=Math.max(0,log.length-8);i<log.length;i++){
+      if(!log[i]||!log[i].text) continue;
+      bits.push((log[i].role==="user"?"Owner":"Assistant")+": "+cleanText(log[i].text).slice(0,240));
+    }
+    return bits.join("\n").slice(0,1200);
+  }
+  function normalizeAssistantToolCalls(message){
+    if(!message) return [];
+    if(Array.isArray(message.tool_calls)) return message.tool_calls.filter(Boolean);
+    if(message.tool_calls&&typeof message.tool_calls==="object") return [message.tool_calls];
+    if(message.function_call) return [{type:"function",function:message.function_call}];
+    return [];
+  }
+  function parseWriteFromAssistantContent(content){
+    var raw=typeof openaiContentText==="function"?openaiContentText(content):content;
+    var args=parseToolArguments(raw);
+    var text=agentEditText(args.text!=null?args.text:(args.content!=null?args.content:args.body));
+    if(!text) return null;
+    return {text:text,title:cleanText(args.title),mode:args.mode};
+  }
+  function collabWriteOnlyTools(){
+    return (collabTools(true)||[]).filter(function(tool){
+      return tool&&tool.function&&tool.function.name==="update_open_document";
+    });
   }
   function fallbackNoteWriteText(log){
     var pending=typeof collab!=="undefined"&&collab?cleanText(collab.pendingDictation):"";
@@ -7175,6 +7247,7 @@
     if(opts.requireWrite) return true;
     if(looksLikeGenerativeNoteRequest(userText)) return true;
     if(looksLikeClarifyingAnswer(userText)&&recentGenerativeNoteRequest()) return true;
+    if(looksLikeEditCapabilityQuestion(userText)&&(recentGenerativeNoteRequest()||fallbackNoteWriteText()||noteBodyIsVisuallyEmpty(it))) return true;
     if(looksLikeNoteWriteRequest(userText)&&!looksLikeNoteWriteQuestion(userText)&&!looksLikeGenerativeNoteRequest(userText)) return true;
     if(noteBodyIsVisuallyEmpty(it)){
       if(looksLikeNoteWriteQuestion(userText)||isMetaNoteWriteUtterance(userText)) return true;
@@ -7185,7 +7258,7 @@
   }
   function recoverMissedNoteWrite(targetItem,replyText,opts){
     if(!targetItem||agentRequiresApproval(collabAgent())) return {ok:false,text:replyText||""};
-    if(looksLikeGenerativeNoteRequest(lastCollabUserText())||(looksLikeClarifyingAnswer(lastCollabUserText())&&recentGenerativeNoteRequest())){
+    if(looksLikeGenerativeNoteRequest(lastCollabUserText())||(looksLikeClarifyingAnswer(lastCollabUserText())&&recentGenerativeNoteRequest())||looksLikeEditCapabilityQuestion(lastCollabUserText())){
       return {ok:false,text:replyText||""};
     }
     var wording=fallbackNoteWriteText();
@@ -7199,8 +7272,56 @@
     var recovered=writeOpenDocument(targetItem,{text:wording,mode:defaultNoteWriteMode(targetItem,lastCollabUserText())});
     if(!(recovered&&recovered.ok)) return {ok:false,text:replyText||""};
     var text=replyText||"";
-    if(!text||looksLikeNoteWriteClaim(text)||denied||/was not changed/i.test(text)) text="It's in the note now.";
+    if(!text||looksLikeNoteWriteClaim(text)||denied||looksLikeEchoedUserText(text,lastCollabUserText())||/was not changed/i.test(text)) text="It's in the note now.";
     return {ok:true,text:text};
+  }
+  function generateAndWriteNote(it,request,replyText){
+    var agentItem=collabAgent();
+    var current=cleanText(itemText(it));
+    var failed={ok:false,text:replyText||""};
+    if(!it||!agentItem||!cleanText(request)) return Promise.resolve(failed);
+    return llmChat({
+      model:agentModelForRole(agentItem,"conscious"),
+      temperature:0.7,
+      maxTokens:1200,
+      fallbacks:agentFallbacks("conscious",agentModelForRole(agentItem,"conscious")),
+      agentItem:agentItem,
+      usageRole:"conscious",
+      messages:[
+        {role:"system",content:"Rewrite the owner's open note. Reply with the complete new note body only. No preamble, no markdown fences, no mention of tools, and no apology. Never return only a one-word tone like casual. Do not repeat the owner's question."},
+        {role:"user",content:"Request: "+cleanText(request)+"\n\nCurrent note:\n"+(current||"(empty)")+"\n\nRecent conversation:\n"+recentNoteWriteContext()}
+      ]
+    }).then(function(data){
+      var raw=openaiContentText(data&&data.choices&&data.choices[0]&&data.choices[0].message&&data.choices[0].message.content);
+      var parsed=parseToolArguments(raw);
+      var text=agentEditText(parsed.text!=null?parsed.text:(parsed.content!=null?parsed.content:parsed));
+      if(!text) text=extractDraftedNoteCopy(raw,request)||cleanText(raw).replace(/^```(?:json|text)?\s*|\s*```$/g,"");
+      if(!text||looksLikeClarifyingAnswer(text)||looksLikeEditCapabilityQuestion(text)||looksLikeNoteToolDenial(text)||text.length<8) throw new Error("empty draft");
+      var written=writeOpenDocument(it,{text:text,title:cleanText(parsed.title),mode:"replace"});
+      if(!(written&&written.ok)) throw new Error("write failed");
+      return {ok:true,text:"It's in the note now."};
+    }).catch(function(){ return failed; });
+  }
+  function ensureOpenNoteWrite(targetItem,replyText,opts){
+    var text=replyText||"";
+    if(!targetItem||agentRequiresApproval(collabAgent())) return Promise.resolve({ok:false,text:text});
+    var userText=lastCollabUserText();
+    var denied=looksLikeNoteToolDenial(text);
+    var echoed=looksLikeEchoedUserText(text,userText);
+    var needed=shouldForceNoteWrite(targetItem,userText,opts)||denied||echoed;
+    if(!needed) return Promise.resolve({ok:false,text:text});
+    var recovered=recoverMissedNoteWrite(targetItem,text,opts);
+    if(recovered.ok) return Promise.resolve(recovered);
+    var draft=extractDraftedNoteCopy(text,userText);
+    if(draft){
+      var written=writeOpenDocument(targetItem,{text:draft,mode:defaultNoteWriteMode(targetItem,userText)});
+      if(written&&written.ok) return Promise.resolve({ok:true,text:"It's in the note now."});
+    }
+    var request=lastGenerativeNoteRequest()||(looksLikeGenerativeNoteRequest(userText)?cleanText(userText):"");
+    if(!request&&looksLikeNoteWriteRequest(userText)&&!looksLikeEditCapabilityQuestion(userText)&&cleanText(itemText(targetItem))) request=userText;
+    if(!request&&(looksLikeEditCapabilityQuestion(userText)||isMetaNoteWriteUtterance(userText))) request=lastGenerativeNoteRequest();
+    if(!request) return Promise.resolve({ok:false,text:echoed||denied?"":text});
+    return generateAndWriteNote(targetItem,request,text);
   }
   function collabApiMessages(agentItem,targetItem,targets){
     var messages=[{role:"system",content:collabSystemPrompt(agentItem,targetItem,targets)}];
@@ -7221,6 +7342,7 @@
     var userText=lastCollabUserText();
     var forceWrite=shouldForceNoteWrite(targetItem,userText,opts)&&!!(targetItem&&targets.length);
     var toolChoice=forceWrite?{type:"function",function:{name:"update_open_document"}}:"auto";
+    if(forceWrite) tools=collabWriteOnlyTools();
     collab.busy=true; updateCollabControls(); setCollabStatus(role==="subconscious"?"Deciding whether to jump in…":"Thinking…");
     if(agentSettings().speakReplies) unlockSpeechPlayback(playbackAudioContext());
     markCompanionState("thinking");
@@ -7239,7 +7361,7 @@
       if(!it) return;
       targetItem=it;
       targets=collabTargets(it);
-      tools=collabTools(!!(targetItem&&targets.length));
+      tools=forceWrite&&!turnWrites?collabWriteOnlyTools():collabTools(!!(targetItem&&targets.length));
     }
     function step(){
       rounds++;
@@ -7249,22 +7371,34 @@
         }
         var choice=data&&data.choices&&data.choices[0], message=choice&&choice.message;
         if(!message) throw new Error("The model returned no reply.");
-        var calls=Array.isArray(message.tool_calls)?message.tool_calls:[];
+        var calls=normalizeAssistantToolCalls(message);
         if(!calls.length){
+          var embedded=parseWriteFromAssistantContent(message.content||message.refusal);
+          if(embedded&&targetItem&&!agentRequiresApproval(agentItem)){
+            var embeddedWrite=writeOpenDocument(targetItem,embedded);
+            if(embeddedWrite&&embeddedWrite.ok){
+              turnWrites++;
+              dropStream();
+              return "It's in the note now.";
+            }
+          }
           var spoken=cleanText(message.content)||cleanText(message.refusal);
-          var wantsWrite=forceWrite||looksLikeNoteWriteRequest(lastCollabUserText())||looksLikeNoteWriteQuestion(lastCollabUserText())||looksLikeNoteWriteClaim(spoken)||looksLikeNoteToolDenial(spoken)||looksLikeGenerativeNoteRequest(lastCollabUserText())||(looksLikeClarifyingAnswer(lastCollabUserText())&&recentGenerativeNoteRequest())||!!(cleanText(collab.pendingDictation)&&looksLikeDirectNoteContent(collab.pendingDictation));
+          var wantsWrite=forceWrite||looksLikeNoteWriteRequest(lastCollabUserText())||looksLikeNoteWriteQuestion(lastCollabUserText())||looksLikeEditCapabilityQuestion(lastCollabUserText())||looksLikeNoteWriteClaim(spoken)||looksLikeNoteToolDenial(spoken)||looksLikeGenerativeNoteRequest(lastCollabUserText())||(looksLikeClarifyingAnswer(lastCollabUserText())&&recentGenerativeNoteRequest())||!!(cleanText(collab.pendingDictation)&&looksLikeDirectNoteContent(collab.pendingDictation));
           if(targetItem&&!nudgedWrite&&rounds<COLLAB_TOOL_ROUNDS&&wantsWrite){
             nudgedWrite=true;
             dropStream();
             messages.push({role:"assistant",content:message.content||spoken||""});
-            var generative=looksLikeGenerativeNoteRequest(lastCollabUserText())||(looksLikeClarifyingAnswer(lastCollabUserText())&&recentGenerativeNoteRequest());
+            var generative=looksLikeGenerativeNoteRequest(lastCollabUserText())||(looksLikeClarifyingAnswer(lastCollabUserText())&&recentGenerativeNoteRequest())||looksLikeEditCapabilityQuestion(lastCollabUserText());
             if(generative){
-              messages.push({role:"user",content:"The open note was not changed. Call update_open_document now with the full drafted wording the owner asked for (intro, hook, outline, or other requested copy). Use their short preference (like casual) only as tone guidance — never save that preference alone as the note. update_open_document is available on this turn."});
+              var pending=lastGenerativeNoteRequest()||fallbackNoteWriteText();
+              messages.push({role:"user",content:"The open note was not changed. Call update_open_document now with the full drafted wording for this request:\n"+(pending||"the owner's latest note request")+"\nUse their short preference (like casual) only as tone guidance — never save that preference or their question as the note. update_open_document is available on this turn. Do not say the editing tool is unavailable."});
             } else {
-              var wording=fallbackNoteWriteText()||lastCollabUserText();
-              messages.push({role:"user",content:"The open note was not changed. Call update_open_document now with this wording:\n"+(wording||"(use the owner's last dictated note)")+"\nUse mode replace if the note body is empty. update_open_document is available on this turn. Do not say the editing tool is unavailable, and do not claim the edit happened until the tool result says Saved."});
+              var wording=fallbackNoteWriteText();
+              if(!wording||looksLikeEditCapabilityQuestion(wording)||isMetaNoteWriteUtterance(wording)) wording="";
+              messages.push({role:"user",content:"The open note was not changed. Call update_open_document now"+(wording?" with this wording:\n"+wording:" with the drafted note the owner asked for.")+"\nUse mode replace if the note body is empty. update_open_document is available on this turn. Do not say the editing tool is unavailable, and do not claim the edit happened until the tool result says Saved."});
             }
             toolChoice={type:"function",function:{name:"update_open_document"}};
+            tools=collabWriteOnlyTools();
             return step();
           }
           return spoken;
@@ -7414,7 +7548,6 @@
       });
     }
     step().then(function(reply){
-      collab.busy=false; updateCollabControls();
       var a=normalizeAgent(agentItem);
       var spokenProposals=turnProposals.filter(function(proposal){ return proposal.state==="applied"||proposal.state==="pending"; });
       var text=spokenProposals.length?proposalSpokenReply(spokenProposals):cleanText(reply);
@@ -7424,44 +7557,58 @@
         if(a.readBack==="never") shouldSpeak=false;
         else if(a.readBack==="after_edits") shouldSpeak=shouldSpeak&&!!spokenProposals.length;
       }
+      var finishTurn=function(){
+        collab.busy=false; updateCollabControls();
+        if(!turnWrites&&!spokenProposals.length&&targetItem&&looksLikeNoteWriteClaim(text)){
+          pushCollabNote("No note edit was received from the agent, so the document was not changed. Ask it to try the edit again.",true);
+        }
+        if(!turnWrites&&(looksLikeNoteToolDenial(text)||looksLikeEchoedUserText(text,lastCollabUserText()))){
+          text="I heard you, but the edit didn't land. Say it once more and I'll write it into the note.";
+        }
+        if(!text&&forceWrite){
+          text="I heard you, but the edit didn't land. Say it once more and I'll write it into the note.";
+        }
+        var emptyVoice=!text&&collab.voice&&collab.voice.active;
+        if(emptyVoice){
+          text="I heard you, but the language model sent back an empty reply.";
+          if(streamEntry) abandonCollabStream(streamEntry);
+          streamEntry=null;
+          pushCollabNote(text,true);
+          shouldSpeak=shouldSpeak!==false;
+        }
+        var talking=Promise.resolve();
+        if(text){
+          if(streamEntry) finishCollabStream(streamEntry,text);
+          else if(!emptyVoice) pushCollabMessage("agent",text);
+          setCollabStatus("");
+          if(shouldSpeak){ markCompanionState("speaking"); talking=speakCollab(text); }
+        }
+        else {
+          if(streamEntry) abandonCollabStream(streamEntry);
+          setCollabStatus("");
+        }
+        if(turnWrites) completeAgentWorkTasks(agentItem,"done");
+        save();
+        return Promise.resolve(talking).catch(function(){}).then(function(){
+          if(collab.voice&&collab.voice.active){
+            markCompanionState("listening");
+            setVoiceStatus("Listening");
+            if(collab.queuedUtterance){ var leftover=collab.queuedUtterance; collab.queuedUtterance=""; considerVoiceTurn(leftover,true); }
+          }
+        });
+      };
       if(!turnWrites&&!spokenProposals.length&&targetItem){
-        var recoveredMiss=recoverMissedNoteWrite(targetItem,text,opts);
-        if(recoveredMiss.ok){
-          turnWrites++;
-          text=recoveredMiss.text;
-        }
+        return ensureOpenNoteWrite(targetItem,text,opts).then(function(ensured){
+          if(ensured&&ensured.ok){
+            turnWrites++;
+            text=ensured.text||"It's in the note now.";
+          } else if(ensured&&ensured.text!==undefined){
+            text=ensured.text;
+          }
+          return finishTurn();
+        });
       }
-      if(!turnWrites&&!spokenProposals.length&&targetItem&&looksLikeNoteWriteClaim(text)){
-        pushCollabNote("No note edit was received from the agent, so the document was not changed. Ask it to try the edit again.",true);
-      }
-      var emptyVoice=!text&&collab.voice&&collab.voice.active;
-      if(emptyVoice){
-        text="I heard you, but the language model sent back an empty reply.";
-        if(streamEntry) abandonCollabStream(streamEntry);
-        streamEntry=null;
-        pushCollabNote(text,true);
-        shouldSpeak=shouldSpeak!==false;
-      }
-      var talking=Promise.resolve();
-      if(text){
-        if(streamEntry) finishCollabStream(streamEntry,text);
-        else if(!emptyVoice) pushCollabMessage("agent",text);
-        setCollabStatus("");
-        if(shouldSpeak){ markCompanionState("speaking"); talking=speakCollab(text); }
-      }
-      else {
-        if(streamEntry) abandonCollabStream(streamEntry);
-        setCollabStatus("");
-      }
-      completeAgentWorkTasks(agentItem,"done");
-      save();
-      return Promise.resolve(talking).catch(function(){}).then(function(){
-        if(collab.voice&&collab.voice.active){
-          markCompanionState("listening");
-          setVoiceStatus("Listening");
-          if(collab.queuedUtterance){ var leftover=collab.queuedUtterance; collab.queuedUtterance=""; considerVoiceTurn(leftover,true); }
-        }
-      });
+      return finishTurn();
     }).catch(function(error){
       if(streamEntry) abandonCollabStream(streamEntry);
       collab.busy=false; updateCollabControls();
@@ -7469,7 +7616,6 @@
       var msg=cleanText(error&&error.message)||"The model could not be reached.";
       pushCollabNote(msg,true);
       setCollabStatus(msg,true);
-      completeAgentWorkTasks(agentItem,"done");
       var talking=Promise.resolve();
       if(collab.voice&&collab.voice.active){
         setVoiceStatus("Error");
@@ -7801,7 +7947,9 @@
       return;
     }
     if(collab.busy){ collab.queuedUtterance=(collab.queuedUtterance?collab.queuedUtterance+"\n":"")+buffered; setVoiceStatus("One moment"); return; }
-    agentTaskUpsertRunning(agentItem,"Work on the note",decision.reason,agentModelForRole(agentItem,"conscious"));
+    if(looksLikeGenerativeNoteRequest(buffered)||looksLikeNoteWriteRequest(buffered)||looksLikeNoteWriteQuestion(buffered)||looksLikeEditCapabilityQuestion(buffered)||looksLikeDirectNoteContent(buffered)){
+      agentTaskUpsertRunning(agentItem,"Work on the note",decision.reason,agentModelForRole(agentItem,"conscious"));
+    }
     handoffVoiceBuffer(decision.compressed||buffered,decision);
   }
   function considerVoiceTurn(utterance,alreadyBuffered){
