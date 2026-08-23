@@ -1550,7 +1550,7 @@
     if(currentUser&&(changedWeight>0||createdOrDeleted)) state.pendingCloudSync=true;
     var d=JSON.stringify(state); if(canPersist){ try{ localStorage.setItem(KEY,d); }catch(e){ mem=JSON.parse(d); } } else mem=JSON.parse(d);
     setSaveState(currentUser?(state.pendingCloudSync?"Saving to cloud":"Saved to cloud"):"Sign in to sync",currentUser?(state.pendingCloudSync?"saving":"cloud"):"");
-    if(!cloudSyncPaused&&!cloudSyncLoading&&(changedWeight>0||createdOrDeleted)){
+    if(!cloudSyncPaused&&!cloudSyncLoading&&cloudHydrated&&(changedWeight>0||createdOrDeleted)){
       if(createdOrDeleted) saveCloudNow();
       else saveCloud(changedWeight);
     }
@@ -1914,6 +1914,7 @@
   function wipeDeviceNotes(){
     clearTimeout(cloudTimer);
     cloudTimer=null; mem=null; deviceBackups=[]; documentBackups={}; documentBackupActivity={}; activeAttachmentUploads={}; activeNoteTextBlock=null; draggedNoteBlock=null;
+    cloudHydrated=false; pendingAccountRecovery=0;
     if(activeAudioRecorder){ try{ activeAudioRecorder.recorder.stop(); }catch(e){} activeAudioRecorder=null; }
     if(canPersist){
       try{
@@ -2847,6 +2848,19 @@
   var lastListSignature=null, justAddedId=null, justAddedTimer=null;
   function renderList(){
     trackTimeSpent();
+    /* A signed-in phone with no local cache looks like one Untitled note while
+       the account is still loading. Do not present that seed item as the
+       owner's notes. */
+    if(currentUser&&cloudSyncLoading&&countRealAccountItems(state.items)===0){
+      if(selectNotesBtn){ selectNotesBtn.textContent=state.filterTag?"＋":"✓"; selectNotesBtn.title=state.filterTag?"Add notes to this tag":"Select notes"; }
+      listLabel.textContent=allNotesTitle()+"  ·  …";
+      listEl.innerHTML="";
+      listEl.classList.remove("enter");
+      lastListSignature="loading-account";
+      var loading=document.createElement("div"); loading.className="tag-empty"; loading.style.padding="10px 12px";
+      loading.textContent="Loading your notes…";
+      listEl.appendChild(loading); updateSidebarButtons(); return;
+    }
     var items=state.sidebarView==="upcoming"?upcomingItems():visibleItems(!!state.tagAssignMode);
     state.selectedItemIds=state.selectedItemIds.filter(function(id){ return state.items.some(function(item){ return item.id===id; }); });
     if(selectNotesBtn){
@@ -2949,6 +2963,17 @@
   function grow(el){ el.style.height="auto"; el.style.height=el.scrollHeight+"px"; }
   var lastMainId=null;
   function renderMain(){
+    if(currentUser&&cloudSyncLoading&&countRealAccountItems(state.items)===0){
+      if(renderedModule&&renderedModule.detach) renderedModule.detach();
+      else if(window.SecondBrainCode&&typeof window.SecondBrainCode.detach==="function") window.SecondBrainCode.detach();
+      renderedModule=null;
+      canvas.innerHTML="";
+      var loading=document.createElement("div"); loading.className="sheet enter";
+      var hint=document.createElement("p"); hint.className="hint"; hint.style.padding="28px 8px";
+      hint.textContent="Loading your notes from your account…";
+      loading.appendChild(hint); canvas.appendChild(loading);
+      updateShareButton(null); return;
+    }
     var it=current();
     /* Let a registered type tear down timers, media elements, and listeners
        before its DOM is thrown away. */
@@ -8800,7 +8825,8 @@
   }
 
   /* =================== Firebase (configured in astral.config.js) =================== */
-  var auth=null, db=null, storage=null, currentUser=null, cloudTimer=null, cloudAutoBackupInFlight=false, cloudSyncPaused=false, cloudSyncLoading=false, fbReady=false, apiSettingsUnsubscribe=null;
+  var auth=null, db=null, storage=null, currentUser=null, cloudTimer=null, cloudAutoBackupInFlight=false, cloudSyncPaused=false, cloudSyncLoading=false, cloudHydrated=false, pendingAccountRecovery=0, fbReady=false, apiSettingsUnsubscribe=null;
+  var CLOUD_LOAD_TIMEOUT_MS=20000, STORAGE_USAGE_TIMEOUT_MS=12000;
   var accountUsage={status:"idle",totalBytes:0,fileBytes:0,accountBytes:0,backupBytes:0,files:[],currentFileBytes:0,backupFileBytes:0,unlinkedFileBytes:0,unlinkedFileCount:0}, accountUsageTimer=null, accountUsageRequest=0, accountUsageUnsubscribers=[];
   function utf8Bytes(value){
     var text=String(value==null?"":value);
@@ -8901,6 +8927,23 @@
     accountUsageUnsubscribers=[];
     accountUsage={status:"idle",totalBytes:0,fileBytes:0,accountBytes:0,backupBytes:0,files:[],currentFileBytes:0,backupFileBytes:0,unlinkedFileBytes:0,unlinkedFileCount:0};
   }
+  function promiseWithTimeout(promise, ms, label){
+    return new Promise(function(resolve, reject){
+      var settled=false;
+      var timer=setTimeout(function(){
+        if(settled) return;
+        settled=true;
+        reject(new Error(label||"Timed out"));
+      }, Math.max(1, Number(ms)||0));
+      Promise.resolve(promise).then(function(value){
+        if(settled) return;
+        settled=true; clearTimeout(timer); resolve(value);
+      }, function(error){
+        if(settled) return;
+        settled=true; clearTimeout(timer); reject(error);
+      });
+    });
+  }
   function refreshAccountUsage(){
     if(!currentUser||!db||!storage) return;
     var userId=currentUser.uid, request=++accountUsageRequest;
@@ -8909,7 +8952,7 @@
     Promise.all([userRef.get(),backupRef.get()]).then(function(results){
       if(request!==accountUsageRequest||!currentUser||currentUser.uid!==userId) return;
       var userDoc=results[0], backupDocs=results[1].docs||[], userData=userDoc.exists?userDoc.data():{};
-      return collectCloudStorageUsage(userId,userData,backupDocs).then(function(fileUsage){
+      return promiseWithTimeout(collectCloudStorageUsage(userId,userData,backupDocs), STORAGE_USAGE_TIMEOUT_MS, "Storage listing timed out").then(function(fileUsage){
         if(request!==accountUsageRequest||!currentUser||currentUser.uid!==userId) return;
         var accountBytes=userDoc.exists?firestoreDocumentBytes(["users",userId],userData):0;
         var backupBytes=backupDocs.reduce(function(total,doc){ return total+firestoreDocumentBytes(["users",userId,"backups",doc.id],doc.data()); },0);
@@ -9128,11 +9171,11 @@
         var signedOutUser=currentUser;
         currentUser=u;
         if(u){
-          cloudSyncPaused=false;
+          cloudSyncPaused=false; cloudHydrated=false; pendingAccountRecovery=0;
           setAuthGate(false); startApiSettingsSync(); startHostedBillingSync(); startAccountUsageTracking(); renderFoot();
           loadCloud().then(openPendingInvite);
         } else {
-          cloudSyncPaused=true; cloudSyncLoading=false;
+          cloudSyncPaused=true; cloudSyncLoading=false; cloudHydrated=false; pendingAccountRecovery=0;
           stopAccountUsageTracking(); stopApiSettingsSync(); stopHostedBillingSync(); resetApiSettings();
           /* Firebase reports the signed-out state once on startup. Keep notes
              already on this device so their owner can choose how to sync them
@@ -9211,6 +9254,27 @@
     if(!item) return true;
     if(item.type==="agent"&&item.id===AGENT_DEFAULT_ID) return true;
     return !hasContent([item]);
+  }
+  function countRealAccountItems(items){
+    return (items||[]).filter(function(item){ return !isSeedDeviceItem(item); }).length;
+  }
+  function backupEntryData(entry){
+    if(!entry) return null;
+    if(entry.data&&Array.isArray(entry.data.items)) return entry.data;
+    if(Array.isArray(entry.items)) return entry;
+    return entry.data&&typeof entry.data==="object"?entry.data:null;
+  }
+  function richestAccountBackup(entries){
+    var best=null, bestCount=-1, bestCreated=-1;
+    (entries||[]).forEach(function(entry){
+      var data=backupEntryData(entry);
+      if(!data||!Array.isArray(data.items)) return;
+      var count=countRealAccountItems(data.items), created=Number(entry.created)||Number(data.created)||0;
+      if(count>bestCount||(count===bestCount&&created>bestCreated)){
+        best=data; bestCount=count; bestCreated=created;
+      }
+    });
+    return bestCount>0?{data:best,count:bestCount,created:bestCreated}:null;
   }
   function unlinkedDeviceItems(deviceItems,cloudItems){
     var byId={};
@@ -9325,6 +9389,54 @@
     data.versionChangedAt=Date.now();
     data.updated=data.versionChangedAt;
     return data;
+  }
+  function mergeCloudWithBackup(cloud, backupData){
+    var live=cloneData(cloud&&typeof cloud==="object"?cloud:{});
+    var backup=cloneData(backupData&&typeof backupData==="object"?backupData:{});
+    live.items=Array.isArray(live.items)?live.items:[];
+    live.folders=Array.isArray(live.folders)?live.folders:[];
+    live.tags=Array.isArray(live.tags)?live.tags:[];
+    live.deletedItems=mergeTombstones(live.deletedItems, backup.deletedItems);
+    var used={};
+    live.items.forEach(function(item){ if(item&&item.id) used[item.id]=true; });
+    var added=0;
+    (backup.items||[]).forEach(function(item){
+      if(!item||!item.id||used[item.id]||isSeedDeviceItem(item)) return;
+      var tomb=live.deletedItems[item.id];
+      if(tomb&&!revisionIsNewer(itemRevision(item),tomb)) return;
+      live.items.push(item);
+      used[item.id]=true;
+      added++;
+      if(live.deletedItems[item.id]) delete live.deletedItems[item.id];
+    });
+    if(!added) return live;
+    if(countRealAccountItems(live.items)) live.items=live.items.filter(function(item){ return !isSeedDeviceItem(item); });
+    live.folders=unionById(live.folders, backup.folders);
+    live.tags=unionById(live.tags, backup.tags);
+    if(!accountPreferences(live)&&accountPreferences(backup)){
+      live.preferences=backup.preferences;
+      if(backup.theme) live.theme=backup.theme;
+      if(typeof backup.motion==="boolean") live.motion=backup.motion;
+    }
+    live.version=Math.max(1,Number(live.version)||0,Number(backup.version)||0)+1;
+    live.versionChangedAt=Date.now();
+    live.updated=live.versionChangedAt;
+    return live;
+  }
+  function recoverCloudAccount(cloud){
+    cloud=cloud&&typeof cloud==="object"?cloneData(cloud):{};
+    return getCloudBackups().then(function(entries){
+      var richest=richestAccountBackup(entries);
+      if(!richest) return {cloud:cloud,recovered:0};
+      var before=countRealAccountItems(cloud.items);
+      var merged=mergeCloudWithBackup(cloud, richest.data);
+      var recovered=countRealAccountItems(merged.items)-before;
+      if(recovered<=0) return {cloud:cloud,recovered:0};
+      return {cloud:merged,recovered:recovered};
+    }).catch(function(error){
+      console.warn("Account backups could not be read for recovery:",error);
+      return {cloud:cloud,recovered:0};
+    });
   }
   function itemChangesSinceBaseline(items,baseline){
     var changes={}, byId={};
@@ -9498,9 +9610,9 @@
     accountMergeChoice=null;
     $("accountMergeModal").classList.remove("open");
     if(action==="merge"){
-      finishCloudLoad(reconcileWithCloud(choice.cloud),"Merged this device's notes into your account","merge");
+      finishCloudLoad(markRecoveredCloudResult(reconcileWithCloud(choice.cloud)),"Merged this device's notes into your account","merge");
     } else {
-      finishCloudLoad({cloud:choice.cloud,data:cloneData(choice.cloud),conflicts:[],needsCloudWrite:false},"Used the notes already in your account","account");
+      finishCloudLoad(markRecoveredCloudResult({cloud:choice.cloud,data:cloneData(choice.cloud),conflicts:[],needsCloudWrite:false}),"Used the notes already in your account","account");
     }
   }
   function showAccountMergeChoice(cloud){
@@ -9565,6 +9677,8 @@
     conflictResolution=null;
     $("syncConflictModal").classList.remove("open");
     rememberAccountLink("linked");
+    cloudHydrated=true;
+    pendingAccountRecovery=0;
     useData(result.data);
     if(result.needsCloudWrite){
       /* Keep the last confirmed cloud baseline until this write succeeds, so a
@@ -9621,6 +9735,14 @@
     renderConflictResolution();
     $("syncConflictModal").classList.add("open");
   }
+  function markRecoveredCloudResult(result, originalCloud){
+    if(!result) return result;
+    if(pendingAccountRecovery){
+      result.needsCloudWrite=true;
+      if(originalCloud) result.cloud=cloneData(originalCloud);
+    }
+    return result;
+  }
   function finishCloudLoad(result,message,linkChoice){
     if(linkChoice!=="account"){
       var dropped=notesMissingFrom(result.data&&result.data.items);
@@ -9631,8 +9753,10 @@
         message=(message||"Synced")+" · kept "+dropped.length+" note"+(dropped.length===1?"":"s")+" from this device";
       }
     }
+    cloudHydrated=true;
     useData(result.data);
     rememberAccountLink(linkChoice||"linked");
+    pendingAccountRecovery=0;
     if(result.needsCloudWrite){
       recordSyncBaseline(result.cloud,result.cloud.updated||Date.now());
       state.pendingCloudSync=true; state.lastLocalChange=Date.now(); captureAutoBackup(false);
@@ -9666,44 +9790,70 @@
     }catch(e){ console.warn("Collaboration invite could not be opened:",e); }
   }
 
+  function applyLoadedCloudAccount(originalCloud, recovery){
+    var recovered=recovery&&recovery.recovered||0;
+    var cloud=(recovery&&recovery.cloud)||originalCloud;
+    pendingAccountRecovery=recovered;
+    var restoredMessage=recovered?("Restored "+recovered+" note"+(recovered===1?"":"s")+" from your account backup"):"";
+    var cloudHas=cloud&&Array.isArray(cloud.items);
+    if(cloudHas){
+      /* A first sign-in has no baseline that can tell whether the device
+         copy belongs to this account. Never replace notes the owner actually
+         wrote without letting them choose to merge or use the account copy.
+         Empty Untitled notes and the built-in Assistant are seeded on every
+         fresh load, so they must not trigger that choice. */
+      var unlinked=unlinkedDeviceItems(state.items,cloud.items);
+      if(!hasUsableSyncBaseline()&&unlinked.length){
+        if(!hasContent(cloud.items)){
+          finishCloudLoad(markRecoveredCloudResult(reconcileWithCloud(cloud),originalCloud),restoredMessage||"Synced this device's notes to your account","merge");
+        } else {
+          var remembered=rememberedAccountLink();
+          if(remembered==="merge") finishCloudLoad(markRecoveredCloudResult(reconcileWithCloud(cloud),originalCloud),restoredMessage||"Merged this device's notes into your account","merge");
+          else if(remembered==="account") finishCloudLoad(markRecoveredCloudResult({cloud:originalCloud||cloud,data:cloneData(cloud),conflicts:[],needsCloudWrite:false},originalCloud),restoredMessage||"Used the notes already in your account","account");
+          else showAccountMergeChoice(cloud);
+        }
+      } else {
+        var result=markRecoveredCloudResult(reconcileWithCloud(cloud),originalCloud);
+        if(result.conflicts.length) showConflictResolution(result);
+        else finishCloudLoad(result,restoredMessage||(result.needsCloudWrite?"Synced offline changes":"Synced from your account"));
+      }
+      return;
+    }
+    if(applyAccountPreferences(cloud||originalCloud)){
+      if(canPersist){ try{ localStorage.setItem(KEY,JSON.stringify(state)); }catch(e){} }
+      renderAll();
+    }
+    rememberAccountLink("linked");
+    pendingAccountRecovery=0;
+    cloudHydrated=true;
+    cloudSyncLoading=false;
+    saveCloudNow();
+    showToast("Cloud sync is ready");
+    renderList();
+    renderMain();
+  }
   function loadCloud(){
     if(!currentUser||!db) return Promise.resolve();
     cloudSyncLoading=true;
+    cloudHydrated=false;
+    pendingAccountRecovery=0;
     setSaveState("Loading from cloud","saving");
-    return db.collection("users").doc(currentUser.uid).get().then(function(doc){
-      var cloud=doc.exists?doc.data():null;
-      var cloudHas=cloud&&Array.isArray(cloud.items);
-      if(cloudHas){
-        /* A first sign-in has no baseline that can tell whether the device
-           copy belongs to this account. Never replace notes the owner actually
-           wrote without letting them choose to merge or use the account copy.
-           Empty Untitled notes and the built-in Assistant are seeded on every
-           fresh load, so they must not trigger that choice. */
-        var unlinked=unlinkedDeviceItems(state.items,cloud.items);
-        if(!hasUsableSyncBaseline()&&unlinked.length){
-          if(!hasContent(cloud.items)){
-            finishCloudLoad(reconcileWithCloud(cloud),"Synced this device's notes to your account","merge");
-          } else {
-            var remembered=rememberedAccountLink();
-            if(remembered==="merge") finishCloudLoad(reconcileWithCloud(cloud),"Merged this device's notes into your account","merge");
-            else if(remembered==="account") finishCloudLoad({cloud:cloud,data:cloneData(cloud),conflicts:[],needsCloudWrite:false},"Used the notes already in your account","account");
-            else showAccountMergeChoice(cloud);
-          }
-        } else {
-          var result=reconcileWithCloud(cloud);
-          if(result.conflicts.length) showConflictResolution(result);
-          else finishCloudLoad(result,result.needsCloudWrite?"Synced offline changes":"Synced from your account");
-        }
-      }
-      else {
-        if(applyAccountPreferences(cloud)){
-          if(canPersist){ try{ localStorage.setItem(KEY,JSON.stringify(state)); }catch(e){} }
-          renderAll();
-        }
-        rememberAccountLink("linked");
-        cloudSyncLoading=false; saveCloudNow(); showToast("Cloud sync is ready");
-      }
-    }).then(function(){ trimCloudBackups(); }).catch(function(e){ cloudSyncLoading=false; console.warn(e); showToast("Couldn’t read cloud data — check Firestore rules",true); });
+    renderList();
+    renderMain();
+    return promiseWithTimeout(db.collection("users").doc(currentUser.uid).get(), CLOUD_LOAD_TIMEOUT_MS, "Cloud notes timed out").then(function(doc){
+      var original=doc.exists?doc.data():null;
+      return recoverCloudAccount(original).then(function(recovery){
+        applyLoadedCloudAccount(original, recovery);
+      });
+    }).then(function(){ trimCloudBackups(); }).catch(function(e){
+      cloudSyncLoading=false;
+      cloudHydrated=false;
+      pendingAccountRecovery=0;
+      console.warn(e);
+      renderList();
+      renderMain();
+      showToast("Couldn’t read your notes — this device will not overwrite your account",true);
+    });
   }
   /* Cloud writes are deliberately batched: local recovery saves stay immediate,
      while a burst of typing becomes one network write after a quiet moment.
@@ -9723,7 +9873,7 @@
     return Math.max(0,Math.round(delay));
   }
   function saveCloud(weight){
-    if(!currentUser||!db||cloudSyncPaused||cloudSyncLoading) return;
+    if(!currentUser||!db||cloudSyncPaused||cloudSyncLoading||!cloudHydrated) return;
     cloudPendingWeight+=Math.max(0,Number(weight)||0);
     if(!cloudPendingSince) cloudPendingSince=Date.now();
     clearTimeout(cloudTimer); cloudTimer=setTimeout(saveCloudNow,cloudSaveDelay());
@@ -9762,7 +9912,7 @@
     return cloudDocumentBackupCollection(item.id).orderBy("created","desc").limit(DOCUMENT_BACKUP_LIMIT).get().then(function(snap){ return (snap.docs||[]).map(function(doc){ var data=doc.data()||{}; return {id:doc.id,source:"cloud",kind:data.kind||"automatic",created:data.created||0,data:data.data||data}; }); });
   }
   function maybeCloudBackup(){
-    if(!currentUser||!db||cloudAutoBackupInFlight) return;
+    if(!currentUser||!db||cloudAutoBackupInFlight||countRealAccountItems(state.items)===0) return;
     var now=Date.now(), marker="second-brain-cloud-backup-"+currentUser.uid, lastCreated=0;
     try{ lastCreated=Number(localStorage.getItem(marker))||0; }catch(e){}
     if(now-lastCreated<AUTO_BACKUP_COOLDOWN) return;
@@ -9818,13 +9968,16 @@
     };
   }
   function saveCloudNow(){
-    if(!currentUser||!db||cloudSyncPaused||cloudSyncLoading) return;
+    if(!currentUser||!db||cloudSyncPaused||cloudSyncLoading||!cloudHydrated) return;
     clearTimeout(cloudTimer); cloudPendingWeight=0; cloudPendingSince=0;
     return saveCloudNowVersioned();
   }
   function saveCloudNowVersioned(){
     var sentAt=Date.now(), ref=db.collection("users").doc(currentUser.uid);
     function writeMerged(remote){
+      if(countRealAccountItems(state.items)===0&&countRealAccountItems((remote||{}).items)>0){
+        return {payload:cloudWritePayload(remote,sentAt),reconciled:{needsCloudWrite:false,data:remote},skipped:true};
+      }
       var reconciled=reconcileWithCloud(remote||{items:[],folders:[],tags:[],deletedItems:{},version:0});
       if(reconciled.data&&notesMissingFrom(reconciled.data.items).length){
         reconciled.data=keepLocalNotesTheCloudDropped(reconciled.data);
