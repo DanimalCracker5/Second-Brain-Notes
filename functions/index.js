@@ -162,7 +162,10 @@ function sanitizeMessages(messages) {
     const role = ["system", "user", "assistant", "tool"].indexOf(message.role) >= 0 ? message.role : "user";
     const out = { role: role };
     if (typeof message.content === "string") out.content = message.content.slice(0, 120000);
-    else if (message.content == null) out.content = "";
+    else if (message.content == null) {
+      if (role === "assistant" && Array.isArray(message.tool_calls) && message.tool_calls.length) out.content = null;
+      else out.content = "";
+    }
     else out.content = JSON.stringify(message.content).slice(0, 120000);
     if (role === "tool") {
       out.name = String(message.name || "tool").slice(0, 64);
@@ -357,7 +360,11 @@ async function handleChat(req, res, user) {
       data = await callGeminiChat(model, payload);
     } else {
       const payload = { model: model, messages: messages };
-      if (tools.length) { payload.tools = tools; payload.tool_choice = toolChoice || "auto"; }
+      if (tools.length) {
+        payload.tools = tools;
+        payload.tool_choice = toolChoice || "auto";
+        if (toolChoice && toolChoice !== "auto") payload.parallel_tool_calls = false;
+      }
       if (body.json) payload.response_format = { type: "json_object" };
       if (typeof temperature === "number") payload.temperature = temperature;
       if (/^(o[1-9]\b|gpt-5)/i.test(model)) payload.max_completion_tokens = maxTokens;
