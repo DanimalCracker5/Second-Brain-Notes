@@ -3352,15 +3352,17 @@
   function noteInsertIndex(note){
     var active=activeNoteTextBlock, index=(note.blocks||[]).length;
     if(!active||active.noteId!==note.id) return index;
-    var textIndex=note.blocks.findIndex(function(block){ return block.id===active.blockId&&block.type==="text"; });
-    if(textIndex<0) return index;
-    var textBlock=note.blocks[textIndex], before=typeof active.beforeHtml==="string"?active.beforeHtml:textBlock.html, after=typeof active.afterHtml==="string"?active.afterHtml:"";
-    if(!hasRichContent(before)) return textIndex;
-    textBlock.html=before; syncTextBlock(textBlock);
+    var blockIndex=note.blocks.findIndex(function(block){ return block.id===active.blockId; });
+    if(blockIndex<0) return index;
+    var currentBlock=note.blocks[blockIndex];
+    if(currentBlock.type!=="text") return blockIndex+1;
+    var before=typeof active.beforeHtml==="string"?active.beforeHtml:currentBlock.html, after=typeof active.afterHtml==="string"?active.afterHtml:"";
+    if(!hasRichContent(before)) return blockIndex;
+    currentBlock.html=before; syncTextBlock(currentBlock);
     if(hasRichContent(after)){
-      var tail=textBlockFromHtml(after); note.blocks.splice(textIndex+1,0,tail); return textIndex+1;
+      var tail=textBlockFromHtml(after); note.blocks.splice(blockIndex+1,0,tail); return blockIndex+1;
     }
-    return textIndex+1;
+    return blockIndex+1;
   }
   function textBlockFromHtml(html){ var block=textBlock(""); block.html=sanitizeRichHtml(html); syncTextBlock(block); return block; }
   function insertAttachmentBlocks(note,attachments,insertAt){
@@ -3470,7 +3472,31 @@
     actions.appendChild(actionButton('<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 6h18"/><path d="M8 6V4h8v2"/><path d="M19 6l-1 14H6L5 6"/><path d="M10 11v5M14 11v5"/></svg>',"Delete block",false,function(){ deleteNoteBlock(note,block); },"delete"));
     return actions;
   }
-  function rememberNoteTextSelection(note,block,field){ activeNoteTextBlock={noteId:note.id,blockId:block.id,start:field.selectionStart||0,end:field.selectionEnd||0}; }
+  function contentEditableCaretHtml(field){
+    var selection=window.getSelection(), empty={beforeHtml:field.innerHTML||"", afterHtml:""};
+    if(!selection||!selection.rangeCount) return empty;
+    var caret=selection.getRangeAt(0), anchor=caret.commonAncestorContainer;
+    if(anchor!==field&&!field.contains(anchor)) return empty;
+    var beforeRange=document.createRange();
+    beforeRange.selectNodeContents(field);
+    beforeRange.setEnd(caret.startContainer, caret.startOffset);
+    var afterRange=document.createRange();
+    afterRange.selectNodeContents(field);
+    afterRange.setStart(caret.endContainer, caret.endOffset);
+    var before=document.createElement("div"), after=document.createElement("div");
+    before.appendChild(beforeRange.cloneContents());
+    after.appendChild(afterRange.cloneContents());
+    return {beforeHtml:before.innerHTML, afterHtml:after.innerHTML};
+  }
+  function rememberNoteTextSelection(note,block,field){
+    var active={noteId:note.id,blockId:block.id,start:field.selectionStart||0,end:field.selectionEnd||0};
+    if(field&&field.isContentEditable){
+      var split=contentEditableCaretHtml(field);
+      active.beforeHtml=split.beforeHtml;
+      active.afterHtml=split.afterHtml;
+    }
+    activeNoteTextBlock=active;
+  }
   function buildNoteDropTarget(note,index){
     var target=document.createElement("div"); target.className="note-drop";
     target.ondragover=function(event){ if(!draggedNoteBlock||draggedNoteBlock.noteId!==note.id) return; event.preventDefault(); target.classList.add("over"); };
@@ -3796,11 +3822,115 @@
   function saveNoteBlockChange(note,block,immediate){
     syncNoteBody(note); touchContent(note); updateMeta(); refreshListMeta(); if(immediate) persist(); else save();
   }
+  /* Windows Ctrl+V of a screenshot or Explorer photo puts a File on the
+     clipboard (Chrome names Snipping Tool pastes image.png). Some apps only
+     provide a data-URI <img> in text/html. Route those through the existing
+     attachment uploader instead of letting the browser dump a giant image
+     into the contenteditable — that freeze is what “breaks everything”. */
+  function namedClipboardFile(file, index){
+    if(!file) return null;
+    if((file.name||"").trim()) return file;
+    var type=file.type||"application/octet-stream", ext="bin";
+    if(/^image\/jpeg$/i.test(type)) ext="jpg";
+    else if(/^image\/svg\+xml$/i.test(type)) ext="svg";
+    else if(/^image\//i.test(type)||/^video\//i.test(type)||/^audio\//i.test(type)) ext=(type.split("/")[1]||"bin").toLowerCase().replace(/[^a-z0-9]+/g,"")||"bin";
+    var name="pasted-file"+(index?"-"+(index+1):"")+"."+ext;
+    try{ return new File([file],name,{type:type,lastModified:file.lastModified||Date.now()}); }
+    catch(error){ return file; }
+  }
+  function clipboardPasteFiles(clipboard){
+    var files=[], seen={};
+    if(!clipboard) return files;
+    function add(file){
+      var named=namedClipboardFile(file, files.length);
+      if(!named||!named.size) return;
+      var key=(named.name||"")+"|"+named.size+"|"+(named.type||"");
+      if(seen[key]) return;
+      seen[key]=true;
+      files.push(named);
+    }
+    if(clipboard.files&&clipboard.files.length) Array.prototype.forEach.call(clipboard.files, add);
+    if(clipboard.items&&clipboard.items.length) Array.prototype.forEach.call(clipboard.items, function(item){
+      if(item&&item.kind==="file"&&typeof item.getAsFile==="function") add(item.getAsFile());
+    });
+    return files;
+  }
+  function clipboardHtmlImageFiles(clipboard){
+    var html=clipboard&&typeof clipboard.getData==="function"?clipboard.getData("text/html"):"";
+    if(!html||!/data:image\//i.test(html)) return [];
+    var files=[], re=/data:(image\/[a-z0-9.+-]+);base64,([a-z0-9+/=\s]+)/gi, match;
+    while(files.length<8&&(match=re.exec(html))){
+      try{
+        var binary=atob(match[2].replace(/\s+/g,"")), bytes=new Uint8Array(binary.length), i;
+        for(i=0;i<binary.length;i++) bytes[i]=binary.charCodeAt(i);
+        if(!bytes.length||bytes.length>MAX_ATTACHMENT_BYTES) continue;
+        var type=match[1].toLowerCase(), ext=/jpeg/.test(type)?"jpg":(/svg\+xml/.test(type)?"svg":type.replace(/^image\//,""));
+        files.push(new File([bytes],"pasted-image"+(files.length?"-"+(files.length+1):"")+"."+ext,{type:type}));
+      }catch(error){}
+    }
+    return files;
+  }
+  function clipboardNoteFiles(clipboard){
+    var files=clipboardPasteFiles(clipboard);
+    if(files.length) return files;
+    var text=clipboard&&typeof clipboard.getData==="function"?clipboard.getData("text/plain"):"";
+    if((text||"").trim()) return [];
+    return clipboardHtmlImageFiles(clipboard);
+  }
   function pastePlainText(event){
+    /* Always swallow the browser default in note fields. Image paste otherwise
+       injects a huge <img> that stays in the live DOM even after saved HTML
+       is sanitized, and every later keystroke re-parses it. Files are turned
+       into attachments by pasteNoteFilesFromClipboard. */
     var data=event.clipboardData&&event.clipboardData.getData("text/plain");
-    if(data==null) return;
     event.preventDefault();
+    if(clipboardNoteFiles(event.clipboardData).length) return;
+    if(!data) return;
     document.execCommand("insertText",false,data.replace(/\r\n?/g,"\n"));
+  }
+  function noteFromEditorNode(editor){
+    if(!editor) return null;
+    var id=editor.getAttribute("data-note-id");
+    if(!id) return null;
+    var it=current();
+    if(it&&it.id===id) return it;
+    if(it&&it.type==="todo"){
+      var task=(it.todos||[]).find(function(item){ return item.id===id; });
+      if(task){ ensureTodoTaskDetails(task); return task; }
+    }
+    return (state.items||[]).find(function(item){ return item.id===id; })||null;
+  }
+  function rememberPasteCaret(note){
+    var field=document.activeElement;
+    if(!note||!field||typeof field.getAttribute!=="function") return;
+    var blockId=field.getAttribute("data-note-block")||field.getAttribute("data-group-body");
+    var block=(note.blocks||[]).find(function(item){ return item.id===blockId; });
+    if(block) rememberNoteTextSelection(note,block,field);
+  }
+  function pasteTargetAllowsNoteFiles(target){
+    if(!target||typeof target.closest!=="function") return false;
+    if(target.closest("#settingsModal,.modal.open,.menu,.auth-gate,#authGate,.voice-overlay")) return false;
+    if(target.closest(".collab-foot,.note-search")) return false;
+    return true;
+  }
+  function pasteNoteFilesFromClipboard(event){
+    var target=event.target;
+    if(!pasteTargetAllowsNoteFiles(target)) return false;
+    var files=clipboardNoteFiles(event.clipboardData);
+    if(!files.length) return false;
+    var editor=typeof target.closest==="function"?target.closest(".note-editor"):null;
+    var note=noteFromEditorNode(editor);
+    if(!note){
+      var it=current();
+      if(it&&itemUsesNoteBlocks(it)&&typeof target.closest==="function"&&target.closest("#canvas")) note=it;
+    }
+    if(!note) return false;
+    if(!Array.isArray(note.blocks)) ensureNoteBlocks(note);
+    if(!Array.isArray(note.blocks)) return false;
+    event.preventDefault();
+    rememberPasteCaret(note);
+    addNoteAttachments(note, files);
+    return true;
   }
   function buildNoteParagraph(note,block){
     var wrap=document.createElement("div"); wrap.className="note-paragraph-wrap";
@@ -8936,6 +9066,9 @@
     if(!currentUser) return;
     if((e.metaKey||e.ctrlKey)&&e.key==="Enter"){ e.preventDefault(); $("copyAll").click(); }
     if(e.key==="Escape"){ stopVoiceSession(); closeMenu(); $("settingsModal").classList.remove("open"); }
+  });
+  document.addEventListener("paste", function(event){
+    pasteNoteFilesFromClipboard(event);
   });
 
   /* =================== export / import =================== */
