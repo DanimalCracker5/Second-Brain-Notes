@@ -110,36 +110,36 @@
       if(!block||!block.type) return;
       if(block.type==="text"){
         var paragraph=document.createElement("div"); paragraph.className="note-text";
-        if(editing){ paragraph.contentEditable="true"; paragraph.setAttribute("role","textbox"); appendRichText(paragraph,block.html,block.text); bindChange(paragraph,function(){ block.html=paragraph.innerHTML; block.text=paragraph.innerText||paragraph.textContent||""; onChange(); }); }
+        if(editing){ paragraph.contentEditable="true"; paragraph.setAttribute("role","textbox"); paragraph.setAttribute("data-share-key","block:"+text(block.id)); appendRichText(paragraph,block.html,block.text); bindChange(paragraph,function(){ block.html=paragraph.innerHTML; block.text=paragraph.innerText||paragraph.textContent||""; onChange(); }); }
         else appendRichText(paragraph,block.html,block.text);
         body.appendChild(paragraph); return;
       }
       if(block.type==="heading"){
         var level=Math.max(1,Math.min(3,Number(block.level)||2)), heading=document.createElement("h"+level); heading.className="note-heading h"+level;
-        if(editing){ heading.contentEditable="true"; heading.textContent=text(block.text); bindChange(heading,function(){ block.text=heading.textContent; onChange(); }); }
+        if(editing){ heading.contentEditable="true"; heading.setAttribute("data-share-key","block:"+text(block.id)); heading.textContent=text(block.text); bindChange(heading,function(){ block.text=heading.textContent; onChange(); }); }
         else heading.textContent=text(block.text);
         body.appendChild(heading); return;
       }
       if(block.type==="chapter"){
         var chapter=document.createElement("section"), chapterTitle=document.createElement("h2"), chapterBody=document.createElement("div"); chapter.className="chapter"; chapterBody.className="chapter-body";
-        if(editing){ chapterTitle.contentEditable="true"; chapterTitle.textContent=text(block.title)||"Untitled chapter"; bindChange(chapterTitle,function(){ block.title=chapterTitle.textContent; onChange(); }); chapterBody.contentEditable="true"; appendRichText(chapterBody,block.html,block.text); bindChange(chapterBody,function(){ block.html=chapterBody.innerHTML; block.text=chapterBody.innerText||chapterBody.textContent||""; onChange(); }); }
+        if(editing){ chapterTitle.contentEditable="true"; chapterTitle.setAttribute("data-share-key","block-title:"+text(block.id)); chapterTitle.textContent=text(block.title)||"Untitled chapter"; bindChange(chapterTitle,function(){ block.title=chapterTitle.textContent; onChange(); }); chapterBody.contentEditable="true"; chapterBody.setAttribute("data-share-key","block:"+text(block.id)); appendRichText(chapterBody,block.html,block.text); bindChange(chapterBody,function(){ block.html=chapterBody.innerHTML; block.text=chapterBody.innerText||chapterBody.textContent||""; onChange(); }); }
         else { chapterTitle.textContent=text(block.title)||"Untitled chapter"; appendRichText(chapterBody,block.html,block.text); }
         chapter.appendChild(chapterTitle); chapter.appendChild(chapterBody); body.appendChild(chapter); return;
       }
       if(block.type==="comment"||block.type==="prompt"){
         var callout=document.createElement("aside"), label=document.createElement("b"); callout.className=block.type; label.textContent=block.type==="prompt"?"Prompt":"Note"; callout.appendChild(label);
-        if(editing){ var field=document.createElement("div"); field.className="share-field"; field.contentEditable="true"; field.textContent=text(block.text); bindChange(field,function(){ block.text=field.textContent; onChange(); }); callout.appendChild(field); }
+        if(editing){ var field=document.createElement("div"); field.className="share-field"; field.contentEditable="true"; field.setAttribute("data-share-key","block:"+text(block.id)); field.textContent=text(block.text); bindChange(field,function(){ block.text=field.textContent; onChange(); }); callout.appendChild(field); }
         else callout.appendChild(document.createTextNode(text(block.text)));
         body.appendChild(callout); return;
       }
       if(block.type==="group"){
         var group=document.createElement("details"), summary=document.createElement("summary"), groupBody=document.createElement("div"); group.className="group"; group.open=true; groupBody.className="group-body";
-        if(editing){ var groupTitle=document.createElement("input"); groupTitle.className="share-field"; groupTitle.value=text(block.title)||"Untitled group"; bindChange(groupTitle,function(){ block.title=groupTitle.value; onChange(); }); summary.appendChild(groupTitle); groupBody.contentEditable="true"; groupBody.textContent=text(block.text); bindChange(groupBody,function(){ block.text=groupBody.textContent; onChange(); }); }
+        if(editing){ var groupTitle=document.createElement("input"); groupTitle.className="share-field"; groupTitle.setAttribute("data-share-key","block-title:"+text(block.id)); groupTitle.value=text(block.title)||"Untitled group"; bindChange(groupTitle,function(){ block.title=groupTitle.value; onChange(); }); summary.appendChild(groupTitle); groupBody.contentEditable="true"; groupBody.setAttribute("data-share-key","block:"+text(block.id)); groupBody.textContent=text(block.text); bindChange(groupBody,function(){ block.text=groupBody.textContent; onChange(); }); }
         else { summary.textContent=text(block.title)||"Untitled group"; groupBody.textContent=text(block.text); }
         group.appendChild(summary); group.appendChild(groupBody); body.appendChild(group); return;
       }
       if(block.type==="code"){
-        if(editing){ var code=document.createElement("textarea"); code.className="code-block share-field"; code.value=text(block.code); bindChange(code,function(){ block.code=code.value; onChange(); }); body.appendChild(code); }
+        if(editing){ var code=document.createElement("textarea"); code.className="code-block share-field"; code.setAttribute("data-share-key","block:"+text(block.id)); code.value=text(block.code); bindChange(code,function(){ block.code=code.value; onChange(); }); body.appendChild(code); }
         else { var pre=document.createElement("pre"); pre.className="code-block"; pre.textContent=text(block.code); body.appendChild(pre); }
         return;
       }
@@ -152,7 +152,7 @@
   function renderScript(data,body,editing,onChange){
     (data.sections||[]).forEach(function(section){
       var item=document.createElement("section"), title=document.createElement("h2"), content=document.createElement("div"); item.className="script-section"+(section.kind==="cue"?" cue":""); title.className="section-title"; content.className="section-body";
-      if(editing){ title.contentEditable="true"; title.textContent=text(section.title)||"Untitled section"; bindChange(title,function(){ section.title=title.textContent; onChange(); }); content.contentEditable="true"; content.textContent=text(section.body); bindChange(content,function(){ section.body=content.textContent; onChange(); }); }
+      if(editing){ title.contentEditable="true"; title.setAttribute("data-share-key","section-title:"+text(section.id)); title.textContent=text(section.title)||"Untitled section"; bindChange(title,function(){ section.title=title.textContent; onChange(); }); content.contentEditable="true"; content.setAttribute("data-share-key","section:"+text(section.id)); content.textContent=text(section.body); bindChange(content,function(){ section.body=content.textContent; onChange(); }); }
       else { title.textContent=text(section.title)||"Untitled section"; content.textContent=text(section.body); }
       item.appendChild(title); item.appendChild(content); body.appendChild(item);
     });
@@ -167,7 +167,7 @@
     var eyebrow=document.createElement("p"), title=document.createElement(editing?"textarea":"h1"), titleRow=document.createElement("div"), updated=document.createElement("p"), rule=document.createElement("div"), body=document.createElement("div"), isTodo=!!data.todo;
     eyebrow.className="eyebrow"; eyebrow.textContent=data.type==="script"?"Shared video script":(isTodo?"Shared todo":"Shared note");
     title.className=editing?"title share-title":"title";
-    if(editing){ title.rows=1; title.value=text(data.title); title.placeholder="Untitled "+(isTodo?"todo":(data.type==="script"?"video script":"note")); bindChange(title,function(){ data.title=title.value; title.style.height="auto"; title.style.height=title.scrollHeight+"px"; onChange(); }); }
+    if(editing){ title.rows=1; title.setAttribute("data-share-key","title"); title.value=text(data.title); title.placeholder="Untitled "+(isTodo?"todo":(data.type==="script"?"video script":"note")); bindChange(title,function(){ data.title=title.value; title.style.height="auto"; title.style.height=title.scrollHeight+"px"; onChange(); }); }
     else title.textContent=text(data.title)||"Untitled "+(isTodo?"todo":(data.type==="script"?"video script":"note"));
     updated.className="updated"; updated.textContent=data.updatedAt?"Updated "+new Date(data.updatedAt).toLocaleString():"Shared view"; rule.className="rule";
     container.appendChild(eyebrow);
@@ -196,6 +196,75 @@
   if(!shareId){ showError("Ask the sender for the complete public link."); return; }
   if(!config||typeof firebase==="undefined"){ showError("Public sharing is not configured for this site."); return; }
   function canEdit(){ return !!(docData&&docData.allowEdit&&currentUser); }
+  function focusedShareKey(){
+    var active=document.activeElement;
+    return active&&container.contains(active)?(active.getAttribute("data-share-key")||""):"";
+  }
+  function shareFieldOffset(field){
+    if(!field) return 0;
+    if(typeof field.selectionStart==="number") return field.selectionStart;
+    var selection=window.getSelection();
+    if(!selection||!selection.rangeCount||!field.isContentEditable) return 0;
+    var range=selection.getRangeAt(0);
+    if(range.startContainer!==field&&!field.contains(range.startContainer)) return 0;
+    var before=document.createRange();
+    before.selectNodeContents(field);
+    before.setEnd(range.startContainer,range.startOffset);
+    return (before.toString()||"").length;
+  }
+  function restoreShareFocus(key,offset){
+    if(!key) return;
+    var field=container.querySelector('[data-share-key="'+key.replace(/"/g,"")+'"]');
+    if(!field) return;
+    field.focus();
+    if(typeof field.selectionStart==="number"){
+      try{ field.setSelectionRange(offset,offset); }catch(e){}
+      return;
+    }
+    if(!field.isContentEditable) return;
+    var remaining=Math.max(0,Number(offset)||0), node, walker=document.createTreeWalker(field,NodeFilter.SHOW_TEXT,null);
+    while((node=walker.nextNode())){
+      if(node.length>=remaining){
+        var range=document.createRange();
+        range.setStart(node,remaining);
+        range.collapse(true);
+        var selection=window.getSelection();
+        selection.removeAllRanges();
+        selection.addRange(range);
+        return;
+      }
+      remaining-=node.length;
+    }
+  }
+  function mergeShareLists(localList,remoteList,protectId){
+    var local=localList||[], remote=remoteList||[], used={}, out=[];
+    remote.forEach(function(entry){
+      if(!entry) return;
+      var match=entry.id&&local.find(function(item){ return item&&item.id===entry.id; });
+      out.push(match&&protectId&&entry.id===protectId?match:entry);
+      if(entry.id) used[entry.id]=true;
+    });
+    local.forEach(function(entry){
+      if(entry&&entry.id&&!used[entry.id]) out.push(entry);
+    });
+    return out;
+  }
+  function mergeSharedDocument(local,remote,protectKey){
+    var next=JSON.parse(JSON.stringify(remote||{}));
+    if(!local) return next;
+    var protectId="";
+    if(protectKey==="title") next.title=local.title;
+    else if(protectKey.indexOf("block-title:")===0) protectId=protectKey.slice(12);
+    else if(protectKey.indexOf("block:")===0) protectId=protectKey.slice(6);
+    else if(protectKey.indexOf("section-title:")===0) protectId=protectKey.slice(14);
+    else if(protectKey.indexOf("section:")===0) protectId=protectKey.slice(8);
+    if((remote&&remote.type==="script")||(local&&local.type==="script")) next.sections=mergeShareLists(local.sections,remote.sections,protectId);
+    else {
+      next.blocks=mergeShareLists(local.blocks,remote.blocks,protectId);
+      next.attachments=mergeShareLists(local.attachments,remote.attachments,"");
+    }
+    return next;
+  }
   function updateChrome(){
     if(!badge) return;
     if(docData&&docData.allowEdit){
@@ -260,9 +329,10 @@
       if(!doc.exists){ showError("The sender may have stopped sharing it, or the link may be incomplete."); return; }
       var incoming=doc.data()||{};
       if(incoming.updatedBy===clientId&&(Number(incoming.updatedAt)||0)<=lastPushed) return;
-      if(canEdit()&&saveTimer) return;
-      docData=incoming;
+      var key=focusedShareKey(), offset=shareFieldOffset(document.activeElement);
+      docData=canEdit()&&key?mergeSharedDocument(docData,incoming,key):incoming;
       paint();
+      restoreShareFocus(key,offset);
     },function(error){ console.warn("Could not load shared document:",error); showError(error.message||"Please try again later."); });
   }catch(error){ console.warn("Could not start public sharing:",error); showError("Please try again later."); }
 })();

@@ -72,6 +72,39 @@ test("mergeKeyedRecords keeps a protected local block and adds a remote photo bl
   assert.equal(merged.some(function (block) { return block.id === "p"; }), true);
 });
 
+test("dirtyBlockProtectIds only flags blocks this device changed since the last live push", function () {
+  const previous = note("n1", [
+    { id: "a", type: "text", text: "hello" },
+    { id: "b", type: "text", text: "other" }
+  ]);
+  const local = note("n1", [
+    { id: "a", type: "text", text: "hello from phone" },
+    { id: "b", type: "text", text: "other" }
+  ]);
+  const ids = sandbox.dirtyBlockProtectIds(local, previous);
+  assert.equal(ids.a, true);
+  assert.equal(!!ids.b, false);
+});
+
+test("unprotected remote text and a new photo apply while a local paragraph is protected", function () {
+  const local = note("n1", [
+    { id: "a", type: "text", text: "typing on phone", html: "typing on phone" },
+    { id: "b", type: "text", text: "old other", html: "old other" }
+  ], [], { version: 4, versionChangedAt: 40, updated: 40, title: "Trip" });
+  const remote = note("n1", [
+    { id: "a", type: "text", text: "hello", html: "hello" },
+    { id: "b", type: "text", text: "laptop other", html: "laptop other" },
+    { id: "p", type: "attachment", attachmentId: "img1" }
+  ], [
+    { id: "img1", name: "lake.jpg", type: "image/jpeg", storagePath: "users/u/notes/n1/attachments/img1" }
+  ], { version: 5, versionChangedAt: 50, updated: 50, title: "Trip" });
+  const merged = sandbox.mergeLiveItems(local, remote, { preferLocal: false, protectBlockIds: { a: true } });
+  assert.equal(merged.blocks[0].text, "typing on phone");
+  assert.equal(merged.blocks.find(function (block) { return block.id === "b"; }).text, "laptop other");
+  assert.equal(merged.attachments[0].id, "img1");
+  assert.equal(merged.blocks.some(function (block) { return block.id === "p"; }), true);
+});
+
 test("mergeLiveItems unions a laptop photo onto a note the phone is still editing", function () {
   const local = note("n1", [
     { id: "a", type: "text", text: "hello from phone", html: "hello from phone" }
@@ -131,4 +164,6 @@ test("shared page listens live and can edit when allowEdit is on", function () {
   assert.match(shared, /Add photo/);
   assert.match(shared, /firebase-auth-compat/);
   assert.match(shared, /firebase-storage-compat/);
+  assert.match(shared, /mergeSharedDocument/);
+  assert.match(shared, /data-share-key/);
 });

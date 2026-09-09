@@ -2395,9 +2395,13 @@
       var sw=document.createElement("span"); sw.className="toggle"+(item.shareAllowEdit?" on":""); sw.innerHTML="<b></b>";
       row.appendChild(sl); row.appendChild(sw);
       row.setAttribute("aria-pressed",item.shareAllowEdit?"true":"false");
+      row.setAttribute("aria-label","Allow editing");
       row.onclick=function(event){
         event.preventDefault();
+        if(row.disabled) return;
         var next=!item.shareAllowEdit;
+        sw.classList.toggle("on",next);
+        row.setAttribute("aria-pressed",next?"true":"false");
         row.disabled=true;
         setShareAllowEdit(item,next).then(function(){
           sw.classList.toggle("on",!!item.shareAllowEdit);
@@ -9485,18 +9489,69 @@
   function persistLocalStateQuietly(){
     if(canPersist){ try{ localStorage.setItem(KEY,JSON.stringify(state)); }catch(e){} }
   }
+  function contentEditableCaretOffset(field){
+    var selection=window.getSelection();
+    if(!selection||!selection.rangeCount||!field) return 0;
+    var range=selection.getRangeAt(0);
+    if(range.startContainer!==field&&!field.contains(range.startContainer)) return 0;
+    var before=document.createRange();
+    before.selectNodeContents(field);
+    before.setEnd(range.startContainer,range.startOffset);
+    return (before.toString()||"").length;
+  }
+  function setContentEditableCaretOffset(field,offset){
+    if(!field) return;
+    field.focus();
+    var remaining=Math.max(0,Number(offset)||0), node, walker=document.createTreeWalker(field,NodeFilter.SHOW_TEXT,null);
+    while((node=walker.nextNode())){
+      if(node.length>=remaining){
+        var range=document.createRange();
+        range.setStart(node,remaining);
+        range.collapse(true);
+        var selection=window.getSelection();
+        selection.removeAllRanges();
+        selection.addRange(range);
+        return;
+      }
+      remaining-=node.length;
+    }
+    var end=document.createRange();
+    end.selectNodeContents(field);
+    end.collapse(false);
+    var selection=window.getSelection();
+    selection.removeAllRanges();
+    selection.addRange(end);
+  }
   function localNoteEditGuard(item){
     var currentItem=item||current();
-    var guard={itemId:currentItem&&currentItem.id||"",blockIds:{},protectTitle:false,selectionStart:null,selectionEnd:null,hasEdits:!!(saveTimer||savePendingSince)};
+    var guard={itemId:currentItem&&currentItem.id||"",blockIds:{},focusedBlockId:"",protectTitle:false,selectionStart:null,selectionEnd:null,contentOffset:null,hasEdits:!!(saveTimer||savePendingSince)};
     var active=document.activeElement;
-    if(activeNoteTextBlock&&currentItem&&activeNoteTextBlock.noteId===currentItem.id) guard.blockIds[activeNoteTextBlock.blockId]=true;
+    if(activeNoteTextBlock&&currentItem&&activeNoteTextBlock.noteId===currentItem.id){
+      guard.blockIds[activeNoteTextBlock.blockId]=true;
+      if(!guard.focusedBlockId) guard.focusedBlockId=activeNoteTextBlock.blockId;
+    }
+    if(currentItem&&state.currentId&&currentItem.id!==state.currentId) return guard;
     if(!active||!canvas||!canvas.contains(active)) return guard;
     if(active.classList&&active.classList.contains("title")) guard.protectTitle=true;
     var blockId=active.getAttribute&&(active.getAttribute("data-note-block")||active.getAttribute("data-group-body"));
-    if(blockId) guard.blockIds[blockId]=true;
+    if(blockId){ guard.blockIds[blockId]=true; guard.focusedBlockId=blockId; }
     if(typeof active.selectionStart==="number"){ guard.selectionStart=active.selectionStart; guard.selectionEnd=active.selectionEnd; }
+    if(active.isContentEditable) guard.contentOffset=contentEditableCaretOffset(active);
     if(saveTimer||savePendingSince) guard.hasEdits=true;
     return guard;
+  }
+  function liveIncomingOptions(local,guard){
+    guard=guard||localNoteEditGuard(local);
+    var previous=local&&lastLiveWrite[local.id]&&lastLiveWrite[local.id].item;
+    var protect=dirtyBlockProtectIds(local,previous);
+    Object.keys(guard.blockIds||{}).forEach(function(id){ protect[id]=true; });
+    var protectTitle=!!guard.protectTitle;
+    if(previous&&(local.title||"")!==(previous.title||"")) protectTitle=true;
+    if(!previous&&guard.hasEdits){
+      protectTitle=true;
+      (local&&local.type==="script"?local.sections:local&&local.blocks||[]).forEach(function(entry){ if(entry&&entry.id) protect[entry.id]=true; });
+    }
+    return {preferLocal:false,protectBlockIds:protect,protectTitle:protectTitle};
   }
   function restoreOpenEditorCaret(guard){
     if(!guard) return;
@@ -9505,11 +9560,15 @@
       if(title){ title.focus(); if(guard.selectionStart!=null){ try{ title.setSelectionRange(guard.selectionStart,guard.selectionEnd); }catch(e){} } }
       return;
     }
-    var blockId=Object.keys(guard.blockIds)[0];
+    var blockId=guard.focusedBlockId||Object.keys(guard.blockIds)[0];
     if(!blockId) return;
-    var field=canvas.querySelector('[data-note-block="'+blockId+'"]');
+    var field=canvas.querySelector('[data-note-block="'+blockId+'"], [data-group-body="'+blockId+'"]');
     if(!field) return;
     field.focus();
+    if(field.isContentEditable&&guard.contentOffset!=null){
+      setContentEditableCaretOffset(field,guard.contentOffset);
+      return;
+    }
     if(typeof field.selectionStart==="number"&&guard.selectionStart!=null){
       try{ field.setSelectionRange(guard.selectionStart,guard.selectionEnd); }catch(e){}
     }
@@ -9541,7 +9600,7 @@
   function writeLiveNoteNow(item){
     if(!currentUser||!db||!shouldLivePushItem(item)||applyingRemoteCloud||applyingLiveNote) return Promise.resolve();
     var payload={item:cloneData(item),updated:Date.now(),updatedBy:liveClientId,version:Number(item.version)||1};
-    lastLiveWrite[item.id]={at:payload.updated,by:liveClientId,sig:itemSyncSignature(item)};
+    lastLiveWrite[item.id]={at:payload.updated,by:liveClientId,sig:itemSyncSignature(item),item:cloneData(item)};
     return liveNotesRef(item.id).set(payload).catch(function(error){ console.warn("Live note could not be published:",error); });
   }
   function scheduleLiveNotePush(ids,immediate){
@@ -9590,7 +9649,7 @@
           return;
         }
         var guard=localNoteEditGuard(local);
-        var result=commitIncomingItem(local,incoming,{preferLocal:!!guard.hasEdits,protectBlockIds:guard.blockIds,protectTitle:guard.protectTitle});
+        var result=commitIncomingItem(local,incoming,liveIncomingOptions(local,guard));
         if(result.changed) refreshOpenItemFromLive(local);
         if(result.writeBack){ scheduleLiveNotePush([local.id],true); saveCloud(1); }
       } finally { applyingLiveNote=false; }
@@ -9636,7 +9695,7 @@
         var guard=localNoteEditGuard(live);
         applyingLiveNote=true;
         try{
-          var result=commitIncomingItem(live,incoming,{preferLocal:!!guard.hasEdits,protectBlockIds:guard.blockIds,protectTitle:guard.protectTitle});
+          var result=commitIncomingItem(live,incoming,liveIncomingOptions(live,guard));
           if(result.changed){
             refreshOpenItemFromLive(live);
             if(result.writeBack||itemSyncSignature(live)!==itemSyncSignature(item)){ scheduleLiveNotePush([live.id],true); saveCloud(1); }
@@ -9666,9 +9725,7 @@
           var copy=cloneData(remote); normalizeItem(copy); state.items.push(copy); added++; return;
         }
         var guard=localNoteEditGuard(local);
-        var options={preferLocal:!!(guard.itemId===local.id&&guard.hasEdits)};
-        if(guard.itemId===local.id){ options.protectBlockIds=guard.blockIds; options.protectTitle=guard.protectTitle; }
-        var result=commitIncomingItem(local,remote,options);
+        var result=commitIncomingItem(local,remote,liveIncomingOptions(local,guard));
         if(result.changed&&local.id===state.currentId) changedCurrent=true;
         if(result.writeBack) writeBack=true;
       });
@@ -9712,7 +9769,7 @@
         if(!data.item||data.updatedBy===liveClientId) return;
         applyingLiveNote=true;
         try{
-          var result=commitIncomingItem(item,data.item,{preferLocal:!!localNoteEditGuard(item).hasEdits,protectBlockIds:localNoteEditGuard(item).blockIds,protectTitle:localNoteEditGuard(item).protectTitle});
+          var result=commitIncomingItem(item,data.item,liveIncomingOptions(item));
           if(result.changed) refreshOpenItemFromLive(item);
         } finally { applyingLiveNote=false; }
       }).catch(function(){});
@@ -10231,6 +10288,19 @@
     primary.forEach(function(entry){ if(!entry||!entry.id||used[entry.id]) return; out.push(choose(entry.id)); used[entry.id]=true; });
     secondary.forEach(function(entry){ if(!entry||!entry.id||used[entry.id]) return; out.push(choose(entry.id)); used[entry.id]=true; });
     return out;
+  }
+  function dirtyBlockProtectIds(local, previous){
+    var ids={};
+    if(!local||!previous) return ids;
+    var localList=local.type==="script"?local.sections:local.blocks;
+    var previousList=previous.type==="script"?previous.sections:previous.blocks;
+    var previousBy={};
+    (previousList||[]).forEach(function(entry){ if(entry&&entry.id) previousBy[entry.id]=JSON.stringify(entry); });
+    (localList||[]).forEach(function(entry){
+      if(!entry||!entry.id) return;
+      if(JSON.stringify(entry)!==(previousBy[entry.id]||"")) ids[entry.id]=true;
+    });
+    return ids;
   }
   function mergeAttachmentLists(localList,remoteList){
     var byId={};
@@ -10793,7 +10863,7 @@
           }
           if(itemSyncSignature(local)===itemSyncSignature(item)) return;
           var guard=localNoteEditGuard(local);
-          var adopted=applyIncomingItemOnto(local,item,{preferLocal:guard.itemId===local.id&&guard.hasEdits,protectBlockIds:guard.itemId===local.id?guard.blockIds:{},protectTitle:guard.itemId===local.id&&guard.protectTitle});
+          var adopted=applyIncomingItemOnto(local,item,liveIncomingOptions(local,guard));
           if(adopted.changed){
             normalizeItem(local);
             if(local.type==="note") syncNoteBody(local);
