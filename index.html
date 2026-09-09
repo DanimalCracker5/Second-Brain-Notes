@@ -608,6 +608,12 @@
   .menu .color-reset{ width:100%; margin-top:2px; border:0; border-radius:8px; padding:8px 10px; color:var(--ink-dim); background:transparent; cursor:pointer; font:500 .76rem "DM Sans",sans-serif; }
   .menu .color-reset:hover{ color:var(--ink); background:rgba(255,255,255,.06); }
   .menu .maxscroll{ max-height:230px; overflow-y:auto; }
+  .menu.share-menu{ min-width:268px; max-width:300px; }
+  .menu .m-toggle{ display:flex; align-items:center; justify-content:space-between; gap:12px; width:100%; margin:2px 0; padding:10px 11px; border:0; border-radius:10px; background:none; color:var(--ink); cursor:pointer; text-align:left; }
+  .menu .m-toggle:hover{ background:rgba(255,255,255,.06); }
+  .menu .m-toggle .sl{ min-width:0; font-size:.86rem; font-weight:600; }
+  .menu .m-toggle .sl small{ display:block; margin-top:3px; color:var(--ink-faint); font-size:.72rem; font-weight:500; line-height:1.35; }
+  .menu .m-toggle .toggle{ pointer-events:none; flex:none; }
 
   /* ---------- due-date calendar ---------- */
   .menu.calendar-menu{ min-width:272px; max-width:288px; }
@@ -1386,6 +1392,8 @@
   /* =================== storage =================== */
   var KEY="astral-notes-v5", OLDS=["astral-notes-v4","astral-notes-v3"], CFGKEY="astral-fb-config", BACKUP_KEY="second-brain-auto-backups-v1", DOCUMENT_BACKUP_KEY="second-brain-document-backups-v1", DOCUMENT_BACKUP_ACTIVITY_KEY="second-brain-document-backup-activity-v1", BACKUP_LIMIT=10, DOCUMENT_BACKUP_LIMIT=25, AUTO_BACKUP_COOLDOWN=60*60*1000, DOCUMENT_AUTO_BACKUP_EDIT_LIMIT=20, DOCUMENT_AUTO_BACKUP_CHAR_LIMIT=750, DOCUMENT_AUTO_BACKUP_MAX_WAIT=15*60*1000, mem=null;
   var deviceBackups=[], documentBackups={}, documentBackupActivity={}, attachmentDbPromise=null, activeNoteTextBlock=null, draggedNoteBlock=null, activeAttachmentUploads={}, activeAudioRecorder=null;
+  var liveClientId="d"+Math.random().toString(36).slice(2,10)+Date.now().toString(36);
+  var applyingRemoteCloud=false, applyingLiveNote=false, cloudLiveReady=false, lastPersistChangedIds=[], lastCloudWriteSentAt=0, lastAppliedLiveFingerprint="", watchedLiveNoteId="", liveNoteUnsub=null, liveNotePushTimers={}, liveNotePendingSince={}, lastLiveWrite={}, sharedEditUnsubs={};
   var DEFAULT_ELEVENLABS_VOICE="21m00Tcm4TlvDq8ikWAM", CUSTOM_VOICE_OPTION="__elevenlabs_voice_id__", APP_VOICE_OPTION="__app_voice__";
   var runtimeApiKeys={openai:"",gemini:"",elevenlabs:"",elevenlabsVoice:DEFAULT_ELEVENLABS_VOICE,savedVoices:[],audio:null,audioUrl:null,ttsControl:null,ttsRequestId:0};
   var llmRoute="hosted";
@@ -1524,6 +1532,7 @@
   function bumpLocalVersions(previous){
     previous=previous&&typeof previous==="object"?previous:{};
     var beforeById={}, changedWeight=0, currentIds={};
+    lastPersistChangedIds=[];
     (previous.items||[]).forEach(function(item){ if(item&&item.id) beforeById[item.id]=item; });
     (state.items||[]).forEach(function(item){
       if(!item||!item.id) return;
@@ -1534,6 +1543,7 @@
         item.version=Math.max(1,Number(item.version)||1,previousVersion)+delta;
         item.versionChangedAt=Number(item.updated)||Date.now();
         changedWeight+=delta;
+        lastPersistChangedIds.push(item.id);
       }
     });
     (previous.items||[]).forEach(function(item){ if(item&&item.id&&!currentIds[item.id]) changedWeight+=1; });
@@ -1560,7 +1570,8 @@
     if(currentUser&&(changedWeight>0||createdOrDeleted)) state.pendingCloudSync=true;
     var d=JSON.stringify(state); if(canPersist){ try{ localStorage.setItem(KEY,d); }catch(e){ mem=JSON.parse(d); } } else mem=JSON.parse(d);
     setSaveState(currentUser?(state.pendingCloudSync?"Saving to cloud":"Saved to cloud"):"Sign in to sync",currentUser?(state.pendingCloudSync?"saving":"cloud"):"");
-    if(!cloudSyncPaused&&!cloudSyncLoading&&cloudHydrated&&(changedWeight>0||createdOrDeleted)){
+    if(!applyingRemoteCloud&&!applyingLiveNote&&!cloudSyncPaused&&!cloudSyncLoading&&cloudHydrated&&(changedWeight>0||createdOrDeleted)){
+      scheduleLiveNotePush(lastPersistChangedIds,createdOrDeleted);
       if(createdOrDeleted) saveCloudNow();
       else saveCloud(changedWeight);
     }
@@ -1924,6 +1935,7 @@
   }
   function wipeDeviceNotes(){
     clearTimeout(cloudTimer);
+    stopLiveNoteWatch(); stopSharedEditListeners(); cloudLiveReady=false;
     cloudTimer=null; mem=null; deviceBackups=[]; documentBackups={}; documentBackupActivity={}; activeAttachmentUploads={}; activeNoteTextBlock=null; draggedNoteBlock=null;
     cloudHydrated=false; pendingAccountRecovery=0;
     if(activeAudioRecorder){ try{ activeAudioRecorder.recorder.stop(); }catch(e){} activeAudioRecorder=null; }
@@ -1961,8 +1973,12 @@
     var changed=trackTimeSpent();
     if(changed){ persist(); if(state.listSort==="timeSpent") renderList(); }
   }
-  document.addEventListener("visibilitychange",saveTrackedTime);
+  document.addEventListener("visibilitychange",function(){
+    saveTrackedTime();
+    if(document.visibilityState==="visible") pullLiveCloudNow();
+  });
   ["focus","blur","pagehide"].forEach(function(eventName){ window.addEventListener(eventName,saveTrackedTime); });
+  window.addEventListener("online",function(){ pullLiveCloudNow(); });
   setInterval(saveTrackedTime,30000);
   function themeDef(){ return THEMES.find(function(t){return t.id===state.theme;})||THEMES[0]; }
   function tagById(id){ return state.tags.find(function(t){return t.id===id;}); }
@@ -2267,16 +2283,16 @@
     return Promise.all((note.attachments||[]).map(function(attachment){
       if(!attachment||!attachment.id) return null;
       var file={id:attachment.id,name:attachment.name||"Attachment",type:attachment.type||"application/octet-stream",size:Number(attachment.size)||0};
-      var source=attachment.inlineData&&/^image\//.test(attachment.type||"")?Promise.resolve(attachment.inlineData):(storage&&attachment.storagePath?storage.ref(attachment.storagePath).getDownloadURL().catch(function(){ return ""; }):Promise.resolve(""));
+      var source=attachment.url?Promise.resolve(attachment.url):(attachment.inlineData&&/^image\//.test(attachment.type||"")?Promise.resolve(attachment.inlineData):(storage&&attachment.storagePath?storage.ref(attachment.storagePath).getDownloadURL().catch(function(){ return ""; }):Promise.resolve("")));
       return source.then(function(url){ if(url) file.url=url; return file; });
     })).then(function(files){ return files.filter(Boolean); });
   }
   function publicShareSignature(item){
-    if(item.type==="script") return JSON.stringify({type:item.type,title:item.title||"",sections:(item.sections||[]).map(function(section){ return {title:section.title||"",body:section.body||"",kind:section.kind||"chapter"}; })});
-    return JSON.stringify({type:item.type,title:item.title||"",todo:!!item.todo,done:!!item.done,theme:publicShareTheme(),blocks:publicNoteBlocks(item),attachments:(item.attachments||[]).map(function(attachment){ return attachment&&{id:attachment.id,name:attachment.name,type:attachment.type,size:attachment.size,storagePath:attachment.storagePath,inlineData:attachment.inlineData}; })});
+    if(item.type==="script") return JSON.stringify({type:item.type,title:item.title||"",allowEdit:!!item.shareAllowEdit,sections:(item.sections||[]).map(function(section){ return {title:section.title||"",body:section.body||"",kind:section.kind||"chapter"}; })});
+    return JSON.stringify({type:item.type,title:item.title||"",todo:!!item.todo,done:!!item.done,allowEdit:!!item.shareAllowEdit,theme:publicShareTheme(),blocks:publicNoteBlocks(item),attachments:(item.attachments||[]).map(function(attachment){ return attachment&&{id:attachment.id,name:attachment.name,type:attachment.type,size:attachment.size,storagePath:attachment.storagePath,url:attachment.url,inlineData:attachment.inlineData}; })});
   }
   function publicSharePayload(item){
-    var now=Date.now(), payload={ownerId:currentUser.uid,shareId:item.shareId,type:item.type,title:item.title||"",todo:!!item.todo,done:!!item.done,theme:publicShareTheme(),createdAt:item.shareCreatedAt||now,updatedAt:now};
+    var now=Date.now(), payload={ownerId:currentUser.uid,shareId:item.shareId,type:item.type,title:item.title||"",todo:!!item.todo,done:!!item.done,allowEdit:!!item.shareAllowEdit,updatedBy:liveClientId,theme:publicShareTheme(),createdAt:item.shareCreatedAt||now,updatedAt:now};
     if(item.type==="script"){
       payload.sections=(item.sections||[]).map(function(section){ return {id:section.id||uid(),title:section.title||"",body:section.body||"",kind:section.kind||"chapter"}; });
       return Promise.resolve(payload);
@@ -2319,8 +2335,8 @@
     }
     button.style.display=shareable?"inline-flex":"none";
     button.classList.toggle("done",!!(shareable&&item.shareId));
-    label.textContent=shareable&&item.shareId?"Public link":"Share";
-    button.title=shareable&&item.shareId?"Manage public view link":"Share a view-only link";
+    label.textContent=shareable&&item.shareId?(item.shareAllowEdit?"Can edit":"Public link"):"Share";
+    button.title=shareable&&item.shareId?(item.shareAllowEdit?"Manage shared editing":"Manage public view link"):"Share a view-only link";
   }
   function shareCurrentItem(){
     var item=current(), button=$("shareBtn"), label=$("shareLabel"), created=false;
@@ -2330,28 +2346,69 @@
     if(button) button.disabled=true;
     if(label) label.textContent="Sharing…";
     publishPublicShare(item).then(function(url){
-      copy(url,function(){ showToast("Public view link copied"); });
+      copy(url,function(){ showToast(item.shareAllowEdit?"Editable share link copied":"Public view link copied"); });
       updateShareButton(item);
+      if($("shareBtn")) openPublicShareOptions($("shareBtn"),item);
     }).catch(function(error){
       console.warn("Public share failed:",error);
-      if(created){ delete item.shareId; delete item.shareCreatedAt; persist(); }
+      if(created){ delete item.shareId; delete item.shareCreatedAt; delete item.shareAllowEdit; persist(); }
       updateShareButton(item);
       showToast("Couldn’t create the public link. Check your Firestore rules.",true);
     }).then(function(){ if(button) button.disabled=false; });
   }
   function stopPublicSharing(item){
     if(!item||!item.shareId||!currentUser||!db) return;
-    if(!confirm("Stop public sharing? Anyone opening this link will no longer be able to view it.")) return;
+    if(!confirm("Stop public sharing? Anyone opening this link will no longer be able to view or edit it.")) return;
     var shareId=item.shareId;
+    stopSharedEditListener(shareId);
     db.collection("shared").doc(shareId).delete().then(function(){
-      delete publicShareSignatures[shareId]; delete item.shareId; delete item.shareCreatedAt; persist(); updateShareButton(item); closeMenu(); showToast("Public sharing stopped");
+      delete publicShareSignatures[shareId]; delete item.shareId; delete item.shareCreatedAt; delete item.shareAllowEdit; persist(); updateShareButton(item); closeMenu(); showToast("Public sharing stopped");
     }).catch(function(error){ console.warn("Could not stop public sharing:",error); showToast("Couldn’t stop public sharing. Check your Firestore rules.",true); });
+  }
+  function setShareAllowEdit(item,allow){
+    if(!item||!item.shareId||!currentUser||!db) return Promise.reject(new Error("Share this note first"));
+    item.shareAllowEdit=!!allow;
+    persist();
+    return publishPublicShare(item).then(function(){
+      updateShareButton(item);
+      startSharedEditListeners();
+      showToast(item.shareAllowEdit?"Anyone signed in with the link can edit":"Link is view-only again");
+    }).catch(function(error){
+      item.shareAllowEdit=!allow;
+      persist();
+      updateShareButton(item);
+      console.warn("Could not update shared editing:",error);
+      showToast("Couldn’t update editing access. Check your Firestore rules.",true);
+      throw error;
+    });
   }
   function openPublicShareOptions(anchor,item){
     openMenu(anchor,function(menu){
-      var title=document.createElement("div"); title.className="mtitle"; title.textContent="Public sharing"; menu.appendChild(title);
-      menu.appendChild(mkItem("","Copy public link",false,function(){ closeMenu(); shareCurrentItem(); }));
-      var stop=mkItem(ICON_DELETE,"Stop public sharing",false,function(){ stopPublicSharing(item); }); stop.className+=" danger"; menu.appendChild(stop);
+      menu.classList.add("share-menu");
+      var title=document.createElement("div"); title.className="mtitle"; title.textContent="Sharing"; menu.appendChild(title);
+      menu.appendChild(mkItem("","Copy link",false,function(){ closeMenu(); shareCurrentItem(); }));
+      var row=document.createElement("button"); row.type="button"; row.className="m-toggle";
+      var sl=document.createElement("div"); sl.className="sl";
+      var name=document.createElement("b"); name.textContent="Allow editing";
+      var hint=document.createElement("small"); hint.textContent="People who sign in with this link can change text and photos";
+      sl.appendChild(name); sl.appendChild(hint);
+      var sw=document.createElement("span"); sw.className="toggle"+(item.shareAllowEdit?" on":""); sw.innerHTML="<b></b>";
+      row.appendChild(sl); row.appendChild(sw);
+      row.setAttribute("aria-pressed",item.shareAllowEdit?"true":"false");
+      row.onclick=function(event){
+        event.preventDefault();
+        var next=!item.shareAllowEdit;
+        row.disabled=true;
+        setShareAllowEdit(item,next).then(function(){
+          sw.classList.toggle("on",!!item.shareAllowEdit);
+          row.setAttribute("aria-pressed",item.shareAllowEdit?"true":"false");
+        }).catch(function(){
+          sw.classList.toggle("on",!!item.shareAllowEdit);
+          row.setAttribute("aria-pressed",item.shareAllowEdit?"true":"false");
+        }).then(function(){ row.disabled=false; });
+      };
+      menu.appendChild(row);
+      var stop=mkItem(ICON_DELETE,"Stop sharing",false,function(){ stopPublicSharing(item); }); stop.className+=" danger"; menu.appendChild(stop);
     });
   }
   var toastTimer=null;
@@ -2359,7 +2416,7 @@
   /* Typing coalesces into one write, but a long unbroken burst would otherwise
      keep pushing the debounce out and never reach localStorage at all, so the
      total wait is capped at SAVE_MAX_WAIT from the first unsaved keystroke. */
-  var saveTimer=null, savePendingSince=0, SAVE_DEBOUNCE=400, SAVE_MAX_WAIT=2200;
+  var saveTimer=null, savePendingSince=0, SAVE_DEBOUNCE=280, SAVE_MAX_WAIT=900;
   function save(){
     setSaveState("Saving…","saving");
     if(!savePendingSince) savePendingSince=Date.now();
@@ -2658,7 +2715,7 @@
   function duplicateItem(it){
     prepareManualOrder();
     var copy=JSON.parse(JSON.stringify(it));
-    copy.id=uid(); copy.locked=false; copy.updated=Date.now(); delete copy.shareId; delete copy.shareCreatedAt;
+    copy.id=uid(); copy.locked=false; copy.updated=Date.now(); delete copy.shareId; delete copy.shareCreatedAt; delete copy.shareAllowEdit;
     copy.title=it.title?it.title+" copy":"Untitled "+itemLabel(it).toLowerCase()+" copy";
     var taskCopies=[];
     if(copy.type==="script") (copy.sections||[]).forEach(function(section){ section.id=uid(); });
@@ -3035,8 +3092,8 @@
       var loading=document.createElement("div"); loading.className="sheet enter";
       var hint=document.createElement("p"); hint.className="hint"; hint.style.padding="28px 8px";
       hint.textContent="Loading your notes from your account…";
-      loading.appendChild(hint); canvas.appendChild(loading);
-      updateShareButton(null); return;
+      loading.appendChild(hint);       canvas.appendChild(loading);
+      updateShareButton(null); stopLiveNoteWatch(); return;
     }
     var it=current();
     /* Let a registered type tear down timers, media elements, and listeners
@@ -3048,7 +3105,7 @@
        the canvas, so it goes away with it. */
     if(collab.hostKind==="stage"){ collab.host=null; collab.hostKind=null; }
     canvas.innerHTML="";
-    if(!it){ updateShareButton(null); return; }
+    if(!it){ updateShareButton(null); stopLiveNoteWatch(); return; }
     updateShareButton(it);
     updateTtsButton(it);
     var mod=itemModule(it);
@@ -3063,6 +3120,7 @@
       sheet.appendChild(buildAgent(it));
       canvas.appendChild(sheet);
       syncCollabToCurrentItem();
+      watchLiveNote(it.id);
       return;
     }
 
@@ -3132,6 +3190,7 @@
     for(var i=0;i<tas.length;i++) grow(tas[i]);
     updateMeta();
     syncCollabToCurrentItem();
+    watchLiveNote(it.id);
     if(isEntering){
       setTimeout(function(){
         if(!current()||current().id!==it.id) return;
@@ -3233,6 +3292,7 @@
   function attachmentIsVideo(attachment){ return /^video\//.test(attachment.type||""); }
   function fallbackAttachmentUrl(attachment){
     if(attachment.inlineData) return Promise.resolve({url:attachment.inlineData,local:false});
+    if(attachment.url) return Promise.resolve({url:attachment.url,local:false});
     if(storage&&attachment.storagePath) return storage.ref(attachment.storagePath).getDownloadURL().then(function(url){ return {url:url,local:false}; });
     return Promise.reject(new Error("Attachment file is unavailable"));
   }
@@ -3267,7 +3327,7 @@
         },ATTACHMENT_UPLOAD_TIMEOUT);
       }catch(error){ finish(error); }
     }).then(function(){
-      attachment.storagePath=path; delete attachment.inlineData; delete attachment.cloudError; attachment.syncState="cloud"; touchContent(note); persist(); refreshContentEditor(note); return true;
+      attachment.storagePath=path; delete attachment.inlineData; delete attachment.cloudError; attachment.syncState="cloud"; touchContent(note); persist(); scheduleLiveNotePush([note.id],true); saveCloudNow(); refreshContentEditor(note); return true;
     }).catch(function(error){
       attachment.syncState="device"; attachment.cloudError=true; touchContent(note); persist(); refreshContentEditor(note); throw error;
     });
@@ -9412,7 +9472,251 @@
     apiSettingsUnsubscribe=db.collection("users").doc(currentUser.uid).onSnapshot(function(doc){
       var data=doc.exists?doc.data():{};
       applyApiSettings(data.privateSettings||{});
+      applyRemoteAccountSnapshot(data);
     },function(error){ console.warn("API-key sync failed:",error); });
+  }
+  function liveNotesRef(itemId){ return db.collection("users").doc(currentUser.uid).collection("liveNotes").doc(itemId); }
+  function shouldLivePushItem(item){ return !!(item&&(item.type==="note"||item.type==="script")); }
+  function patchSyncBaselineItem(item){
+    if(!item||!item.id) return;
+    if(!state.syncBaseline||!state.syncBaseline.items||typeof state.syncBaseline.items!=="object") recordSyncBaseline({items:state.items},Date.now());
+    else state.syncBaseline.items[item.id]=itemSyncSignature(item);
+  }
+  function persistLocalStateQuietly(){
+    if(canPersist){ try{ localStorage.setItem(KEY,JSON.stringify(state)); }catch(e){} }
+  }
+  function localNoteEditGuard(item){
+    var currentItem=item||current();
+    var guard={itemId:currentItem&&currentItem.id||"",blockIds:{},protectTitle:false,selectionStart:null,selectionEnd:null,hasEdits:!!(saveTimer||savePendingSince)};
+    var active=document.activeElement;
+    if(activeNoteTextBlock&&currentItem&&activeNoteTextBlock.noteId===currentItem.id) guard.blockIds[activeNoteTextBlock.blockId]=true;
+    if(!active||!canvas||!canvas.contains(active)) return guard;
+    if(active.classList&&active.classList.contains("title")) guard.protectTitle=true;
+    var blockId=active.getAttribute&&(active.getAttribute("data-note-block")||active.getAttribute("data-group-body"));
+    if(blockId) guard.blockIds[blockId]=true;
+    if(typeof active.selectionStart==="number"){ guard.selectionStart=active.selectionStart; guard.selectionEnd=active.selectionEnd; }
+    if(saveTimer||savePendingSince) guard.hasEdits=true;
+    return guard;
+  }
+  function restoreOpenEditorCaret(guard){
+    if(!guard) return;
+    if(guard.protectTitle){
+      var title=canvas.querySelector("textarea.title");
+      if(title){ title.focus(); if(guard.selectionStart!=null){ try{ title.setSelectionRange(guard.selectionStart,guard.selectionEnd); }catch(e){} } }
+      return;
+    }
+    var blockId=Object.keys(guard.blockIds)[0];
+    if(!blockId) return;
+    var field=canvas.querySelector('[data-note-block="'+blockId+'"]');
+    if(!field) return;
+    field.focus();
+    if(typeof field.selectionStart==="number"&&guard.selectionStart!=null){
+      try{ field.setSelectionRange(guard.selectionStart,guard.selectionEnd); }catch(e){}
+    }
+  }
+  function refreshOpenItemFromLive(item){
+    if(!item){ renderList(); return; }
+    renderList();
+    if(item.id!==state.currentId) return;
+    var guard=localNoteEditGuard(item);
+    var title=canvas.querySelector("textarea.title");
+    if(title&&!guard.protectTitle){ title.value=item.title||""; grow(title); }
+    refreshContentEditor(item);
+    updateMeta(); refreshListMeta(); updateShareButton(item);
+    restoreOpenEditorCaret(guard);
+  }
+  function commitIncomingItem(item,incoming,options){
+    if(!item||!incoming) return {changed:false,writeBack:false};
+    var result=applyIncomingItemOnto(item,incoming,options||{});
+    if(!result.changed) return result;
+    normalizeItem(item);
+    if(item.type==="note") syncNoteBody(item);
+    if(result.writeBack){
+      state.pendingCloudSync=true;
+      state.lastLocalChange=Date.now();
+    } else patchSyncBaselineItem(item);
+    persistLocalStateQuietly();
+    return result;
+  }
+  function writeLiveNoteNow(item){
+    if(!currentUser||!db||!shouldLivePushItem(item)||applyingRemoteCloud||applyingLiveNote) return Promise.resolve();
+    var payload={item:cloneData(item),updated:Date.now(),updatedBy:liveClientId,version:Number(item.version)||1};
+    lastLiveWrite[item.id]={at:payload.updated,by:liveClientId,sig:itemSyncSignature(item)};
+    return liveNotesRef(item.id).set(payload).catch(function(error){ console.warn("Live note could not be published:",error); });
+  }
+  function scheduleLiveNotePush(ids,immediate){
+    if(!currentUser||!db||applyingRemoteCloud||applyingLiveNote) return;
+    (ids||[]).forEach(function(id){
+      var item=(state.items||[]).find(function(entry){ return entry&&entry.id===id; });
+      if(!shouldLivePushItem(item)) return;
+      if(immediate){
+        clearTimeout(liveNotePushTimers[id]); liveNotePendingSince[id]=0;
+        writeLiveNoteNow(item);
+        return;
+      }
+      if(!liveNotePendingSince[id]) liveNotePendingSince[id]=Date.now();
+      clearTimeout(liveNotePushTimers[id]);
+      var wait=Math.max(0,Math.min(220,liveNotePendingSince[id]+700-Date.now()));
+      liveNotePushTimers[id]=setTimeout(function(){
+        liveNotePendingSince[id]=0;
+        var latest=(state.items||[]).find(function(entry){ return entry&&entry.id===id; });
+        writeLiveNoteNow(latest);
+      },wait);
+    });
+  }
+  function stopLiveNoteWatch(){
+    if(liveNoteUnsub){ liveNoteUnsub(); liveNoteUnsub=null; }
+    watchedLiveNoteId="";
+  }
+  function watchLiveNote(itemId){
+    if(watchedLiveNoteId===itemId&&liveNoteUnsub) return;
+    stopLiveNoteWatch();
+    watchedLiveNoteId=itemId||"";
+    if(!currentUser||!db||!itemId||!cloudLiveReady) return;
+    var currentItem=(state.items||[]).find(function(entry){ return entry&&entry.id===itemId; });
+    if(!shouldLivePushItem(currentItem)) return;
+    liveNoteUnsub=liveNotesRef(itemId).onSnapshot(function(snapshot){
+      if(!snapshot.exists||applyingRemoteCloud) return;
+      var data=snapshot.data()||{}, incoming=data.item;
+      if(!incoming||data.updatedBy===liveClientId) return;
+      var previous=lastLiveWrite[itemId];
+      if(previous&&(Number(data.updated)||0)<=previous.at) return;
+      var local=(state.items||[]).find(function(entry){ return entry&&entry.id===itemId; });
+      applyingLiveNote=true;
+      try{
+        if(!local){
+          local=cloneData(incoming); normalizeItem(local); state.items.push(local); persistLocalStateQuietly(); renderList();
+          if(state.currentId===itemId) refreshOpenItemFromLive(local);
+          return;
+        }
+        var guard=localNoteEditGuard(local);
+        var result=commitIncomingItem(local,incoming,{preferLocal:!!guard.hasEdits,protectBlockIds:guard.blockIds,protectTitle:guard.protectTitle});
+        if(result.changed) refreshOpenItemFromLive(local);
+        if(result.writeBack){ scheduleLiveNotePush([local.id],true); saveCloud(1); }
+      } finally { applyingLiveNote=false; }
+    },function(error){ console.warn("Live note sync failed:",error); });
+  }
+  function sharedItemFromPayload(item,data){
+    var incoming=cloneData(item);
+    incoming.title=data.title||"";
+    incoming.todo=!!data.todo;
+    incoming.done=!!data.done;
+    incoming.updated=Number(data.updatedAt)||Date.now();
+    if(data.type==="script") incoming.sections=Array.isArray(data.sections)?data.sections:incoming.sections;
+    else {
+      incoming.blocks=Array.isArray(data.blocks)?data.blocks:incoming.blocks;
+      incoming.attachments=Array.isArray(data.attachments)?data.attachments:incoming.attachments;
+    }
+    incoming.shareAllowEdit=!!data.allowEdit;
+    return incoming;
+  }
+  function stopSharedEditListener(shareId){
+    if(shareId&&sharedEditUnsubs[shareId]){ sharedEditUnsubs[shareId](); delete sharedEditUnsubs[shareId]; }
+  }
+  function stopSharedEditListeners(){
+    Object.keys(sharedEditUnsubs).forEach(function(shareId){ stopSharedEditListener(shareId); });
+  }
+  function startSharedEditListeners(){
+    if(!currentUser||!db) return;
+    var wanted={};
+    (state.items||[]).forEach(function(item){
+      if(!item||!item.shareId||!item.shareAllowEdit) return;
+      wanted[item.shareId]=item;
+    });
+    Object.keys(sharedEditUnsubs).forEach(function(shareId){ if(!wanted[shareId]) stopSharedEditListener(shareId); });
+    Object.keys(wanted).forEach(function(shareId){
+      if(sharedEditUnsubs[shareId]) return;
+      var item=wanted[shareId];
+      sharedEditUnsubs[shareId]=db.collection("shared").doc(shareId).onSnapshot(function(snapshot){
+        if(!snapshot.exists) return;
+        var data=snapshot.data()||{};
+        if(data.updatedBy===liveClientId||!data.allowEdit) return;
+        var live=(state.items||[]).find(function(entry){ return entry&&entry.shareId===shareId; })||item;
+        var incoming=sharedItemFromPayload(live,data);
+        var guard=localNoteEditGuard(live);
+        applyingLiveNote=true;
+        try{
+          var result=commitIncomingItem(live,incoming,{preferLocal:!!guard.hasEdits,protectBlockIds:guard.blockIds,protectTitle:guard.protectTitle});
+          if(result.changed){
+            refreshOpenItemFromLive(live);
+            if(result.writeBack||itemSyncSignature(live)!==itemSyncSignature(item)){ scheduleLiveNotePush([live.id],true); saveCloud(1); }
+          }
+        } finally { applyingLiveNote=false; }
+      },function(error){ console.warn("Shared editing updates failed:",error); });
+    });
+  }
+  function applyRemoteAccountSnapshot(cloud){
+    if(!cloudLiveReady||applyingRemoteCloud||applyingLiveNote||cloudSyncLoading||cloudSyncPaused||!cloud||!Array.isArray(cloud.items)) return;
+    if((Number(cloud.updated)||0)===lastCloudWriteSentAt) return;
+    var fingerprint=liveAccountFingerprint(cloud);
+    if(fingerprint===lastAppliedLiveFingerprint) return;
+    lastAppliedLiveFingerprint=fingerprint;
+    applyingRemoteCloud=true;
+    var writeBack=false, changedCurrent=false, added=0;
+    try{
+      var localById={};
+      (state.items||[]).forEach(function(item){ if(item&&item.id) localById[item.id]=item; });
+      var seen={}, tombs=cloud.deletedItems||{};
+      cloud.items.forEach(function(remote){
+        if(!remote||!remote.id) return;
+        seen[remote.id]=true;
+        var local=localById[remote.id];
+        if(!local){
+          if(isSeedDeviceItem(remote)) return;
+          var copy=cloneData(remote); normalizeItem(copy); state.items.push(copy); added++; return;
+        }
+        var guard=localNoteEditGuard(local);
+        var options={preferLocal:!!(guard.itemId===local.id&&guard.hasEdits)};
+        if(guard.itemId===local.id){ options.protectBlockIds=guard.blockIds; options.protectTitle=guard.protectTitle; }
+        var result=commitIncomingItem(local,remote,options);
+        if(result.changed&&local.id===state.currentId) changedCurrent=true;
+        if(result.writeBack) writeBack=true;
+      });
+      state.items=(state.items||[]).filter(function(item){
+        if(!item||!item.id) return false;
+        if(seen[item.id]) return true;
+        if(tombs[item.id]&&!revisionIsNewer(itemRevision(item),tombs[item.id])){
+          if(item.id===state.currentId&&localNoteEditGuard(item).hasEdits){ writeBack=true; return true; }
+          return false;
+        }
+        if(!isSeedDeviceItem(item)) writeBack=true;
+        return true;
+      });
+      state.folders=unionById(cloud.folders,state.folders);
+      state.tags=unionById(cloud.tags,state.tags);
+      if(cloud.deletedItems) state.deletedItems=mergeTombstones(state.deletedItems,cloud.deletedItems);
+      persistLocalStateQuietly();
+      if(added||changedCurrent) refreshOpenItemFromLive(current());
+      else renderList();
+      startSharedEditListeners();
+      if(writeBack){ state.pendingCloudSync=true; saveCloud(1); }
+      else recordSyncBaseline({items:state.items},Number(cloud.updated)||Date.now());
+    } finally { applyingRemoteCloud=false; }
+  }
+  function armCloudLiveSync(){
+    cloudLiveReady=true;
+    lastAppliedLiveFingerprint=liveAccountFingerprint({items:state.items,deletedItems:state.deletedItems,version:state.version,updated:state.lastCloudSync});
+    watchLiveNote(state.currentId);
+    startSharedEditListeners();
+  }
+  function pullLiveCloudNow(){
+    if(!currentUser||!db||!cloudLiveReady||cloudSyncLoading||cloudSyncPaused) return;
+    db.collection("users").doc(currentUser.uid).get().then(function(doc){
+      if(doc.exists) applyRemoteAccountSnapshot(doc.data());
+    }).catch(function(error){ console.warn("Live cloud refresh failed:",error); });
+    var item=current();
+    if(shouldLivePushItem(item)){
+      liveNotesRef(item.id).get().then(function(snapshot){
+        if(!snapshot.exists) return;
+        var data=snapshot.data()||{};
+        if(!data.item||data.updatedBy===liveClientId) return;
+        applyingLiveNote=true;
+        try{
+          var result=commitIncomingItem(item,data.item,{preferLocal:!!localNoteEditGuard(item).hasEdits,protectBlockIds:localNoteEditGuard(item).blockIds,protectTitle:localNoteEditGuard(item).protectTitle});
+          if(result.changed) refreshOpenItemFromLive(item);
+        } finally { applyingLiveNote=false; }
+      }).catch(function(){});
+    }
   }
   function getPrivateSettings(){
     if(!currentUser||!db) return Promise.resolve({});
@@ -9521,12 +9825,12 @@
         var signedOutUser=currentUser;
         currentUser=u;
         if(u){
-          cloudSyncPaused=false; cloudHydrated=false; pendingAccountRecovery=0;
+          cloudSyncPaused=false; cloudHydrated=false; cloudLiveReady=false; pendingAccountRecovery=0;
           setAuthGate(false); startApiSettingsSync(); startHostedBillingSync(); startAccountUsageTracking(); renderFoot();
           loadCloud().then(openPendingInvite);
         } else {
-          cloudSyncPaused=true; cloudSyncLoading=false; cloudHydrated=false; pendingAccountRecovery=0;
-          stopAccountUsageTracking(); stopApiSettingsSync(); stopHostedBillingSync(); resetApiSettings();
+          cloudSyncPaused=true; cloudSyncLoading=false; cloudHydrated=false; cloudLiveReady=false; pendingAccountRecovery=0;
+          stopAccountUsageTracking(); stopApiSettingsSync(); stopHostedBillingSync(); stopLiveNoteWatch(); stopSharedEditListeners(); resetApiSettings();
           /* Firebase reports the signed-out state once on startup. Keep notes
              already on this device so their owner can choose how to sync them
              after signing in. A deliberate sign-out still clears this device. */
@@ -9861,7 +10165,12 @@
       var localDelete=!!(localChanges[id]&&localChanges[id].kind==="delete");
       var candidate=null, fromLocal=false;
       if(local&&remote){
-        if(revisionIsNewer(itemRevision(local),itemRevision(remote))){ candidate=cloneData(local); fromLocal=true; }
+        if(canStructurallyMergeItems(local,remote)){
+          candidate=mergeLiveItems(local,remote,{});
+          fromLocal=itemSyncSignature(candidate)!==itemSyncSignature(remote);
+        } else if(revisionIsNewer(itemRevision(local),itemRevision(remote))){
+          candidate=cloneData(local); fromLocal=true;
+        }
         else candidate=cloneData(remote);
       } else if(local){
         if(isSeedDeviceItem(local)) return;
@@ -9896,6 +10205,116 @@
       result.data.versionChangedAt=Number(cloud.versionChangedAt)||Number(cloud.updated)||Number(localData.versionChangedAt)||Date.now();
     }
     return result;
+  }
+  function canStructurallyMergeItems(local,remote){
+    return !!(local&&remote&&local.type===remote.type&&(local.type==="note"||local.type==="script"));
+  }
+  /* Union two lists of {id:...} records. Protected ids and preferLocal keep this
+     device's in-progress block; everything else takes the incoming side, and
+     records that exist on only one side are kept. That is how a laptop can drop
+     a photo onto a note while a phone is still typing in another paragraph. */
+  function mergeKeyedRecords(localList,remoteList,options){
+    options=options||{};
+    var protectIds=options.protectIds||{}, preferLocal=!!options.preferLocal;
+    var local=(localList||[]).filter(function(entry){ return entry&&entry.id; });
+    var remote=(remoteList||[]).filter(function(entry){ return entry&&entry.id; });
+    var localBy={}, remoteBy={};
+    local.forEach(function(entry){ localBy[entry.id]=entry; });
+    remote.forEach(function(entry){ remoteBy[entry.id]=entry; });
+    function choose(id){
+      var left=localBy[id], right=remoteBy[id];
+      if(left&&protectIds[id]) return cloneData(left);
+      if(left&&right) return cloneData(preferLocal?left:right);
+      return cloneData(left||right);
+    }
+    var primary=preferLocal?local:remote, secondary=preferLocal?remote:local, used={}, out=[];
+    primary.forEach(function(entry){ if(!entry||!entry.id||used[entry.id]) return; out.push(choose(entry.id)); used[entry.id]=true; });
+    secondary.forEach(function(entry){ if(!entry||!entry.id||used[entry.id]) return; out.push(choose(entry.id)); used[entry.id]=true; });
+    return out;
+  }
+  function mergeAttachmentLists(localList,remoteList){
+    var byId={};
+    function score(attachment){
+      if(!attachment) return 0;
+      if(attachment.storagePath) return 4;
+      if(attachment.url) return 3;
+      if(attachment.inlineData) return 2;
+      if(attachment.syncState==="cloud") return 1;
+      return 0;
+    }
+    function add(attachment){
+      if(!attachment||!attachment.id) return;
+      var previous=byId[attachment.id];
+      if(!previous||score(attachment)>=score(previous)){
+        var copy=cloneData(attachment);
+        if(previous){
+          if(!copy.storagePath&&previous.storagePath) copy.storagePath=previous.storagePath;
+          if(!copy.url&&previous.url) copy.url=previous.url;
+          if(!copy.inlineData&&previous.inlineData&&!copy.storagePath) copy.inlineData=previous.inlineData;
+        }
+        byId[attachment.id]=copy;
+      } else {
+        if(!previous.storagePath&&attachment.storagePath) previous.storagePath=attachment.storagePath;
+        if(!previous.url&&attachment.url) previous.url=attachment.url;
+        if(!previous.inlineData&&attachment.inlineData&&!previous.storagePath) previous.inlineData=attachment.inlineData;
+      }
+    }
+    (localList||[]).forEach(add);
+    (remoteList||[]).forEach(add);
+    var used={}, out=[];
+    (remoteList||[]).concat(localList||[]).forEach(function(attachment){
+      if(attachment&&attachment.id&&byId[attachment.id]&&!used[attachment.id]){ out.push(byId[attachment.id]); used[attachment.id]=true; }
+    });
+    return out;
+  }
+  function mergeLiveItems(local,remote,options){
+    options=options||{};
+    if(!local) return cloneData(remote);
+    if(!remote) return cloneData(local);
+    if(itemSyncSignature(local)===itemSyncSignature(remote)) return cloneData(local);
+    var preferLocal=typeof options.preferLocal==="boolean"?options.preferLocal:revisionIsNewer(itemRevision(local),itemRevision(remote));
+    if(!canStructurallyMergeItems(local,remote)) return cloneData(preferLocal?local:remote);
+    var merged=cloneData(preferLocal?local:remote);
+    var protectIds=options.protectBlockIds||{};
+    if(local.type==="note"){
+      merged.blocks=mergeKeyedRecords(local.blocks,remote.blocks,{protectIds:protectIds,preferLocal:preferLocal});
+      merged.attachments=mergeAttachmentLists(local.attachments,remote.attachments);
+      if(options.protectTitle) merged.title=local.title||"";
+      else merged.title=(preferLocal?local:remote).title||"";
+      if(typeof (preferLocal?local:remote).todo==="boolean") merged.todo=!!(preferLocal?local:remote).todo;
+      if(typeof (preferLocal?local:remote).done==="boolean") merged.done=!!(preferLocal?local:remote).done;
+    } else {
+      merged.sections=mergeKeyedRecords(local.sections,remote.sections,{protectIds:protectIds,preferLocal:preferLocal});
+      if(options.protectTitle) merged.title=local.title||"";
+      else merged.title=(preferLocal?local:remote).title||"";
+    }
+    merged.shareId=local.shareId||remote.shareId||merged.shareId;
+    merged.shareCreatedAt=local.shareCreatedAt||remote.shareCreatedAt||merged.shareCreatedAt;
+    if(merged.shareId){
+      var shareSource=revisionIsNewer(itemRevision(local),itemRevision(remote))?local:remote;
+      if(shareSource.shareId){ merged.shareId=shareSource.shareId; merged.shareCreatedAt=shareSource.shareCreatedAt||merged.shareCreatedAt; }
+      merged.shareAllowEdit=!!shareSource.shareAllowEdit;
+    } else {
+      delete merged.shareId; delete merged.shareCreatedAt; delete merged.shareAllowEdit;
+    }
+    var localRev=itemRevision(local), remoteRev=itemRevision(remote);
+    merged.version=Math.max(localRev.version,remoteRev.version);
+    merged.versionChangedAt=Math.max(localRev.versionChangedAt,remoteRev.versionChangedAt);
+    merged.updated=Math.max(Number(local.updated)||0,Number(remote.updated)||0);
+    return merged;
+  }
+  function applyIncomingItemOnto(local,incoming,options){
+    var merged=mergeLiveItems(local,incoming,options);
+    if(itemSyncSignature(local)===itemSyncSignature(merged)) return {changed:false,writeBack:false};
+    var writeBack=itemSyncSignature(merged)!==itemSyncSignature(incoming);
+    Object.keys(local).forEach(function(key){ if(!Object.prototype.hasOwnProperty.call(merged,key)) delete local[key]; });
+    Object.keys(merged).forEach(function(key){ local[key]=merged[key]; });
+    return {changed:true,writeBack:writeBack};
+  }
+  function liveAccountFingerprint(cloud){
+    var items={};
+    ((cloud&&cloud.items)||[]).forEach(function(item){ if(item&&item.id) items[item.id]=itemSyncSignature(item); });
+    return stableStringify({updated:Number(cloud&&cloud.updated)||0,version:Number(cloud&&cloud.version)||0,items:items,deleted:cloud&&cloud.deletedItems||{}});
   }
   function useData(d){
     /* A cloud or imported legacy script is normalized in-place below. Snapshot
@@ -10046,6 +10465,7 @@
       showToast("Kept the cloud version");
     }
     syncStoredAttachments();
+    armCloudLiveSync();
   }
   function resolveConflict(action){
     if(!conflictResolution) return;
@@ -10120,6 +10540,7 @@
     }
     syncStoredAttachments();
     showToast(message);
+    armCloudLiveSync();
   }
   /* ?edit=<sessionId> is a collaboration invite from someone else's video
      editor. It is read once at boot, stripped from the address bar so a refresh
@@ -10182,11 +10603,13 @@
     showToast("Cloud sync is ready");
     renderList();
     renderMain();
+    armCloudLiveSync();
   }
   function loadCloud(){
     if(!currentUser||!db) return Promise.resolve();
     cloudSyncLoading=true;
     cloudHydrated=false;
+    cloudLiveReady=false;
     pendingAccountRecovery=0;
     setSaveState("Loading from cloud","saving");
     renderList();
@@ -10199,6 +10622,7 @@
     }).then(function(){ trimCloudBackups(); }).catch(function(e){
       cloudSyncLoading=false;
       cloudHydrated=false;
+      cloudLiveReady=false;
       pendingAccountRecovery=0;
       console.warn(e);
       renderList();
@@ -10213,7 +10637,7 @@
      tag edit or a delete goes up almost at once. CLOUD_SAVE_MAX_WAIT is the
      backstop: an unbroken burst of edits can never push the debounce out
      forever, because the oldest unsaved change is only ever that far behind. */
-  var CLOUD_SAVE_MIN_DELAY=500, CLOUD_SAVE_MAX_DELAY=4500, CLOUD_SAVE_RUSH_WEIGHT=12, CLOUD_SAVE_MAX_WAIT=9000;
+  var CLOUD_SAVE_MIN_DELAY=220, CLOUD_SAVE_MAX_DELAY=900, CLOUD_SAVE_RUSH_WEIGHT=8, CLOUD_SAVE_MAX_WAIT=1400;
   var cloudPendingWeight=0, cloudPendingSince=0;
   function cloudSaveDelay(){
     /* Weight comes from revisionWeight(), which counts one unit per ~120 changed
@@ -10319,7 +10743,7 @@
     };
   }
   function saveCloudNow(){
-    if(!currentUser||!db||cloudSyncPaused||cloudSyncLoading||!cloudHydrated) return;
+    if(!currentUser||!db||cloudSyncPaused||cloudSyncLoading||!cloudHydrated||applyingRemoteCloud) return;
     clearTimeout(cloudTimer); cloudPendingWeight=0; cloudPendingSince=0;
     return saveCloudNowVersioned();
   }
@@ -10356,22 +10780,36 @@
       return ref.set(merged.payload,{merge:true}).then(function(){ return merged; });
     });
     return writePromise.then(function(result){
-      var payload=result&&result.payload, added=0;
+      var payload=result&&result.payload, added=0, changedCurrent=false;
+      if(!result||!result.skipped) lastCloudWriteSentAt=sentAt;
       if(payload&&Array.isArray(payload.items)){
         var have={};
-        (state.items||[]).forEach(function(item){ if(item&&item.id) have[item.id]=true; });
+        (state.items||[]).forEach(function(item){ if(item&&item.id) have[item.id]=item; });
         payload.items.forEach(function(item){
-          if(!item||!item.id||have[item.id]||isSeedDeviceItem(item)) return;
-          state.items.push(item); normalizeItem(item); have[item.id]=true; added++;
+          if(!item||!item.id||isSeedDeviceItem(item)) return;
+          var local=have[item.id];
+          if(!local){
+            var copy=cloneData(item); normalizeItem(copy); state.items.push(copy); have[copy.id]=copy; added++; return;
+          }
+          if(itemSyncSignature(local)===itemSyncSignature(item)) return;
+          var guard=localNoteEditGuard(local);
+          var adopted=applyIncomingItemOnto(local,item,{preferLocal:guard.itemId===local.id&&guard.hasEdits,protectBlockIds:guard.itemId===local.id?guard.blockIds:{},protectTitle:guard.itemId===local.id&&guard.protectTitle});
+          if(adopted.changed){
+            normalizeItem(local);
+            if(local.type==="note") syncNoteBody(local);
+            if(local.id===state.currentId) changedCurrent=true;
+          }
         });
         if(payload.deletedItems&&typeof payload.deletedItems==="object") state.deletedItems=cloneData(payload.deletedItems);
         state.version=Math.max(1,Number(state.version)||1,Number(payload.version)||1);
         state.versionChangedAt=Number(payload.versionChangedAt)||state.versionChangedAt||sentAt;
+        lastAppliedLiveFingerprint=liveAccountFingerprint(payload);
       }
       state.lastCloudSync=sentAt;
-      if((state.lastLocalChange||0)<=sentAt){ state.pendingCloudSync=false; recordSyncBaseline({items:state.items},sentAt); if(canPersist){ try{ localStorage.setItem(KEY,JSON.stringify(state)); }catch(e){} } }
-      setSaveState("Saved to cloud","cloud"); syncPublicShares(); maybeCloudBackup(); scheduleAccountUsageRefresh(0);
+      if((state.lastLocalChange||0)<=sentAt){ state.pendingCloudSync=false; recordSyncBaseline({items:state.items},sentAt); persistLocalStateQuietly(); }
+      setSaveState("Saved to cloud","cloud"); syncPublicShares(); maybeCloudBackup(); scheduleAccountUsageRefresh(0); startSharedEditListeners();
       if(added) renderList();
+      if(changedCurrent){ refreshOpenItemFromLive(current()); scheduleLiveNotePush([state.currentId],true); }
     }).catch(function(e){ console.warn(e); setSaveState("Cloud sync failed — recovery copy kept","bad"); });
   }
   window.addEventListener("beforeunload",saveCloudNow);

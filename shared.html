@@ -10,23 +10,28 @@
 <link href="https://fonts.googleapis.com/css2?family=DM+Sans:opsz,wght@9..40,400;9..40,500;9..40,600;9..40,700&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet">
 <script src="./astral.config.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-auth-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-storage-compat.js"></script>
 <style>
   :root{--bg:#09090c;--surface:#15151b;--line:rgba(255,255,255,.1);--ink:#f5f5f7;--dim:#a1a1ae;--faint:#696975;--accent:#c4a5ff;--accent-soft:rgba(174,130,255,.15);--accent-line:rgba(196,165,255,.32);--glow1:rgba(118,62,210,.22);--glow2:rgba(210,59,191,.12);--mono:"DM Mono",ui-monospace,SFMono-Regular,Menlo,monospace;}
   *{box-sizing:border-box} html,body{min-height:100%;margin:0} body{background:radial-gradient(70rem 35rem at 15% -10%,var(--glow1),transparent 60%),radial-gradient(54rem 36rem at 100% 100%,var(--glow2),transparent 62%),var(--bg);color:var(--ink);font-family:"DM Sans",ui-sans-serif,system-ui,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;-webkit-font-smoothing:antialiased}
-  .page{width:min(100% - 32px,780px);margin:0 auto;padding:28px 0 72px}.bar{display:flex;align-items:center;justify-content:space-between;gap:16px;margin-bottom:42px;color:var(--dim);font-size:.88rem}.brand{font-weight:700;color:var(--ink);letter-spacing:-.015em}.bar-actions{display:flex;align-items:center;gap:8px}.home-link,.view-only{display:inline-flex;align-items:center;gap:7px;padding:7px 10px;border:1px solid var(--line);border-radius:999px;background:rgba(255,255,255,.035);font-size:.75rem;font-weight:600}.home-link{color:var(--ink);text-decoration:none}.home-link:hover{border-color:var(--accent);background:var(--accent-soft)}.view-only::before{content:"";width:7px;height:7px;border-radius:50%;background:#6ee7b7;box-shadow:0 0 12px rgba(110,231,183,.75)}
+  .page{width:min(100% - 32px,780px);margin:0 auto;padding:28px 0 72px}.bar{display:flex;align-items:center;justify-content:space-between;gap:16px;margin-bottom:42px;color:var(--dim);font-size:.88rem}.brand{font-weight:700;color:var(--ink);letter-spacing:-.015em}.bar-actions{display:flex;align-items:center;gap:8px}
+  .home-link,.view-only,.auth-btn{display:inline-flex;align-items:center;gap:7px;padding:7px 10px;border:1px solid var(--line);border-radius:999px;background:rgba(255,255,255,.035);font-size:.75rem;font-weight:600}.home-link,.auth-btn{color:var(--ink);text-decoration:none;cursor:pointer;font-family:inherit}.home-link:hover,.auth-btn:hover{border-color:var(--accent);background:var(--accent-soft)}.view-only::before,.view-only.can-edit::before{content:"";width:7px;height:7px;border-radius:50%;background:#6ee7b7;box-shadow:0 0 12px rgba(110,231,183,.75)}.view-only.can-edit::before{background:#60a5fa;box-shadow:0 0 12px rgba(96,165,250,.75)}.auth-btn{border:0}
   .document{padding:clamp(22px,6vw,48px);border:1px solid var(--line);border-radius:24px;background:linear-gradient(145deg,rgba(255,255,255,.065),rgba(255,255,255,.025));box-shadow:0 28px 80px rgba(0,0,0,.22)}.eyebrow{margin:0 0 11px;color:var(--accent);font-size:.7rem;font-weight:700;letter-spacing:.13em;text-transform:uppercase}.title-row{display:flex;align-items:flex-start;gap:14px}.title-row .title{flex:1}.title{margin:0;overflow-wrap:anywhere;font-size:clamp(2rem,6vw,3rem);font-weight:700;line-height:1.06;letter-spacing:-.02em}.todo-check{display:grid;place-items:center;width:40px;height:40px;flex:none;margin-top:8px;border:1px solid var(--accent-line);border-radius:12px;color:var(--accent);background:var(--accent-soft);font-size:1.15rem;font-weight:800}.todo-check.done{border-color:#6ee7b7;background:#6ee7b7;color:#07110c}.updated{margin:15px 0 0;color:var(--faint);font-family:var(--mono);font-size:.72rem}.rule{height:1px;margin:30px 0;background:var(--line)}
   .note-text,.section-body,.group-body{color:#e2e2e8;font-size:1.08rem;line-height:1.72;overflow-wrap:anywhere}.note-text{margin:0 0 18px}.note-text p,.note-text div{margin:0 0 1em}.note-text ul,.note-text ol{padding-left:1.4em}.note-text code{padding:.12em .35em;border-radius:5px;background:rgba(255,255,255,.09);font-family:var(--mono);font-size:.9em}.note-heading{margin:32px 0 10px;letter-spacing:-.03em;line-height:1.18}.note-heading.h1{font-size:1.75rem}.note-heading.h2{font-size:1.4rem}.note-heading.h3{font-size:1.12rem}.comment,.prompt{margin:20px 0;padding:15px 17px;border-left:3px solid var(--accent);border-radius:0 12px 12px 0;background:var(--accent-soft);color:var(--dim);font-size:.95rem;line-height:1.65;white-space:pre-wrap}.comment b,.prompt b{display:block;margin-bottom:6px;color:var(--accent);font-size:.67rem;letter-spacing:.12em;text-transform:uppercase}.group{margin:20px 0;border:1px solid var(--line);border-radius:14px;background:rgba(255,255,255,.025)}.group summary{padding:13px 15px;cursor:pointer;font-weight:700}.group-body{padding:0 15px 15px;white-space:pre-wrap;font-size:.96rem}
   .attachment{width:min(100%,var(--w,100%));margin:20px 0;overflow:hidden;border:1px solid var(--line);border-radius:15px;background:rgba(255,255,255,.035)}
   .embed{width:min(100%,var(--w,100%));position:relative;margin:20px 0;overflow:hidden;border:1px solid var(--line);border-radius:15px;background:#000}.embed-frame{position:relative;width:100%;aspect-ratio:16/9}.embed-frame iframe{position:absolute;inset:0;width:100%;height:100%;border:0}
   .link-card{display:block;width:min(100%,var(--w,100%));margin:20px 0;overflow:hidden;border:1px solid var(--line);border-radius:15px;background:rgba(255,255,255,.035);color:inherit;text-decoration:none}.link-card:hover{border-color:var(--accent-line);background:rgba(255,255,255,.055)}.link-media{display:block;width:100%;aspect-ratio:16/9;object-fit:cover;background:rgba(0,0,0,.3)}.link-body{display:grid;gap:5px;padding:14px 15px}.link-host{color:var(--accent);font:600 .64rem var(--mono);letter-spacing:.07em;text-transform:uppercase;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}.link-body b{font-size:.98rem;letter-spacing:-.01em;overflow-wrap:anywhere}.link-body small{color:var(--dim);font-size:.82rem;line-height:1.5;overflow-wrap:anywhere}.link-card:hover .link-body b{color:var(--accent)}.attachment img,.attachment video{display:block;width:100%;max-height:72vh;object-fit:contain;background:rgba(0,0,0,.28)}.attachment-file{display:flex;align-items:center;gap:12px;padding:15px;text-decoration:none;color:var(--ink)}.attachment-file:hover{background:rgba(255,255,255,.045)}.file-mark{display:grid;place-items:center;width:38px;height:38px;flex:none;border-radius:10px;background:var(--accent-soft);color:var(--accent);font-size:.67rem;font-weight:800}.file-copy{min-width:0}.file-copy b,.file-copy small{display:block;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}.file-copy b{font-size:.88rem}.file-copy small{margin-top:3px;color:var(--faint);font:400 .68rem var(--mono)}.unavailable{padding:14px 15px;color:var(--faint);font-size:.86rem}.chapter{padding:4px 0 26px;margin-bottom:25px;border-bottom:1px solid var(--line)}.chapter h2{margin:0 0 11px;font-size:1.2rem;letter-spacing:-.02em}.chapter-body{color:#e2e2e8;font-size:1.05rem;line-height:1.75}.code-block{margin:20px 0;overflow:auto;padding:15px;border:1px solid var(--line);border-radius:14px;background:#08080b;color:#e8e8ee;font:400 .84rem/1.6 ui-monospace,SFMono-Regular,Menlo,monospace;white-space:pre}
   .script-section{padding:4px 0 26px;margin-bottom:25px;border-bottom:1px solid var(--line)}.script-section:last-child{padding-bottom:0;margin-bottom:0;border-bottom:0}.section-title{margin:0 0 11px;font-size:1.2rem;letter-spacing:-.02em}.script-section.cue{padding:12px 14px;margin:16px 0;border:1px dashed rgba(196,165,255,.35);border-radius:12px;background:rgba(196,165,255,.07)}.script-section.cue .section-title{display:none}.script-section.cue .section-body{color:var(--dim);font-size:.92rem;font-style:italic}.empty{padding:34px 20px;color:var(--dim);text-align:center;line-height:1.6}.error{border-color:rgba(248,113,113,.34);background:rgba(248,113,113,.08)}.footer{margin-top:24px;color:var(--faint);text-align:center;font-size:.75rem}
+  .share-title{width:100%;margin:0;padding:0;border:0;background:transparent;color:inherit;font:inherit;letter-spacing:inherit;line-height:inherit;resize:none;outline:none}.share-field{width:100%;margin:0;padding:0;border:0;background:transparent;color:inherit;font:inherit;line-height:inherit;outline:none;white-space:pre-wrap}.note-text[contenteditable="true"],.chapter-body[contenteditable="true"],.section-body[contenteditable="true"]{min-height:1.6em;border-radius:8px;padding:2px 4px}.note-text[contenteditable="true"]:focus,.chapter-body[contenteditable="true"]:focus,.section-body[contenteditable="true"]:focus,.share-title:focus,.share-field:focus{background:rgba(255,255,255,.04)}
+  .share-tools{display:flex;flex-wrap:wrap;gap:8px;margin:22px 0 0}.share-tools button{display:inline-flex;align-items:center;gap:6px;padding:8px 12px;border:1px solid var(--line);border-radius:999px;background:rgba(255,255,255,.04);color:var(--ink);cursor:pointer;font:600 .78rem "DM Sans",sans-serif}.share-tools button:hover{border-color:var(--accent-line);background:var(--accent-soft)}
   @media (max-width:560px){.page{width:min(100% - 24px,780px);padding-top:18px}.bar{margin-bottom:26px}.document{padding:25px 20px;border-radius:18px}}
 </style>
 </head>
 <body>
 <main class="page">
-  <header class="bar"><span class="brand">Second Brain</span><div class="bar-actions"><a class="home-link" href="https://secondbrainnotes.com/">Home</a><span class="view-only">View only</span></div></header>
+  <header class="bar"><span class="brand">Second Brain</span><div class="bar-actions"><a class="home-link" href="https://secondbrainnotes.com/">Home</a><button type="button" class="auth-btn" id="signInBtn" hidden>Sign in to edit</button><span class="view-only" id="accessBadge">View only</span></div></header>
   <article class="document" id="document" aria-live="polite"><div class="empty">Loading shared document…</div></article>
   <p class="footer">Shared from Second Brain</p>
 </main>
@@ -97,45 +102,168 @@
     var link=document.createElement("a"), mark=document.createElement("span"), copy=document.createElement("span"), name=document.createElement("b"), detail=document.createElement("small");
     link.className="attachment-file"; link.href=url; link.target="_blank"; link.rel="noreferrer"; mark.className="file-mark"; mark.textContent="FILE"; copy.className="file-copy"; name.textContent=text(file.name)||"Attachment"; detail.textContent=[text(file.type)||"File",fileSize(file.size)].join(" · "); copy.appendChild(name); copy.appendChild(detail); link.appendChild(mark); link.appendChild(copy); box.appendChild(link); return box;
   }
-  function renderNote(data,body){
+  function uid(){ return Date.now().toString(36)+Math.random().toString(36).slice(2,7); }
+  function bindChange(node,handler){ node.oninput=handler; node.onblur=handler; }
+  function renderNote(data,body,editing,onChange){
     var files={}; (data.attachments||[]).forEach(function(file){ if(file&&file.id) files[file.id]=file; });
     (data.blocks||[]).forEach(function(block){
       if(!block||!block.type) return;
-      if(block.type==="text"){ var paragraph=document.createElement("div"); paragraph.className="note-text"; appendRichText(paragraph,block.html,block.text); body.appendChild(paragraph); return; }
-      if(block.type==="heading"){ var level=Math.max(1,Math.min(3,Number(block.level)||2)), heading=document.createElement("h"+level); heading.className="note-heading h"+level; heading.textContent=text(block.text); body.appendChild(heading); return; }
-      if(block.type==="chapter"){ var chapter=document.createElement("section"), chapterTitle=document.createElement("h2"), chapterBody=document.createElement("div"); chapter.className="chapter"; chapterTitle.textContent=text(block.title)||"Untitled chapter"; chapterBody.className="chapter-body"; appendRichText(chapterBody,block.html,block.text); chapter.appendChild(chapterTitle); chapter.appendChild(chapterBody); body.appendChild(chapter); return; }
-      if(block.type==="comment"||block.type==="prompt"){ var callout=document.createElement("aside"), label=document.createElement("b"); callout.className=block.type; label.textContent=block.type==="prompt"?"Prompt":"Note"; callout.appendChild(label); callout.appendChild(document.createTextNode(text(block.text))); body.appendChild(callout); return; }
-      if(block.type==="group"){ var group=document.createElement("details"), summary=document.createElement("summary"), groupBody=document.createElement("div"); group.className="group"; group.open=true; summary.textContent=text(block.title)||"Untitled group"; groupBody.className="group-body"; groupBody.textContent=text(block.text); group.appendChild(summary); group.appendChild(groupBody); body.appendChild(group); return; }
-      if(block.type==="code"){ var code=document.createElement("pre"); code.className="code-block"; code.textContent=text(block.code); body.appendChild(code); return; }
+      if(block.type==="text"){
+        var paragraph=document.createElement("div"); paragraph.className="note-text";
+        if(editing){ paragraph.contentEditable="true"; paragraph.setAttribute("role","textbox"); appendRichText(paragraph,block.html,block.text); bindChange(paragraph,function(){ block.html=paragraph.innerHTML; block.text=paragraph.innerText||paragraph.textContent||""; onChange(); }); }
+        else appendRichText(paragraph,block.html,block.text);
+        body.appendChild(paragraph); return;
+      }
+      if(block.type==="heading"){
+        var level=Math.max(1,Math.min(3,Number(block.level)||2)), heading=document.createElement("h"+level); heading.className="note-heading h"+level;
+        if(editing){ heading.contentEditable="true"; heading.textContent=text(block.text); bindChange(heading,function(){ block.text=heading.textContent; onChange(); }); }
+        else heading.textContent=text(block.text);
+        body.appendChild(heading); return;
+      }
+      if(block.type==="chapter"){
+        var chapter=document.createElement("section"), chapterTitle=document.createElement("h2"), chapterBody=document.createElement("div"); chapter.className="chapter"; chapterBody.className="chapter-body";
+        if(editing){ chapterTitle.contentEditable="true"; chapterTitle.textContent=text(block.title)||"Untitled chapter"; bindChange(chapterTitle,function(){ block.title=chapterTitle.textContent; onChange(); }); chapterBody.contentEditable="true"; appendRichText(chapterBody,block.html,block.text); bindChange(chapterBody,function(){ block.html=chapterBody.innerHTML; block.text=chapterBody.innerText||chapterBody.textContent||""; onChange(); }); }
+        else { chapterTitle.textContent=text(block.title)||"Untitled chapter"; appendRichText(chapterBody,block.html,block.text); }
+        chapter.appendChild(chapterTitle); chapter.appendChild(chapterBody); body.appendChild(chapter); return;
+      }
+      if(block.type==="comment"||block.type==="prompt"){
+        var callout=document.createElement("aside"), label=document.createElement("b"); callout.className=block.type; label.textContent=block.type==="prompt"?"Prompt":"Note"; callout.appendChild(label);
+        if(editing){ var field=document.createElement("div"); field.className="share-field"; field.contentEditable="true"; field.textContent=text(block.text); bindChange(field,function(){ block.text=field.textContent; onChange(); }); callout.appendChild(field); }
+        else callout.appendChild(document.createTextNode(text(block.text)));
+        body.appendChild(callout); return;
+      }
+      if(block.type==="group"){
+        var group=document.createElement("details"), summary=document.createElement("summary"), groupBody=document.createElement("div"); group.className="group"; group.open=true; groupBody.className="group-body";
+        if(editing){ var groupTitle=document.createElement("input"); groupTitle.className="share-field"; groupTitle.value=text(block.title)||"Untitled group"; bindChange(groupTitle,function(){ block.title=groupTitle.value; onChange(); }); summary.appendChild(groupTitle); groupBody.contentEditable="true"; groupBody.textContent=text(block.text); bindChange(groupBody,function(){ block.text=groupBody.textContent; onChange(); }); }
+        else { summary.textContent=text(block.title)||"Untitled group"; groupBody.textContent=text(block.text); }
+        group.appendChild(summary); group.appendChild(groupBody); body.appendChild(group); return;
+      }
+      if(block.type==="code"){
+        if(editing){ var code=document.createElement("textarea"); code.className="code-block share-field"; code.value=text(block.code); bindChange(code,function(){ block.code=code.value; onChange(); }); body.appendChild(code); }
+        else { var pre=document.createElement("pre"); pre.className="code-block"; pre.textContent=text(block.code); body.appendChild(pre); }
+        return;
+      }
       if(block.type==="embed"){ var frame=embedFrame(block); if(frame) body.appendChild(frame); return; }
       if(block.type==="link"){ var card=linkCard(block,files); if(card) body.appendChild(card); return; }
       if(block.type==="attachment"){ var view=attachmentView(files[block.attachmentId]); view.style.setProperty("--w",blockWidth(block)); body.appendChild(view); }
     });
     if(!body.childNodes.length){ var empty=document.createElement("p"); empty.className="empty"; empty.textContent="This note is empty."; body.appendChild(empty); }
   }
-  function renderScript(data,body){
+  function renderScript(data,body,editing,onChange){
     (data.sections||[]).forEach(function(section){
-      var item=document.createElement("section"), title=document.createElement("h2"), content=document.createElement("div"); item.className="script-section"+(section.kind==="cue"?" cue":""); title.className="section-title"; title.textContent=text(section.title)||"Untitled section"; content.className="section-body"; content.textContent=text(section.body); item.appendChild(title); item.appendChild(content); body.appendChild(item);
+      var item=document.createElement("section"), title=document.createElement("h2"), content=document.createElement("div"); item.className="script-section"+(section.kind==="cue"?" cue":""); title.className="section-title"; content.className="section-body";
+      if(editing){ title.contentEditable="true"; title.textContent=text(section.title)||"Untitled section"; bindChange(title,function(){ section.title=title.textContent; onChange(); }); content.contentEditable="true"; content.textContent=text(section.body); bindChange(content,function(){ section.body=content.textContent; onChange(); }); }
+      else { title.textContent=text(section.title)||"Untitled section"; content.textContent=text(section.body); }
+      item.appendChild(title); item.appendChild(content); body.appendChild(item);
     });
     if(!body.childNodes.length){ var empty=document.createElement("p"); empty.className="empty"; empty.textContent="This script is empty."; body.appendChild(empty); }
   }
-  function render(data){
+  function render(data,editing,onChange,onAddPhoto){
     if(!data||["note","script"].indexOf(data.type)<0){ throw new Error("This public link is not valid."); }
     applySharedTheme(data.theme);
     document.title=(text(data.title)||"Shared document")+" · Second Brain";
+    container.classList.remove("error");
     container.innerHTML="";
-    var eyebrow=document.createElement("p"), title=document.createElement("h1"), titleRow=document.createElement("div"), updated=document.createElement("p"), rule=document.createElement("div"), body=document.createElement("div"), isTodo=!!data.todo;
-    eyebrow.className="eyebrow"; eyebrow.textContent=data.type==="script"?"Shared video script":(isTodo?"Shared todo":"Shared note"); title.className="title"; title.textContent=text(data.title)||"Untitled "+(isTodo?"todo":(data.type==="script"?"video script":"note")); updated.className="updated"; updated.textContent=data.updatedAt?"Updated "+new Date(data.updatedAt).toLocaleString():"Shared view"; rule.className="rule"; container.appendChild(eyebrow); if(isTodo){ var check=document.createElement("span"); titleRow.className="title-row"; titleRow.appendChild(title); check.className="todo-check"+(data.done?" done":""); check.textContent=data.done?"✓":""; check.setAttribute("role","img"); check.setAttribute("aria-label",data.done?"Completed todo":"Open todo"); titleRow.appendChild(check); container.appendChild(titleRow); } else container.appendChild(title); container.appendChild(updated); container.appendChild(rule); container.appendChild(body);
-    if(data.type==="script") renderScript(data,body); else renderNote(data,body);
+    var eyebrow=document.createElement("p"), title=document.createElement(editing?"textarea":"h1"), titleRow=document.createElement("div"), updated=document.createElement("p"), rule=document.createElement("div"), body=document.createElement("div"), isTodo=!!data.todo;
+    eyebrow.className="eyebrow"; eyebrow.textContent=data.type==="script"?"Shared video script":(isTodo?"Shared todo":"Shared note");
+    title.className=editing?"title share-title":"title";
+    if(editing){ title.rows=1; title.value=text(data.title); title.placeholder="Untitled "+(isTodo?"todo":(data.type==="script"?"video script":"note")); bindChange(title,function(){ data.title=title.value; title.style.height="auto"; title.style.height=title.scrollHeight+"px"; onChange(); }); }
+    else title.textContent=text(data.title)||"Untitled "+(isTodo?"todo":(data.type==="script"?"video script":"note"));
+    updated.className="updated"; updated.textContent=data.updatedAt?"Updated "+new Date(data.updatedAt).toLocaleString():"Shared view"; rule.className="rule";
+    container.appendChild(eyebrow);
+    if(isTodo){ var check=document.createElement(editing?"button":"span"); titleRow.className="title-row"; titleRow.appendChild(title); check.type=editing?"button":undefined; check.className="todo-check"+(data.done?" done":""); check.textContent=data.done?"✓":""; check.setAttribute("aria-label",data.done?"Completed todo":"Open todo"); if(editing) check.onclick=function(){ data.done=!data.done; onChange(); render(data,true,onChange,onAddPhoto); }; titleRow.appendChild(check); container.appendChild(titleRow); }
+    else container.appendChild(title);
+    container.appendChild(updated); container.appendChild(rule); container.appendChild(body);
+    if(data.type==="script") renderScript(data,body,editing,onChange); else renderNote(data,body,editing,onChange);
+    if(editing){
+      var tools=document.createElement("div"); tools.className="share-tools";
+      var addText=document.createElement("button"); addText.type="button"; addText.textContent="Add text";
+      addText.onclick=function(){ data.blocks=data.blocks||[]; data.blocks.push({id:uid(),type:"text",text:"",html:""}); onChange(); render(data,true,onChange,onAddPhoto); };
+      var addPhoto=document.createElement("button"); addPhoto.type="button"; addPhoto.textContent="Add photo";
+      var picker=document.createElement("input"); picker.type="file"; picker.accept="image/*"; picker.hidden=true;
+      addPhoto.onclick=function(){ picker.click(); };
+      picker.onchange=function(){ if(picker.files&&picker.files[0]&&onAddPhoto) onAddPhoto(picker.files[0]); picker.value=""; };
+      tools.appendChild(addText); tools.appendChild(addPhoto); tools.appendChild(picker); container.appendChild(tools);
+      if(title.tagName==="TEXTAREA"){ title.style.height="auto"; title.style.height=title.scrollHeight+"px"; }
+    }
   }
   function showError(message){ container.classList.add("error"); container.innerHTML=""; var title=document.createElement("h1"), copy=document.createElement("p"); title.className="title"; title.textContent="This link isn’t available"; copy.className="empty"; copy.textContent=message; container.appendChild(title); container.appendChild(copy); }
   var shareId=(new URLSearchParams(location.search)).get("share");
   var config=window.ASTRAL_CONFIG&&window.ASTRAL_CONFIG.firebase;
+  var clientId="s"+Math.random().toString(36).slice(2,10)+Date.now().toString(36);
+  var currentUser=null, docData=null, saveTimer=null, saving=false, saveAgain=false, lastPushed=0;
+  var badge=document.getElementById("accessBadge"), signInBtn=document.getElementById("signInBtn");
   if(!shareId){ showError("Ask the sender for the complete public link."); return; }
   if(!config||typeof firebase==="undefined"){ showError("Public sharing is not configured for this site."); return; }
+  function canEdit(){ return !!(docData&&docData.allowEdit&&currentUser); }
+  function updateChrome(){
+    if(!badge) return;
+    if(docData&&docData.allowEdit){
+      badge.classList.add("can-edit");
+      badge.textContent=currentUser?"Editing":"Can edit";
+      if(signInBtn) signInBtn.hidden=!!currentUser;
+    } else {
+      badge.classList.remove("can-edit");
+      badge.textContent="View only";
+      if(signInBtn) signInBtn.hidden=true;
+    }
+  }
+  function paint(){
+    if(!docData) return;
+    render(docData,canEdit(),scheduleSave,addSharedPhoto);
+    updateChrome();
+  }
+  function scheduleSave(){
+    if(!canEdit()) return;
+    clearTimeout(saveTimer);
+    saveTimer=setTimeout(pushShare,280);
+  }
+  function pushShare(){
+    if(!canEdit()||!docData) return;
+    if(saving){ saveAgain=true; return; }
+    saving=true;
+    var payload=JSON.parse(JSON.stringify(docData));
+    payload.updatedAt=Date.now();
+    payload.updatedBy=clientId;
+    payload.allowEdit=true;
+    firebase.firestore().collection("shared").doc(shareId).update(payload).then(function(){
+      lastPushed=payload.updatedAt; saving=false;
+      if(saveAgain){ saveAgain=false; pushShare(); }
+    }).catch(function(error){
+      saving=false;
+      console.warn("Shared edits could not be saved:",error);
+    });
+  }
+  function addSharedPhoto(file){
+    if(!canEdit()||!file||!firebase.storage) return;
+    var id=uid(), path="shares/"+shareId+"/"+id;
+    firebase.storage().ref(path).put(file,{contentType:file.type||"image/jpeg"}).then(function(){
+      return firebase.storage().ref(path).getDownloadURL();
+    }).then(function(url){
+      docData.attachments=docData.attachments||[];
+      docData.blocks=docData.blocks||[];
+      docData.attachments.push({id:id,name:file.name||"Photo",type:file.type||"image/jpeg",size:file.size||0,url:url,storagePath:path});
+      docData.blocks.push({id:uid(),type:"attachment",attachmentId:id,width:100});
+      scheduleSave();
+      paint();
+    }).catch(function(error){ console.warn("Shared photo could not be added:",error); });
+  }
+  function signIn(){
+    var auth=firebase.auth(), provider=new firebase.auth.GoogleAuthProvider();
+    auth.signInWithPopup(provider).catch(function(){ return auth.signInWithRedirect(provider); });
+  }
+  if(signInBtn) signInBtn.onclick=signIn;
   try{
     if(!firebase.apps.length) firebase.initializeApp(config);
-    firebase.firestore().collection("shared").doc(shareId).get().then(function(doc){ if(!doc.exists) throw new Error("The sender may have stopped sharing it, or the link may be incomplete."); render(doc.data()); }).catch(function(error){ console.warn("Could not load shared document:",error); showError(error.message||"Please try again later."); });
+    firebase.auth().onAuthStateChanged(function(user){ currentUser=user||null; paint(); });
+    firebase.firestore().collection("shared").doc(shareId).onSnapshot(function(doc){
+      if(!doc.exists){ showError("The sender may have stopped sharing it, or the link may be incomplete."); return; }
+      var incoming=doc.data()||{};
+      if(incoming.updatedBy===clientId&&(Number(incoming.updatedAt)||0)<=lastPushed) return;
+      if(canEdit()&&saveTimer) return;
+      docData=incoming;
+      paint();
+    },function(error){ console.warn("Could not load shared document:",error); showError(error.message||"Please try again later."); });
   }catch(error){ console.warn("Could not start public sharing:",error); showError("Please try again later."); }
 })();
 </script>
