@@ -71,3 +71,94 @@ test("note pencil menu nests AI handoff and backups behind submenus", function (
   const aiView = src.indexOf('view==="ai"');
   assert.ok(chatgpt > aiView, "ChatGPT belongs in the AI submenu, not the root list");
 });
+
+function drawerHtml() {
+  const from = html.indexOf('<aside class="drawer">');
+  const to = html.indexOf('<div class="main">');
+  assert.ok(from >= 0 && to > from, "drawer markup missing");
+  return html.slice(from, to);
+}
+
+test("sidebar search sits above the tags, types, and notes carets", function () {
+  const drawer = drawerHtml();
+  const searchAt = drawer.indexOf('id="noteSearchWrap"');
+  const tagsAt = drawer.indexOf('id="tagsToggleBtn"');
+  const typesAt = drawer.indexOf('id="typesToggleBtn"');
+  const notesAt = drawer.indexOf('id="notesToggleBtn"');
+  assert.ok(searchAt >= 0 && tagsAt > searchAt, "search belongs above tags");
+  assert.ok(typesAt > tagsAt, "types follow tags");
+  assert.ok(notesAt > typesAt, "all notes follows types");
+});
+
+test("all notes section has a collapse caret like tags and types", function () {
+  const drawer = drawerHtml();
+  assert.match(drawer, /id="notesToggleBtn"[^>]*aria-controls="notesListWrap"/);
+  assert.match(drawer, /id="notesToggleBtn"[\s\S]*<span id="listLabel">All notes<\/span>[\s\S]*<path d="m6 9 6 6 6-6"\/>/);
+  assert.match(drawer, /id="notesListWrap"/);
+});
+
+test("sidebar exposes a bulk delete control for selected notes", function () {
+  const drawer = drawerHtml();
+  assert.match(drawer, /id="selectNotesBtn"/);
+  assert.match(drawer, /id="deleteNotesBtn"/);
+  assert.match(grab("deleteSelectedNotes", "delItem"), /Unlock these items before deleting them/);
+  assert.match(grab("openListTools", "prepareManualOrder"), /Select all in this list/);
+});
+
+function deleteSandbox() {
+  const box = {
+    state: {
+      items: [
+        { id: "a", title: "Keep", locked: false },
+        { id: "b", title: "Delete me", locked: false },
+        { id: "c", title: "Locked", locked: true },
+        { id: "d", title: "Also delete", locked: false }
+      ],
+      selectedItemIds: ["b", "c", "d"],
+      selectingNotes: true,
+      tagAssignMode: false,
+      currentId: "b"
+    },
+    activeAudioRecorder: null,
+    confirm: function () { return true; },
+    captureAutoBackup: function () {},
+    forEachItemContentDocument: function () {},
+    cleanupContentAttachments: function () {},
+    recordDeletedItem: function (item) { box.deleted.push(item.id); },
+    newNoteItem: function () { return { id: "seed", title: "Untitled" }; },
+    visibleItems: function () { return box.state.items; },
+    persist: function () { box.persisted = true; },
+    renderList: function () {},
+    renderMain: function () { box.rerendered = true; },
+    showToast: function (message) { box.toast = message; },
+    deleted: [],
+    persisted: false,
+    rerendered: false,
+    toast: ""
+  };
+  vm.createContext(box);
+  vm.runInContext(grab("deleteSelectedNotes", "delItem"), box, { filename: "deleteSelectedNotes" });
+  return box;
+}
+
+test("deleteSelectedNotes removes unlocked selected notes and skips locked ones", function () {
+  const box = deleteSandbox();
+  box.deleteSelectedNotes();
+  assert.deepEqual(box.state.items.map(function (item) { return item.id; }), ["a", "c"]);
+  assert.deepEqual(box.deleted, ["b", "d"]);
+  assert.equal(box.state.currentId, "a");
+  assert.equal(box.state.selectingNotes, false);
+  assert.deepEqual(box.state.selectedItemIds, []);
+  assert.equal(box.persisted, true);
+  assert.equal(box.rerendered, true);
+  assert.equal(box.toast, "Deleted 2 notes");
+});
+
+test("deleteSelectedNotes leaves notes alone when confirm is cancelled", function () {
+  const box = deleteSandbox();
+  box.confirm = function () { return false; };
+  box.deleteSelectedNotes();
+  assert.deepEqual(box.state.items.map(function (item) { return item.id; }), ["a", "b", "c", "d"]);
+  assert.equal(box.state.selectingNotes, true);
+  assert.equal(box.persisted, false);
+});
