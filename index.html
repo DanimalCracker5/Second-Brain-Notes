@@ -9106,7 +9106,7 @@
   }
 
   /* =================== Firebase (configured in astral.config.js) =================== */
-  var auth=null, db=null, storage=null, currentUser=null, cloudTimer=null, cloudAutoBackupInFlight=false, cloudSyncPaused=false, cloudSyncLoading=false, cloudHydrated=false, pendingAccountRecovery=0, fbReady=false, apiSettingsUnsubscribe=null;
+  var auth=null, db=null, storage=null, currentUser=null, cloudTimer=null, cloudAutoBackupInFlight=false, cloudSyncPaused=false, cloudSyncLoading=false, cloudWriteInFlight=false, cloudHydrated=false, pendingAccountRecovery=0, fbReady=false, apiSettingsUnsubscribe=null;
   var CLOUD_LOAD_TIMEOUT_MS=20000, STORAGE_USAGE_TIMEOUT_MS=12000;
   var accountUsage={status:"idle",totalBytes:0,fileBytes:0,accountBytes:0,backupBytes:0,files:[],currentFileBytes:0,backupFileBytes:0,unlinkedFileBytes:0,unlinkedFileCount:0}, accountUsageTimer=null, accountUsageRequest=0, accountUsageUnsubscribers=[];
   function utf8Bytes(value){
@@ -9343,7 +9343,38 @@
     apiSettingsUnsubscribe=db.collection("users").doc(currentUser.uid).onSnapshot(function(doc){
       var data=doc.exists?doc.data():{};
       applyApiSettings(data.privateSettings||{});
+      applyIncomingCloudSnapshot(data);
     },function(error){ console.warn("API-key sync failed:",error); });
+  }
+  function applyIncomingCloudSnapshot(data){
+    if(!cloudHydrated||cloudSyncLoading||cloudSyncPaused||cloudWriteInFlight||!currentUser) return;
+    if(!data||!Array.isArray(data.items)) return;
+    var incomingUpdated=Number(data.updated)||Number(data.versionChangedAt)||0;
+    if(incomingUpdated&&incomingUpdated<=(Number(state.lastCloudSync)||0)) return;
+    var reconciled=reconcileWithCloud(data);
+    var copies=[];
+    if(reconciled.conflicts.length){
+      preferLocalConflicts(reconciled);
+      copies=attachConflictCopies(reconciled.data,reconciled.conflicts);
+      reconciled.needsCloudWrite=true;
+    }
+    var currentBefore=current();
+    var beforeSig=currentBefore?itemSyncSignature(currentBefore):"";
+    adoptReconciledItems(reconciled.data.items,incomingUpdated||Date.now());
+    if(reconciled.data.folders) state.folders=cloneData(reconciled.data.folders);
+    if(reconciled.data.tags) state.tags=cloneData(reconciled.data.tags);
+    if(reconciled.data.deletedItems) state.deletedItems=cloneData(reconciled.data.deletedItems);
+    state.version=Math.max(1,Number(state.version)||1,Number(reconciled.data.version)||1);
+    state.versionChangedAt=Number(reconciled.data.versionChangedAt)||state.versionChangedAt;
+    state.lastCloudSync=incomingUpdated||Date.now();
+    if(!reconciled.needsCloudWrite) recordSyncBaseline({items:state.items},state.lastCloudSync);
+    if(canPersist){ try{ localStorage.setItem(KEY,JSON.stringify(state)); }catch(e){} }
+    var currentAfter=current();
+    var afterSig=currentAfter?itemSyncSignature(currentAfter):"";
+    renderList();
+    if(beforeSig!==afterSig) renderMain();
+    if(copies.length) showToast("Kept both versions of "+(copies.length===1?"a note":copies.length+" notes")+" edited on another device");
+    if(reconciled.needsCloudWrite) saveCloud(CLOUD_SAVE_RUSH_WEIGHT);
   }
   function getPrivateSettings(){
     if(!currentUser||!db) return Promise.resolve({});
@@ -9766,6 +9797,11 @@
     return localChangedAt>remoteChangedAt;
   }
   function reconcileWithCloud(cloud){
+    /* Same-account devices share one Firestore document, not a live CRDT.
+       Independent edits to different notes merge. The same note edited in two
+       places since the last shared baseline is a conflict: default to the
+       cloud copy so a load can prompt, and let a live save keep local typing
+       while stashing the other device's version as a sibling note. */
     var localData={items:state.items,folders:state.folders,tags:state.tags,deletedItems:state.deletedItems,version:state.version,versionChangedAt:state.versionChangedAt};
     cloud=cloud&&typeof cloud==="object"?cloud:{};
     var result={cloud:cloneData(cloud),data:cloneData(cloud),conflicts:[],needsCloudWrite:false};
@@ -9778,6 +9814,7 @@
     result.data.items.forEach(function(item){ if(item&&item.id) cloudById[item.id]=item; });
     var baseline=hasUsableSyncBaseline()?state.syncBaseline:null;
     var localChanges=baseline?itemChangesSinceBaseline(localData.items,baseline):{};
+    var remoteChanges=baseline?itemChangesSinceBaseline(result.data.items,baseline):{};
     var merged=[], seen={};
     function keepTombstone(id,item){
       var rev=item?itemRevision(item):{version:1,versionChangedAt:Date.now()};
@@ -9785,21 +9822,48 @@
       if(revisionIsNewer(entry,result.data.deletedItems[id])) result.data.deletedItems[id]=entry;
       result.needsCloudWrite=true;
     }
+    function upsertChange(item){
+      return {kind:"upsert",id:item.id,item:cloneData(item),signature:itemSyncSignature(item)};
+    }
+    function deleteChange(id){ return {kind:"delete",id:id}; }
+    function recordConflict(id,localChange,cloudChange){
+      result.conflicts.push({id:id,local:localChange,cloud:cloudChange});
+    }
     function consider(id,local,remote){
       if(!id||seen[id]) return;
       seen[id]=true;
       var tombstone=result.data.deletedItems[id];
       var localDelete=!!(localChanges[id]&&localChanges[id].kind==="delete");
+      var localDiverged=!!(localChanges[id]&&localChanges[id].kind==="upsert");
+      var remoteDiverged=!!(remoteChanges[id]&&remoteChanges[id].kind==="upsert");
       var candidate=null, fromLocal=false;
       if(local&&remote){
-        if(revisionIsNewer(itemRevision(local),itemRevision(remote))){ candidate=cloneData(local); fromLocal=true; }
+        if(itemSyncSignature(local)===itemSyncSignature(remote)) candidate=cloneData(remote);
+        else if(baseline){
+          if(localDiverged&&remoteDiverged){
+            recordConflict(id,upsertChange(local),upsertChange(remote));
+            candidate=cloneData(remote);
+          } else if(localDiverged){ candidate=cloneData(local); fromLocal=true; }
+          else candidate=cloneData(remote);
+        } else if(revisionIsNewer(itemRevision(local),itemRevision(remote))){ candidate=cloneData(local); fromLocal=true; }
         else candidate=cloneData(remote);
       } else if(local){
         if(isSeedDeviceItem(local)) return;
+        if(tombstone&&!revisionIsNewer(itemRevision(local),tombstone)){
+          if(baseline&&localDiverged){
+            recordConflict(id,upsertChange(local),deleteChange(id));
+            result.needsCloudWrite=true;
+          }
+          return;
+        }
         candidate=cloneData(local); fromLocal=true;
       } else if(remote){
-        if(localDelete){ keepTombstone(id,remote); return; }
-        candidate=cloneData(remote);
+        if(localDelete){
+          if(baseline&&remoteDiverged){
+            recordConflict(id,deleteChange(id),upsertChange(remote));
+            candidate=cloneData(remote);
+          } else { keepTombstone(id,remote); return; }
+        } else candidate=cloneData(remote);
       }
       if(!candidate) return;
       if(tombstone&&!revisionIsNewer(itemRevision(candidate),tombstone)){
@@ -9818,7 +9882,7 @@
     result.data.folders=unionById(result.data.folders,localData.folders);
     result.data.tags=unionById(result.data.tags,localData.tags);
     result.data.deletedItems=pruneTombstones(result.data.deletedItems);
-    if(result.needsCloudWrite){
+    if(result.needsCloudWrite||result.conflicts.length){
       result.data.version=Math.max(1,Number(cloud.version)||0,Number(localData.version)||0)+1;
       result.data.versionChangedAt=Date.now();
       result.data.updated=result.data.versionChangedAt;
@@ -9827,6 +9891,102 @@
       result.data.versionChangedAt=Number(cloud.versionChangedAt)||Number(cloud.updated)||Number(localData.versionChangedAt)||Date.now();
     }
     return result;
+  }
+  function conflictCopyTitle(item){
+    var base=((item&&item.title)||"").trim()||"Untitled note";
+    if(/\s\(from another device\)$/.test(base)) return base;
+    return base+" (from another device)";
+  }
+  function makeConflictCopy(item){
+    var copy=cloneData(item||{});
+    copy.id=uid();
+    copy.title=conflictCopyTitle(item);
+    copy.conflictOf=item&&item.id||"";
+    copy.updated=Date.now();
+    copy.version=Math.max(1,Number(copy.version)||1);
+    copy.versionChangedAt=copy.updated;
+    return copy;
+  }
+  function preferLocalConflicts(reconciled){
+    if(!reconciled||!reconciled.conflicts||!reconciled.conflicts.length) return reconciled;
+    reconciled.conflicts.forEach(function(conflict){
+      applyItemChange(reconciled.data,conflict.local);
+      if(conflict.local.kind==="delete"){
+        var rev=itemRevision(conflict.cloud&&conflict.cloud.item);
+        var entry={version:rev.version+1,versionChangedAt:Date.now(),deletedAt:Date.now()};
+        reconciled.data.deletedItems=reconciled.data.deletedItems||{};
+        if(revisionIsNewer(entry,reconciled.data.deletedItems[conflict.id])) reconciled.data.deletedItems[conflict.id]=entry;
+      } else if(reconciled.data.deletedItems&&reconciled.data.deletedItems[conflict.id]) delete reconciled.data.deletedItems[conflict.id];
+      reconciled.needsCloudWrite=true;
+    });
+    return reconciled;
+  }
+  function attachConflictCopies(data,conflicts){
+    var copies=[];
+    if(!data||!conflicts||!conflicts.length) return copies;
+    data.items=Array.isArray(data.items)?data.items:[];
+    var signatures={}, byConflictOf={};
+    data.items.forEach(function(item){
+      if(!item) return;
+      signatures[itemSyncSignature(item)]=true;
+      if(item.conflictOf) byConflictOf[item.conflictOf]=item;
+    });
+    conflicts.forEach(function(conflict){
+      var losing=conflict&&conflict.cloud;
+      if(!losing||losing.kind!=="upsert"||!losing.item) return;
+      var signature=losing.signature||itemSyncSignature(losing.item);
+      if(signatures[signature]) return;
+      var existing=byConflictOf[conflict.id];
+      if(existing){
+        var keptId=existing.id, copy=cloneData(losing.item);
+        copy.id=keptId; copy.title=conflictCopyTitle(losing.item); copy.conflictOf=conflict.id;
+        copy.updated=Date.now(); copy.versionChangedAt=copy.updated;
+        var index=data.items.indexOf(existing);
+        if(index>=0) data.items[index]=copy; else data.items.push(copy);
+        signatures[itemSyncSignature(copy)]=true;
+        copies.push(copy);
+        return;
+      }
+      var created=makeConflictCopy(losing.item);
+      data.items.push(created);
+      signatures[itemSyncSignature(created)]=true;
+      byConflictOf[conflict.id]=created;
+      includeLocalReferences(data,created);
+      copies.push(created);
+    });
+    if(copies.length){
+      data.version=Math.max(1,Number(data.version)||0)+1;
+      data.versionChangedAt=Date.now();
+      data.updated=data.versionChangedAt;
+    }
+    return copies;
+  }
+  function adoptReconciledItems(items,sentAt){
+    if(!Array.isArray(items)) return 0;
+    var localById={}, seen={}, next=[], added=0;
+    (state.items||[]).forEach(function(item){ if(item&&item.id) localById[item.id]=item; });
+    var typedAfterWrite=(state.lastLocalChange||0)>sentAt;
+    items.forEach(function(item){
+      if(!item||!item.id||seen[item.id]) return;
+      seen[item.id]=true;
+      var local=localById[item.id];
+      if(typedAfterWrite&&local&&itemSyncSignature(local)!==itemSyncSignature(item)&&(Number(local.updated)||0)>=sentAt){
+        next.push(local);
+        return;
+      }
+      if(!local) added++;
+      var copy=cloneData(item);
+      if(typeof normalizeItem==="function") normalizeItem(copy);
+      next.push(copy);
+    });
+    if(typedAfterWrite){
+      (state.items||[]).forEach(function(item){
+        if(!item||!item.id||seen[item.id]) return;
+        next.push(item); seen[item.id]=true; added++;
+      });
+    }
+    state.items=next;
+    return added;
   }
   function useData(d){
     /* A cloud or imported legacy script is normalized in-place below. Snapshot
@@ -10249,24 +10409,31 @@
     };
   }
   function saveCloudNow(){
-    if(!currentUser||!db||cloudSyncPaused||cloudSyncLoading||!cloudHydrated) return;
+    if(!currentUser||!db||cloudSyncPaused||cloudSyncLoading||!cloudHydrated||cloudWriteInFlight) return;
     clearTimeout(cloudTimer); cloudPendingWeight=0; cloudPendingSince=0;
     return saveCloudNowVersioned();
   }
   function saveCloudNowVersioned(){
     var sentAt=Date.now(), ref=db.collection("users").doc(currentUser.uid);
+    cloudWriteInFlight=true;
     function writeMerged(remote){
       if(countRealAccountItems(state.items)===0&&countRealAccountItems((remote||{}).items)>0){
-        return {payload:cloudWritePayload(remote,sentAt),reconciled:{needsCloudWrite:false,data:remote},skipped:true};
+        return {payload:cloudWritePayload(remote,sentAt),reconciled:{needsCloudWrite:false,data:remote,conflicts:[]},copies:[],skipped:true};
       }
       var reconciled=reconcileWithCloud(remote||{items:[],folders:[],tags:[],deletedItems:{},version:0});
+      var copies=[];
+      if(reconciled.conflicts.length){
+        preferLocalConflicts(reconciled);
+        copies=attachConflictCopies(reconciled.data,reconciled.conflicts);
+        reconciled.needsCloudWrite=true;
+      }
       if(reconciled.data&&notesMissingFrom(reconciled.data.items).length){
         reconciled.data=keepLocalNotesTheCloudDropped(reconciled.data);
         reconciled.needsCloudWrite=true;
       }
       var payload=cloudWritePayload(reconciled.data,sentAt);
       if(reconciled.needsCloudWrite) payload.version=Math.max(1,Number(payload.version)||0,Number(remote&&remote.version)||0,Number(state.version)||0)+1;
-      return {payload:payload,reconciled:reconciled};
+      return {payload:payload,reconciled:reconciled,copies:copies};
     }
     var writePromise;
     if(typeof db.runTransaction==="function"){
@@ -10274,7 +10441,7 @@
         return transaction.get(ref).then(function(snapshot){
           var remote=snapshot.exists?snapshot.data():null;
           var merged=writeMerged(remote);
-          if(!merged.reconciled.needsCloudWrite&&remote&&Array.isArray(remote.items)) return {payload:merged.payload,reconciled:merged.reconciled,skipped:true};
+          if(!merged.reconciled.needsCloudWrite&&remote&&Array.isArray(remote.items)) return {payload:merged.payload,reconciled:merged.reconciled,copies:merged.copies,skipped:true};
           transaction.set(ref,merged.payload,{merge:true});
           return merged;
         });
@@ -10286,23 +10453,26 @@
       return ref.set(merged.payload,{merge:true}).then(function(){ return merged; });
     });
     return writePromise.then(function(result){
-      var payload=result&&result.payload, added=0;
+      var payload=result&&result.payload, copies=result&&result.copies||[], added=0;
       if(payload&&Array.isArray(payload.items)){
-        var have={};
-        (state.items||[]).forEach(function(item){ if(item&&item.id) have[item.id]=true; });
-        payload.items.forEach(function(item){
-          if(!item||!item.id||have[item.id]||isSeedDeviceItem(item)) return;
-          state.items.push(item); normalizeItem(item); have[item.id]=true; added++;
-        });
+        var currentBefore=current();
+        var beforeSig=currentBefore?itemSyncSignature(currentBefore):"";
+        added=adoptReconciledItems(payload.items,sentAt);
         if(payload.deletedItems&&typeof payload.deletedItems==="object") state.deletedItems=cloneData(payload.deletedItems);
+        if(payload.folders) state.folders=cloneData(payload.folders);
+        if(payload.tags) state.tags=cloneData(payload.tags);
         state.version=Math.max(1,Number(state.version)||1,Number(payload.version)||1);
         state.versionChangedAt=Number(payload.versionChangedAt)||state.versionChangedAt||sentAt;
+        var currentAfter=current();
+        var afterSig=currentAfter?itemSyncSignature(currentAfter):"";
+        if(added||copies.length) renderList();
+        if(beforeSig!==afterSig) renderMain();
       }
       state.lastCloudSync=sentAt;
       if((state.lastLocalChange||0)<=sentAt){ state.pendingCloudSync=false; recordSyncBaseline({items:state.items},sentAt); if(canPersist){ try{ localStorage.setItem(KEY,JSON.stringify(state)); }catch(e){} } }
       setSaveState("Saved to cloud","cloud"); syncPublicShares(); maybeCloudBackup(); scheduleAccountUsageRefresh(0);
-      if(added) renderList();
-    }).catch(function(e){ console.warn(e); setSaveState("Cloud sync failed — recovery copy kept","bad"); });
+      if(copies.length) showToast("Kept both versions of "+(copies.length===1?"a note":copies.length+" notes")+" edited on another device");
+    }).catch(function(e){ console.warn(e); setSaveState("Cloud sync failed — recovery copy kept","bad"); }).then(function(){ cloudWriteInFlight=false; });
   }
   window.addEventListener("beforeunload",saveCloudNow);
 
