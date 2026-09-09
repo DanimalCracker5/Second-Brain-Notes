@@ -166,4 +166,5 @@ test("shared page listens live and can edit when allowEdit is on", function () {
   assert.match(shared, /firebase-storage-compat/);
   assert.match(shared, /mergeSharedDocument/);
   assert.match(shared, /data-share-key/);
+  assert.match(shared, /\.auth-btn\[hidden\]/);
 });
