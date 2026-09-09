@@ -369,11 +369,17 @@
   .sec-h button:active{ transform:scale(.88); }
   #addTagBtn{ transition:color .14s,background .14s,transform .3s cubic-bezier(.2,.9,.3,1.5); }
   #addTagBtn:hover{ transform:rotate(90deg) scale(1.1); } #addTagBtn.menu-open{ color:var(--accent); background:var(--accent-soft); transform:rotate(135deg); }
-  .sec-h .section-toggle{ width:auto; min-width:0; padding:0; display:flex; align-items:center; gap:5px; }
-  .sec-h .section-toggle svg{ width:13px; height:13px; transition:transform .16s ease; }
+  .sec-h .section-toggle{ width:auto; min-width:0; flex:1; padding:0; display:flex; align-items:center; gap:5px; }
+  .sec-h .section-toggle svg{ width:13px; height:13px; flex:none; transition:transform .16s ease; }
   .sec-h .section-toggle[aria-expanded="false"] svg{ transform:rotate(-90deg); }
-  .list-tools{ display:flex; align-items:center; gap:4px; }
+  .sec-h .section-toggle span{ min-width:0; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+  .list-tools{ display:flex; align-items:center; gap:4px; flex:none; }
   .list-tools button{ width:auto; min-width:22px; padding:0 5px; font-size:.72rem; }
+  .list-tools .bulk-delete{ color:#f87171; }
+  .list-tools .bulk-delete svg{ width:13px; height:13px; }
+  .list-tools .bulk-delete:hover{ color:#fecaca; background:rgba(248,113,113,.12); }
+  .list-tools .bulk-delete:disabled{ opacity:.35; color:#f87171; cursor:default; }
+  .list-tools .bulk-delete[hidden]{ display:none !important; }
   /* A filtered Upcoming list looks the same as a short one, so the tools button
      wears a dot whenever something is being held back. */
   .list-tools button.filtered{ position:relative; color:var(--accent); }
@@ -402,6 +408,10 @@
   /* overflow:hidden clips the content but not the box's own padding, which
      would otherwise leave a dead gap under a collapsed section. */
   #tags.is-collapsed > *{ padding-top:0; padding-bottom:0; }
+  #notesListWrap{ display:grid; grid-template-rows:1fr; transition:grid-template-rows .28s cubic-bezier(.4,0,.2,1),opacity .2s ease; }
+  #notesListWrap > *{ min-height:0; }
+  #notesListWrap.is-collapsed{ grid-template-rows:0fr; opacity:0; pointer-events:none; overflow:hidden; }
+  #notesListWrap.is-collapsed > *{ overflow:hidden; padding-top:0; padding-bottom:0; }
 
   /* Five children (dot, name, count, hide, edit) need five columns — with four
      the edit button wrapped onto a second row and doubled the chip's height. */
@@ -443,7 +453,7 @@
 
   /* display:block matters — a <label> is inline by default, so the input's
      width:100% would resolve against the sidebar instead of this box. */
-  .note-search{ display:block; position:relative; margin:2px 14px 4px; }.note-search svg{ position:absolute; top:50%; left:10px; width:15px; height:15px; color:var(--ink-faint); transform:translateY(-50%); pointer-events:none; }.note-search input{ width:100%; height:34px; padding:0 62px 0 32px; border:1px solid var(--line); border-radius:10px; outline:none; color:var(--ink); background:rgba(255,255,255,.035); font:.77rem "DM Sans",sans-serif; }.note-search input::placeholder{ color:var(--ink-faint); }.note-search input{ transition:border-color .16s,background .16s,box-shadow .2s; }.note-search input:focus{ border-color:var(--accent-line); background:rgba(255,255,255,.055); box-shadow:0 0 0 3px var(--accent-soft); }.note-search svg{ transition:color .16s; }.note-search:focus-within svg{ color:var(--accent); }.note-search button{ position:absolute; right:4px; top:4px; width:26px; height:26px; display:none; place-items:center; border:0; border-radius:7px; color:var(--ink-faint); background:transparent; cursor:pointer; font-size:1rem; }.note-search button:hover{ color:var(--ink); background:rgba(255,255,255,.08); }.note-search .quick-add-note{ right:31px; display:grid; color:var(--accent); font-size:1.05rem; font-weight:700; }.note-search .quick-add-note:hover{ color:var(--ink); background:var(--accent-soft); }.note-search.has-value #clearNoteSearch{ display:grid; }
+  .note-search{ display:block; position:relative; margin:10px 14px 2px; }.note-search svg{ position:absolute; top:50%; left:10px; width:15px; height:15px; color:var(--ink-faint); transform:translateY(-50%); pointer-events:none; }.note-search input{ width:100%; height:34px; padding:0 62px 0 32px; border:1px solid var(--line); border-radius:10px; outline:none; color:var(--ink); background:rgba(255,255,255,.035); font:.77rem "DM Sans",sans-serif; }.note-search input::placeholder{ color:var(--ink-faint); }.note-search input{ transition:border-color .16s,background .16s,box-shadow .2s; }.note-search input:focus{ border-color:var(--accent-line); background:rgba(255,255,255,.055); box-shadow:0 0 0 3px var(--accent-soft); }.note-search svg{ transition:color .16s; }.note-search:focus-within svg{ color:var(--accent); }.note-search button{ position:absolute; right:4px; top:4px; width:26px; height:26px; display:none; place-items:center; border:0; border-radius:7px; color:var(--ink-faint); background:transparent; cursor:pointer; font-size:1rem; }.note-search button:hover{ color:var(--ink); background:rgba(255,255,255,.08); }.note-search .quick-add-note{ right:31px; display:grid; color:var(--accent); font-size:1.05rem; font-weight:700; }.note-search .quick-add-note:hover{ color:var(--ink); background:var(--accent-soft); }.note-search.has-value #clearNoteSearch{ display:grid; }
 
   .d-list{ padding:4px 10px 8px; }
   /* Upcoming headings. They stick to the top of the scroller so the month you
@@ -1236,13 +1246,13 @@
     <div class="d-head"><div><h2>Second Brain Notes</h2><small>by Astral Studios LLC</small></div><button class="sidebar-fullscreen" id="sidebarFullscreenBtn" type="button" title="Open sidebar focus" aria-label="Open sidebar focus"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M8 3H3v5M16 3h5v5M21 16v5h-5M3 16v5h5"/></svg></button></div>
     <button class="d-new" id="newBtn"><span class="plus" aria-hidden="true">＋</span><span>New</span></button>
     <div class="d-scroll">
+      <label class="note-search" id="noteSearchWrap"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="11" cy="11" r="6"/><path d="m16 16 4 4"/></svg><input id="noteSearch" type="search" autocomplete="off" placeholder="Search notes…" aria-label="Search notes"><button class="quick-add-note" id="quickAddNoteBtn" type="button" title="Add note from search" aria-label="Add note from search">＋</button><button id="clearNoteSearch" type="button" aria-label="Clear note search">×</button></label>
       <div class="sec-h"><button class="section-toggle" id="tagsToggleBtn" type="button" aria-controls="tags" aria-expanded="true" title="Collapse tags"><span>Tags</span><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m6 9 6 6 6-6"/></svg></button><button id="addTagBtn" title="New tag">＋</button></div>
       <div id="tags"></div>
       <div class="sec-h"><button class="section-toggle" id="typesToggleBtn" type="button" aria-controls="types" aria-expanded="true" title="Collapse types"><span>Types</span><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m6 9 6 6 6-6"/></svg></button></div>
       <div class="typecloud" id="types"></div>
-      <div class="sec-h"><span id="listLabel">All notes</span><div class="list-tools"><button id="selectNotesBtn" title="Select notes" aria-label="Select notes">✓</button><button id="listToolsBtn" title="Filter and sort" aria-label="Filter and sort notes">⇅</button></div></div>
-      <label class="note-search" id="noteSearchWrap"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="11" cy="11" r="6"/><path d="m16 16 4 4"/></svg><input id="noteSearch" type="search" autocomplete="off" placeholder="Search notes…" aria-label="Search notes"><button class="quick-add-note" id="quickAddNoteBtn" type="button" title="Add note from search" aria-label="Add note from search">＋</button><button id="clearNoteSearch" type="button" aria-label="Clear note search">×</button></label>
-      <div class="d-list" id="list"></div>
+      <div class="sec-h"><button class="section-toggle" id="notesToggleBtn" type="button" aria-controls="notesListWrap" aria-expanded="true" title="Collapse notes"><span id="listLabel">All notes</span><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m6 9 6 6 6-6"/></svg></button><div class="list-tools"><button id="selectNotesBtn" title="Select notes" aria-label="Select notes">✓</button><button id="deleteNotesBtn" class="bulk-delete" type="button" hidden title="Delete selected notes" aria-label="Delete selected notes"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 6h18M8 6V4h8v2M19 6l-1 14H6L5 6"/></svg></button><button id="listToolsBtn" title="Filter and sort" aria-label="Filter and sort notes">⇅</button></div></div>
+      <div id="notesListWrap"><div class="d-list" id="list"></div></div>
     </div>
     <div class="d-foot" id="dfoot"></div>
   </aside>
@@ -1439,7 +1449,7 @@
   }
   function loadLocal(){ var v=readKey(KEY); if(v&&v.items) return v; if(!canPersist&&mem) return mem; return migrate(); }
   function setSaveState(label,kind){ var el=$("saveState"); if(!el) return; el.textContent=label; el.className="save-state"+(kind?" "+kind:""); }
-  function backupPayload(){ return { app:"second-brain", version:16, items:state.items, folders:state.folders, tags:state.tags, deletedItems:state.deletedItems||{}, preferences:{theme:state.theme,motion:state.motion,darkness:state.darkness,enabledTypes:state.enabledTypes,typeDefaults:state.typeDefaults,noteInsertOptions:state.noteInsertOptions,tagsCollapsed:state.tagsCollapsed,typesCollapsed:state.typesCollapsed,focusNoteBody:state.focusNoteBody,quickAiHandoff:state.quickAiHandoff,allNotesName:state.allNotesName,readChapterNames:state.readChapterNames,agentSettings:agentSettings()}, created:Date.now() }; }
+  function backupPayload(){ return { app:"second-brain", version:16, items:state.items, folders:state.folders, tags:state.tags, deletedItems:state.deletedItems||{}, preferences:{theme:state.theme,motion:state.motion,darkness:state.darkness,enabledTypes:state.enabledTypes,typeDefaults:state.typeDefaults,noteInsertOptions:state.noteInsertOptions,tagsCollapsed:state.tagsCollapsed,typesCollapsed:state.typesCollapsed,allNotesCollapsed:state.allNotesCollapsed,focusNoteBody:state.focusNoteBody,quickAiHandoff:state.quickAiHandoff,allNotesName:state.allNotesName,readChapterNames:state.readChapterNames,agentSettings:agentSettings()}, created:Date.now() }; }
   function autoBackups(){ return deviceBackups; }
   function backupSnapshot(data){
     try{ return JSON.parse(JSON.stringify(data)); }catch(e){ console.warn("Backup snapshot could not be copied:",e); return data; }
@@ -1867,6 +1877,7 @@
   Object.keys(NOTE_INSERT_DEFAULTS).forEach(function(type){ if(typeof state.noteInsertOptions[type]!=="boolean") state.noteInsertOptions[type]=NOTE_INSERT_DEFAULTS[type]; });
   if(typeof state.tagsCollapsed!=="boolean") state.tagsCollapsed=false;
   if(typeof state.typesCollapsed!=="boolean") state.typesCollapsed=false;
+  if(typeof state.allNotesCollapsed!=="boolean") state.allNotesCollapsed=false;
   if(typeof state.focusNoteBody!=="boolean") state.focusNoteBody=true;
   if(typeof state.quickAiHandoff!=="boolean") state.quickAiHandoff=true;
   state.filterType=typeof state.filterType==="string"?state.filterType:"";
@@ -1900,7 +1911,7 @@
   if(!state.currentId || !state.items.some(function(i){return i.id===state.currentId;})) state.currentId=state.items[0].id;
 
   function blankDeviceState(){
-    return {items:[],folders:[],tags:[],deletedItems:{},currentId:null,motion:true,theme:"nebula",darkness:82,enabledTypes:defaultEnabledTypes(),typeDefaults:TYPE_DEFAULTS_VERSION,noteInsertOptions:{file:true,paragraph:true,comment:true,prompt:true,heading:true,chapter:true,group:true,code:true},tagsCollapsed:false,typesCollapsed:false,focusNoteBody:true,quickAiHandoff:true,allNotesName:"All notes",readChapterNames:false,filterTag:null,filterType:"",sidebarView:"all",tagAssignMode:false,noteSearch:"",listSort:"updated",upcomingSort:"due",upcomingFilter:{range:"all",tagId:null,showDone:false},version:1,agentSettings:defaultAgentSettings(),pendingCloudSync:false,syncBaseline:null};
+    return {items:[],folders:[],tags:[],deletedItems:{},currentId:null,motion:true,theme:"nebula",darkness:82,enabledTypes:defaultEnabledTypes(),typeDefaults:TYPE_DEFAULTS_VERSION,noteInsertOptions:{file:true,paragraph:true,comment:true,prompt:true,heading:true,chapter:true,group:true,code:true},tagsCollapsed:false,typesCollapsed:false,allNotesCollapsed:false,focusNoteBody:true,quickAiHandoff:true,allNotesName:"All notes",readChapterNames:false,filterTag:null,filterType:"",sidebarView:"all",tagAssignMode:false,noteSearch:"",listSort:"updated",upcomingSort:"due",upcomingFilter:{range:"all",tagId:null,showDone:false},version:1,agentSettings:defaultAgentSettings(),pendingCloudSync:false,syncBaseline:null};
   }
   function clearAttachmentStore(){
     if(!window.indexedDB) return;
@@ -2004,7 +2015,7 @@
   var $=function(id){ return document.getElementById(id); };
   var app=$("app"), ambient=$("ambient"), canvas=$("canvas"), listEl=$("list"), toast=$("toast"),
       menuBtn=$("menuBtn"), scrim=$("scrim"), tagsEl=$("tags"),
-      listLabel=$("listLabel"), dfoot=$("dfoot"), listToolsBtn=$("listToolsBtn"), selectNotesBtn=$("selectNotesBtn"), noteSearch=$("noteSearch"), noteSearchWrap=$("noteSearchWrap");
+      listLabel=$("listLabel"), dfoot=$("dfoot"), listToolsBtn=$("listToolsBtn"), selectNotesBtn=$("selectNotesBtn"), deleteNotesBtn=$("deleteNotesBtn"), noteSearch=$("noteSearch"), noteSearchWrap=$("noteSearchWrap");
 
   /* =================== theme apply =================== */
   var rootS=document.documentElement.style, phase=0, motionTimer=null;
@@ -2615,6 +2626,16 @@
       [["updated","Recently updated"],["due","Due date · soonest"],["timeSpent","Most time spent"],["title","Title A–Z"],["tag","Tag A–Z"]].forEach(function(opt){
         m.appendChild(mkItem("",opt[1],state.listSort===opt[0],function(){ state.listSort=opt[0]; closeMenu(); persist(); renderList(); }));
       });
+      m.appendChild(sep());
+      m.appendChild(mkItem("✓",state.selectingNotes?"Select all in this list":"Select notes",false,function(){
+        var items=visibleItems(!!state.tagAssignMode);
+        closeMenu();
+        state.selectingNotes=true;
+        state.tagAssignMode=!!state.filterTag;
+        state.selectedItemIds=items.map(function(item){ return item.id; });
+        if(state.allNotesCollapsed){ state.allNotesCollapsed=false; persist(); }
+        renderList();
+      }));
     });
   }
   function prepareManualOrder(){
@@ -2846,6 +2867,23 @@
     showToast(isTodoNote(it)?"Converted to todo":"Converted to note");
   }
   var lastListSignature=null, justAddedId=null, justAddedTimer=null;
+  function syncNotesListCollapse(){
+    var wrap=$("notesListWrap"), toggle=$("notesToggleBtn");
+    if(wrap) wrap.classList.toggle("is-collapsed",!!state.allNotesCollapsed);
+    if(toggle){ toggle.setAttribute("aria-expanded",state.allNotesCollapsed?"false":"true"); toggle.title=state.allNotesCollapsed?"Expand notes":"Collapse notes"; }
+  }
+  function syncBulkNoteActions(){
+    if(!deleteNotesBtn) return;
+    var canDelete=!!state.selectingNotes&&state.selectedItemIds.some(function(id){
+      var item=state.items.find(function(entry){ return entry.id===id; });
+      return item&&!item.locked;
+    });
+    deleteNotesBtn.hidden=!state.selectingNotes;
+    deleteNotesBtn.disabled=!canDelete;
+    var count=state.selectedItemIds.length;
+    deleteNotesBtn.title=canDelete?"Delete "+count+" selected note"+(count===1?"":"s"):(state.selectingNotes?"Select unlocked notes to delete":"Delete selected notes");
+    deleteNotesBtn.setAttribute("aria-label",deleteNotesBtn.title);
+  }
   function renderList(){
     trackTimeSpent();
     /* A signed-in phone with no local cache looks like one Untitled note while
@@ -2859,7 +2897,7 @@
       lastListSignature="loading-account";
       var loading=document.createElement("div"); loading.className="tag-empty"; loading.style.padding="10px 12px";
       loading.textContent="Loading your notes…";
-      listEl.appendChild(loading); updateSidebarButtons(); return;
+      listEl.appendChild(loading); syncNotesListCollapse(); syncBulkNoteActions(); updateSidebarButtons(); return;
     }
     var items=state.sidebarView==="upcoming"?upcomingItems():visibleItems(!!state.tagAssignMode);
     state.selectedItemIds=state.selectedItemIds.filter(function(id){ return state.items.some(function(item){ return item.id===id; }); });
@@ -2868,6 +2906,8 @@
       selectNotesBtn.textContent=state.selectingNotes?(state.selectedItemIds.length?(state.tagAssignMode?assignLabel:"Tag "+state.selectedItemIds.length):"Cancel"):(state.filterTag?"＋":"✓");
       selectNotesBtn.title=state.selectingNotes?(state.selectedItemIds.length?(state.tagAssignMode?"Add selected notes to this tag":"Tag selected notes"):"Cancel selection"):(state.filterTag?"Add notes to this tag":"Select notes");
     }
+    syncNotesListCollapse();
+    syncBulkNoteActions();
     var lbl = state.sidebarView==="upcoming"?"Upcoming":(state.sidebarView==="hidden"?"Hidden":(state.filterTag ? ((tagById(state.filterTag)||{}).name||"Tag") : (state.filterType?(state.filterType.charAt(0).toUpperCase()+state.filterType.slice(1)):allNotesTitle())));
     if(state.tagAssignMode&&state.filterTag) lbl="Add to "+((tagById(state.filterTag)||{}).name||"tag");
     listLabel.textContent=lbl+"  ·  "+items.length;
@@ -2882,7 +2922,7 @@
     if(!items.length){
       var e=document.createElement("div"); e.className="tag-empty"; e.style.padding="10px 12px";
       e.textContent=upcoming?(activeFilters?"Nothing matches these filters.":"Nothing due yet."):(hiddenView?"Nothing is hidden. Use the pencil menu on any note to hide it from All notes — it stays in your account, and this list is the way back.":"Nothing here yet.");
-      listEl.appendChild(e); updateSidebarButtons(); return;
+      listEl.appendChild(e); syncNotesListCollapse(); syncBulkNoteActions(); updateSidebarButtons(); return;
     }
     var groups=upcoming?upcomingGroups(items):[{items:items}], row=0;
     groups.forEach(function(group){
@@ -2942,6 +2982,30 @@
     var count=selected.length;
     state.selectedItemIds=[]; state.selectingNotes=false; state.tagAssignMode=false;
     persist(); renderAll(); showToast("Added "+count+" note"+(count===1?"":"s")+" to "+tag.name);
+  }
+  function deleteSelectedNotes(){
+    var selected=state.items.filter(function(item){ return state.selectedItemIds.indexOf(item.id)>=0; });
+    if(!selected.length){ showToast("Select one or more notes first",true); return; }
+    if(activeAudioRecorder&&selected.some(function(item){ return item.id===activeAudioRecorder.itemId; })){ showToast("Stop the recording before deleting this audio entry",true); return; }
+    var locked=selected.filter(function(item){ return item.locked; });
+    var deletable=selected.filter(function(item){ return !item.locked; });
+    if(!deletable.length){ showToast("Unlock these items before deleting them",true); return; }
+    var extra=locked.length?" "+locked.length+" locked item"+(locked.length===1?"":"s")+" will be skipped.":"";
+    if(!confirm("Delete "+deletable.length+" note"+(deletable.length===1?"":"s")+"? This can't be undone."+extra)) return;
+    captureAutoBackup(true,"recovery");
+    var ids={};
+    deletable.forEach(function(item){
+      ids[item.id]=true;
+      forEachItemContentDocument(item,cleanupContentAttachments);
+      recordDeletedItem(item);
+    });
+    state.items=state.items.filter(function(item){ return !ids[item.id]; });
+    if(!state.items.length) state.items.push(newNoteItem());
+    if(ids[state.currentId]){ var vis=visibleItems(); state.currentId=(vis[0]||state.items[0]).id; }
+    var count=deletable.length;
+    state.selectedItemIds=[]; state.selectingNotes=false; state.tagAssignMode=false;
+    persist(); renderList(); renderMain();
+    showToast("Deleted "+count+" note"+(count===1?"":"s"));
   }
   function delItem(id,message){
     var item=state.items.find(function(s){ return s.id===id; });
@@ -8972,6 +9036,7 @@
   };
   $("tagsToggleBtn").onclick=function(){ state.tagsCollapsed=!state.tagsCollapsed; persist(); renderTags(); };
   $("typesToggleBtn").onclick=function(){ state.typesCollapsed=!state.typesCollapsed; persist(); renderTypes(); };
+  $("notesToggleBtn").onclick=function(){ state.allNotesCollapsed=!state.allNotesCollapsed; persist(); syncNotesListCollapse(); };
   if(noteSearch){
     noteSearch.value=state.noteSearch||"";
     noteSearchWrap.classList.toggle("has-value",!!noteSearch.value);
@@ -9025,10 +9090,14 @@
   selectNotesBtn.onclick=function(){
     if(state.selectingNotes&&state.selectedItemIds.length) return state.tagAssignMode?addSelectedNotesToTag():openBulkTagPick(this);
     state.selectingNotes=!state.selectingNotes;
-    if(state.selectingNotes){ state.tagAssignMode=!!state.filterTag; }
+    if(state.selectingNotes){
+      state.tagAssignMode=!!state.filterTag;
+      if(state.allNotesCollapsed){ state.allNotesCollapsed=false; persist(); }
+    }
     else { state.selectedItemIds=[]; state.tagAssignMode=false; }
     renderList();
   };
+  if(deleteNotesBtn) deleteNotesBtn.onclick=function(){ deleteSelectedNotes(); };
   listToolsBtn.onclick=function(){ if(openMenuEl){ closeMenu(); return; } openListTools(this); };
   function usesOverlaySidebar(){ return window.matchMedia&&window.matchMedia("(max-width: 900px)").matches; }
   function setOverlaySidebarOpen(open){
@@ -9930,6 +9999,7 @@
     if(prefs.noteInsertOptions&&typeof prefs.noteInsertOptions==="object") Object.keys(NOTE_INSERT_DEFAULTS).forEach(function(type){ if(typeof prefs.noteInsertOptions[type]==="boolean") state.noteInsertOptions[type]=prefs.noteInsertOptions[type]; });
     if(typeof prefs.tagsCollapsed==="boolean") state.tagsCollapsed=prefs.tagsCollapsed;
     if(typeof prefs.typesCollapsed==="boolean") state.typesCollapsed=prefs.typesCollapsed;
+    if(typeof prefs.allNotesCollapsed==="boolean") state.allNotesCollapsed=prefs.allNotesCollapsed;
     if(typeof prefs.focusNoteBody==="boolean") state.focusNoteBody=prefs.focusNoteBody;
     if(typeof prefs.quickAiHandoff==="boolean") state.quickAiHandoff=prefs.quickAiHandoff;
     if(typeof prefs.allNotesName==="string"&&prefs.allNotesName.trim()) state.allNotesName=prefs.allNotesName.trim();
@@ -10242,7 +10312,7 @@
       deletedItems:pruneTombstones(data.deletedItems||{}),
       version:Number(data.version)||1,
       versionChangedAt:Number(data.versionChangedAt)||sentAt,
-      preferences:{theme:state.theme,motion:state.motion,darkness:state.darkness,enabledTypes:state.enabledTypes,typeDefaults:state.typeDefaults,noteInsertOptions:state.noteInsertOptions,tagsCollapsed:state.tagsCollapsed,typesCollapsed:state.typesCollapsed,focusNoteBody:state.focusNoteBody,quickAiHandoff:state.quickAiHandoff,allNotesName:state.allNotesName,readChapterNames:state.readChapterNames,agentSettings:agentSettings()},
+      preferences:{theme:state.theme,motion:state.motion,darkness:state.darkness,enabledTypes:state.enabledTypes,typeDefaults:state.typeDefaults,noteInsertOptions:state.noteInsertOptions,tagsCollapsed:state.tagsCollapsed,typesCollapsed:state.typesCollapsed,allNotesCollapsed:state.allNotesCollapsed,focusNoteBody:state.focusNoteBody,quickAiHandoff:state.quickAiHandoff,allNotesName:state.allNotesName,readChapterNames:state.readChapterNames,agentSettings:agentSettings()},
       theme:state.theme,
       motion:state.motion,
       updated:sentAt
