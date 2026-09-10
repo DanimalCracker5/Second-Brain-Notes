@@ -50,11 +50,13 @@ To sell convenience (users talk without pasting their own provider keys),
 deploy Cloud Functions and the updated Firestore rules. See `docs/HOSTED_AI.md`.
 Never put OpenAI, Gemini, ElevenLabs, or Stripe secrets in this repo.
 
-## Public view-only links
+## Public share links
 
 The **Share** button on a note or video script creates a link to `shared.html`.
-Anyone with that link can view the published snapshot without signing in, but
-cannot list shared documents, edit them, or access the author's private notes.
-Changes made after publishing are refreshed the next time the note syncs; use
-**Public link → Stop public sharing** to revoke a link. Deploy the Firestore
-rules above before using this feature.
+Anyone with that link can view the live document without signing in, but cannot
+list shared documents or access the author's private notes. Turn on
+**Allow editing** in the share menu to let signed-in people change text and
+photos on that link. Changes show up on the owner's devices, and on other
+devices signed into the same account, as they are saved. Use **Stop sharing**
+to revoke a link. Deploy the Firestore and Storage rules above before using
+this feature.

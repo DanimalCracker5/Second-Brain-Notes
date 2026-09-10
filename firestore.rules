@@ -14,11 +14,19 @@ service cloud.firestore {
         allow read, write: if request.auth != null
                            && request.auth.uid == userId;
       }
+
+      // Fast per-note channel so two devices on the same account can edit one
+      // note at once without waiting for the whole account document to save.
+      match /liveNotes/{noteId} {
+        allow read, write: if request.auth != null
+                           && request.auth.uid == userId;
+      }
     }
 
-    // A share is a deliberately limited, read-only snapshot of one note or
-    // script. It is addressed by its unguessable document ID, not listable,
-    // and only its original owner can change or remove it.
+    // A share is addressed by its unguessable document ID and is not listable.
+    // Anyone with the link may read it. The owner can always change it. If the
+    // owner turns on allowEdit, any signed-in visitor may update the contents
+    // but cannot take ownership, change the type, or disable editing.
     match /shared/{shareId} {
       allow get: if true;
       allow create: if request.auth != null
@@ -26,11 +34,13 @@ service cloud.firestore {
                     && request.resource.data.shareId == shareId
                     && request.resource.data.type in ['note', 'script'];
       allow update: if request.auth != null
-                    && resource.data.ownerId == request.auth.uid
                     && request.resource.data.ownerId == resource.data.ownerId
                     && request.resource.data.shareId == resource.data.shareId
                     && request.resource.data.type == resource.data.type
-                    && request.resource.data.createdAt == resource.data.createdAt;
+                    && request.resource.data.createdAt == resource.data.createdAt
+                    && (resource.data.ownerId == request.auth.uid
+                        || (resource.data.allowEdit == true
+                            && request.resource.data.allowEdit == resource.data.allowEdit));
       allow delete: if request.auth != null
                     && resource.data.ownerId == request.auth.uid;
     }
