@@ -137,6 +137,69 @@ test("applyIncomingItemOnto mutates the local note in place so the open editor k
   assert.equal(local.blocks[1].text, "two");
 });
 
+test("same-content live merge still takes the newer updated time so recency sort matches", function () {
+  const local = note("n1", [{ id: "a", type: "text", text: "hello" }], [], { version: 4, versionChangedAt: 40, updated: 40 });
+  const remote = note("n1", [{ id: "a", type: "text", text: "hello" }], [], { version: 4, versionChangedAt: 40, updated: 90 });
+  const merged = sandbox.mergeLiveItems(local, remote, { preferLocal: false });
+  assert.equal(merged.blocks[0].text, "hello");
+  assert.equal(merged.updated, 90);
+  const result = sandbox.applyIncomingItemOnto(local, remote, { preferLocal: false });
+  assert.equal(result.changed, true);
+  assert.equal(result.writeBack, false);
+  assert.equal(local.updated, 90);
+});
+
+test("a device that already has the newer recency writes it back so the other list can catch up", function () {
+  const local = note("n1", [{ id: "a", type: "text", text: "hello" }], [], { version: 4, versionChangedAt: 40, updated: 90 });
+  const remote = note("n1", [{ id: "a", type: "text", text: "hello" }], [], { version: 4, versionChangedAt: 40, updated: 40 });
+  const result = sandbox.applyIncomingItemOnto(local, remote, { preferLocal: false });
+  assert.equal(result.changed, false);
+  assert.equal(result.writeBack, true);
+  assert.equal(local.updated, 90);
+});
+
+test("account fingerprint changes when only a note's updated time changes", function () {
+  const older = { updated: 10, version: 2, items: [note("n1", [{ id: "a", type: "text", text: "hello" }], [], { updated: 40 })], deletedItems: {} };
+  const newer = { updated: 10, version: 2, items: [note("n1", [{ id: "a", type: "text", text: "hello" }], [], { updated: 90 })], deletedItems: {} };
+  assert.notEqual(sandbox.liveAccountFingerprint(older), sandbox.liveAccountFingerprint(newer));
+});
+
+test("older account snapshots are ignored so a stale get cannot undo a live apply", function () {
+  assert.equal(sandbox.isStaleAccountSnapshot({ updated: 50 }, 80, 0), true);
+  assert.equal(sandbox.isStaleAccountSnapshot({ updated: 90 }, 80, 0), false);
+  assert.equal(sandbox.isStaleAccountSnapshot({ updated: 80 }, 0, 80), true);
+  assert.equal(sandbox.isStaleAccountSnapshot({ updated: 0 }, 0, 0), false);
+});
+
+test("account snapshots are queued until live apply finishes instead of being dropped", function () {
+  const apply = grab("applyRemoteAccountSnapshot", "armCloudLiveSync");
+  assert.match(grab("queueRemoteAccountSnapshot", "applyRemoteAccountSnapshot"), /pendingRemoteAccount=cloud/);
+  assert.match(apply, /pendingRemoteAccount=cloud/);
+  assert.match(apply, /flushPendingRemoteAccount\(\)/);
+  assert.match(apply, /isStaleAccountSnapshot/);
+  assert.match(grab("armCloudLiveSync", "pullLiveCloudNow"), /flushPendingRemoteAccount\(\)/);
+  assert.match(grab("armCloudLiveSync", "pullLiveCloudNow"), /pullLiveCloudNow\(\)/);
+  assert.match(grab("watchLiveNote", "sharedItemFromPayload"), /flushPendingRemoteAccount\(\)/);
+});
+
+test("a blank note created on another device is still added from the account snapshot", function () {
+  const apply = grab("applyRemoteAccountSnapshot", "armCloudLiveSync");
+  assert.match(apply, /remote\.id===AGENT_DEFAULT_ID/);
+  assert.equal(apply.includes("isSeedDeviceItem(remote)"), false);
+});
+
+test("in-progress typing only protects the open note", function () {
+  const src = grab("localNoteEditGuard", "liveIncomingOptions");
+  assert.match(src, /hasEdits:false/);
+  assert.match(src, /currentItem\.id!==state\.currentId\) return guard/);
+});
+
+test("list sort is stored on the account and changing it writes through", function () {
+  assert.match(grab("cloudWritePayload", "saveCloudNow"), /listSort:state\.listSort/);
+  assert.match(grab("applyAccountPreferences", "conflictItemTitle"), /prefs\.listSort/);
+  assert.match(grab("setListSort", "prepareManualOrder"), /saveCloud\(1\)/);
+});
+
 test("share menu offers an iOS-style Allow editing toggle", function () {
   const src = grab("openPublicShareOptions", "showToast");
   assert.match(src, /Allow editing/);

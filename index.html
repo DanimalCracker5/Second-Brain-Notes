@@ -1393,7 +1393,7 @@
   var KEY="astral-notes-v5", OLDS=["astral-notes-v4","astral-notes-v3"], CFGKEY="astral-fb-config", BACKUP_KEY="second-brain-auto-backups-v1", DOCUMENT_BACKUP_KEY="second-brain-document-backups-v1", DOCUMENT_BACKUP_ACTIVITY_KEY="second-brain-document-backup-activity-v1", BACKUP_LIMIT=10, DOCUMENT_BACKUP_LIMIT=25, AUTO_BACKUP_COOLDOWN=60*60*1000, DOCUMENT_AUTO_BACKUP_EDIT_LIMIT=20, DOCUMENT_AUTO_BACKUP_CHAR_LIMIT=750, DOCUMENT_AUTO_BACKUP_MAX_WAIT=15*60*1000, mem=null;
   var deviceBackups=[], documentBackups={}, documentBackupActivity={}, attachmentDbPromise=null, activeNoteTextBlock=null, draggedNoteBlock=null, activeAttachmentUploads={}, activeAudioRecorder=null;
   var liveClientId="d"+Math.random().toString(36).slice(2,10)+Date.now().toString(36);
-  var applyingRemoteCloud=false, applyingLiveNote=false, cloudLiveReady=false, lastPersistChangedIds=[], lastCloudWriteSentAt=0, lastAppliedLiveFingerprint="", watchedLiveNoteId="", liveNoteUnsub=null, liveNotePushTimers={}, liveNotePendingSince={}, lastLiveWrite={}, sharedEditUnsubs={};
+  var applyingRemoteCloud=false, applyingLiveNote=false, cloudLiveReady=false, lastPersistChangedIds=[], lastCloudWriteSentAt=0, lastAppliedLiveFingerprint="", lastAppliedCloudUpdated=0, pendingRemoteAccount=null, watchedLiveNoteId="", liveNoteUnsub=null, liveNotePushTimers={}, liveNotePendingSince={}, lastLiveWrite={}, sharedEditUnsubs={};
   var DEFAULT_ELEVENLABS_VOICE="21m00Tcm4TlvDq8ikWAM", CUSTOM_VOICE_OPTION="__elevenlabs_voice_id__", APP_VOICE_OPTION="__app_voice__";
   var runtimeApiKeys={openai:"",gemini:"",elevenlabs:"",elevenlabsVoice:DEFAULT_ELEVENLABS_VOICE,savedVoices:[],audio:null,audioUrl:null,ttsControl:null,ttsRequestId:0};
   var llmRoute="hosted";
@@ -1457,7 +1457,7 @@
   }
   function loadLocal(){ var v=readKey(KEY); if(v&&v.items) return v; if(!canPersist&&mem) return mem; return migrate(); }
   function setSaveState(label,kind){ var el=$("saveState"); if(!el) return; el.textContent=label; el.className="save-state"+(kind?" "+kind:""); }
-  function backupPayload(){ return { app:"second-brain", version:16, items:state.items, folders:state.folders, tags:state.tags, deletedItems:state.deletedItems||{}, preferences:{theme:state.theme,motion:state.motion,darkness:state.darkness,enabledTypes:state.enabledTypes,typeDefaults:state.typeDefaults,noteInsertOptions:state.noteInsertOptions,tagsCollapsed:state.tagsCollapsed,typesCollapsed:state.typesCollapsed,allNotesCollapsed:state.allNotesCollapsed,focusNoteBody:state.focusNoteBody,quickAiHandoff:state.quickAiHandoff,allNotesName:state.allNotesName,readChapterNames:state.readChapterNames,agentSettings:agentSettings()}, created:Date.now() }; }
+  function backupPayload(){ return { app:"second-brain", version:16, items:state.items, folders:state.folders, tags:state.tags, deletedItems:state.deletedItems||{}, preferences:{theme:state.theme,motion:state.motion,darkness:state.darkness,enabledTypes:state.enabledTypes,typeDefaults:state.typeDefaults,noteInsertOptions:state.noteInsertOptions,tagsCollapsed:state.tagsCollapsed,typesCollapsed:state.typesCollapsed,allNotesCollapsed:state.allNotesCollapsed,focusNoteBody:state.focusNoteBody,quickAiHandoff:state.quickAiHandoff,allNotesName:state.allNotesName,readChapterNames:state.readChapterNames,listSort:state.listSort,agentSettings:agentSettings()}, created:Date.now() }; }
   function autoBackups(){ return deviceBackups; }
   function backupSnapshot(data){
     try{ return JSON.parse(JSON.stringify(data)); }catch(e){ console.warn("Backup snapshot could not be copied:",e); return data; }
@@ -1935,7 +1935,7 @@
   }
   function wipeDeviceNotes(){
     clearTimeout(cloudTimer);
-    stopLiveNoteWatch(); stopSharedEditListeners(); cloudLiveReady=false;
+    stopLiveNoteWatch(); stopSharedEditListeners(); cloudLiveReady=false; pendingRemoteAccount=null; lastAppliedCloudUpdated=0;
     cloudTimer=null; mem=null; deviceBackups=[]; documentBackups={}; documentBackupActivity={}; activeAttachmentUploads={}; activeNoteTextBlock=null; draggedNoteBlock=null;
     cloudHydrated=false; pendingAccountRecovery=0;
     if(activeAudioRecorder){ try{ activeAudioRecorder.recorder.stop(); }catch(e){} activeAudioRecorder=null; }
@@ -2667,9 +2667,9 @@
         }));
         m.appendChild(sep());
         var st=document.createElement("div"); st.className="mtitle"; st.textContent="Sort hidden notes"; m.appendChild(st);
-        m.appendChild(mkItem("","Custom order",state.listSort==="manual",function(){ state.listSort="manual"; closeMenu(); persist(); renderList(); }));
+        m.appendChild(mkItem("","Custom order",state.listSort==="manual",function(){ setListSort("manual"); }));
         [["updated","Recently updated"],["due","Due date · soonest"],["timeSpent","Most time spent"],["title","Title A–Z"],["tag","Tag A–Z"]].forEach(function(opt){
-          m.appendChild(mkItem("",opt[1],state.listSort===opt[0],function(){ state.listSort=opt[0]; closeMenu(); persist(); renderList(); }));
+          m.appendChild(mkItem("",opt[1],state.listSort===opt[0],function(){ setListSort(opt[0]); }));
         });
       });
       return;
@@ -2683,9 +2683,9 @@
       });
       m.appendChild(tagBox); m.appendChild(sep());
       var st=document.createElement("div"); st.className="mtitle"; st.textContent="Sort notes"; m.appendChild(st);
-      m.appendChild(mkItem("","Custom order",state.listSort==="manual",function(){ state.listSort="manual"; closeMenu(); persist(); renderList(); }));
+      m.appendChild(mkItem("","Custom order",state.listSort==="manual",function(){ setListSort("manual"); }));
       [["updated","Recently updated"],["due","Due date · soonest"],["timeSpent","Most time spent"],["title","Title A–Z"],["tag","Tag A–Z"]].forEach(function(opt){
-        m.appendChild(mkItem("",opt[1],state.listSort===opt[0],function(){ state.listSort=opt[0]; closeMenu(); persist(); renderList(); }));
+        m.appendChild(mkItem("",opt[1],state.listSort===opt[0],function(){ setListSort(opt[0]); }));
       });
       m.appendChild(sep());
       m.appendChild(mkItem("✓",state.selectingNotes?"Select all in this list":"Select notes",false,function(){
@@ -2698,6 +2698,14 @@
         renderList();
       }));
     });
+  }
+  function setListSort(sort){
+    var changed=state.listSort!==sort;
+    state.listSort=sort;
+    closeMenu();
+    persist();
+    if(changed&&currentUser&&cloudHydrated&&!cloudSyncPaused&&!cloudSyncLoading) saveCloud(1);
+    renderList();
   }
   function prepareManualOrder(){
     if(state.listSort==="manual"&&state.items.every(function(item){ return typeof item.manualOrder==="number"; })) return;
@@ -9476,7 +9484,7 @@
     apiSettingsUnsubscribe=db.collection("users").doc(currentUser.uid).onSnapshot(function(doc){
       var data=doc.exists?doc.data():{};
       applyApiSettings(data.privateSettings||{});
-      applyRemoteAccountSnapshot(data);
+      queueRemoteAccountSnapshot(data);
     },function(error){ console.warn("API-key sync failed:",error); });
   }
   function liveNotesRef(itemId){ return db.collection("users").doc(currentUser.uid).collection("liveNotes").doc(itemId); }
@@ -9524,20 +9532,23 @@
   }
   function localNoteEditGuard(item){
     var currentItem=item||current();
-    var guard={itemId:currentItem&&currentItem.id||"",blockIds:{},focusedBlockId:"",protectTitle:false,selectionStart:null,selectionEnd:null,contentOffset:null,hasEdits:!!(saveTimer||savePendingSince)};
+    var guard={itemId:currentItem&&currentItem.id||"",blockIds:{},focusedBlockId:"",protectTitle:false,selectionStart:null,selectionEnd:null,contentOffset:null,hasEdits:false};
     var active=document.activeElement;
     if(activeNoteTextBlock&&currentItem&&activeNoteTextBlock.noteId===currentItem.id){
       guard.blockIds[activeNoteTextBlock.blockId]=true;
       if(!guard.focusedBlockId) guard.focusedBlockId=activeNoteTextBlock.blockId;
     }
-    if(currentItem&&state.currentId&&currentItem.id!==state.currentId) return guard;
+    /* In-progress typing belongs to the open note only. Treating a pending
+       save as "edits on every note" used to freeze the rest of the account
+       on this device's stale copies while the other device was writing. */
+    if(!currentItem||!state.currentId||currentItem.id!==state.currentId) return guard;
+    if(saveTimer||savePendingSince) guard.hasEdits=true;
     if(!active||!canvas||!canvas.contains(active)) return guard;
     if(active.classList&&active.classList.contains("title")) guard.protectTitle=true;
     var blockId=active.getAttribute&&(active.getAttribute("data-note-block")||active.getAttribute("data-group-body"));
     if(blockId){ guard.blockIds[blockId]=true; guard.focusedBlockId=blockId; }
     if(typeof active.selectionStart==="number"){ guard.selectionStart=active.selectionStart; guard.selectionEnd=active.selectionEnd; }
     if(active.isContentEditable) guard.contentOffset=contentEditableCaretOffset(active);
-    if(saveTimer||savePendingSince) guard.hasEdits=true;
     return guard;
   }
   function liveIncomingOptions(local,guard){
@@ -9653,6 +9664,7 @@
         if(result.changed) refreshOpenItemFromLive(local);
         if(result.writeBack){ scheduleLiveNotePush([local.id],true); saveCloud(1); }
       } finally { applyingLiveNote=false; }
+      flushPendingRemoteAccount();
     },function(error){ console.warn("Live note sync failed:",error); });
   }
   function sharedItemFromPayload(item,data){
@@ -9701,15 +9713,32 @@
             if(result.writeBack||itemSyncSignature(live)!==itemSyncSignature(item)){ scheduleLiveNotePush([live.id],true); saveCloud(1); }
           }
         } finally { applyingLiveNote=false; }
+        flushPendingRemoteAccount();
       },function(error){ console.warn("Shared editing updates failed:",error); });
     });
   }
+  function queueRemoteAccountSnapshot(cloud){
+    if(!cloud||!Array.isArray(cloud.items)) return;
+    pendingRemoteAccount=cloud;
+    flushPendingRemoteAccount();
+  }
+  function flushPendingRemoteAccount(){
+    if(!pendingRemoteAccount||!cloudLiveReady||cloudSyncLoading||cloudSyncPaused||applyingRemoteCloud||applyingLiveNote) return;
+    var cloud=pendingRemoteAccount;
+    pendingRemoteAccount=null;
+    applyRemoteAccountSnapshot(cloud);
+  }
   function applyRemoteAccountSnapshot(cloud){
-    if(!cloudLiveReady||applyingRemoteCloud||applyingLiveNote||cloudSyncLoading||cloudSyncPaused||!cloud||!Array.isArray(cloud.items)) return;
-    if((Number(cloud.updated)||0)===lastCloudWriteSentAt) return;
+    if(!cloud||!Array.isArray(cloud.items)) return;
+    if(!cloudLiveReady||applyingRemoteCloud||applyingLiveNote||cloudSyncLoading||cloudSyncPaused){
+      pendingRemoteAccount=cloud;
+      return;
+    }
+    if(isStaleAccountSnapshot(cloud,lastAppliedCloudUpdated,lastCloudWriteSentAt)) return;
     var fingerprint=liveAccountFingerprint(cloud);
     if(fingerprint===lastAppliedLiveFingerprint) return;
     lastAppliedLiveFingerprint=fingerprint;
+    lastAppliedCloudUpdated=Math.max(lastAppliedCloudUpdated, Number(cloud.updated)||0);
     applyingRemoteCloud=true;
     var writeBack=false, changedCurrent=false, added=0;
     try{
@@ -9721,7 +9750,10 @@
         seen[remote.id]=true;
         var local=localById[remote.id];
         if(!local){
-          if(isSeedDeviceItem(remote)) return;
+          /* Empty Untitled notes are seed copies on a fresh device, but a note
+             the owner just created on another device still belongs in this list
+             even before they type anything. */
+          if(remote.type==="agent"&&remote.id===AGENT_DEFAULT_ID) return;
           var copy=cloneData(remote); normalizeItem(copy); state.items.push(copy); added++; return;
         }
         var guard=localNoteEditGuard(local);
@@ -9742,6 +9774,8 @@
       state.folders=unionById(cloud.folders,state.folders);
       state.tags=unionById(cloud.tags,state.tags);
       if(cloud.deletedItems) state.deletedItems=mergeTombstones(state.deletedItems,cloud.deletedItems);
+      var prefs=accountPreferences(cloud);
+      if(prefs&&typeof prefs.listSort==="string"&&["manual","updated","due","timeSpent","title","tag"].indexOf(prefs.listSort)>=0) state.listSort=prefs.listSort;
       persistLocalStateQuietly();
       if(added||changedCurrent) refreshOpenItemFromLive(current());
       else renderList();
@@ -9749,17 +9783,21 @@
       if(writeBack){ state.pendingCloudSync=true; saveCloud(1); }
       else recordSyncBaseline({items:state.items},Number(cloud.updated)||Date.now());
     } finally { applyingRemoteCloud=false; }
+    flushPendingRemoteAccount();
   }
   function armCloudLiveSync(){
     cloudLiveReady=true;
-    lastAppliedLiveFingerprint=liveAccountFingerprint({items:state.items,deletedItems:state.deletedItems,version:state.version,updated:state.lastCloudSync});
+    lastAppliedLiveFingerprint=liveAccountFingerprint({items:state.items,deletedItems:state.deletedItems,version:state.version,updated:state.lastCloudSync,preferences:{listSort:state.listSort}});
+    lastAppliedCloudUpdated=Math.max(lastAppliedCloudUpdated, Number(state.lastCloudSync)||0);
     watchLiveNote(state.currentId);
     startSharedEditListeners();
+    flushPendingRemoteAccount();
+    pullLiveCloudNow();
   }
   function pullLiveCloudNow(){
     if(!currentUser||!db||!cloudLiveReady||cloudSyncLoading||cloudSyncPaused) return;
     db.collection("users").doc(currentUser.uid).get().then(function(doc){
-      if(doc.exists) applyRemoteAccountSnapshot(doc.data());
+      if(doc.exists) queueRemoteAccountSnapshot(doc.data());
     }).catch(function(error){ console.warn("Live cloud refresh failed:",error); });
     var item=current();
     if(shouldLivePushItem(item)){
@@ -9772,6 +9810,7 @@
           var result=commitIncomingItem(item,data.item,liveIncomingOptions(item));
           if(result.changed) refreshOpenItemFromLive(item);
         } finally { applyingLiveNote=false; }
+        flushPendingRemoteAccount();
       }).catch(function(){});
     }
   }
@@ -9882,11 +9921,11 @@
         var signedOutUser=currentUser;
         currentUser=u;
         if(u){
-          cloudSyncPaused=false; cloudHydrated=false; cloudLiveReady=false; pendingAccountRecovery=0;
+          cloudSyncPaused=false; cloudHydrated=false; cloudLiveReady=false; pendingAccountRecovery=0; pendingRemoteAccount=null; lastAppliedCloudUpdated=0;
           setAuthGate(false); startApiSettingsSync(); startHostedBillingSync(); startAccountUsageTracking(); renderFoot();
           loadCloud().then(openPendingInvite);
         } else {
-          cloudSyncPaused=true; cloudSyncLoading=false; cloudHydrated=false; cloudLiveReady=false; pendingAccountRecovery=0;
+          cloudSyncPaused=true; cloudSyncLoading=false; cloudHydrated=false; cloudLiveReady=false; pendingAccountRecovery=0; pendingRemoteAccount=null; lastAppliedCloudUpdated=0;
           stopAccountUsageTracking(); stopApiSettingsSync(); stopHostedBillingSync(); stopLiveNoteWatch(); stopSharedEditListeners(); resetApiSettings();
           /* Firebase reports the signed-out state once on startup. Keep notes
              already on this device so their owner can choose how to sync them
@@ -10266,6 +10305,24 @@
   function canStructurallyMergeItems(local,remote){
     return !!(local&&remote&&local.type===remote.type&&(local.type==="note"||local.type==="script"));
   }
+  function adoptItemRecency(target, source){
+    if(!target||!source) return target;
+    var targetRev=itemRevision(target), sourceRev=itemRevision(source);
+    target.updated=Math.max(Number(target.updated)||0, Number(source.updated)||0);
+    if(revisionIsNewer(sourceRev, targetRev)){
+      target.version=sourceRev.version;
+      target.versionChangedAt=sourceRev.versionChangedAt;
+    } else {
+      target.version=targetRev.version;
+      target.versionChangedAt=targetRev.versionChangedAt;
+    }
+    return target;
+  }
+  function itemRecencyChanged(left,right){
+    return (Number(left&&left.updated)||0)!==(Number(right&&right.updated)||0)
+      || (Number(left&&left.version)||0)!==(Number(right&&right.version)||0)
+      || (Number(left&&left.versionChangedAt)||0)!==(Number(right&&right.versionChangedAt)||0);
+  }
   /* Union two lists of {id:...} records. Protected ids and preferLocal keep this
      device's in-progress block; everything else takes the incoming side, and
      records that exist on only one side are kept. That is how a laptop can drop
@@ -10341,7 +10398,11 @@
     options=options||{};
     if(!local) return cloneData(remote);
     if(!remote) return cloneData(local);
-    if(itemSyncSignature(local)===itemSyncSignature(remote)) return cloneData(local);
+    if(itemSyncSignature(local)===itemSyncSignature(remote)){
+      var same=cloneData(local);
+      adoptItemRecency(same, remote);
+      return same;
+    }
     var preferLocal=typeof options.preferLocal==="boolean"?options.preferLocal:revisionIsNewer(itemRevision(local),itemRevision(remote));
     if(!canStructurallyMergeItems(local,remote)) return cloneData(preferLocal?local:remote);
     var merged=cloneData(preferLocal?local:remote);
@@ -10375,16 +10436,27 @@
   }
   function applyIncomingItemOnto(local,incoming,options){
     var merged=mergeLiveItems(local,incoming,options);
-    if(itemSyncSignature(local)===itemSyncSignature(merged)) return {changed:false,writeBack:false};
-    var writeBack=itemSyncSignature(merged)!==itemSyncSignature(incoming);
+    var sameContent=itemSyncSignature(local)===itemSyncSignature(merged);
+    if(sameContent&&!itemRecencyChanged(local,merged)){
+      return {changed:false,writeBack:(Number(local.updated)||0)>(Number(incoming&&incoming.updated)||0)};
+    }
+    var writeBack=itemSyncSignature(merged)!==itemSyncSignature(incoming)||itemRecencyChanged(merged,incoming);
     Object.keys(local).forEach(function(key){ if(!Object.prototype.hasOwnProperty.call(merged,key)) delete local[key]; });
     Object.keys(merged).forEach(function(key){ local[key]=merged[key]; });
     return {changed:true,writeBack:writeBack};
   }
   function liveAccountFingerprint(cloud){
     var items={};
-    ((cloud&&cloud.items)||[]).forEach(function(item){ if(item&&item.id) items[item.id]=itemSyncSignature(item); });
-    return stableStringify({updated:Number(cloud&&cloud.updated)||0,version:Number(cloud&&cloud.version)||0,items:items,deleted:cloud&&cloud.deletedItems||{}});
+    ((cloud&&cloud.items)||[]).forEach(function(item){ if(item&&item.id) items[item.id]=itemSyncSignature(item)+":"+(Number(item.updated)||0); });
+    return stableStringify({updated:Number(cloud&&cloud.updated)||0,version:Number(cloud&&cloud.version)||0,items:items,deleted:cloud&&cloud.deletedItems||{},listSort:(cloud&&cloud.preferences&&cloud.preferences.listSort)||""});
+  }
+  function isStaleAccountSnapshot(cloud,lastAppliedUpdated,lastSentAt){
+    var incoming=Number(cloud&&cloud.updated)||0;
+    var lastApplied=Number(lastAppliedUpdated)||0;
+    var lastSent=Number(lastSentAt)||0;
+    if(incoming&&incoming===lastSent) return true;
+    if(lastApplied&&incoming&&incoming<lastApplied) return true;
+    return false;
   }
   function useData(d){
     /* A cloud or imported legacy script is normalized in-place below. Snapshot
@@ -10493,6 +10565,7 @@
     if(typeof prefs.quickAiHandoff==="boolean") state.quickAiHandoff=prefs.quickAiHandoff;
     if(typeof prefs.allNotesName==="string"&&prefs.allNotesName.trim()) state.allNotesName=prefs.allNotesName.trim();
     if(typeof prefs.readChapterNames==="boolean") state.readChapterNames=prefs.readChapterNames;
+    if(typeof prefs.listSort==="string"&&["manual","updated","due","timeSpent","title","tag"].indexOf(prefs.listSort)>=0) state.listSort=prefs.listSort;
     if(prefs.agentSettings&&typeof prefs.agentSettings==="object"){
       var incoming=prefs.agentSettings, local=agentSettings();
       ["defaultAgentId","activeAgentId"].forEach(function(key){ if(typeof incoming[key]==="string") local[key]=incoming[key]; });
@@ -10806,7 +10879,7 @@
       deletedItems:pruneTombstones(data.deletedItems||{}),
       version:Number(data.version)||1,
       versionChangedAt:Number(data.versionChangedAt)||sentAt,
-      preferences:{theme:state.theme,motion:state.motion,darkness:state.darkness,enabledTypes:state.enabledTypes,typeDefaults:state.typeDefaults,noteInsertOptions:state.noteInsertOptions,tagsCollapsed:state.tagsCollapsed,typesCollapsed:state.typesCollapsed,allNotesCollapsed:state.allNotesCollapsed,focusNoteBody:state.focusNoteBody,quickAiHandoff:state.quickAiHandoff,allNotesName:state.allNotesName,readChapterNames:state.readChapterNames,agentSettings:agentSettings()},
+      preferences:{theme:state.theme,motion:state.motion,darkness:state.darkness,enabledTypes:state.enabledTypes,typeDefaults:state.typeDefaults,noteInsertOptions:state.noteInsertOptions,tagsCollapsed:state.tagsCollapsed,typesCollapsed:state.typesCollapsed,allNotesCollapsed:state.allNotesCollapsed,focusNoteBody:state.focusNoteBody,quickAiHandoff:state.quickAiHandoff,allNotesName:state.allNotesName,readChapterNames:state.readChapterNames,listSort:state.listSort,agentSettings:agentSettings()},
       theme:state.theme,
       motion:state.motion,
       updated:sentAt
