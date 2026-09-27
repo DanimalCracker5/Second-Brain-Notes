@@ -3606,12 +3606,19 @@
     var index=note.blocks.findIndex(function(item){ return item.id===block.id; }), actions=document.createElement("div"); actions.className="note-block-actions "+className;
     function actionButton(icon,label,disabled,handler,kind){
       var button=document.createElement("button"); button.type="button"; button.innerHTML=icon; button.title=label; button.setAttribute("aria-label",label); button.disabled=disabled; if(kind) button.className=kind;
-      var touched=false;
+      var lastRun=0;
+      function run(event){
+        if(event) event.preventDefault();
+        if(button.disabled) return;
+        var now=Date.now();
+        /* Phones emit touchend and click for one tap, in either order. */
+        if(now-lastRun<400) return;
+        lastRun=now;
+        handler();
+      }
       button.onmousedown=function(event){ event.preventDefault(); };
-      /* A touch that preventDefaults mousedown never delivers click on iPhone,
-         so run the action from touchend and ignore the duplicate click. */
-      button.addEventListener("touchend",function(event){ if(button.disabled) return; touched=true; event.preventDefault(); handler(); },{passive:false});
-      button.onclick=function(){ if(touched){ touched=false; return; } if(!button.disabled) handler(); };
+      button.addEventListener("touchend",run,{passive:false});
+      button.onclick=run;
       return button;
     }
     actions.appendChild(actionButton('<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m7 14 5-5 5 5"/></svg>',"Move block up",index<=0,function(){ moveNoteBlock(note,block,-1); }));
