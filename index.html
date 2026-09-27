@@ -151,9 +151,14 @@
   .note-block-actions{ position:absolute; z-index:6; display:flex; gap:3px; padding:3px; border:1px solid var(--line); border-radius:10px; background:rgba(13,13,17,.92); box-shadow:0 8px 22px rgba(0,0,0,.2); opacity:0; visibility:hidden; pointer-events:none; transform:translateY(4px); transition:opacity .15s,transform .15s,visibility .15s; }
   .note-block-actions button{ width:24px; height:24px; display:grid; place-items:center; border:0; border-radius:6px; color:var(--ink-dim); background:transparent; cursor:pointer; }
   .note-block-actions button svg{ width:14px; height:14px; } .note-block-actions button:hover{ color:var(--ink); background:var(--accent-soft); } .note-block-actions button.delete:hover{ color:#fca5a5; background:rgba(248,113,113,.12); } .note-block-actions button:disabled{ cursor:default; opacity:.3; }
-  .note-paragraph-actions{ right:34px; bottom:5px; } .note-heading-actions{ right:34px; bottom:5px; } .note-chapter-actions{ right:0; bottom:5px; }
-  .note-paragraph-wrap:hover .note-paragraph-actions,.note-paragraph-wrap:focus-within .note-paragraph-actions,.note-heading:hover .note-heading-actions,.note-heading:focus-within .note-heading-actions,.note-chapter:hover .note-chapter-actions,.note-chapter:focus-within .note-chapter-actions{ opacity:1; visibility:visible; pointer-events:auto; transform:translateY(0); }
+  .note-paragraph-actions{ right:34px; bottom:5px; } .note-heading-actions{ right:34px; bottom:5px; }
+  .note-paragraph-wrap:hover .note-paragraph-actions,.note-paragraph-wrap:focus-within .note-paragraph-actions,.note-heading:hover .note-heading-actions,.note-heading:focus-within .note-heading-actions{ opacity:1; visibility:visible; pointer-events:auto; transform:translateY(0); }
   .note-paragraph-wrap:hover,.note-paragraph-wrap:focus-within,.note-heading:hover,.note-heading:focus-within{ padding-bottom:39px; }
+  /* Chapter controls sit in the document flow. A hover-only overlay grew the
+     chapter and slid a bordered bar under the pointer, so the divider jumped
+     and move/delete could not be clicked. */
+  .note-chapter .note-paragraph-wrap,.note-chapter .note-paragraph-wrap:hover,.note-chapter .note-paragraph-wrap:focus-within{ padding-bottom:2px; }
+  .note-chapter .note-chapter-actions{ position:static; display:flex; flex-wrap:wrap; width:max-content; max-width:100%; margin:2px 0 0 25px; padding:0; border:0; border-radius:0; background:transparent; box-shadow:none; opacity:1; visibility:visible; pointer-events:auto; transform:none; }
   .note-paragraph-wrap.format-open .note-paragraph-actions{ opacity:0; visibility:hidden; pointer-events:none; }
   .note-heading{ position:relative; display:flex; align-items:center; gap:8px; margin:18px 0 5px; padding-bottom:2px; transition:padding-bottom .15s; }
   .note-heading input{ flex:1; min-width:0; padding:1px 0; border:0; outline:none; color:var(--ink); background:transparent; font-family:inherit; font-weight:700; letter-spacing:-.025em; transition:padding .14s; }
@@ -171,7 +176,7 @@
   .note-group summary::before{ content:"›"; color:var(--accent); font-size:1.2rem; transition:transform .16s; } .note-group[open] summary::before{ transform:rotate(90deg); }
   .note-group summary input{ flex:1; min-width:0; border:0; outline:none; color:inherit; background:transparent; font:inherit; font-weight:inherit; }
   .note-group-body{ min-height:74px; padding:2px 13px 14px 34px; outline:none; color:var(--ink-dim); font-size:.94rem; line-height:1.65; white-space:pre-wrap; } .note-group-body:empty::before{ content:"Add group content…"; color:var(--ink-faint); }
-  .note-chapter{ position:relative; padding:4px 0 22px; border-bottom:1px solid var(--line-soft); margin-bottom:18px; }
+  .note-chapter{ position:relative; padding:4px 0 10px; border-bottom:1px solid var(--line-soft); margin-bottom:18px; }
   .note-chapter:last-child{ border-bottom:none; }
   .note-chapter-head{ display:flex; align-items:center; gap:9px; }
   .note-chapter-index{ flex:none; color:var(--accent); font:500 .66rem "DM Mono",monospace; }
@@ -3599,7 +3604,23 @@
   }
   function buildNoteBlockActions(note,block,className){
     var index=note.blocks.findIndex(function(item){ return item.id===block.id; }), actions=document.createElement("div"); actions.className="note-block-actions "+className;
-    function actionButton(icon,label,disabled,handler,kind){ var button=document.createElement("button"); button.type="button"; button.innerHTML=icon; button.title=label; button.setAttribute("aria-label",label); button.disabled=disabled; if(kind) button.className=kind; button.onmousedown=function(event){ event.preventDefault(); }; button.onclick=function(){ if(!button.disabled) handler(); }; return button; }
+    function actionButton(icon,label,disabled,handler,kind){
+      var button=document.createElement("button"); button.type="button"; button.innerHTML=icon; button.title=label; button.setAttribute("aria-label",label); button.disabled=disabled; if(kind) button.className=kind;
+      var lastRun=0;
+      function run(event){
+        if(event) event.preventDefault();
+        if(button.disabled) return;
+        var now=Date.now();
+        /* Phones emit touchend and click for one tap, in either order. */
+        if(now-lastRun<400) return;
+        lastRun=now;
+        handler();
+      }
+      button.onmousedown=function(event){ event.preventDefault(); };
+      button.addEventListener("touchend",run,{passive:false});
+      button.onclick=run;
+      return button;
+    }
     actions.appendChild(actionButton('<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m7 14 5-5 5 5"/></svg>',"Move block up",index<=0,function(){ moveNoteBlock(note,block,-1); }));
     actions.appendChild(actionButton('<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m7 10 5 5 5-5"/></svg>',"Move block down",index<0||index>=note.blocks.length-1,function(){ moveNoteBlock(note,block,1); }));
     actions.appendChild(actionButton(ICON_EDIT,"Edit block",false,function(){ focusNoteBlock(block); }));
@@ -3949,7 +3970,14 @@
     return null;
   }
   function focusNoteBlock(block){
-    setTimeout(function(){ var field=canvas.querySelector('[data-note-block="'+block.id+'"]'); if(field){ field.focus(); if(field.select) field.select(); } },0);
+    setTimeout(function(){
+      var fields=canvas.querySelectorAll('[data-note-block="'+block.id+'"]');
+      if(!fields.length) return;
+      var field=fields[0];
+      for(var i=0;i<fields.length;i++) if(fields[i].isContentEditable){ field=fields[i]; break; }
+      field.focus();
+      if(field.select&&!field.isContentEditable&&fields.length===1) field.select();
+    },0);
   }
   function insertNoteBlock(note,type,insertAt){
     var block=createNoteBlock(type); if(!block) return;
@@ -4111,7 +4139,9 @@
     var head=document.createElement("div"); head.className="note-chapter-head";
     var index=document.createElement("span"); index.className="note-chapter-index"; index.textContent="CH";
     var title=document.createElement("input"); title.type="text"; title.className="note-chapter-title"; title.value=block.title||""; title.placeholder="Chapter name"; title.setAttribute("data-note-block",block.id);
-    title.oninput=function(){ block.title=title.value; saveNoteBlockChange(note,block,false); };
+    title.oninput=function(){ block.title=title.value; saveNoteBlockChange(note,block,false); rememberNoteTextSelection(note,block,title); };
+    title.onfocus=function(){ rememberNoteTextSelection(note,block,title); };
+    title.onkeyup=function(){ rememberNoteTextSelection(note,block,title); };
     var listen=document.createElement("button"); listen.type="button"; listen.className="note-chapter-listen"; listen.textContent="Listen";
     listen.style.display=hasVoiceAccess()&&ttsTextForChapter(block).trim()?"inline-flex":"none";
     listen.onclick=function(){ playTts(ttsTextForChapter(block).trim(),listen,listen); };
@@ -4126,7 +4156,9 @@
     head.appendChild(index); head.appendChild(title); head.appendChild(listen); head.appendChild(audioMenu); wrap.appendChild(head);
     var bodyWrap=document.createElement("div"); bodyWrap.className="note-paragraph-wrap";
     var body=document.createElement("div"); body.className="note-paragraph"; body.contentEditable="true"; body.setAttribute("role","textbox"); body.setAttribute("aria-multiline","true"); body.setAttribute("data-note-block",block.id); body.setAttribute("data-placeholder","Write this chapter…"); body.innerHTML=block.html||"";
-    body.onpaste=pastePlainText; body.oninput=function(){ block.html=sanitizeRichHtml(body.innerHTML); block.text=richTextToPlain(block.html); var hasAudio=hasVoiceAccess()&&ttsTextForChapter(block).trim(); listen.style.display=hasAudio?"inline-flex":"none"; audioMenu.style.display=hasAudio?"grid":"none"; saveNoteBlockChange(note,block,false); };
+    function rememberChapterBody(){ rememberNoteTextSelection(note,block,body); }
+    body.onpaste=pastePlainText; body.onfocus=rememberChapterBody; body.onkeyup=rememberChapterBody; body.onmouseup=rememberChapterBody;
+    body.oninput=function(){ block.html=sanitizeRichHtml(body.innerHTML); block.text=richTextToPlain(block.html); var hasAudio=hasVoiceAccess()&&ttsTextForChapter(block).trim(); listen.style.display=hasAudio?"inline-flex":"none"; audioMenu.style.display=hasAudio?"grid":"none"; saveNoteBlockChange(note,block,false); rememberChapterBody(); };
     bodyWrap.appendChild(body); wrap.appendChild(bodyWrap); wrap.appendChild(buildNoteBlockActions(note,block,"note-chapter-actions")); return wrap;
   }
   function buildNoteCode(note,block){
@@ -9573,7 +9605,14 @@
     }
     var blockId=guard.focusedBlockId||Object.keys(guard.blockIds)[0];
     if(!blockId) return;
-    var field=canvas.querySelector('[data-note-block="'+blockId+'"], [data-group-body="'+blockId+'"]');
+    var fields=canvas.querySelectorAll('[data-note-block="'+blockId+'"], [data-group-body="'+blockId+'"]');
+    var field=null;
+    for(var i=0;i<fields.length;i++){
+      var candidate=fields[i];
+      if(guard.contentOffset!=null&&candidate.isContentEditable){ field=candidate; break; }
+      if(guard.contentOffset==null&&!candidate.isContentEditable) field=field||candidate;
+    }
+    if(!field) field=fields[0];
     if(!field) return;
     field.focus();
     if(field.isContentEditable&&guard.contentOffset!=null){
