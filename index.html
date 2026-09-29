@@ -1274,6 +1274,21 @@
   .home-add .add-choice{ display:flex; flex-direction:column; align-items:flex-start; gap:3px; padding:12px 14px; border:1px solid var(--line); border-radius:14px; color:var(--ink); background:rgba(255,255,255,.03); cursor:pointer; text-align:left; font:inherit; }
   .home-add .add-choice small{ color:var(--ink-faint); line-height:1.4; }
   .home-add .add-choice:hover{ border-color:var(--accent-line); background:var(--accent-soft); }
+  .home-notes-slot{ margin-top:14px; }
+  .home-search{ display:flex; margin-bottom:8px; }
+  .home-search input,.home-scratch{ width:100%; border:1px solid var(--line); border-radius:12px; padding:12px 14px; color:var(--ink); background:rgba(0,0,0,.28); font:inherit; outline:none; }
+  .home-search input{ border-radius:12px; }
+  .home-search input:focus,.home-scratch:focus{ border-color:var(--accent-line); }
+  .home-scratch{ min-height:108px; resize:vertical; line-height:1.5; border:0; padding:2px 2px 10px; background:transparent; }
+  .home-todo{ display:grid; grid-template-columns:22px minmax(0,1fr) auto; gap:8px; align-items:center; width:100%; margin:0 0 4px; padding:8px; border:0; border-radius:12px; color:inherit; background:transparent; text-align:left; font:inherit; }
+  .home-todo:hover{ background:rgba(255,255,255,.05); }
+  .home-todo .box{ width:18px; height:18px; border:1px solid var(--accent-line); border-radius:6px; background:transparent; color:transparent; cursor:pointer; font-weight:700; }
+  .home-todo .box:hover{ background:var(--accent-soft); color:var(--accent); }
+  .home-todo b{ display:block; font-weight:600; font-size:.92rem; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+  .home-todo button.title{ border:0; background:transparent; color:inherit; cursor:pointer; text-align:left; font:inherit; min-width:0; padding:0; }
+  .home-todo em{ color:var(--ink-faint); font:500 .68rem "DM Mono",monospace; font-style:normal; white-space:nowrap; }
+  .home-filters{ display:flex; flex-wrap:wrap; gap:6px; margin:0 2px 8px; }
+  .home-filters button{ border:1px solid var(--accent-line); border-radius:999px; padding:4px 8px; color:var(--accent); background:var(--accent-soft); cursor:pointer; font:600 .72rem "DM Sans",sans-serif; }
   .tag-empty{ animation:fadeIn .25s ease both; }
 
   body.reduce-fx *,body.reduce-fx *::before,body.reduce-fx *::after{ animation-duration:.001s !important; animation-delay:0s !important; transition-duration:.001s !important; }
@@ -1528,7 +1543,7 @@
   }
   function loadLocal(){ var v=readKey(KEY); if(v&&v.items) return v; if(!canPersist&&mem) return mem; return migrate(); }
   function setSaveState(label,kind){ var el=$("saveState"); if(!el) return; el.textContent=label; el.className="save-state"+(kind?" "+kind:""); }
-  function backupPayload(){ return { app:"second-brain", version:16, items:state.items, folders:state.folders, tags:state.tags, deletedItems:state.deletedItems||{}, preferences:{theme:state.theme,motion:state.motion,darkness:state.darkness,enabledTypes:state.enabledTypes,typeDefaults:state.typeDefaults,noteInsertOptions:state.noteInsertOptions,tagsCollapsed:state.tagsCollapsed,typesCollapsed:state.typesCollapsed,allNotesCollapsed:state.allNotesCollapsed,focusNoteBody:state.focusNoteBody,quickAiHandoff:state.quickAiHandoff,allNotesName:state.allNotesName,readChapterNames:state.readChapterNames,listSort:state.listSort,homeLayout:normalizeHomeLayout(state.homeLayout),agentSettings:agentSettings()}, created:Date.now() }; }
+  function backupPayload(){ return { app:"second-brain", version:16, items:state.items, folders:state.folders, tags:state.tags, deletedItems:state.deletedItems||{}, preferences:{theme:state.theme,motion:state.motion,darkness:state.darkness,enabledTypes:state.enabledTypes,typeDefaults:state.typeDefaults,noteInsertOptions:state.noteInsertOptions,tagsCollapsed:state.tagsCollapsed,typesCollapsed:state.typesCollapsed,allNotesCollapsed:state.allNotesCollapsed,focusNoteBody:state.focusNoteBody,quickAiHandoff:state.quickAiHandoff,allNotesName:state.allNotesName,readChapterNames:state.readChapterNames,listSort:state.listSort,homeLayout:normalizeHomeLayout(state.homeLayout),homeExtrasVersion:state.homeExtrasVersion||0,homeScratch:state.homeScratch||"",agentSettings:agentSettings()}, created:Date.now() }; }
   function autoBackups(){ return deviceBackups; }
   function backupSnapshot(data){
     try{ return JSON.parse(JSON.stringify(data)); }catch(e){ console.warn("Backup snapshot could not be copied:",e); return data; }
@@ -1974,6 +1989,7 @@
   state.upcomingSort=normalizeUpcomingSort(state.upcomingSort);
   state.upcomingFilter=normalizeUpcomingFilter(state.upcomingFilter);
   state.homeLayout=normalizeHomeLayout(state.homeLayout);
+  if(typeof state.homeScratch!=="string") state.homeScratch="";
   agentSettings();
   if(state.agentEditDefaultsVersion!==1){ agentSettings().requireApproval=false; state.agentEditDefaultsVersion=1; }
   if(typeof state.pendingCloudSync!=="boolean") state.pendingCloudSync=false;
@@ -1992,9 +2008,10 @@
   migrateFoldersToTags(state);
   if(!state.items.length) state.items.push(newNoteItem());
   if(!state.currentId || !state.items.some(function(i){return i.id===state.currentId;})) state.currentId=state.items[0].id;
+  if(ensureHomeExtras()) persistLocalStateQuietly();
 
   function blankDeviceState(){
-    return {items:[],folders:[],tags:[],deletedItems:{},currentId:null,motion:true,theme:"nebula",darkness:82,enabledTypes:defaultEnabledTypes(),typeDefaults:TYPE_DEFAULTS_VERSION,noteInsertOptions:{file:true,paragraph:true,comment:true,prompt:true,heading:true,chapter:true,group:true,code:true},tagsCollapsed:false,typesCollapsed:false,allNotesCollapsed:false,focusNoteBody:true,quickAiHandoff:true,allNotesName:"All notes",readChapterNames:false,filterTag:null,filterType:"",sidebarView:"all",tagAssignMode:false,noteSearch:"",listSort:"updated",upcomingSort:"due",upcomingFilter:{range:"all",tagId:null,showDone:false},homeLayout:defaultHomeLayout(),version:1,agentSettings:defaultAgentSettings(),pendingCloudSync:false,syncBaseline:null};
+    return {items:[],folders:[],tags:[],deletedItems:{},currentId:null,motion:true,theme:"nebula",darkness:82,enabledTypes:defaultEnabledTypes(),typeDefaults:TYPE_DEFAULTS_VERSION,noteInsertOptions:{file:true,paragraph:true,comment:true,prompt:true,heading:true,chapter:true,group:true,code:true},tagsCollapsed:false,typesCollapsed:false,allNotesCollapsed:false,focusNoteBody:true,quickAiHandoff:true,allNotesName:"All notes",readChapterNames:false,filterTag:null,filterType:"",sidebarView:"all",tagAssignMode:false,noteSearch:"",listSort:"updated",upcomingSort:"due",upcomingFilter:{range:"all",tagId:null,showDone:false},homeLayout:defaultHomeLayout(),homeExtrasVersion:1,homeScratch:"",version:1,agentSettings:defaultAgentSettings(),pendingCloudSync:false,syncBaseline:null};
   }
   function clearAttachmentStore(){
     if(!window.indexedDB) return;
@@ -2026,7 +2043,7 @@
   }
 
   /* Opening the site lands on Home. A note is shown only after it is chosen. */
-  var viewingHome=true, homeCustomizing=false, homeTagId=null;
+  var viewingHome=true, homeCustomizing=false, homeTagId=null, homeTypeFilter="", homeQuery="", homeSearchFocus=false, homeScratchTimer=null;
   function current(){ return state.items.find(function(s){return s.id===state.currentId;})||state.items[0]; }
   /* Time is counted only while this app is the focused, visible tab. It is kept
      separately from `updated` so opening a note does not change its recency. */
@@ -3173,27 +3190,65 @@
      list is one of them and starts on. Visiting the site always opens Home. */
   function homeWidgetCatalog(){
     return [
-      {type:"notes",label:"Notes list",hint:"Every note in one list. On by default, and you can turn it off."},
+      {type:"notes",label:"Notes list",hint:"Every note in one list, under the widgets. On by default."},
       {type:"capture",label:"Quick capture",hint:"Jot a note without leaving home."},
       {type:"continue",label:"Continue",hint:"Jump back into the note you had open."},
       {type:"upcoming",label:"Upcoming",hint:"What is due next."},
+      {type:"glance",label:"At a glance",hint:"Counts for notes, open todos, and what is due."},
+      {type:"todos",label:"Open todos",hint:"Unchecked todos, with the due ones first."},
+      {type:"search",label:"Search",hint:"Find a note and filter the list below."},
       {type:"tags",label:"Tags",hint:"Pick a tag to filter the notes list."},
-      {type:"glance",label:"At a glance",hint:"Counts for notes, open todos, and what is due."}
+      {type:"revisit",label:"Revisit",hint:"Notes that have been quiet for a while."},
+      {type:"time",label:"Time spent",hint:"Where your time in notes has gone."},
+      {type:"today",label:"Today",hint:"Notes touched since this morning."},
+      {type:"done",label:"Finished",hint:"Todos you recently checked off."},
+      {type:"types",label:"Types",hint:"Jump to notes, todos, scripts, and the rest."},
+      {type:"scratch",label:"Scratch pad",hint:"A little pad that stays on Home, not in a note."},
+      {type:"agents",label:"Agents",hint:"Open an assistant without hunting through the list."}
     ];
   }
-  function defaultHomeLayout(){ return {widgets:[{type:"notes",enabled:true}]}; }
+  function homeStarterWidgets(){ return ["capture","continue","upcoming","glance","todos","search","tags","revisit","time","today","done","types","scratch","agents"]; }
+  function defaultHomeLayout(){
+    return {widgets:homeStarterWidgets().map(function(type){ return {type:type, enabled:true}; }).concat([{type:"notes", enabled:true}])};
+  }
   function normalizeHomeLayout(layout){
     var known={};
     homeWidgetCatalog().forEach(function(entry){ known[entry.type]=true; });
     var incoming=layout&&Array.isArray(layout.widgets)?layout.widgets:[];
-    var seen={}, widgets=[];
+    var seen={}, widgets=[], notes=null;
     incoming.forEach(function(widget){
       if(!widget||!known[widget.type]||seen[widget.type]) return;
       seen[widget.type]=true;
-      widgets.push({type:widget.type, enabled:widget.enabled!==false});
+      var entry={type:widget.type, enabled:widget.enabled!==false};
+      if(widget.type==="notes") notes=entry;
+      else widgets.push(entry);
     });
-    if(!seen.notes) widgets.unshift({type:"notes", enabled:true});
+    widgets.push(notes||{type:"notes", enabled:true});
     return {widgets:widgets};
+  }
+  function ensureHomeExtras(){
+    var before=JSON.stringify(state.homeLayout||null), versionBefore=state.homeExtrasVersion||0;
+    var layout=normalizeHomeLayout(state.homeLayout);
+    if((state.homeExtrasVersion||0)!==1){
+      var have={};
+      layout.widgets.forEach(function(widget){ have[widget.type]=true; });
+      var notes=layout.widgets.pop();
+      homeStarterWidgets().forEach(function(type){ if(!have[type]) layout.widgets.push({type:type, enabled:true}); });
+      layout.widgets.push(notes);
+      state.homeExtrasVersion=1;
+    }
+    state.homeLayout=normalizeHomeLayout(layout);
+    return JSON.stringify(state.homeLayout)!==before||(state.homeExtrasVersion||0)!==versionBefore;
+  }
+  function applyHomePreferences(prefs){
+    if(!prefs) return;
+    if(prefs.homeLayout){
+      state.homeLayout=normalizeHomeLayout(prefs.homeLayout);
+      state.homeExtrasVersion=typeof prefs.homeExtrasVersion==="number"?prefs.homeExtrasVersion:0;
+    } else if(typeof prefs.homeExtrasVersion==="number") state.homeExtrasVersion=prefs.homeExtrasVersion;
+    if(typeof prefs.homeScratch==="string") state.homeScratch=prefs.homeScratch;
+    var changed=ensureHomeExtras();
+    if(changed&&currentUser&&cloudHydrated&&!cloudSyncPaused&&!cloudSyncLoading) saveCloud(1);
   }
   function homeLayout(){ state.homeLayout=normalizeHomeLayout(state.homeLayout); return state.homeLayout; }
   function homeWidgetOn(type){
@@ -3214,12 +3269,15 @@
     persistHomeLayout();
   }
   function moveHomeWidget(type,direction){
-    var widgets=homeLayout().widgets, index=-1, i;
+    if(type==="notes") return;
+    var layout=homeLayout(), notes=layout.widgets.filter(function(widget){ return widget.type==="notes"; });
+    var widgets=layout.widgets.filter(function(widget){ return widget.type!=="notes"; }), index=-1, i;
     for(i=0;i<widgets.length;i++) if(widgets[i].type===type) index=i;
     var target=index+direction;
     if(index<0||target<0||target>=widgets.length) return;
     var moved=widgets.splice(index,1)[0];
     widgets.splice(target,0,moved);
+    layout.widgets=widgets.concat(notes);
     persistHomeLayout();
   }
   function removeHomeWidget(type){
@@ -3285,10 +3343,17 @@
     return mod&&mod.icon?mod.icon:(it.type==="script"?ICON_SCRIPT:(todoItem?ICON_TODO:(it.type==="audio"?ICON_AUDIO:(it.type==="agent"?ICON_AGENT:ICON_NOTE))));
   }
   function homeNotes(){
+    var query=(homeQuery||"").trim().toLowerCase();
     var items=(state.items||[]).filter(function(it){
       if(!it||it.hidden) return false;
-      if(homeTagId) return (it.tagIds||[]).indexOf(homeTagId)>=0;
-      return !(it.tagIds||[]).some(function(id){ var tag=tagById(id); return tag&&tag.hidden; });
+      if(homeTypeFilter&&itemKindForAgent(it)!==homeTypeFilter) return false;
+      if(homeTagId){ if((it.tagIds||[]).indexOf(homeTagId)<0) return false; }
+      else if((it.tagIds||[]).some(function(id){ var tag=tagById(id); return tag&&tag.hidden; })) return false;
+      if(query){
+        var tagNames=(it.tagIds||[]).map(function(id){ var tag=tagById(id); return tag?tag.name:""; }).join(" ");
+        if((it.title+" "+itemText(it)+" "+tagNames).toLowerCase().indexOf(query)<0) return false;
+      }
+      return true;
     });
     var sort=state.listSort||"updated";
     return items.sort(function(a,b){
@@ -3324,16 +3389,16 @@
   }
   function homeWidgetFrame(type,body,count){
     var def=homeWidgetDef(type), card=document.createElement("section");
-    card.className="home-widget"+((type==="notes"||type==="upcoming")?" span":"");
+    card.className="home-widget"+((type==="notes"||type==="upcoming"||type==="search"||type==="scratch")?" span":"");
     card.setAttribute("data-home-widget",type);
     var head=document.createElement("div"); head.className="home-widget-head";
     var title=document.createElement("h2"); title.textContent=def.label; head.appendChild(title);
     if(typeof count==="number"){ var badge=document.createElement("span"); badge.className="home-count"; badge.textContent=String(count); head.appendChild(badge); }
-    if(homeCustomizing){
+    if(homeCustomizing&&type!=="notes"){
       var actions=document.createElement("div"); actions.className="home-widget-actions";
       actions.appendChild(homeMiniButton("Move up","Up",function(){ moveHomeWidget(type,-1); }));
       actions.appendChild(homeMiniButton("Move down","Down",function(){ moveHomeWidget(type,1); }));
-      if(type!=="notes") actions.appendChild(homeMiniButton("Remove "+def.label,"Remove",function(){ removeHomeWidget(type); }));
+      actions.appendChild(homeMiniButton("Remove "+def.label,"Remove",function(){ removeHomeWidget(type); }));
       head.appendChild(actions);
     }
     card.appendChild(head); card.appendChild(body); return card;
@@ -3343,7 +3408,7 @@
     var copy=document.createElement("div");
     var kicker=document.createElement("p"); kicker.className="home-kicker"; kicker.textContent=homeGreeting();
     var title=document.createElement("h1"); title.textContent="Home";
-    var sub=document.createElement("p"); sub.className="home-sub"; sub.textContent="Land here instead of a note. Turn the notes list on or off, and add the widgets you want.";
+    var sub=document.createElement("p"); sub.className="home-sub"; sub.textContent="Widgets up top. The notes list sits underneath, and you can turn it off.";
     copy.appendChild(kicker); copy.appendChild(title); copy.appendChild(sub);
     var tools=document.createElement("div"); tools.className="home-tools";
     var notesOn=homeWidgetOn("notes");
@@ -3382,15 +3447,22 @@
       body.appendChild(off); return homeWidgetFrame("notes", body);
     }
     if(homeTagId&&!tagById(homeTagId)) homeTagId=null;
-    if(homeTagId){
-      var tag=tagById(homeTagId), bar=document.createElement("div"); bar.className="home-filter";
-      var label=document.createElement("span"); label.textContent="Showing "+(tag?tag.name:"this tag");
-      var clear=document.createElement("button"); clear.type="button"; clear.textContent="Clear"; clear.onclick=function(){ homeTagId=null; renderMain(); };
-      bar.appendChild(label); bar.appendChild(clear); body.appendChild(bar);
+    var filters=[];
+    if(homeTagId){ var tag=tagById(homeTagId); if(tag) filters.push(tag.name); }
+    if(homeTypeFilter) filters.push(itemLabel({type:homeTypeFilter}));
+    if((homeQuery||"").trim()) filters.push("Search: "+homeQuery.trim());
+    if(filters.length){
+      var bar=document.createElement("div"); bar.className="home-filters";
+      filters.forEach(function(text){
+        var chip=document.createElement("button"); chip.type="button"; chip.textContent=text+"  ×";
+        chip.onclick=function(){ homeTagId=null; homeTypeFilter=""; homeQuery=""; renderMain(); };
+        bar.appendChild(chip);
+      });
+      body.appendChild(bar);
     }
     var items=homeNotes();
     if(!items.length){
-      var empty=document.createElement("p"); empty.className="home-muted"; empty.textContent=homeTagId?"Nothing in this tag.":"No notes yet.";
+      var empty=document.createElement("p"); empty.className="home-muted"; empty.textContent=homeTagId?"Nothing in this tag.":((homeQuery||"").trim()||homeTypeFilter)?"Nothing matches.":"No notes yet.";
       body.appendChild(empty);
     } else items.forEach(function(it){ body.appendChild(buildHomeNoteRow(it)); });
     return homeWidgetFrame("notes", body, items.length);
@@ -3484,6 +3556,132 @@
     });
     return homeWidgetFrame("glance", body);
   }
+  function homeLinkRow(it, meta){
+    var button=document.createElement("button"); button.type="button"; button.className="home-due";
+    var text=document.createElement("span"); var title=document.createElement("b"); title.textContent=it.title||("Untitled "+itemLabel(it).toLowerCase()); text.appendChild(title);
+    var when=document.createElement("em"); when.textContent=meta||"";
+    button.appendChild(text); button.appendChild(when);
+    button.onclick=function(){ openHomeItem(it.id); };
+    return button;
+  }
+  function buildHomeListWidget(type, items, metaFor, emptyText){
+    var body=document.createElement("div");
+    if(!items.length){
+      var empty=document.createElement("p"); empty.className="home-muted"; empty.textContent=emptyText;
+      body.appendChild(empty); return homeWidgetFrame(type, body, 0);
+    }
+    items.forEach(function(it){ body.appendChild(homeLinkRow(it, metaFor(it))); });
+    return homeWidgetFrame(type, body, items.length);
+  }
+  function homeOpenTodos(){
+    return (state.items||[]).filter(function(it){ return it&&!it.hidden&&(isTodoNote(it)||it.type==="todo")&&!it.done; }).sort(function(a,b){
+      return (itemDueDate(a)||"9999").localeCompare(itemDueDate(b)||"9999")||((b.updated||0)-(a.updated||0));
+    }).slice(0,8);
+  }
+  function homeQuietNotes(){
+    var cutoff=Date.now()-14*86400000;
+    return (state.items||[]).filter(function(it){
+      return it&&!it.hidden&&it.type!=="agent"&&(it.updated||0)<cutoff&&(it.title||itemText(it));
+    }).sort(function(a,b){ return (a.updated||0)-(b.updated||0); }).slice(0,5);
+  }
+  function homeSpentLabel(ms){
+    ms=Number(ms)||0;
+    if(ms<60000) return ms?"Under 1m":"";
+    var mins=Math.round(ms/60000);
+    if(mins<60) return mins+"m";
+    var hours=Math.floor(mins/60), rest=mins%60;
+    return hours+"h"+(rest?" "+rest+"m":"");
+  }
+  function homeTimeNotes(){
+    return (state.items||[]).filter(function(it){ return it&&!it.hidden&&(Number(it.timeSpentMs)||0)>0; }).sort(function(a,b){
+      return (Number(b.timeSpentMs)||0)-(Number(a.timeSpentMs)||0);
+    }).slice(0,5);
+  }
+  function homeTodayNotes(){
+    var start=new Date(); start.setHours(0,0,0,0); var from=start.getTime();
+    return (state.items||[]).filter(function(it){ return it&&!it.hidden&&it.type!=="agent"&&(it.updated||0)>=from; }).sort(function(a,b){
+      return (b.updated||0)-(a.updated||0);
+    }).slice(0,6);
+  }
+  function homeFinishedTodos(){
+    return (state.items||[]).filter(function(it){ return it&&!it.hidden&&(isTodoNote(it)||it.type==="todo")&&it.done; }).sort(function(a,b){
+      return (b.completed||b.updated||0)-(a.completed||a.updated||0);
+    }).slice(0,6);
+  }
+  function buildHomeTodosWidget(){
+    var items=homeOpenTodos(), body=document.createElement("div");
+    if(!items.length){
+      var empty=document.createElement("p"); empty.className="home-muted"; empty.textContent="No open todos.";
+      body.appendChild(empty); return homeWidgetFrame("todos", body, 0);
+    }
+    items.forEach(function(it){
+      var row=document.createElement("div"); row.className="home-todo";
+      var check=document.createElement("button"); check.type="button"; check.className="box"; check.textContent="✓"; check.title="Mark complete"; check.setAttribute("aria-label","Mark complete");
+      check.onclick=function(){ setTodoDone(it, true); if(viewingHome) renderMain(); };
+      var open=document.createElement("button"); open.type="button"; open.className="title";
+      var title=document.createElement("b"); title.textContent=it.title||"Untitled todo"; open.appendChild(title);
+      open.onclick=function(){ openHomeItem(it.id); };
+      var due=itemDueDate(it), when=document.createElement("em"); when.textContent=due?dueDateLabel(due):"";
+      if(dueDateClass(due)==="overdue") when.style.color="#fca5a5";
+      row.appendChild(check); row.appendChild(open); row.appendChild(when);
+      body.appendChild(row);
+    });
+    return homeWidgetFrame("todos", body, items.length);
+  }
+  function buildHomeSearchWidget(){
+    var body=document.createElement("div"); body.className="home-search";
+    var input=document.createElement("input"); input.type="search"; input.className="home-search-input"; input.placeholder="Search notes…"; input.setAttribute("aria-label","Search notes"); input.value=homeQuery||"";
+    input.oninput=function(){
+      homeQuery=input.value; homeSearchFocus=true;
+      if((homeQuery||"").trim()&&!homeWidgetOn("notes")) setHomeWidgetEnabled("notes", true);
+      else renderMain();
+    };
+    body.appendChild(input);
+    return homeWidgetFrame("search", body);
+  }
+  function buildHomeRevisitWidget(){ return buildHomeListWidget("revisit", homeQuietNotes(), function(it){ return homeWhen(it.updated); }, "Nothing has been sitting for two weeks."); }
+  function buildHomeTimeWidget(){ return buildHomeListWidget("time", homeTimeNotes(), function(it){ return homeSpentLabel(it.timeSpentMs); }, "Time shows up here after you spend a minute in a note."); }
+  function buildHomeTodayWidget(){ return buildHomeListWidget("today", homeTodayNotes(), function(it){ return homeWhen(it.updated); }, "Nothing touched today yet."); }
+  function buildHomeDoneWidget(){ return buildHomeListWidget("done", homeFinishedTodos(), function(it){ return homeWhen(it.completed||it.updated); }, "No finished todos yet."); }
+  function buildHomeTypesWidget(){
+    var body=document.createElement("div"); body.className="home-tags";
+    var counts={};
+    (state.items||[]).forEach(function(it){ if(!it||it.hidden) return; var kind=itemKindForAgent(it); counts[kind]=(counts[kind]||0)+1; });
+    var kinds=Object.keys(counts).sort(function(a,b){ return counts[b]-counts[a]||a.localeCompare(b); });
+    if(!kinds.length){
+      var empty=document.createElement("p"); empty.className="home-muted"; empty.textContent="No notes yet.";
+      return homeWidgetFrame("types", empty);
+    }
+    kinds.forEach(function(kind){
+      var chip=document.createElement("button"); chip.type="button"; chip.className="home-tag"+(homeTypeFilter===kind?" on":"");
+      chip.textContent=itemLabel({type:kind})+"  "+counts[kind];
+      chip.onclick=function(){
+        homeTypeFilter=homeTypeFilter===kind?"":kind;
+        if(homeTypeFilter&&!homeWidgetOn("notes")) setHomeWidgetEnabled("notes", true);
+        else renderMain();
+      };
+      body.appendChild(chip);
+    });
+    return homeWidgetFrame("types", body);
+  }
+  function buildHomeScratchWidget(){
+    var body=document.createElement("div");
+    var area=document.createElement("textarea"); area.className="home-scratch"; area.placeholder="Scratch pad. This stays on Home."; area.value=state.homeScratch||"";
+    area.oninput=function(){
+      state.homeScratch=area.value;
+      clearTimeout(homeScratchTimer);
+      homeScratchTimer=setTimeout(function(){
+        persist();
+        if(currentUser&&cloudHydrated&&!cloudSyncPaused&&!cloudSyncLoading) saveCloud(1);
+      }, 500);
+    };
+    body.appendChild(area);
+    return homeWidgetFrame("scratch", body);
+  }
+  function buildHomeAgentsWidget(){
+    var agents=(state.items||[]).filter(function(it){ return it&&!it.hidden&&it.type==="agent"; });
+    return buildHomeListWidget("agents", agents, function(){ return "Open"; }, "No agents yet. Create one from New.");
+  }
   function buildHomeWidget(widget){
     if(widget.type==="notes") return buildHomeNotesWidget(widget.enabled===false);
     if(widget.type==="capture") return buildHomeCaptureWidget();
@@ -3491,6 +3689,15 @@
     if(widget.type==="upcoming") return buildHomeUpcomingWidget();
     if(widget.type==="tags") return buildHomeTagsWidget();
     if(widget.type==="glance") return buildHomeGlanceWidget();
+    if(widget.type==="todos") return buildHomeTodosWidget();
+    if(widget.type==="search") return buildHomeSearchWidget();
+    if(widget.type==="revisit") return buildHomeRevisitWidget();
+    if(widget.type==="time") return buildHomeTimeWidget();
+    if(widget.type==="today") return buildHomeTodayWidget();
+    if(widget.type==="done") return buildHomeDoneWidget();
+    if(widget.type==="types") return buildHomeTypesWidget();
+    if(widget.type==="scratch") return buildHomeScratchWidget();
+    if(widget.type==="agents") return buildHomeAgentsWidget();
     return document.createElement("div");
   }
   function buildHomeAddPanel(){
@@ -3529,18 +3736,26 @@
     var sheet=document.createElement("div"); sheet.className="sheet home-sheet"+(entering?" enter":"");
     sheet.appendChild(buildHomeHeader());
     var grid=document.createElement("div"); grid.className="home-grid";
-    var widgets=homeLayout().widgets.filter(function(widget){
-      if(widget.enabled===false) return homeCustomizing&&widget.type==="notes";
-      return true;
-    });
+    var widgets=homeLayout().widgets.filter(function(widget){ return widget.type!=="notes"&&widget.enabled!==false; });
+    var notesWidget=homeLayout().widgets.filter(function(widget){ return widget.type==="notes"; })[0];
     if(homeCustomizing) grid.appendChild(buildHomeAddPanel());
-    if(!widgets.length){
+    if(!widgets.length&&!(notesWidget&&notesWidget.enabled!==false)&&!homeCustomizing){
       var empty=document.createElement("div"); empty.className="home-empty";
       empty.textContent="Your home page is clear. Turn the notes list on, or add a widget.";
       grid.appendChild(empty);
     } else widgets.forEach(function(widget){ grid.appendChild(buildHomeWidget(widget)); });
     sheet.appendChild(grid);
+    if(notesWidget&&notesWidget.enabled!==false){
+      var slot=document.createElement("div"); slot.className="home-notes-slot";
+      slot.appendChild(buildHomeNotesWidget(false));
+      sheet.appendChild(slot);
+    }
     canvas.appendChild(sheet);
+    if(homeSearchFocus){
+      homeSearchFocus=false;
+      var search=sheet.querySelector(".home-search-input");
+      if(search){ search.focus(); var end=search.value.length; try{ search.setSelectionRange(end, end); }catch(e){} }
+    }
   }
   var lastMainId=null;
   function renderMain(){
@@ -10268,7 +10483,7 @@
       if(cloud.deletedItems) state.deletedItems=mergeTombstones(state.deletedItems,cloud.deletedItems);
       var prefs=accountPreferences(cloud);
       if(prefs&&typeof prefs.listSort==="string"&&["manual","updated","due","timeSpent","title","tag"].indexOf(prefs.listSort)>=0) state.listSort=prefs.listSort;
-      if(prefs&&prefs.homeLayout) state.homeLayout=normalizeHomeLayout(prefs.homeLayout);
+      if(prefs) applyHomePreferences(prefs);
       persistLocalStateQuietly();
       if(added||changedCurrent) refreshOpenItemFromLive(current());
       else if(viewingHome) renderMain();
@@ -11060,7 +11275,7 @@
     if(typeof prefs.allNotesName==="string"&&prefs.allNotesName.trim()) state.allNotesName=prefs.allNotesName.trim();
     if(typeof prefs.readChapterNames==="boolean") state.readChapterNames=prefs.readChapterNames;
     if(typeof prefs.listSort==="string"&&["manual","updated","due","timeSpent","title","tag"].indexOf(prefs.listSort)>=0) state.listSort=prefs.listSort;
-    if(prefs.homeLayout) state.homeLayout=normalizeHomeLayout(prefs.homeLayout);
+    applyHomePreferences(prefs);
     if(prefs.agentSettings&&typeof prefs.agentSettings==="object"){
       var incoming=prefs.agentSettings, local=agentSettings();
       ["defaultAgentId","activeAgentId"].forEach(function(key){ if(typeof incoming[key]==="string") local[key]=incoming[key]; });
@@ -11374,7 +11589,7 @@
       deletedItems:pruneTombstones(data.deletedItems||{}),
       version:Number(data.version)||1,
       versionChangedAt:Number(data.versionChangedAt)||sentAt,
-      preferences:{theme:state.theme,motion:state.motion,darkness:state.darkness,enabledTypes:state.enabledTypes,typeDefaults:state.typeDefaults,noteInsertOptions:state.noteInsertOptions,tagsCollapsed:state.tagsCollapsed,typesCollapsed:state.typesCollapsed,allNotesCollapsed:state.allNotesCollapsed,focusNoteBody:state.focusNoteBody,quickAiHandoff:state.quickAiHandoff,allNotesName:state.allNotesName,readChapterNames:state.readChapterNames,listSort:state.listSort,homeLayout:normalizeHomeLayout(state.homeLayout),agentSettings:agentSettings()},
+      preferences:{theme:state.theme,motion:state.motion,darkness:state.darkness,enabledTypes:state.enabledTypes,typeDefaults:state.typeDefaults,noteInsertOptions:state.noteInsertOptions,tagsCollapsed:state.tagsCollapsed,typesCollapsed:state.typesCollapsed,allNotesCollapsed:state.allNotesCollapsed,focusNoteBody:state.focusNoteBody,quickAiHandoff:state.quickAiHandoff,allNotesName:state.allNotesName,readChapterNames:state.readChapterNames,listSort:state.listSort,homeLayout:normalizeHomeLayout(state.homeLayout),homeExtrasVersion:state.homeExtrasVersion||0,homeScratch:state.homeScratch||"",agentSettings:agentSettings()},
       theme:state.theme,
       motion:state.motion,
       updated:sentAt

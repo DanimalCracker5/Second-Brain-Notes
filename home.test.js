@@ -28,7 +28,8 @@ function grab(name, next) {
 const sandbox = { state: {} };
 vm.createContext(sandbox);
 vm.runInContext(
-  [grab("homeWidgetCatalog", "defaultHomeLayout"),
+  [grab("homeWidgetCatalog", "homeStarterWidgets"),
+   grab("homeStarterWidgets", "defaultHomeLayout"),
    grab("defaultHomeLayout", "normalizeHomeLayout"),
    grab("normalizeHomeLayout", "homeLayout"),
    grab("homeLayout", "homeWidgetOn"),
@@ -37,8 +38,15 @@ vm.runInContext(
   { filename: "home-layout" }
 );
 
-test("a fresh home shows the notes list and nothing else", function () {
-  assert.deepEqual(sandbox.defaultHomeLayout().widgets, [{ type: "notes", enabled: true }]);
+test("a fresh home puts widgets first and the notes list last", function () {
+  const widgets = sandbox.defaultHomeLayout().widgets;
+  const types = widgets.map(function (widget) { return widget.type; });
+  assert.deepEqual(types.slice(0, -1), sandbox.homeStarterWidgets());
+  assert.equal(types[types.length - 1], "notes");
+  assert.ok(widgets.every(function (widget) { return widget.enabled === true; }));
+  ["todos", "search", "revisit", "time", "today", "done", "types", "scratch", "agents"].forEach(function (type) {
+    assert.ok(types.indexOf(type) >= 0, type);
+  });
 });
 
 test("homeWidgetOn reads the saved notes toggle", function () {
@@ -64,10 +72,35 @@ test("normalizeHomeLayout keeps a turned-off notes list and drops unknown widget
   ]);
 });
 
-test("normalizeHomeLayout puts the notes list back on when it is missing", function () {
-  const layout = sandbox.normalizeHomeLayout({ widgets: [{ type: "glance", enabled: true }] });
-  assert.deepEqual(layout.widgets[0], { type: "notes", enabled: true });
-  assert.equal(layout.widgets[1].type, "glance");
+test("normalizeHomeLayout puts the notes list last when it is missing", function () {
+  const layout = sandbox.normalizeHomeLayout({
+    widgets: [
+      { type: "notes", enabled: true },
+      { type: "glance", enabled: true },
+      { type: "capture", enabled: false }
+    ]
+  });
+  assert.deepEqual(layout.widgets.map(function (widget) { return widget.type; }), ["glance", "capture", "notes"]);
+  assert.equal(layout.widgets[2].enabled, true);
+  const missing = sandbox.normalizeHomeLayout({ widgets: [{ type: "glance", enabled: true }] });
+  assert.equal(missing.widgets[missing.widgets.length - 1].type, "notes");
+  assert.equal(missing.widgets[missing.widgets.length - 1].enabled, true);
+  assert.equal(missing.widgets[0].type, "glance");
+});
+
+test("ensureHomeExtras adds the new widgets once and leaves later removals alone", function () {
+  sandbox.state = {
+    homeLayout: { widgets: [{ type: "capture", enabled: true }, { type: "notes", enabled: true }] }
+  };
+  assert.equal(sandbox.ensureHomeExtras(), true);
+  const types = sandbox.state.homeLayout.widgets.map(function (widget) { return widget.type; });
+  assert.equal(types[0], "capture");
+  assert.equal(types[types.length - 1], "notes");
+  assert.ok(types.indexOf("todos") > 0 && types.indexOf("todos") < types.length - 1);
+  assert.equal(sandbox.state.homeExtrasVersion, 1);
+  sandbox.state.homeLayout.widgets = sandbox.state.homeLayout.widgets.filter(function (widget) { return widget.type !== "todos"; });
+  assert.equal(sandbox.ensureHomeExtras(), false);
+  assert.ok(!sandbox.state.homeLayout.widgets.some(function (widget) { return widget.type === "todos"; }));
 });
 
 test("opening the site starts on home instead of a note", function () {
@@ -88,4 +121,17 @@ test("home has a notes-list toggle and a way back from a note", function () {
   assert.match(grab("buildHomeHeader", "buildHomeNoteRow"), /setHomeWidgetEnabled\("notes"/);
   assert.match(grab("buildHomeAddPanel", "renderHome"), /Add a widget/);
   assert.match(html, /data-home-widget/);
+});
+
+test("the notes list is rendered under the widget grid", function () {
+  const from = html.indexOf("  function renderHome(");
+  const to = html.indexOf("  var lastMainId=", from);
+  assert.ok(from >= 0 && to > from);
+  const render = html.slice(from, to);
+  const gridAt = render.indexOf('grid.className="home-grid"');
+  const filterAt = render.indexOf('widget.type!=="notes"');
+  const slotAt = render.indexOf('slot.className="home-notes-slot"');
+  assert.ok(gridAt >= 0 && filterAt > gridAt && slotAt > filterAt);
+  assert.ok(render.indexOf("sheet.appendChild(grid)") < render.indexOf("sheet.appendChild(slot)"));
+  assert.match(grab("moveHomeWidget", "removeHomeWidget"), /type==="notes"/);
 });
