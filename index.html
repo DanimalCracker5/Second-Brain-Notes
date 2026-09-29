@@ -418,8 +418,8 @@
   #notesListWrap.is-collapsed{ grid-template-rows:0fr; opacity:0; pointer-events:none; overflow:hidden; }
   #notesListWrap.is-collapsed > *{ overflow:hidden; padding-top:0; padding-bottom:0; }
 
-  /* Five children (dot, name, count, hide, edit) need five columns — with four
-     the edit button wrapped onto a second row and doubled the chip's height. */
+  /* Grip, dot, name, count, hide, and edit each need a column — a short grid
+     wraps the edit button onto a second row and doubles the chip's height. */
   .tagcloud{ display:grid; gap:2px; padding:2px 10px 10px; }
   .typecloud{ display:grid; gap:2px; padding:2px 10px 10px; }
   .typecloud.is-collapsed{ display:none; }
@@ -427,7 +427,17 @@
   .type-filter:hover,.type-filter.active{ color:var(--ink); border-color:var(--line); background:rgba(255,255,255,.05); }
   .type-filter.active{ color:var(--accent); border-color:var(--accent-line); background:var(--accent-soft); }
   .type-filter svg{ width:14px; height:14px; }
-  .tg{ position:relative; display:grid; grid-template-columns:auto minmax(0,1fr) auto auto auto; align-items:center; gap:8px; width:100%; min-height:31px; padding:0 3px 0 9px; border-radius:9px; color:var(--ink-dim); background:transparent; border:1px solid transparent; cursor:pointer; isolation:isolate; transition:color .16s ease,border-color .16s ease,transform .16s cubic-bezier(.2,.9,.3,1.2); }
+  .tg{ position:relative; display:grid; grid-template-columns:auto auto minmax(0,1fr) auto auto auto; align-items:center; gap:8px; width:100%; min-height:31px; padding:0 3px 0 6px; border-radius:9px; color:var(--ink-dim); background:transparent; border:1px solid transparent; cursor:pointer; isolation:isolate; transition:color .16s ease,border-color .16s ease,transform .16s cubic-bezier(.2,.9,.3,1.2); }
+  .tg .tag-grip{ position:relative; color:var(--ink-faint); font:700 .74rem "DM Mono",monospace; letter-spacing:-.18em; cursor:grab; user-select:none; opacity:.45; touch-action:none; }
+  .tg .tag-grip::after{ content:""; position:absolute; inset:-8px -6px; }
+  .tg:hover .tag-grip,.tg:focus-within .tag-grip{ opacity:1; }
+  .tg.dragging{ opacity:.32; }
+  .tg.drop-before{ box-shadow:inset 0 2px 0 var(--accent); }
+  .tg.drop-after{ box-shadow:inset 0 -2px 0 var(--accent); }
+  .tag-drag-ghost{ position:fixed; z-index:80; width:max-content; max-width:220px; min-height:31px; padding:0 12px; pointer-events:none; cursor:grabbing; opacity:.96; box-shadow:0 16px 36px rgba(0,0,0,.45); grid-template-columns:auto minmax(0,1fr); transform:rotate(-1.5deg); }
+  body.tag-dragging,body.tag-dragging *{ cursor:grabbing !important; }
+  body.tag-dragging{ user-select:none; }
+  body.tag-dragging .tg:active{ transform:none; }
   /* Each row tints itself with its own tag colour instead of the theme accent,
      so the list reads as a legend for the dots beside every note. */
   .tg::before{ content:""; position:absolute; z-index:-1; inset:0; border-radius:inherit; background:var(--tg,var(--accent)); opacity:.07; transition:opacity .16s ease; }
@@ -455,6 +465,22 @@
     .tg .tag-action::after{ content:""; position:absolute; inset:-6px -3px; }
   }
   .tag-empty{ padding:0 18px 9px; font-size:.76rem; color:var(--ink-faint); }
+  .tag-group-h{ padding-top:8px; }
+  .tag-group-h .section-toggle.with-label{ flex:1; }
+  .tag-group-h .section-toggle:not(.with-label){ flex:none; }
+  .tag-group-h .tag-group-rename svg{ width:13px; height:13px; }
+  .tag-group-name-input{ flex:1; min-width:0; width:100%; border:0; border-bottom:1px solid var(--accent-line); padding:0 0 1px; color:var(--ink); background:transparent; font:600 .58rem "DM Mono",monospace; letter-spacing:.16em; text-transform:uppercase; outline:none; }
+  .tag-group-name-input::placeholder{ color:var(--ink-faint); }
+  .tag-group-body{ display:grid; grid-template-rows:1fr; transition:grid-template-rows .28s cubic-bezier(.4,0,.2,1),opacity .2s ease; }
+  .tag-group-body > *{ min-height:0; overflow:hidden; transition:padding .28s cubic-bezier(.4,0,.2,1); }
+  .tag-group-body.is-collapsed{ grid-template-rows:0fr; opacity:0; pointer-events:none; }
+  .tag-group-body.is-collapsed > *{ padding-top:0; padding-bottom:0; }
+  .tag-group-h.drop-target,.tagcloud.drop-target{ outline:1px dashed var(--accent-line); background:var(--accent-soft); border-radius:9px; }
+  .tagcloud:empty{ display:none; }
+  body.tag-dragging #tags .tagcloud:empty{ display:grid; min-height:36px; margin:0 10px 8px; border:1px dashed var(--accent-line); border-radius:10px; }
+  .tag-new-group{ display:none; margin:2px 14px 8px; padding:9px 10px; border:1px dashed var(--accent-line); border-radius:10px; color:var(--accent); background:rgba(255,255,255,.03); font:600 .68rem "DM Mono",monospace; letter-spacing:.12em; text-transform:uppercase; text-align:center; }
+  body.tag-dragging .tag-new-group.is-visible{ display:block; }
+  .tag-new-group.is-armed{ color:#08080b; background:var(--accent); border-style:solid; }
 
   /* display:block matters — a <label> is inline by default, so the input's
      width:100% would resolve against the sidebar instead of this box. */
@@ -1260,6 +1286,7 @@
       <label class="note-search" id="noteSearchWrap"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="11" cy="11" r="6"/><path d="m16 16 4 4"/></svg><input id="noteSearch" type="search" autocomplete="off" placeholder="Search notes…" aria-label="Search notes"><button class="quick-add-note" id="quickAddNoteBtn" type="button" title="Add note from search" aria-label="Add note from search">＋</button><button id="clearNoteSearch" type="button" aria-label="Clear note search">×</button></label>
       <div class="sec-h"><button class="section-toggle" id="tagsToggleBtn" type="button" aria-controls="tags" aria-expanded="true" title="Collapse tags"><span>Tags</span><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m6 9 6 6 6-6"/></svg></button><button id="addTagBtn" title="New tag">＋</button></div>
       <div id="tags"></div>
+      <div id="tagGroups"></div>
       <div class="sec-h"><button class="section-toggle" id="typesToggleBtn" type="button" aria-controls="types" aria-expanded="true" title="Collapse types"><span>Types</span><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m6 9 6 6 6-6"/></svg></button></div>
       <div class="typecloud" id="types"></div>
       <div class="sec-h"><button class="section-toggle" id="notesToggleBtn" type="button" aria-controls="notesListWrap" aria-expanded="true" title="Collapse notes"><span id="listLabel">All notes</span><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m6 9 6 6 6-6"/></svg></button><div class="list-tools"><button id="selectNotesBtn" title="Select notes" aria-label="Select notes">✓</button><button id="deleteNotesBtn" class="bulk-delete" type="button" hidden title="Delete selected notes" aria-label="Delete selected notes"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 6h18M8 6V4h8v2M19 6l-1 14H6L5 6"/></svg></button><button id="listToolsBtn" title="Filter and sort" aria-label="Filter and sort notes">⇅</button></div></div>
@@ -1462,7 +1489,7 @@
   }
   function loadLocal(){ var v=readKey(KEY); if(v&&v.items) return v; if(!canPersist&&mem) return mem; return migrate(); }
   function setSaveState(label,kind){ var el=$("saveState"); if(!el) return; el.textContent=label; el.className="save-state"+(kind?" "+kind:""); }
-  function backupPayload(){ return { app:"second-brain", version:16, items:state.items, folders:state.folders, tags:state.tags, deletedItems:state.deletedItems||{}, preferences:{theme:state.theme,motion:state.motion,darkness:state.darkness,enabledTypes:state.enabledTypes,typeDefaults:state.typeDefaults,noteInsertOptions:state.noteInsertOptions,tagsCollapsed:state.tagsCollapsed,typesCollapsed:state.typesCollapsed,allNotesCollapsed:state.allNotesCollapsed,focusNoteBody:state.focusNoteBody,quickAiHandoff:state.quickAiHandoff,allNotesName:state.allNotesName,readChapterNames:state.readChapterNames,listSort:state.listSort,agentSettings:agentSettings()}, created:Date.now() }; }
+  function backupPayload(){ return { app:"second-brain", version:16, items:state.items, folders:state.folders, tags:state.tags, deletedItems:state.deletedItems||{}, preferences:{theme:state.theme,motion:state.motion,darkness:state.darkness,enabledTypes:state.enabledTypes,typeDefaults:state.typeDefaults,noteInsertOptions:state.noteInsertOptions,tagsCollapsed:state.tagsCollapsed,typesCollapsed:state.typesCollapsed,allNotesCollapsed:state.allNotesCollapsed,focusNoteBody:state.focusNoteBody,quickAiHandoff:state.quickAiHandoff,allNotesName:state.allNotesName,readChapterNames:state.readChapterNames,listSort:state.listSort,tagGroups:state.tagGroups||[],tagOrder:state.tagOrder||[],agentSettings:agentSettings()}, created:Date.now() }; }
   function autoBackups(){ return deviceBackups; }
   function backupSnapshot(data){
     try{ return JSON.parse(JSON.stringify(data)); }catch(e){ console.warn("Backup snapshot could not be copied:",e); return data; }
@@ -1572,13 +1599,14 @@
     var activeDocument=current(), documentEntry=captureDocumentBackup(activeDocument,false,"automatic");
     if(documentEntry&&currentUser&&db) writeCloudDocumentBackup(activeDocument,documentEntry.kind,documentEntry.created,documentEntry.data).catch(function(error){ console.warn("Automatic document backup could not reach the cloud:",error); });
     state.lastLocalChange=Date.now();
-    if(currentUser&&(changedWeight>0||createdOrDeleted)) state.pendingCloudSync=true;
+    var tagsChanged=tagLayoutSignature(previous)!==tagLayoutSignature(state);
+    if(currentUser&&(changedWeight>0||createdOrDeleted||tagsChanged)) state.pendingCloudSync=true;
     var d=JSON.stringify(state); if(canPersist){ try{ localStorage.setItem(KEY,d); }catch(e){ mem=JSON.parse(d); } } else mem=JSON.parse(d);
     setSaveState(currentUser?(state.pendingCloudSync?"Saving to cloud":"Saved to cloud"):"Sign in to sync",currentUser?(state.pendingCloudSync?"saving":"cloud"):"");
-    if(!applyingRemoteCloud&&!applyingLiveNote&&!cloudSyncPaused&&!cloudSyncLoading&&cloudHydrated&&(changedWeight>0||createdOrDeleted)){
+    if(!applyingRemoteCloud&&!applyingLiveNote&&!cloudSyncPaused&&!cloudSyncLoading&&cloudHydrated&&(changedWeight>0||createdOrDeleted||tagsChanged)){
       scheduleLiveNotePush(lastPersistChangedIds,createdOrDeleted);
       if(createdOrDeleted) saveCloudNow();
-      else saveCloud(changedWeight);
+      else saveCloud(Math.max(changedWeight, tagsChanged?1:0));
     }
   }
 
@@ -1867,6 +1895,10 @@
   var state=loadLocal();
   if(!state||!state.items){ state={ items:[], tags:[], currentId:null, motion:true, theme:"nebula", filterTag:null, sidebarView:"all", version:1 }; state.items.push(newNoteItem()); state.currentId=state.items[0].id; }
   state.folders=state.folders||[]; state.tags=state.tags||[]; state.items=state.items||[];
+  state.tagGroups=Array.isArray(state.tagGroups)?state.tagGroups:[];
+  if(Array.isArray(state.tagOrder)) state.tags=applyTagOrder(state.tags, state.tagOrder);
+  state.tagGroups=sanitizeTagGroups(state.tagGroups, state.tags);
+  state.tagOrder=state.tags.map(function(tag){ return tag.id; });
   if(typeof state.motion!=="boolean") state.motion=true;
   if(!state.theme) state.theme="nebula";
   if(typeof state.darkness!=="number") state.darkness=82;
@@ -1927,7 +1959,7 @@
   if(!state.currentId || !state.items.some(function(i){return i.id===state.currentId;})) state.currentId=state.items[0].id;
 
   function blankDeviceState(){
-    return {items:[],folders:[],tags:[],deletedItems:{},currentId:null,motion:true,theme:"nebula",darkness:82,enabledTypes:defaultEnabledTypes(),typeDefaults:TYPE_DEFAULTS_VERSION,noteInsertOptions:{file:true,paragraph:true,comment:true,prompt:true,heading:true,chapter:true,group:true,code:true},tagsCollapsed:false,typesCollapsed:false,allNotesCollapsed:false,focusNoteBody:true,quickAiHandoff:true,allNotesName:"All notes",readChapterNames:false,filterTag:null,filterType:"",sidebarView:"all",tagAssignMode:false,noteSearch:"",listSort:"updated",upcomingSort:"due",upcomingFilter:{range:"all",tagId:null,showDone:false},version:1,agentSettings:defaultAgentSettings(),pendingCloudSync:false,syncBaseline:null};
+    return {items:[],folders:[],tags:[],tagGroups:[],tagOrder:[],deletedItems:{},currentId:null,motion:true,theme:"nebula",darkness:82,enabledTypes:defaultEnabledTypes(),typeDefaults:TYPE_DEFAULTS_VERSION,noteInsertOptions:{file:true,paragraph:true,comment:true,prompt:true,heading:true,chapter:true,group:true,code:true},tagsCollapsed:false,typesCollapsed:false,allNotesCollapsed:false,focusNoteBody:true,quickAiHandoff:true,allNotesName:"All notes",readChapterNames:false,filterTag:null,filterType:"",sidebarView:"all",tagAssignMode:false,noteSearch:"",listSort:"updated",upcomingSort:"due",upcomingFilter:{range:"all",tagId:null,showDone:false},version:1,agentSettings:defaultAgentSettings(),pendingCloudSync:false,syncBaseline:null};
   }
   function clearAttachmentStore(){
     if(!window.indexedDB) return;
@@ -2035,7 +2067,7 @@
 
   var $=function(id){ return document.getElementById(id); };
   var app=$("app"), ambient=$("ambient"), canvas=$("canvas"), listEl=$("list"), toast=$("toast"),
-      menuBtn=$("menuBtn"), scrim=$("scrim"), tagsEl=$("tags"),
+      menuBtn=$("menuBtn"), scrim=$("scrim"), tagsEl=$("tags"), tagGroupsEl=$("tagGroups"),
       listLabel=$("listLabel"), dfoot=$("dfoot"), listToolsBtn=$("listToolsBtn"), selectNotesBtn=$("selectNotesBtn"), deleteNotesBtn=$("deleteNotesBtn"), noteSearch=$("noteSearch"), noteSearchWrap=$("noteSearchWrap");
 
   /* =================== theme apply =================== */
@@ -2550,42 +2582,396 @@
     (data.items||[]).forEach(function(item){ if(item&&item.folderId&&mapped[item.folderId]){ item.tagIds=item.tagIds||[]; if(item.tagIds.indexOf(mapped[item.folderId])<0) item.tagIds.push(mapped[item.folderId]); } if(item) delete item.folderId; });
     data.tags=tags; data.folders=[]; delete data.filterFolder;
   }
+  /* Tag groups are collapsible carets under the default list. Membership lives
+     in each group's tagIds. A group with no tags left is removed. */
+  function sanitizeTagGroups(groups, tags){
+    var ids={}, seen={}, used={}, clean=[];
+    (tags||[]).forEach(function(tag){ if(tag&&tag.id) ids[tag.id]=true; });
+    (groups||[]).forEach(function(group){
+      if(!group||!group.id||seen[group.id]) return;
+      seen[group.id]=true;
+      var tagIds=[];
+      (group.tagIds||[]).forEach(function(id){
+        if(!ids[id]||used[id]) return;
+        used[id]=true; tagIds.push(id);
+      });
+      if(!tagIds.length) return;
+      clean.push({id:String(group.id), name:(typeof group.name==="string"&&group.name.trim())?group.name.trim():"New group", collapsed:!!group.collapsed, tagIds:tagIds});
+    });
+    return clean;
+  }
+  function applyTagOrder(tags, order){
+    tags=Array.isArray(tags)?tags:[];
+    if(!Array.isArray(order)||!order.length) return tags.slice();
+    var byId={}, next=[], seen={};
+    tags.forEach(function(tag){ if(tag&&tag.id&&!byId[tag.id]) byId[tag.id]=tag; });
+    order.forEach(function(id){ if(byId[id]&&!seen[id]){ next.push(byId[id]); seen[id]=true; } });
+    tags.forEach(function(tag){ if(tag&&tag.id&&!seen[tag.id]){ next.push(tag); seen[tag.id]=true; } });
+    return next;
+  }
+  function placeId(list, tagId, targetId, after){
+    var next=(list||[]).filter(function(id){ return id!==tagId; });
+    if(!targetId){ next.push(tagId); return next; }
+    var index=next.indexOf(targetId);
+    if(index<0) next.push(tagId);
+    else next.splice(after?index+1:index, 0, tagId);
+    return next;
+  }
+  function placeTagInDefault(tags, tagId, targetId, after){
+    var byId={};
+    (tags||[]).forEach(function(tag){ if(tag&&tag.id) byId[tag.id]=tag; });
+    var moved=byId[tagId];
+    if(!moved) return (tags||[]).slice();
+    var next=(tags||[]).filter(function(tag){ return tag&&tag.id!==tagId; });
+    if(!targetId){ next.push(moved); return next; }
+    var index=-1;
+    next.forEach(function(tag, i){ if(tag.id===targetId) index=i; });
+    if(index<0) next.push(moved);
+    else next.splice(after?index+1:index, 0, moved);
+    return next;
+  }
+  function relocateTag(tags, groups, tagId, destination){
+    destination=destination||{};
+    tags=(tags||[]).slice();
+    groups=(groups||[]).map(function(group){ return {id:group.id, name:group.name, collapsed:!!group.collapsed, tagIds:(group.tagIds||[]).slice()}; });
+    var sourceGroupId=null;
+    groups.forEach(function(group){
+      var index=group.tagIds.indexOf(tagId);
+      if(index>=0){ sourceGroupId=group.id; group.tagIds.splice(index,1); }
+    });
+    var createdId=null;
+    if(destination.groupId==="new"){
+      createdId=destination.newId;
+      if(createdId) groups.push({id:createdId, name:(destination.name||"New group").trim()||"New group", collapsed:false, tagIds:[tagId]});
+    } else if(destination.groupId){
+      var group=null;
+      groups.forEach(function(entry){ if(entry.id===destination.groupId) group=entry; });
+      if(group) group.tagIds=placeId(group.tagIds, tagId, destination.targetId||null, !!destination.after);
+    } else tags=placeTagInDefault(tags, tagId, destination.targetId||null, !!destination.after);
+    var removedGroupIds=groups.filter(function(group){ return !group.tagIds.length; }).map(function(group){ return group.id; });
+    groups=groups.filter(function(group){ return group.tagIds.length; });
+    return {tags:tags, groups:groups, createdId:createdId, removedGroupIds:removedGroupIds, sourceGroupId:sourceGroupId};
+  }
+  function nudgeTag(tags, groups, tagId, offset){
+    var source=null;
+    (groups||[]).forEach(function(group){ if((group.tagIds||[]).indexOf(tagId)>=0) source=group; });
+    if(source){
+      var index=source.tagIds.indexOf(tagId), target=index+offset;
+      if(index<0||target<0||target>=source.tagIds.length) return null;
+      return relocateTag(tags, groups, tagId, {groupId:source.id, targetId:source.tagIds[target], after:offset>0});
+    }
+    var grouped={};
+    (groups||[]).forEach(function(group){ (group.tagIds||[]).forEach(function(id){ grouped[id]=true; }); });
+    var ungrouped=(tags||[]).filter(function(tag){ return tag&&tag.id&&!grouped[tag.id]; });
+    var index=ungrouped.findIndex(function(tag){ return tag.id===tagId; }), next=index+offset;
+    if(index<0||next<0||next>=ungrouped.length) return null;
+    return relocateTag(tags, groups, tagId, {groupId:null, targetId:ungrouped[next].id, after:offset>0});
+  }
+  function forgetTag(groups, tagId){
+    var next=(groups||[]).map(function(group){ return {id:group.id, name:group.name, collapsed:!!group.collapsed, tagIds:(group.tagIds||[]).filter(function(id){ return id!==tagId; })}; });
+    var removedGroupIds=next.filter(function(group){ return !group.tagIds.length; }).map(function(group){ return group.id; });
+    return {groups:next.filter(function(group){ return group.tagIds.length; }), removedGroupIds:removedGroupIds};
+  }
+  function tagLayoutSignature(data){
+    data=data||{};
+    var tags=data.tags||[];
+    var fallback=tags.map(function(tag){ return tag&&tag.id; }).filter(Boolean);
+    var order=Array.isArray(data.tagOrder)&&data.tagOrder.length?data.tagOrder.slice():fallback.slice();
+    fallback.forEach(function(id){ if(order.indexOf(id)<0) order.push(id); });
+    var groups=(data.tagGroups||[]).map(function(group){
+      if(!group||!group.id) return null;
+      return {id:String(group.id), name:group.name||"", collapsed:!!group.collapsed, tagIds:group.tagIds||[]};
+    }).filter(Boolean);
+    return stableStringify({order:order, groups:groups});
+  }
+  function rememberTagOrder(){ state.tagOrder=(state.tags||[]).map(function(tag){ return tag.id; }); }
+  function applyTagMove(result, message){
+    if(!result) return false;
+    var before=tagLayoutSignature(state);
+    state.tags=result.tags;
+    state.tagGroups=result.groups;
+    rememberTagOrder();
+    if(tagLayoutSignature(state)===before){ pendingTagGroupRename=null; return false; }
+    persist();
+    renderTags();
+    if(message) showToast(message);
+    return true;
+  }
   /* Signature of what the last render put on screen. Entrance animations only
      replay when this changes, so editing a note title doesn't make the whole
      sidebar flutter on every keystroke. */
-  var lastTagSignature=null, tagCloseTimer=null;
+  var lastTagSignature=null, tagCloseTimer=null, tagDrag=null, suppressTagClick=false, pendingTagGroupRename=null;
+  function tagGroupById(groupId){
+    if(!groupId) return null;
+    for(var i=0;i<(state.tagGroups||[]).length;i++) if(state.tagGroups[i].id===groupId) return state.tagGroups[i];
+    return null;
+  }
+  function tagGroupIdOf(tagId){
+    for(var i=0;i<(state.tagGroups||[]).length;i++) if((state.tagGroups[i].tagIds||[]).indexOf(tagId)>=0) return state.tagGroups[i].id;
+    return null;
+  }
+  function ungroupedTags(){
+    var grouped={};
+    (state.tagGroups||[]).forEach(function(group){ (group.tagIds||[]).forEach(function(id){ grouped[id]=true; }); });
+    return state.tags.filter(function(tag){ return tag&&!grouped[tag.id]; });
+  }
+  function renderTagChip(tag, index){
+    var chip=document.createElement("div");
+    chip.className="tg"+(state.filterTag===tag.id?" active":"")+(tag.hidden?" hidden":"");
+    chip.dataset.tagId=tag.id;
+    chip.style.setProperty("--i",Math.min(index,9));
+    chip.style.setProperty("--tg",tagColor(tag));
+    chip.innerHTML='<span class="tag-grip" title="Drag to reorder" aria-hidden="true">⋮⋮</span><span class="dot" style="background:'+tagColor(tag)+'"></span><span class="tag-name"></span><span class="tag-count">'+tagUseCount(tag.id)+'</span><button class="tag-action visibility" type="button" title="'+(tag.hidden?"Show tag":"Hide tag")+'" aria-label="'+(tag.hidden?"Show tag":"Hide tag")+'">'+(tag.hidden?ICON_EYE_OFF:ICON_EYE)+'</button><button class="tag-action edit" type="button" title="Edit tag" aria-label="Edit tag">'+ICON_EDIT+'</button>';
+    chip.querySelector(".tag-name").textContent=tag.name;
+    chip.onclick=function(event){
+      if(suppressTagClick){ suppressTagClick=false; return; }
+      if(event.target.closest(".tag-action")||event.target.closest(".tag-grip")) return;
+      clearTimeout(tagCloseTimer);
+      state.filterTag=state.filterTag===tag.id?null:tag.id;
+      if(state.sidebarView==="hidden") state.sidebarView="all";
+      persist(); renderAll();
+      var picked=tagsEl.querySelector(".tg.active");
+      if(picked) picked.classList.add("tag-pick");
+    };
+    chip.querySelector(".visibility").onclick=function(event){ event.stopPropagation(); tag.hidden=!tag.hidden; persist(); renderAll(); showToast(tag.hidden?"Tagged notes hidden from All notes":"Tagged notes shown in All notes"); };
+    chip.querySelector(".edit").onclick=function(event){ event.stopPropagation(); openTagEditor(event.currentTarget,tag); };
+    chip.onpointerdown=function(event){ beginTagDrag(event, tag, chip); };
+    return chip;
+  }
+  function renderTagCloud(tags, groupId, entered){
+    var cloud=document.createElement("div");
+    cloud.className="tagcloud"+(entered?" enter":"");
+    cloud.setAttribute("data-drop-group", groupId||"");
+    tags.forEach(function(tag, index){ cloud.appendChild(renderTagChip(tag, index)); });
+    return cloud;
+  }
   function renderTags(){
     tagsEl.innerHTML="";
+    if(tagGroupsEl) tagGroupsEl.innerHTML="";
     tagsEl.classList.toggle("is-collapsed",state.tagsCollapsed);
     var tagToggle=$("tagsToggleBtn");
     if(tagToggle){ tagToggle.setAttribute("aria-expanded",state.tagsCollapsed?"false":"true"); tagToggle.title=state.tagsCollapsed?"Expand tags":"Collapse tags"; }
     /* The collapsed state is a 0fr grid row, not display:none, so the markup
        still has to be built for the section to slide shut over real content. */
-    if(!state.tags.length){ var empty=document.createElement("div"); empty.className="tag-empty"; empty.textContent="No tags yet — tap +"; tagsEl.appendChild(empty); lastTagSignature=null; return; }
-    var sorted=state.tags.slice();
-    var signature=sorted.map(function(tag){ return tag.id+":"+(tag.hidden?1:0); }).join("|")+"@"+(state.filterTag||"");
-    var cloud=document.createElement("div"); cloud.className="tagcloud"+(signature===lastTagSignature||state.tagsCollapsed?"":" enter");
+    if(!state.tags.length){
+      var empty=document.createElement("div"); empty.className="tag-empty"; empty.textContent="No tags yet — tap +"; tagsEl.appendChild(empty);
+      lastTagSignature=null; return;
+    }
+    var ungrouped=ungroupedTags();
+    var signature=state.tagGroups.map(function(group){ return group.id+":"+group.tagIds.join(","); }).join("/")+"|"+ungrouped.map(function(tag){ return tag.id+":"+(tag.hidden?1:0); }).join("|")+"@"+(state.filterTag||"");
+    var entered=signature!==lastTagSignature&&!state.tagsCollapsed;
     lastTagSignature=signature;
-    sorted.forEach(function(tag,index){
-      var chip=document.createElement("div"); chip.className="tg"+(state.filterTag===tag.id?" active":"")+(tag.hidden?" hidden":"");
-      chip.style.setProperty("--i",Math.min(index,9));
-      chip.style.setProperty("--tg",tagColor(tag));
-      chip.innerHTML='<span class="dot" style="background:'+tagColor(tag)+'"></span><span class="tag-name"></span><span class="tag-count">'+tagUseCount(tag.id)+'</span><button class="tag-action visibility" type="button" title="'+(tag.hidden?"Show tag":"Hide tag")+'" aria-label="'+(tag.hidden?"Show tag":"Hide tag")+'">'+(tag.hidden?ICON_EYE_OFF:ICON_EYE)+'</button><button class="tag-action edit" type="button" title="Edit tag" aria-label="Edit tag">'+ICON_EDIT+'</button>';
-      chip.querySelector(".tag-name").textContent=tag.name;
-      chip.onclick=function(event){
-        if(event.target.closest(".tag-action")) return;
-        clearTimeout(tagCloseTimer);
-        state.filterTag=state.filterTag===tag.id?null:tag.id;
-        if(state.sidebarView==="hidden") state.sidebarView="all";
-        persist(); renderAll();
-        var picked=tagsEl.querySelector('.tg.active');
-        if(picked) picked.classList.add("tag-pick");
+    tagsEl.appendChild(renderTagCloud(ungrouped, "", entered));
+    if(!tagGroupsEl) return;
+    var zone=document.createElement("div");
+    zone.className="tag-new-group";
+    zone.textContent="Drop to make a group";
+    tagGroupsEl.appendChild(zone);
+    var byId={};
+    state.tags.forEach(function(tag){ if(tag&&tag.id) byId[tag.id]=tag; });
+    state.tagGroups.forEach(function(group){
+      var renaming=pendingTagGroupRename===group.id;
+      var head=document.createElement("div");
+      head.className="sec-h tag-group-h";
+      head.setAttribute("data-drop-group", group.id);
+      var toggle=document.createElement("button");
+      toggle.type="button";
+      toggle.className="section-toggle"+(renaming?"":" with-label");
+      toggle.setAttribute("aria-expanded", group.collapsed?"false":"true");
+      toggle.setAttribute("aria-controls","tag-group-"+group.id);
+      toggle.title=group.collapsed?"Expand "+group.name:"Collapse "+group.name;
+      toggle.innerHTML='<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m6 9 6 6 6-6"/></svg>';
+      if(!renaming){
+        var label=document.createElement("span");
+        label.textContent=group.name;
+        toggle.insertBefore(label, toggle.firstChild);
+      }
+      toggle.onclick=function(){
+        if(renaming) return;
+        group.collapsed=!group.collapsed;
+        var body=document.getElementById("tag-group-"+group.id);
+        if(body) body.classList.toggle("is-collapsed", group.collapsed);
+        toggle.setAttribute("aria-expanded", group.collapsed?"false":"true");
+        toggle.title=group.collapsed?"Expand "+group.name:"Collapse "+group.name;
+        persist();
       };
-      chip.querySelector(".visibility").onclick=function(event){ event.stopPropagation(); tag.hidden=!tag.hidden; persist(); renderAll(); showToast(tag.hidden?"Tagged notes hidden from All notes":"Tagged notes shown in All notes"); };
-      chip.querySelector(".edit").onclick=function(event){ event.stopPropagation(); openTagEditor(event.currentTarget,tag); };
-      cloud.appendChild(chip);
+      head.appendChild(toggle);
+      if(renaming){
+        var input=document.createElement("input");
+        input.className="tag-group-name-input";
+        input.value=group.name==="New group"?"":group.name;
+        input.placeholder="Group name";
+        input.setAttribute("aria-label","Tag group name");
+        input.onkeydown=function(event){
+          if(event.key==="Enter"){ event.preventDefault(); input.blur(); }
+          if(event.key==="Escape"){ input.dataset.revert="1"; input.blur(); }
+        };
+        input.onpointerdown=function(event){ event.stopPropagation(); };
+        input.onclick=function(event){ event.stopPropagation(); };
+        input.onblur=function(){
+          if(input.dataset.done==="1") return;
+          input.dataset.done="1";
+          pendingTagGroupRename=null;
+          if(input.dataset.revert!=="1"){
+            var value=input.value.trim();
+            if(value&&value!==group.name) group.name=value;
+          }
+          persist();
+          renderTags();
+        };
+        head.appendChild(input);
+      } else {
+        var rename=document.createElement("button");
+        rename.type="button";
+        rename.className="tag-group-rename";
+        rename.title="Rename group";
+        rename.setAttribute("aria-label","Rename group "+group.name);
+        rename.innerHTML=ICON_EDIT;
+        rename.onclick=function(event){
+          event.stopPropagation();
+          pendingTagGroupRename=group.id;
+          renderTags();
+        };
+        head.appendChild(rename);
+      }
+      var body=document.createElement("div");
+      body.id="tag-group-"+group.id;
+      body.className="tag-group-body"+(group.collapsed?" is-collapsed":"");
+      var members=(group.tagIds||[]).map(function(id){ return byId[id]; }).filter(Boolean);
+      body.appendChild(renderTagCloud(members, group.id, entered&&!group.collapsed));
+      tagGroupsEl.appendChild(head);
+      tagGroupsEl.appendChild(body);
     });
-    tagsEl.appendChild(cloud);
+    var pendingInput=tagGroupsEl.querySelector(".tag-group-name-input");
+    if(pendingInput){ pendingInput.focus(); pendingInput.select(); }
+  }
+  function clearTagDropMarks(){
+    document.querySelectorAll(".tg.drop-before,.tg.drop-after,.drop-target,.tag-new-group").forEach(function(node){
+      node.classList.remove("drop-before","drop-after","drop-target","is-visible","is-armed");
+    });
+  }
+  function tagDropTarget(x, y){
+    if(!tagDrag) return null;
+    var ghost=tagDrag.ghost;
+    if(ghost) ghost.hidden=true;
+    var el=document.elementFromPoint(x, y);
+    if(ghost) ghost.hidden=false;
+    if(!el||!el.closest) return null;
+    var zone=el.closest(".tag-new-group");
+    if(zone&&zone.classList.contains("is-visible")) return {type:"new"};
+    var chip=el.closest(".tg");
+    if(chip&&chip.dataset.tagId&&!chip.classList.contains("tag-drag-ghost")){
+      if(chip.dataset.tagId===tagDrag.id) return {type:"self"};
+      var rect=chip.getBoundingClientRect();
+      var bucket=chip.closest("[data-drop-group]");
+      return {type:"tag", tagId:chip.dataset.tagId, after:y>rect.top+rect.height/2, groupId:(bucket&&bucket.getAttribute("data-drop-group"))||""};
+    }
+    var home=el.closest("[data-drop-group]");
+    if(home) return {type:"bucket", groupId:home.getAttribute("data-drop-group")||""};
+    return null;
+  }
+  function updateTagDrag(event){
+    if(!tagDrag||!tagDrag.ghost) return;
+    tagDrag.ghost.style.left=(event.clientX+14)+"px";
+    tagDrag.ghost.style.top=(event.clientY-18)+"px";
+    clearTagDropMarks();
+    var zone=tagGroupsEl&&tagGroupsEl.querySelector(".tag-new-group");
+    var cloud=tagsEl&&tagsEl.querySelector(".tagcloud");
+    var rect=cloud?cloud.getBoundingClientRect():null;
+    var belowDefault=!tagDrag.sourceGroupId&&rect&&event.clientY>rect.bottom-1;
+    if(zone&&belowDefault){
+      zone.classList.add("is-visible");
+      zone.textContent="Drop to make a group";
+    }
+    var scroller=tagsEl&&tagsEl.closest(".d-scroll");
+    if(scroller){
+      var bounds=scroller.getBoundingClientRect();
+      if(event.clientY<bounds.top+42) scroller.scrollTop-=12;
+      else if(event.clientY>bounds.bottom-42) scroller.scrollTop+=12;
+    }
+    var hit=tagDropTarget(event.clientX, event.clientY);
+    tagDrag.hit=hit;
+    if(hit&&hit.type==="new"&&zone){
+      zone.classList.add("is-visible","is-armed");
+      zone.textContent="Release to make a group";
+    } else if(hit&&hit.type==="tag"){
+      var mark=document.querySelector('.tg[data-tag-id="'+hit.tagId+'"]');
+      if(mark) mark.classList.add(hit.after?"drop-after":"drop-before");
+    } else if(hit&&hit.type==="bucket"){
+      var el=document.elementFromPoint(event.clientX, event.clientY);
+      var home=el&&el.closest&&el.closest("[data-drop-group]");
+      if(home) home.classList.add("drop-target");
+    }
+  }
+  function openTagDrag(tag, chip, event){
+    var ghost=document.createElement("div");
+    ghost.className="tg tag-drag-ghost";
+    ghost.style.setProperty("--tg", tagColor(tag));
+    ghost.innerHTML='<span class="dot" style="background:'+tagColor(tag)+'"></span><span class="tag-name"></span>';
+    ghost.querySelector(".tag-name").textContent=tag.name;
+    document.body.appendChild(ghost);
+    chip.classList.add("dragging");
+    document.body.classList.add("tag-dragging");
+    tagDrag={id:tag.id, sourceGroupId:tagGroupIdOf(tag.id), chip:chip, ghost:ghost, hit:null};
+    updateTagDrag(event);
+  }
+  function finishTagDrag(event){
+    var drag=tagDrag;
+    if(!drag) return;
+    var hit=null;
+    try{ hit=tagDropTarget(event.clientX, event.clientY); }
+    finally{
+      tagDrag=null;
+      suppressTagClick=true;
+      setTimeout(function(){ suppressTagClick=false; }, 400);
+      document.body.classList.remove("tag-dragging");
+      if(drag.ghost&&drag.ghost.parentNode) drag.ghost.parentNode.removeChild(drag.ghost);
+      if(drag.chip) drag.chip.classList.remove("dragging");
+      clearTagDropMarks();
+    }
+    if(!hit||hit.type==="self") return;
+    var destination=null;
+    if(hit.type==="new"){
+      if(drag.sourceGroupId) return;
+      destination={groupId:"new", newId:uid(), name:"New group"};
+    } else if(hit.type==="tag") destination={groupId:hit.groupId||null, targetId:hit.tagId, after:!!hit.after};
+    else if(hit.type==="bucket") destination={groupId:hit.groupId||null};
+    if(!destination) return;
+    if(destination.groupId==="new") pendingTagGroupRename=destination.newId;
+    var result=relocateTag(state.tags, state.tagGroups, drag.id, destination);
+    var landed=destination.groupId&&destination.groupId!=="new"?tagGroupById(destination.groupId):null;
+    var message=null;
+    if(destination.groupId==="new") message="Tag group created";
+    else if(destination.groupId&&destination.groupId!==drag.sourceGroupId) message="Moved into "+((landed&&landed.name)||"group")+(result.removedGroupIds.length?" — group removed":"");
+    else if(result.removedGroupIds.length) message="Group removed";
+    else if(drag.sourceGroupId&&!destination.groupId) message="Removed from group";
+    if(!applyTagMove(result, message)) pendingTagGroupRename=null;
+  }
+  function beginTagDrag(event, tag, chip){
+    if(tagDrag||(event.button!==undefined&&event.button!==0)) return;
+    if(event.target.closest(".tag-action")) return;
+    if(event.pointerType&&event.pointerType!=="mouse"&&!event.target.closest(".tag-grip")) return;
+    var startX=event.clientX, startY=event.clientY, active=false, pointerId=event.pointerId;
+    function move(e){
+      if(e.pointerId!==pointerId) return;
+      if(!active){
+        if(Math.hypot(e.clientX-startX, e.clientY-startY)<5) return;
+        active=true;
+        openTagDrag(tag, chip, e);
+      }
+      if(e.cancelable) e.preventDefault();
+      updateTagDrag(e);
+    }
+    function up(e){
+      if(e.pointerId!==pointerId) return;
+      document.removeEventListener("pointermove", move);
+      document.removeEventListener("pointerup", up);
+      document.removeEventListener("pointercancel", up);
+      if(active) finishTagDrag(e);
+    }
+    document.addEventListener("pointermove", move, {passive:false});
+    document.addEventListener("pointerup", up);
+    document.addEventListener("pointercancel", up);
   }
   function renderTypes(){
     var el=$("types"), toggle=$("typesToggleBtn"); if(!el) return;
@@ -2607,12 +2993,12 @@
   }
   function tagUseCount(tagId){ return state.items.reduce(function(total,item){ return total+((item.tagIds||[]).indexOf(tagId)>=0?1:0); },0); }
   function tagDefaultHex(hue){ var h=((Number(hue)||0)%360+360)%360, c=.65*.62, x=c*(1-Math.abs((h/60)%2-1)), m=.62-c, rgb=h<60?[c,x,0]:h<120?[x,c,0]:h<180?[0,c,x]:h<240?[0,x,c]:h<300?[x,0,c]:[c,0,x]; return "#"+rgb.map(function(v){ return Math.round((v+m)*255).toString(16).padStart(2,"0"); }).join(""); }
-  function moveTag(tag,offset){ var index=state.tags.indexOf(tag), target=index+offset; if(index<0||target<0||target>=state.tags.length) return; state.tags.splice(index,1); state.tags.splice(target,0,tag); persist(); renderAll(); showToast("Tag moved "+(offset<0?"up":"down")); }
+  function moveTag(tag,offset){ var result=nudgeTag(state.tags, state.tagGroups, tag.id, offset); if(!result) return; applyTagMove(result, "Tag moved "+(offset<0?"up":"down")); }
   function openTagMergeMenu(anchor,tag){
     openMenu(anchor,function(menu){
       var title=document.createElement("div"); title.className="mtitle"; title.textContent="Merge “"+tag.name+"” into"; menu.appendChild(title);
       var targets=document.createElement("div"); targets.className="maxscroll";
-      state.tags.filter(function(other){ return other.id!==tag.id; }).forEach(function(other){ targets.appendChild(mkItem("",other.name,false,function(){ if(!confirm('Merge "'+tag.name+'" into "'+other.name+'"?')) return; state.items.forEach(function(item){ if((item.tagIds||[]).indexOf(tag.id)<0) return; item.tagIds=item.tagIds.filter(function(id){ return id!==tag.id; }); if(item.tagIds.indexOf(other.id)<0) item.tagIds.push(other.id); item.updated=Date.now(); }); state.tags=state.tags.filter(function(entry){ return entry.id!==tag.id; }); if(state.filterTag===tag.id) state.filterTag=other.id; closeMenu(); persist(); renderAll(); showToast("Tags merged"); })); });
+      state.tags.filter(function(other){ return other.id!==tag.id; }).forEach(function(other){ targets.appendChild(mkItem("",other.name,false,function(){ if(!confirm('Merge "'+tag.name+'" into "'+other.name+'"?')) return; state.items.forEach(function(item){ if((item.tagIds||[]).indexOf(tag.id)<0) return; item.tagIds=item.tagIds.filter(function(id){ return id!==tag.id; }); if(item.tagIds.indexOf(other.id)<0) item.tagIds.push(other.id); item.updated=Date.now(); }); var forgotten=forgetTag(state.tagGroups, tag.id); state.tagGroups=forgotten.groups; state.tags=state.tags.filter(function(entry){ return entry.id!==tag.id; }); rememberTagOrder(); if(state.filterTag===tag.id) state.filterTag=other.id; closeMenu(); persist(); renderAll(); showToast(forgotten.removedGroupIds.length?"Tags merged — group removed":"Tags merged"); })); });
       menu.appendChild(targets);
     });
   }
@@ -2624,9 +3010,9 @@
       name.onkeydown=function(event){ if(event.key==="Enter"){ saveName(); closeMenu(); } }; name.onblur=saveName; nameRow.appendChild(name); menu.appendChild(nameRow);
       var colorRow=document.createElement("div"); colorRow.className="mrow color-row"; var colorLabel=document.createElement("span"); colorLabel.textContent="Tag color"; var color=document.createElement("input"); color.type="color"; color.className="color-picker"; color.value=cleanIconColor(tag.color)||tagDefaultHex(tag.hue); color.setAttribute("aria-label","Choose tag color"); color.oninput=function(){ tag.color=cleanIconColor(color.value); persist(); renderAll(); }; colorRow.appendChild(colorLabel); colorRow.appendChild(color); menu.appendChild(colorRow);
       menu.appendChild(mkItem(tag.hidden?ICON_EYE:ICON_EYE_OFF,tag.hidden?"Show tagged notes in All notes":"Hide tagged notes from All notes",false,function(){ tag.hidden=!tag.hidden; closeMenu(); persist(); renderAll(); }));
-      var index=state.tags.indexOf(tag); menu.appendChild(sep()); if(index>0) menu.appendChild(mkItem(ICON_UP,"Move up",false,function(){ closeMenu(); moveTag(tag,-1); })); if(index>=0&&index<state.tags.length-1) menu.appendChild(mkItem(ICON_DOWN,"Move down",false,function(){ closeMenu(); moveTag(tag,1); }));
+      menu.appendChild(sep()); if(nudgeTag(state.tags, state.tagGroups, tag.id, -1)) menu.appendChild(mkItem(ICON_UP,"Move up",false,function(){ closeMenu(); moveTag(tag,-1); })); if(nudgeTag(state.tags, state.tagGroups, tag.id, 1)) menu.appendChild(mkItem(ICON_DOWN,"Move down",false,function(){ closeMenu(); moveTag(tag,1); })); if(tagGroupIdOf(tag.id)) menu.appendChild(mkItem("","Remove from group",false,function(){ var result=relocateTag(state.tags, state.tagGroups, tag.id, {groupId:null}); var removed=result.removedGroupIds.length; closeMenu(); applyTagMove(result, removed?"Group removed":"Removed from group"); }));
       if(state.tags.length>1){ menu.appendChild(sep()); menu.appendChild(mkItem(ICON_DUPLICATE,"Merge into…",false,function(){ openTagMergeMenu(anchor,tag); })); }
-      menu.appendChild(sep()); var remove=mkItem(ICON_DELETE,"Delete tag",false,function(){ if(!confirm('Delete tag "'+tag.name+'"? It will be removed from its notes.')) return; state.items.forEach(function(item){ item.tagIds=(item.tagIds||[]).filter(function(id){ return id!==tag.id; }); }); state.tags=state.tags.filter(function(entry){ return entry.id!==tag.id; }); if(state.filterTag===tag.id) state.filterTag=null; closeMenu(); persist(); renderAll(); showToast("Tag deleted"); }); remove.className+=" danger"; menu.appendChild(remove);
+      menu.appendChild(sep()); var remove=mkItem(ICON_DELETE,"Delete tag",false,function(){ if(!confirm('Delete tag "'+tag.name+'"? It will be removed from its notes.')) return; state.items.forEach(function(item){ item.tagIds=(item.tagIds||[]).filter(function(id){ return id!==tag.id; }); }); var forgotten=forgetTag(state.tagGroups, tag.id); state.tagGroups=forgotten.groups; state.tags=state.tags.filter(function(entry){ return entry.id!==tag.id; }); rememberTagOrder(); if(state.filterTag===tag.id) state.filterTag=null; closeMenu(); persist(); renderAll(); showToast(forgotten.removedGroupIds.length?"Tag deleted — group removed":"Tag deleted"); }); remove.className+=" danger"; menu.appendChild(remove);
     });
   }
   function openUpcomingTools(anchor){
@@ -4820,7 +5206,7 @@
         var existing=state.tags.find(function(tag){ return (tag.name||"").toLowerCase()===name.toLowerCase(); });
         if(existing){ setPicked(existing.id,true); return; }
         var nt={id:uid(),name:name,hue:0,color:"#000000"};
-        state.tags.push(nt);
+        state.tags.push(nt); rememberTagOrder();
         if(empty.parentNode) empty.parentNode.removeChild(empty);
         addRow(nt);
         /* The tag itself is real straight away — only the note's membership waits
@@ -5013,7 +5399,7 @@
       });
       m.appendChild(box); m.appendChild(sep());
       var row=document.createElement("div"); row.className="mrow"; var input=document.createElement("input"); input.placeholder="Create and apply tag…";
-      input.onkeydown=function(e){ if(e.key==="Enter"&&input.value.trim()){ var tag={id:uid(),name:input.value.trim().replace(/^#+/,""),hue:0,color:"#000000"}; state.tags.push(tag); selected.forEach(function(item){ item.tagIds=item.tagIds||[]; if(item.tagIds.indexOf(tag.id)<0) item.tagIds.push(tag.id); item.updated=Date.now(); }); closeMenu(); persist(); renderAll(); showToast("Tag created and applied"); } };
+      input.onkeydown=function(e){ if(e.key==="Enter"&&input.value.trim()){ var tag={id:uid(),name:input.value.trim().replace(/^#+/,""),hue:0,color:"#000000"}; state.tags.push(tag); rememberTagOrder(); selected.forEach(function(item){ item.tagIds=item.tagIds||[]; if(item.tagIds.indexOf(tag.id)<0) item.tagIds.push(tag.id); item.updated=Date.now(); }); closeMenu(); persist(); renderAll(); showToast("Tag created and applied"); } };
       row.appendChild(input); m.appendChild(row);
     });
   }
@@ -9134,7 +9520,7 @@
       var t=document.createElement("div"); t.className="mtitle"; t.textContent="New tag"; m.appendChild(t);
       var row=document.createElement("div"); row.className="mrow";
       var inp=document.createElement("input"); inp.placeholder="Tag name…";
-      inp.onkeydown=function(e){ if(e.key==="Enter"&&inp.value.trim()){ state.tags.push({id:uid(),name:inp.value.trim().replace(/^#+/,""),hue:0,color:"#000000"}); closeMenu(); persist(); renderTags(); showToast("Tag created"); } };
+      inp.onkeydown=function(e){ if(e.key==="Enter"&&inp.value.trim()){ state.tags.push({id:uid(),name:inp.value.trim().replace(/^#+/,""),hue:0,color:"#000000"}); rememberTagOrder(); closeMenu(); persist(); renderTags(); showToast("Tag created"); } };
       row.appendChild(inp); m.appendChild(row);
     });
   };
@@ -9815,7 +10201,14 @@
       if(cloud.deletedItems) state.deletedItems=mergeTombstones(state.deletedItems,cloud.deletedItems);
       var prefs=accountPreferences(cloud);
       if(prefs&&typeof prefs.listSort==="string"&&["manual","updated","due","timeSpent","title","tag"].indexOf(prefs.listSort)>=0) state.listSort=prefs.listSort;
+      var layoutBefore=tagLayoutSignature(state);
+      if(prefs&&Array.isArray(prefs.tagGroups)) state.tagGroups=prefs.tagGroups;
+      if(prefs&&Array.isArray(prefs.tagOrder)) state.tags=applyTagOrder(state.tags, prefs.tagOrder);
+      state.tagGroups=sanitizeTagGroups(state.tagGroups, state.tags);
+      rememberTagOrder();
+      var tagLayoutChanged=tagLayoutSignature(state)!==layoutBefore;
       persistLocalStateQuietly();
+      if(tagLayoutChanged) renderTags();
       if(added||changedCurrent) refreshOpenItemFromLive(current());
       else renderList();
       startSharedEditListeners();
@@ -10330,6 +10723,13 @@
     result.data.items=merged;
     result.data.folders=unionById(result.data.folders,localData.folders);
     result.data.tags=unionById(result.data.tags,localData.tags);
+    var cloudPrefs=accountPreferences(cloud)||{};
+    var localLayout={tags:state.tags, tagOrder:state.tagOrder, tagGroups:state.tagGroups};
+    var cloudLayout={tags:result.data.tags, tagOrder:cloudPrefs.tagOrder, tagGroups:cloudPrefs.tagGroups};
+    if(tagLayoutSignature(localLayout)!==tagLayoutSignature(cloudLayout)){
+      result.needsCloudWrite=true;
+      result.data.preferences=Object.assign({}, cloudPrefs, {tagGroups:cloneData(state.tagGroups||[]), tagOrder:(state.tagOrder||[]).slice()});
+    }
     result.data.deletedItems=pruneTombstones(result.data.deletedItems);
     if(result.needsCloudWrite){
       result.data.version=Math.max(1,Number(cloud.version)||0,Number(localData.version)||0)+1;
@@ -10513,6 +10913,9 @@
     state.currentId=(keepId&&state.items.some(function(item){ return item.id===keepId; }))?keepId:state.items[0].id; state.filterTag=null; state.selectedItemIds=[]; state.selectingNotes=false; state.tagAssignMode=false;
     state.pendingCloudSync=false; state.lastCloudSync=d.updated||Date.now();
     applyAccountPreferences(d);
+    state.tagGroups=sanitizeTagGroups(state.tagGroups, state.tags);
+    if(Array.isArray(state.tagOrder)&&state.tagOrder.length) state.tags=applyTagOrder(state.tags, state.tagOrder);
+    rememberTagOrder();
     if(!agentItems().length){ ensureBuiltinAgent(); state.pendingCloudSync=true; }
     else ensureBuiltinAgent();
     recordSyncBaseline({items:state.items},state.lastCloudSync);
@@ -10605,6 +11008,10 @@
     if(typeof prefs.allNotesName==="string"&&prefs.allNotesName.trim()) state.allNotesName=prefs.allNotesName.trim();
     if(typeof prefs.readChapterNames==="boolean") state.readChapterNames=prefs.readChapterNames;
     if(typeof prefs.listSort==="string"&&["manual","updated","due","timeSpent","title","tag"].indexOf(prefs.listSort)>=0) state.listSort=prefs.listSort;
+    if(Array.isArray(prefs.tagGroups)) state.tagGroups=prefs.tagGroups;
+    if(Array.isArray(prefs.tagOrder)) state.tags=applyTagOrder(state.tags, prefs.tagOrder);
+    state.tagGroups=sanitizeTagGroups(state.tagGroups, state.tags);
+    rememberTagOrder();
     if(prefs.agentSettings&&typeof prefs.agentSettings==="object"){
       var incoming=prefs.agentSettings, local=agentSettings();
       ["defaultAgentId","activeAgentId"].forEach(function(key){ if(typeof incoming[key]==="string") local[key]=incoming[key]; });
@@ -10918,7 +11325,7 @@
       deletedItems:pruneTombstones(data.deletedItems||{}),
       version:Number(data.version)||1,
       versionChangedAt:Number(data.versionChangedAt)||sentAt,
-      preferences:{theme:state.theme,motion:state.motion,darkness:state.darkness,enabledTypes:state.enabledTypes,typeDefaults:state.typeDefaults,noteInsertOptions:state.noteInsertOptions,tagsCollapsed:state.tagsCollapsed,typesCollapsed:state.typesCollapsed,allNotesCollapsed:state.allNotesCollapsed,focusNoteBody:state.focusNoteBody,quickAiHandoff:state.quickAiHandoff,allNotesName:state.allNotesName,readChapterNames:state.readChapterNames,listSort:state.listSort,agentSettings:agentSettings()},
+      preferences:{theme:state.theme,motion:state.motion,darkness:state.darkness,enabledTypes:state.enabledTypes,typeDefaults:state.typeDefaults,noteInsertOptions:state.noteInsertOptions,tagsCollapsed:state.tagsCollapsed,typesCollapsed:state.typesCollapsed,allNotesCollapsed:state.allNotesCollapsed,focusNoteBody:state.focusNoteBody,quickAiHandoff:state.quickAiHandoff,allNotesName:state.allNotesName,readChapterNames:state.readChapterNames,listSort:state.listSort,tagGroups:state.tagGroups||[],tagOrder:state.tagOrder||[],agentSettings:agentSettings()},
       theme:state.theme,
       motion:state.motion,
       updated:sentAt
