@@ -44,6 +44,10 @@ within their own account path. Enumeration lets the in-app storage meter count
 the files actually retained in Cloud Storage, including any orphaned files that
 still consume storage. Device-only attachments still work without signing in.
 
+## Connect an agent
+
+Signed-in people can create a token in Settings → Connect an agent and point Hermes (or any MCP client) at their notes. Deploy the agent function with the Firestore rules. See `docs/AGENT_ACCESS.md`.
+
 ## Hosted AI credits
 
 To sell convenience (users talk without pasting their own provider keys),

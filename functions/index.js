@@ -661,3 +661,18 @@ const functionOpts = {
 };
 
 exports.ai = onRequest(functionOpts, handleRequest);
+
+const { createAgentHandler } = require("./agent-http");
+const { createStore } = require("./agent-store");
+
+exports.agent = onRequest({
+  region: "us-central1",
+  timeoutSeconds: 60,
+  memory: "256MiB",
+  maxInstances: 20,
+  cors: false,
+  invoker: "public"
+}, createAgentHandler({
+  store: createStore(db),
+  verifyUser: verifyUser
+}));
