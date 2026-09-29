@@ -177,6 +177,29 @@
   .note-group summary::before{ content:"›"; color:var(--accent); font-size:1.2rem; transition:transform .16s; } .note-group[open] summary::before{ transform:rotate(90deg); }
   .note-group summary input{ flex:1; min-width:0; border:0; outline:none; color:inherit; background:transparent; font:inherit; font-weight:inherit; }
   .note-group-body{ min-height:74px; padding:2px 13px 14px 34px; outline:none; color:var(--ink-dim); font-size:.94rem; line-height:1.65; white-space:pre-wrap; } .note-group-body:empty::before{ content:"Add group content…"; color:var(--ink-faint); }
+  .note-checklist{ position:relative; margin:12px 0; padding:11px 12px 8px; border:1px solid var(--line); border-radius:14px; background:rgba(255,255,255,.025); }
+  .note-checklist-head{ display:flex; align-items:center; gap:8px; min-height:28px; margin-bottom:2px; }
+  .note-checklist-mark{ flex:none; color:var(--accent); font:600 .62rem "DM Mono",monospace; letter-spacing:.12em; }
+  .note-checklist-title{ flex:1; min-width:0; border:0; outline:none; color:var(--ink); background:transparent; font:600 .96rem "DM Sans",sans-serif; }
+  .note-checklist-title::placeholder{ color:var(--ink-faint); font-weight:500; }
+  .note-checklist-count{ flex:none; color:var(--ink-faint); font:500 .68rem "DM Mono",monospace; }
+  .note-checklist-items{ display:grid; gap:1px; }
+  .note-check-row{ display:flex; align-items:center; gap:8px; min-height:32px; border-radius:8px; padding:0 2px; }
+  .note-check-row:hover{ background:rgba(255,255,255,.03); }
+  .note-check-box{ width:18px; height:18px; flex:none; display:grid; place-items:center; padding:0; border:1px solid var(--accent-line); border-radius:6px; background:var(--accent-soft); color:transparent; cursor:pointer; font:800 .72rem/1 "DM Sans",sans-serif; }
+  .note-check-box:hover{ filter:brightness(1.12); }
+  .note-check-row.done .note-check-box{ color:#07110c; background:#6ee7b7; border-color:#6ee7b7; }
+  .note-check-row input{ flex:1; min-width:0; border:0; outline:none; color:var(--ink); background:transparent; font:400 .96rem/1.4 "DM Sans",sans-serif; }
+  .note-check-row input::placeholder{ color:var(--ink-faint); }
+  .note-check-row.done input{ color:var(--ink-faint); text-decoration:line-through; }
+  .note-check-remove{ flex:none; width:22px; height:22px; border:0; border-radius:6px; color:var(--ink-faint); background:transparent; cursor:pointer; opacity:0; font:500 1rem/1 "DM Sans",sans-serif; }
+  .note-check-row:hover .note-check-remove,.note-check-row:focus-within .note-check-remove{ opacity:1; }
+  .note-check-remove:hover{ color:#fca5a5; background:rgba(248,113,113,.12); }
+  .note-checklist-add{ margin:4px 0 2px 26px; padding:4px 0; border:0; color:var(--accent); background:transparent; cursor:pointer; font:500 .78rem "DM Sans",sans-serif; }
+  .note-checklist-add:hover{ filter:brightness(1.15); }
+  .note-checklist .note-checklist-actions{ position:static; display:flex; width:max-content; margin:4px 0 0 auto; padding:0; border:0; border-radius:0; background:transparent; box-shadow:none; opacity:.45; visibility:visible; pointer-events:auto; transform:none; }
+  .note-checklist:hover .note-checklist-actions,.note-checklist:focus-within .note-checklist-actions{ opacity:1; }
+  @media (max-width:560px){ .note-check-remove,.note-checklist .note-checklist-actions{ opacity:1; } }
   .note-chapter{ position:relative; padding:4px 0 10px; border-bottom:1px solid var(--line-soft); margin-bottom:18px; }
   .note-chapter:last-child{ border-bottom:none; }
   .note-chapter-head{ display:flex; align-items:center; gap:9px; }
@@ -303,6 +326,7 @@
   .todo-details .note-paragraph{ min-height:72px; font-size:.96rem; }
   .todo-details .note-heading{ margin-top:12px; }
   .todo-details .note-prompt{ margin:8px 0; }
+  .todo-details .note-checklist{ margin:8px 0; padding:9px 10px 6px; }
   .subtasks{ display:grid; gap:5px; }
   .subtask-row{ display:flex; align-items:center; gap:7px; color:var(--ink-dim); }
   .subtask-row input[type="checkbox"]{ accent-color:var(--accent); margin:0; }
@@ -1610,8 +1634,8 @@
   var COLLAB_HISTORY_LIMIT=24, COLLAB_MESSAGE_LIMIT=4000, COLLAB_CONTEXT_LIMIT=24000, COLLAB_PROPOSAL_CONTEXT_LIMIT=12000, COLLAB_TOOL_ROUNDS=8, COLLAB_SPEECH_CHUNK_LIMIT=2400;
   var LLM_REQUEST_MS=28000, LLM_STREAM_IDLE_MS=18000, LLM_DEFAULT_COMPLETION_TOKENS=4096;
   var TRANSCRIPT_GROUP_TITLE="Transcribed audio";
-  var AGENT_DEFAULT_INSTRUCTIONS="You are a personal assistant inside Second Brain Notes.\nThe owner often rambles through speech-to-text. Clean that up without losing meaning, and never mock filler words.\nThey use Cursor for coding. Help them draft prompts, plans, and notes they can paste there.\nBe useful first: search notes, tick todos, create items, and remember lasting facts without being asked twice.\nPut Cursor prompts in prompt blocks — never flatten them into ordinary paragraphs. Use headings, chapters, comments, groups, code, embeds, and links when those fit.\nKnow the name they gave you, and also answer to assistant or hey you. Be direct, warm, and useful — more like a collaborator than a chatbot.\nWhen a session starts, offer to help. Ask one short question if you need a target; otherwise start working.";
-  var AGENT_LEGACY_JARVIS_INSTRUCTIONS="You are a personal assistant inside Second Brain Notes. The owner often calls you Jarvis.\nThe owner often rambles through speech-to-text. Clean that up without losing meaning, and never mock filler words.\nThey use Cursor for coding. Help them draft prompts, plans, and notes they can paste there.\nBe useful first: search notes, tick todos, create items, and remember lasting facts without being asked twice.\nPut Cursor prompts in prompt blocks — never flatten them into ordinary paragraphs. Use headings, chapters, comments, groups, code, embeds, and links when those fit.\nKnow your own name and answer to Jarvis, assistant, or hey you. Be direct, warm, and useful — more like a collaborator than a chatbot.\nWhen a session starts, offer to help. Ask one short question if you need a target; otherwise start working.";
+  var AGENT_DEFAULT_INSTRUCTIONS="You are a personal assistant inside Second Brain Notes.\nThe owner often rambles through speech-to-text. Clean that up without losing meaning, and never mock filler words.\nThey use Cursor for coding. Help them draft prompts, plans, and notes they can paste there.\nBe useful first: search notes, tick todos, create items, and remember lasting facts without being asked twice.\nPut Cursor prompts in prompt blocks — never flatten them into ordinary paragraphs. Use headings, chapters, comments, groups, mini todo lists, code, embeds, and links when those fit.\nKnow the name they gave you, and also answer to assistant or hey you. Be direct, warm, and useful — more like a collaborator than a chatbot.\nWhen a session starts, offer to help. Ask one short question if you need a target; otherwise start working.";
+  var AGENT_LEGACY_JARVIS_INSTRUCTIONS="You are a personal assistant inside Second Brain Notes. The owner often calls you Jarvis.\nThe owner often rambles through speech-to-text. Clean that up without losing meaning, and never mock filler words.\nThey use Cursor for coding. Help them draft prompts, plans, and notes they can paste there.\nBe useful first: search notes, tick todos, create items, and remember lasting facts without being asked twice.\nPut Cursor prompts in prompt blocks — never flatten them into ordinary paragraphs. Use headings, chapters, comments, groups, mini todo lists, code, embeds, and links when those fit.\nKnow your own name and answer to Jarvis, assistant, or hey you. Be direct, warm, and useful — more like a collaborator than a chatbot.\nWhen a session starts, offer to help. Ask one short question if you need a target; otherwise start working.";
   var AGENT_DEFAULT_GREETING="";
   var canPersist=(function(){ try{ localStorage.setItem("__t","1"); localStorage.removeItem("__t"); return true; }catch(e){ return false; } })();
   function readKey(k){ if(canPersist){ try{ return JSON.parse(localStorage.getItem(k)); }catch(e){} } return null; }
@@ -1756,9 +1780,64 @@
   function newTask(){ return {id:uid(),text:"",description:"",body:"",attachments:[],blocks:[textBlock("")],subtasks:[],done:false,completed:null,dueDate:"",detailsCollapsed:true}; }
   function newAgentItem(){ var it=baseItem(); it.type="agent"; it.title="New Agent"; it.agent={tab:"chat",animationStyle:"face"}; normalizeAgent(it); return it; }
   function newWorkoutRoutine(){ var it=baseItem(); it.type="workout"; it.title="New Workout Routine"; it.workout={sessions:[],lastCompleted:null}; it.blocks=[textBlock("")]; it.body=""; return it; }
-  var NOTE_INSERT_DEFAULTS={file:true,embed:true,link:true,paragraph:true,comment:true,prompt:true,heading:true,chapter:true,group:true,code:true};
-  var AGENT_NOTE_BLOCK_TYPES=["paragraph","heading","chapter","comment","prompt","group","code","embed","link"];
+  var NOTE_INSERT_DEFAULTS={file:true,embed:true,link:true,paragraph:true,checklist:true,comment:true,prompt:true,heading:true,chapter:true,group:true,code:true};
+  var AGENT_NOTE_BLOCK_TYPES=["paragraph","heading","chapter","comment","prompt","group","checklist","code","embed","link"];
+  function canonicalBlockType(type){
+    var value=String(type||"").toLowerCase().replace(/[_-]+/g," ").replace(/\s+/g," ").trim();
+    if(value==="text") return "paragraph";
+    if(["checklist","check list","todo list","mini list","mini todo","mini todo list"].indexOf(value)>=0) return "checklist";
+    return value;
+  }
   function textBlock(text){ return {id:uid(),type:"text",text:text||"",html:escapeHtml(text||"").replace(/\n/g,"<br>")}; }
+  /* A mini todo list lives inside a note the same way a paragraph does. Items
+     are stored structured; text is the agent-facing "[ ] item" form. */
+  function checklistItemsFromText(text){
+    var items=[];
+    String(text||"").split(/\r?\n/).forEach(function(line){
+      if(!String(line).trim()) return;
+      var done=false, body=line;
+      var boxed=/^\s*(?:[-*+]\s*)?\[(x|X| )\]\s*(.*)$/.exec(line);
+      if(boxed){ done=/x/i.test(boxed[1]); body=boxed[2]; }
+      else {
+        var bullet=/^\s*[-*+•]\s+(.*)$/.exec(line);
+        body=bullet?bullet[1]:line.replace(/^\s+/,"");
+      }
+      items.push({id:uid(),text:body,done:done});
+    });
+    return items;
+  }
+  function syncChecklistText(block){
+    block.text=(block.items||[]).filter(function(item){ return item&&String(item.text||"").trim(); }).map(function(item){
+      return (item.done?"[x] ":"[ ] ")+item.text;
+    }).join("\n");
+  }
+  function checklistBlock(title,items,text){
+    var block={id:uid(),type:"checklist",title:typeof title==="string"?title:"",items:[]}, parsed=[];
+    if(Array.isArray(items)&&items.length){
+      items.forEach(function(item){
+        if(typeof item==="string"){ parsed.push({id:uid(),text:item,done:false}); return; }
+        if(!item||typeof item!=="object") return;
+        var itemText=typeof item.text==="string"?item.text:(typeof item.content==="string"?item.content:"");
+        parsed.push({id:typeof item.id==="string"&&item.id?item.id:uid(),text:itemText,done:!!item.done||item.checked===true});
+      });
+    }
+    if(!parsed.length) parsed=checklistItemsFromText(text);
+    if(!parsed.length) parsed=[{id:uid(),text:"",done:false}];
+    block.items=parsed;
+    syncChecklistText(block);
+    return block;
+  }
+  function normalizeChecklistBlock(block){
+    if(!block||block.type!=="checklist") return block;
+    if(typeof block.title!=="string") block.title="";
+    if(!Array.isArray(block.items)||(!block.items.length&&typeof block.text==="string"&&block.text.trim())) block.items=checklistItemsFromText(typeof block.text==="string"?block.text:"");
+    else block.items=block.items.filter(function(item){ return item&&typeof item==="object"; }).map(function(item){
+      return {id:typeof item.id==="string"&&item.id?item.id:uid(),text:typeof item.text==="string"?item.text:"",done:!!item.done};
+    });
+    if(!block.items.length) block.items.push({id:uid(),text:"",done:false});
+    syncChecklistText(block);
+    return block;
+  }
   function richTextToPlain(html){ var box=document.createElement("div"); box.innerHTML=html||""; return (box.innerText||box.textContent||"").replace(/\u00a0/g," "); }
   function sanitizeRichHtml(html){
     var box=document.createElement("div"), allowed={B:1,STRONG:1,I:1,EM:1,U:1,S:1,STRIKE:1,BR:1,DIV:1,P:1,UL:1,OL:1,LI:1,CODE:1};
@@ -1775,6 +1854,10 @@
     if(block.type==="heading"||block.type==="prompt"||block.type==="code") return block.type==="code"?(block.code||""):(block.text||"");
     if(block.type==="chapter") return block.text||"";
     if(block.type==="group") return [block.title,block.text].filter(Boolean).join("\n");
+    if(block.type==="checklist"){
+      var lines=(block.items||[]).map(function(item){ return cleanText(item&&item.text); }).filter(Boolean);
+      return [cleanText(block.title)].concat(lines).filter(Boolean).join("\n");
+    }
     if(block.type==="embed") return [block.title,block.url].filter(Boolean).join("\n");
     if(block.type==="link") return [block.title,block.description,block.url].filter(Boolean).join("\n");
     return "";
@@ -1852,7 +1935,7 @@
       note.blocks=[textBlock(note.body||"")];
       note.attachments.forEach(function(attachment){ note.blocks.push({id:uid(),type:"attachment",attachmentId:attachment.id,width:100}); });
     } else {
-      note.blocks=note.blocks.filter(function(block){ return block&&["text","attachment","embed","link","heading","comment","prompt","chapter","group","code"].indexOf(block.type)>=0&&(block.type!=="attachment"||block.attachmentId); });
+      note.blocks=note.blocks.filter(function(block){ return block&&["text","attachment","embed","link","heading","comment","prompt","chapter","group","checklist","code"].indexOf(block.type)>=0&&(block.type!=="attachment"||block.attachmentId); });
       /* A malformed legacy block list must not make the collaborator see only
          the title while the note's body still contains editable text. */
       if(!note.blocks.length&&typeof note.body==="string"&&note.body.trim()) note.blocks=[textBlock(note.body)];
@@ -1864,6 +1947,7 @@
         if(block.type==="chapter"){ if(typeof block.title!=="string") block.title=""; if(typeof block.text!=="string") block.text=""; block.html=sanitizeRichHtml(typeof block.html==="string"?block.html:escapeHtml(block.text).replace(/\n/g,"<br>")); block.text=richTextToPlain(block.html); }
         if(block.type==="comment"||block.type==="prompt"){ if(typeof block.text!=="string") block.text=""; }
         if(block.type==="group"){ if(typeof block.title!=="string") block.title="Untitled group"; if(typeof block.text!=="string") block.text=""; if(typeof block.collapsed!=="boolean") block.collapsed=false; }
+        if(block.type==="checklist") normalizeChecklistBlock(block);
         if(block.type==="code"){ if(typeof block.language!=="string") block.language="javascript"; if(typeof block.code!=="string") block.code=""; }
         if(block.type==="embed"){ if(typeof block.url!=="string") block.url=""; if(typeof block.videoId!=="string") block.videoId=""; block.provider=block.provider==="vimeo"?"vimeo":"youtube"; block.start=Math.max(0,Number(block.start)||0); if(typeof block.width!=="number") block.width=100; }
         if(block.type==="link"){ ["url","title","description","imageUrl","imageAttachmentId"].forEach(function(key){ if(typeof block[key]!=="string") block[key]=""; }); if(typeof block.width!=="number") block.width=100; }
@@ -1908,7 +1992,8 @@
     todos.forEach(function(task){
       if(task.text) blocks.push({id:uid(),type:"heading",text:task.text,level:3});
       var detail=taskDetailsText(task); if(detail) blocks.push(textBlock(detail));
-      (task.subtasks||[]).forEach(function(subtask){ if(subtask.text) blocks.push(textBlock((subtask.done?"[x] ":"[ ] ")+subtask.text)); });
+      var nested=(task.subtasks||[]).filter(function(subtask){ return subtask&&cleanText(subtask.text); });
+    if(nested.length) blocks.push(checklistBlock("",nested.map(function(subtask){ return {text:subtask.text,done:!!subtask.done}; })));
     });
     it.type="note"; it.todo=true; it.done=!!it.done; it.completed=it.completed||null; it.attachments=[]; it.blocks=blocks.length?blocks:[textBlock("")];
     delete it.todos;
@@ -2097,7 +2182,7 @@
   if(ensureHomeExtras()) persistLocalStateQuietly();
 
   function blankDeviceState(){
-    return {items:[],folders:[],tags:[],tagGroups:[],tagOrder:[],deletedItems:{},currentId:null,motion:true,theme:"nebula",darkness:82,enabledTypes:defaultEnabledTypes(),typeDefaults:TYPE_DEFAULTS_VERSION,noteInsertOptions:{file:true,paragraph:true,comment:true,prompt:true,heading:true,chapter:true,group:true,code:true},tagsCollapsed:false,typesCollapsed:false,allNotesCollapsed:false,focusNoteBody:true,quickAiHandoff:true,allNotesName:"All notes",readChapterNames:false,filterTag:null,filterType:"",sidebarView:"all",tagAssignMode:false,noteSearch:"",listSort:"updated",upcomingSort:"due",upcomingFilter:{range:"all",tagId:null,showDone:false},homeLayout:defaultHomeLayout(),homeExtrasVersion:1,homeScratch:"",version:1,agentSettings:defaultAgentSettings(),pendingCloudSync:false,syncBaseline:null};
+    return {items:[],folders:[],tags:[],tagGroups:[],tagOrder:[],deletedItems:{},currentId:null,motion:true,theme:"nebula",darkness:82,enabledTypes:defaultEnabledTypes(),typeDefaults:TYPE_DEFAULTS_VERSION,noteInsertOptions:{file:true,paragraph:true,checklist:true,comment:true,prompt:true,heading:true,chapter:true,group:true,code:true},tagsCollapsed:false,typesCollapsed:false,allNotesCollapsed:false,focusNoteBody:true,quickAiHandoff:true,allNotesName:"All notes",readChapterNames:false,filterTag:null,filterType:"",sidebarView:"all",tagAssignMode:false,noteSearch:"",listSort:"updated",upcomingSort:"due",upcomingFilter:{range:"all",tagId:null,showDone:false},homeLayout:defaultHomeLayout(),homeExtrasVersion:1,homeScratch:"",version:1,agentSettings:defaultAgentSettings(),pendingCloudSync:false,syncBaseline:null};
   }
   function clearAttachmentStore(){
     if(!window.indexedDB) return;
@@ -2433,6 +2518,12 @@
       if(block.type==="chapter") return {id:block.id||uid(),type:"chapter",title:block.title||"",html:sanitizeRichHtml(block.html||escapeHtml(block.text||"").replace(/\n/g,"<br>")),text:block.text||""};
       if(block.type==="comment"||block.type==="prompt") return {id:block.id||uid(),type:block.type,text:block.text||""};
       if(block.type==="group") return {id:block.id||uid(),type:"group",title:block.title||"Untitled group",text:block.text||""};
+      if(block.type==="checklist"){
+        var items=(Array.isArray(block.items)?block.items:checklistItemsFromText(block.text||"")).filter(function(item){ return item&&typeof item==="object"&&(cleanText(item.text)||item.done); }).map(function(item){
+          return {id:item.id||uid(),text:typeof item.text==="string"?item.text:"",done:!!item.done};
+        });
+        return {id:block.id||uid(),type:"checklist",title:typeof block.title==="string"?block.title:"",items:items};
+      }
       if(block.type==="code") return {id:block.id||uid(),type:"code",language:block.language||"javascript",code:block.code||""};
       if(block.type==="attachment") return {id:block.id||uid(),type:"attachment",attachmentId:block.attachmentId||"",width:Math.max(20,Math.min(100,Number(block.width)||100))};
       if(block.type==="embed") return block.videoId?{id:block.id||uid(),type:"embed",provider:block.provider==="vimeo"?"vimeo":"youtube",videoId:block.videoId,start:Math.max(0,Number(block.start)||0),url:embedWatchUrl(block),width:Math.max(20,Math.min(100,Number(block.width)||100))}:null;
@@ -3267,14 +3358,14 @@
       var sourceTask=(it.todos||[])[index], sourceId=sourceTask&&sourceTask.id, attachmentIds={};
       task.id=uid(); (task.subtasks||[]).forEach(function(subtask){ subtask.id=uid(); });
       (task.attachments||[]).forEach(function(attachment){ var oldId=attachment.id; attachment.id=uid(); attachmentIds[oldId]=attachment.id; attachment.sourceNoteId=sourceId; attachment.sourceAttachmentId=oldId; });
-      (task.blocks||[]).forEach(function(block){ block.id=uid(); if(block.type==="attachment") block.attachmentId=attachmentIds[block.attachmentId]||block.attachmentId; });
+      (task.blocks||[]).forEach(function(block){ block.id=uid(); if(block.type==="attachment") block.attachmentId=attachmentIds[block.attachmentId]||block.attachmentId; if(block.type==="checklist") (block.items||[]).forEach(function(item){ if(item) item.id=uid(); }); });
       if(sourceId) taskCopies.push({sourceId:sourceId,targetId:task.id,attachmentIds:attachmentIds});
     });
     if(copy.type==="note"||copy.type==="audio"){
       var attachmentIds={};
       var copyFiles=copy.type==="audio"?(copy.recordings||[]):(copy.attachments||[]);
       copyFiles.forEach(function(attachment){ var oldId=attachment.id; attachment.id=uid(); attachmentIds[oldId]=attachment.id; attachment.sourceNoteId=it.id; attachment.sourceAttachmentId=oldId; });
-      if(copy.type==="note") (copy.blocks||[]).forEach(function(block){ block.id=uid(); if(block.type==="attachment") block.attachmentId=attachmentIds[block.attachmentId]||block.attachmentId; });
+      if(copy.type==="note") (copy.blocks||[]).forEach(function(block){ block.id=uid(); if(block.type==="attachment") block.attachmentId=attachmentIds[block.attachmentId]||block.attachmentId; if(block.type==="checklist") (block.items||[]).forEach(function(item){ if(item) item.id=uid(); }); });
     }
     var ordered=visibleItems(), index=ordered.findIndex(function(item){ return item.id===it.id; }), next=ordered[index+1];
     copy.manualOrder=next?(it.manualOrder+next.manualOrder)/2:it.manualOrder+5;
@@ -5066,6 +5157,7 @@
     if(type==="heading") return {id:uid(),type:"heading",text:text,level:Math.max(1,Math.min(3,Number(seed.level)||2))};
     if(type==="chapter") return chapterBlock(cleanText(seed.title)||(text?"New chapter":""),text);
     if(type==="group") return {id:uid(),type:"group",title:cleanText(seed.title)||"Untitled group",text:text,collapsed:false};
+    if(type==="checklist") return checklistBlock(cleanText(seed.title)||"", seed.items, text);
     if(type==="code") return {id:uid(),type:"code",language:cleanText(seed.language)||"javascript",code:text};
     return null;
   }
@@ -5294,6 +5386,89 @@
     var body=document.createElement("div"); body.className="note-group-body"; body.contentEditable="true"; body.setAttribute("role","textbox"); body.setAttribute("aria-multiline","true"); body.setAttribute("data-group-body",block.id); body.textContent=block.text||""; body.onpaste=pastePlainText; body.oninput=function(){ block.text=body.innerText||body.textContent||""; saveNoteBlockChange(note,block,false); };
     details.ontoggle=function(){ block.collapsed=!details.open; touchContent(note); persist(); }; details.appendChild(summary); details.appendChild(body); return details;
   }
+  function buildNoteChecklist(note,block){
+    normalizeChecklistBlock(block);
+    var wrap=document.createElement("section"); wrap.className="note-checklist"; wrap.setAttribute("data-checklist-id",block.id); wrap.setAttribute("role","group");
+    function listLabel(){ return cleanText(block.title)||"Mini todo list"; }
+    wrap.setAttribute("aria-label",listLabel());
+    var head=document.createElement("div"); head.className="note-checklist-head";
+    var mark=document.createElement("span"); mark.className="note-checklist-mark"; mark.textContent="LIST";
+    var title=document.createElement("input"); title.type="text"; title.className="note-checklist-title"; title.placeholder="List name"; title.value=block.title||""; title.setAttribute("aria-label","List name");
+    title.oninput=function(){ block.title=title.value; wrap.setAttribute("aria-label",listLabel()); saveNoteBlockChange(note,block,false); };
+    title.onkeydown=function(event){ if(event.key==="Enter"&&!event.isComposing){ event.preventDefault(); var first=list.querySelector("input"); if(first) first.focus(); } };
+    var count=document.createElement("span"); count.className="note-checklist-count";
+    head.appendChild(mark); head.appendChild(title); head.appendChild(count);
+    var list=document.createElement("div"); list.className="note-checklist-items"; list.setAttribute("role","list");
+    function filledItems(){ return (block.items||[]).filter(function(item){ return cleanText(item&&item.text); }); }
+    function paintCount(){
+      var items=filledItems(), done=items.filter(function(item){ return item.done; }).length;
+      count.textContent=items.length?(done+"/"+items.length):"";
+    }
+    function focusItem(index){
+      var fields=list.querySelectorAll("input");
+      var field=fields[Math.max(0,Math.min(index,fields.length-1))];
+      if(!field) return;
+      field.focus();
+      var len=field.value.length;
+      try{ field.setSelectionRange(len,len); }catch(e){}
+    }
+    function commitStructure(focusIndex){
+      syncChecklistText(block); saveNoteBlockChange(note,block,true); draw(); focusItem(focusIndex);
+    }
+    function draw(){
+      list.innerHTML="";
+      block.items.forEach(function(item,index){
+        var row=document.createElement("div"); row.className="note-check-row"+(item.done?" done":""); row.setAttribute("role","listitem");
+        var box=document.createElement("button"); box.type="button"; box.className="note-check-box"; box.textContent=item.done?"✓":"";
+        box.setAttribute("aria-label",item.done?"Mark item incomplete":"Mark item complete"); box.setAttribute("aria-pressed",item.done?"true":"false");
+        var input=document.createElement("input"); input.type="text"; input.value=item.text||""; input.placeholder=index?"Item":"Add an item"; input.setAttribute("data-note-block",block.id); input.setAttribute("aria-label","Checklist item"); input.enterKeyHint="next";
+        var remove=document.createElement("button"); remove.type="button"; remove.className="note-check-remove"; remove.textContent="×"; remove.setAttribute("aria-label","Remove item");
+        box.onclick=function(){
+          item.done=!item.done; row.classList.toggle("done",item.done); box.textContent=item.done?"✓":"";
+          box.setAttribute("aria-label",item.done?"Mark item incomplete":"Mark item complete"); box.setAttribute("aria-pressed",item.done?"true":"false");
+          syncChecklistText(block); paintCount(); saveNoteBlockChange(note,block,true);
+        };
+        input.oninput=function(){ item.text=input.value; syncChecklistText(block); paintCount(); saveNoteBlockChange(note,block,false); };
+        input.onkeydown=function(event){
+          if(event.isComposing) return;
+          if(event.key==="Enter"){
+            event.preventDefault();
+            block.items.splice(index+1,0,{id:uid(),text:"",done:false});
+            commitStructure(index+1);
+          } else if(event.key==="Backspace"&&!input.value&&block.items.length>1){
+            event.preventDefault();
+            block.items.splice(index,1);
+            commitStructure(index-1);
+          }
+        };
+        input.onpaste=function(event){
+          var data=event.clipboardData&&event.clipboardData.getData("text/plain");
+          if(!data||!/[\r\n]/.test(data)) return;
+          event.preventDefault();
+          var start=typeof input.selectionStart==="number"?input.selectionStart:input.value.length;
+          var end=typeof input.selectionEnd==="number"?input.selectionEnd:start;
+          var merged=(input.value.slice(0,start)+data.replace(/\r\n?/g,"\n")+input.value.slice(end));
+          var parsed=checklistItemsFromText(merged);
+          if(!parsed.length) return;
+          item.text=parsed[0].text; item.done=parsed[0].done;
+          parsed.slice(1).forEach(function(extra,offset){ block.items.splice(index+1+offset,0,extra); });
+          commitStructure(index+parsed.length-1);
+        };
+        remove.onclick=function(){
+          if(block.items.length===1){ item.text=""; item.done=false; }
+          else block.items.splice(index,1);
+          commitStructure(Math.min(index,block.items.length-1));
+        };
+        row.appendChild(box); row.appendChild(input); row.appendChild(remove); list.appendChild(row);
+      });
+      paintCount();
+    }
+    var add=document.createElement("button"); add.type="button"; add.className="note-checklist-add"; add.textContent="+ Add item";
+    add.onclick=function(){ block.items.push({id:uid(),text:"",done:false}); commitStructure(block.items.length-1); };
+    draw();
+    wrap.appendChild(head); wrap.appendChild(list); wrap.appendChild(add); wrap.appendChild(buildNoteBlockActions(note,block,"note-checklist-actions"));
+    return wrap;
+  }
   function buildNoteBlock(note,block){
     if(block.type==="text") return buildNoteParagraph(note,block);
     if(block.type==="attachment") return buildNoteAttachmentBlock(note,block);
@@ -5304,6 +5479,7 @@
     if(block.type==="comment") return buildNoteComment(note,block);
     if(block.type==="prompt") return buildNotePrompt(note,block);
     if(block.type==="group") return buildNoteGroup(note,block);
+    if(block.type==="checklist") return buildNoteChecklist(note,block);
     if(block.type==="code") return buildNoteCode(note,block);
     return null;
   }
@@ -5315,6 +5491,7 @@
         ["embed","<span style=\"font-size:.9rem\">▶</span>","YouTube video",function(){ insertNoteBlock(note,"embed",insertAt); }],
         ["link","<span style=\"font-size:1rem\">🔗</span>","Link with photo",function(){ insertNoteBlock(note,"link",insertAt); }],
         ["paragraph","<span style=\"font-size:1rem\">¶</span>","Paragraph",function(){ insertNoteBlock(note,"paragraph",insertAt); }],
+        ["checklist","<span style=\"display:inline-block;width:11px;height:11px;border:1.5px solid currentColor;border-radius:3px\"></span>","Mini todo list",function(){ insertNoteBlock(note,"checklist",insertAt); }],
         ["comment","<span style=\"font-style:italic;color:var(--ink-dim)\">…</span>","Comment",function(){ insertNoteBlock(note,"comment",insertAt); }],
         ["prompt","<span style=\"font:700 .76rem DM Mono\">›_</span>","Prompt",function(){ insertNoteBlock(note,"prompt",insertAt); }],
         ["heading","<span style=\"font-weight:700\">H</span>","Heading",function(){ insertNoteBlock(note,"heading",insertAt); }],
@@ -6022,6 +6199,11 @@
     return (it.blocks||[]).map(function(block){
       if(!block||block.type==="attachment"||block.type==="comment"||block.type==="code") return "";
       if(block.type==="chapter") return [(state.readChapterNames?block.title:""),block.text].filter(Boolean).join(". ");
+      if(block.type==="checklist"){
+        var open=(block.items||[]).map(function(item){ return item&&!item.done?cleanText(item.text):""; }).filter(Boolean);
+        var name=cleanText(block.title);
+        return [name?name+".":""].concat(open).filter(Boolean).join(" ");
+      }
       return blockPlainText(block);
     }).filter(Boolean).join("\n\n");
   }
@@ -6580,16 +6762,17 @@
 
   /* ---------- what the agent may look at and, once approved, change ---------- */
   function prettyBlockType(type){
-    return {paragraph:"Paragraph",text:"Paragraph",heading:"Heading",chapter:"Chapter",comment:"Comment",prompt:"Prompt",group:"Group",code:"Code",embed:"Embed",link:"Link"}[type]||"Paragraph";
+    return {paragraph:"Paragraph",text:"Paragraph",heading:"Heading",chapter:"Chapter",comment:"Comment",prompt:"Prompt",group:"Group",checklist:"Mini todo list",code:"Code",embed:"Embed",link:"Link"}[type]||"Paragraph";
   }
   function agentBlockTypeEnum(){ return AGENT_NOTE_BLOCK_TYPES.slice(); }
-  function isEditableBlock(block){ return !!block&&["text","heading","comment","prompt","chapter","group","code","embed","link"].indexOf(block.type)>=0; }
+  function isEditableBlock(block){ return !!block&&["text","heading","comment","prompt","chapter","group","checklist","code","embed","link"].indexOf(block.type)>=0; }
   function blockLabelFor(block,index){
     if(block.type==="heading") return "Heading";
     if(block.type==="comment") return "Comment";
     if(block.type==="prompt") return "Prompt";
     if(block.type==="chapter") return "Chapter — "+(cleanText(block.title)||"untitled");
     if(block.type==="group") return "Group — "+(cleanText(block.title)||"untitled");
+    if(block.type==="checklist") return "Mini todo list"+(cleanText(block.title)?" — "+block.title:"");
     if(block.type==="code") return "Code";
     if(block.type==="embed") return "Embed"+(block.videoId?" — "+embedProviderName(block):(block.url?" — "+block.url:""));
     if(block.type==="link") return "Link"+(cleanText(block.title)?" — "+block.title:(block.url?" — "+block.url:""));
@@ -6618,7 +6801,7 @@
       it.blocks.forEach(function(block,i){
         if(isEditableBlock(block)){
           targets.push({id:block.id,kind:"block",block:block,owner:it,text:blockTextForAgent(block),label:blockLabelFor(block,i),inline:block.type==="heading"||block.type==="embed"||block.type==="link"});
-          if(block.type==="chapter"||block.type==="group") targets.push({id:block.id+":title",kind:"block-title",block:block,owner:it,text:block.title||"",label:blockLabelFor(block,i)+" title",inline:true});
+          if(block.type==="chapter"||block.type==="group"||block.type==="checklist") targets.push({id:block.id+":title",kind:"block-title",block:block,owner:it,text:block.title||"",label:blockLabelFor(block,i)+" title",inline:true});
         }
       });
     } else if(it.type==="code"){
@@ -6651,6 +6834,12 @@
     if(block.type==="link"){
       block.url=safeLinkUrl(text)||cleanText(text);
       if(!cleanText(block.title)) block.title=linkHostLabel(block.url)||cleanText(text);
+      return;
+    }
+    if(block.type==="checklist"){
+      var nextItems=checklistItemsFromText(text);
+      block.items=nextItems.length?nextItems:[{id:uid(),text:"",done:false}];
+      syncChecklistText(block);
       return;
     }
     if(block.type==="text"||block.type==="chapter"){ block.html=escapeHtml(text).replace(/\n/g,"<br>"); if(block.type==="text") syncTextBlock(block); else block.text=richTextToPlain(block.html); }
@@ -6697,10 +6886,13 @@
     var blocks=it.blocks||[];
     if(blocks.length){
       var visible=blocks.filter(function(block){
-        return block&&(block.type==="text"||block.type==="chapter"||block.type==="comment"||block.type==="prompt"||block.type==="heading"||block.type==="code");
+        return block&&(block.type==="text"||block.type==="chapter"||block.type==="comment"||block.type==="prompt"||block.type==="heading"||block.type==="code"||block.type==="checklist");
       });
       if(!visible.length) return !cleanText(it.body||it.code||"");
-      return visible.every(function(block){ return !cleanText(block.text)&&!cleanText(block.html)&&!cleanText(block.code); });
+      return visible.every(function(block){
+        if(block.type==="checklist") return !cleanText(block.title)&&!(block.items||[]).some(function(item){ return cleanText(item&&item.text); });
+        return !cleanText(block.text)&&!cleanText(block.html)&&!cleanText(block.code);
+      });
     }
     return !cleanText(it.body||it.code||"");
   }
@@ -6863,7 +7055,7 @@
     lines.push("- If the user only wants feedback, an opinion, or an answer, reply in words and do not call propose_edits.");
     lines.push("- You can use search_notes to find notes by words in the title or body, and list_todos for open, overdue, or done todos. search_notes returns snippets; call request_note_access then read_notes only when you need the full text of a note that is not open.");
     lines.push("- Use list_notes to browse titles if you do not have a search query. Before reading any note that is not open, call request_note_access; the app will ask the user first. Only use read_notes after access is granted.");
-    lines.push("- When the user asks you to create a new note, todo, YouTube script, workout, audio item, code file, or another type, call create_note with the matching kind. Pass a blocks array for prompts, headings, chapters, comments, groups, code, embeds, and links instead of one blob of text. The app asks for confirmation, then opens the new item so you can keep editing it.");
+    lines.push("- When the user asks you to create a new note, todo, YouTube script, workout, audio item, code file, or another type, call create_note with the matching kind. Pass a blocks array for prompts, headings, chapters, comments, groups, mini todo lists, code, embeds, and links instead of one blob of text. The app asks for confirmation, then opens the new item so you can keep editing it.");
     lines.push("- When they ask to add a todo, call create_todo or create_note with kind todo. When they say they finished something, call update_todo with done=true. You can also set or clear a due date that way.");
     lines.push("- Use open_note to put a found note or todo on screen so you can edit it.");
     lines.push("- Use list_item_types if you are unsure which kinds or block types this workspace supports.");
@@ -6871,7 +7063,8 @@
     lines.push("- Only edit when they asked for one, or when you offered and they agreed, or when they are clearly dictating content into the open note.");
     lines.push("- A request to add, capture, write, update, change, or remove note content is not complete until you call update_open_document or propose_edits and the tool result says it was saved. Never merely describe the change. Phrases like \"that's the whole note\", \"change it\", and \"write that\" are write requests.");
     lines.push("- To fill or rewrite the open note or todo, call update_open_document with the exact wording. Use mode replace on an empty note and append to add to existing text. You may also set title. That is the normal way to put words into the note.");
-    lines.push("- Create and edit every note block the Insert menu offers: paragraphs, headings, chapters, comments, prompts, collapsible groups, code, YouTube/Vimeo embeds, and links. Use propose_edits with insert_after and block_type to create one; use an existing target_id, or \"body\", to edit one. File attachments cannot be created or changed by the assistant.");
+    lines.push("- Create and edit every note block the Insert menu offers: paragraphs, headings, chapters, comments, prompts, collapsible groups, mini todo lists, code, YouTube/Vimeo embeds, and links. Use propose_edits with insert_after and block_type to create one; use an existing target_id, or \"body\", to edit one. File attachments cannot be created or changed by the assistant.");
+    lines.push("- A mini todo list is a checklist inside the note. Insert one with block_type checklist. Put one item per line in text, and start a finished item with [x]. Set block_title to name the list. Do not flatten a checklist into paragraphs.");
     lines.push("- Cursor prompts, system prompts, and anything meant to be copied elsewhere belong in a prompt block. Do not dump them into a paragraph.");
     lines.push("- A collapsible group titled \""+TRANSCRIPT_GROUP_TITLE+"\" is the owner's raw speech. Append to it only when capturing dictation. Do not rewrite, summarize, or delete that group unless they ask. Put the structured note underneath it.");
     lines.push("- Keep spoken replies to one to three short sentences. They are read aloud, so use no markdown, lists, headings, or emoji — except when they asked you to read back what you wrote, in which case read the written wording.");
@@ -6887,10 +7080,10 @@
       lines.push("");
       lines.push("EDITING RULES");
       lines.push("- Every editable piece of the open document is listed below with a target_id. Use those ids exactly when you need a specific block. \"body\" always writes the main note text. \"title\" always changes the title. \"end\" inserts at the bottom.");
-      lines.push('- Prefer update_open_document for ordinary wording. Use propose_edits when you need headings, chapters, comments, prompts, groups, code, embeds, or links.');
-      lines.push('- "replace" needs the complete new text for that piece. "append" and "prepend" need only the new text. "insert_after" adds a new piece below the target_id you name, or below everything if you pass "end". For insert_after, set block_type to paragraph, heading, chapter, comment, prompt, group, code, embed, or link. For chapters and groups also set block_title. For headings set heading_level to 1, 2, or 3. For embeds and links set url (or put the URL in text).');
+      lines.push('- Prefer update_open_document for ordinary wording. Use propose_edits when you need headings, chapters, comments, prompts, groups, mini todo lists, code, embeds, or links.');
+      lines.push('- "replace" needs the complete new text for that piece. "append" and "prepend" need only the new text. "insert_after" adds a new piece below the target_id you name, or below everything if you pass "end". For insert_after, set block_type to paragraph, heading, chapter, comment, prompt, group, checklist, code, embed, or link. For chapters, groups, and checklists also set block_title. For a checklist, text is one item per line and [x] marks a finished item. For headings set heading_level to 1, 2, or 3. For embeds and links set url (or put the URL in text).');
       lines.push('- "title" is always a valid target_id.');
-      lines.push('- Chapters and groups each expose two editable targets: one for their content and one ending in ":title" for their label. Preserve the requested block type; never flatten a prompt, chapter, or heading into a plain paragraph or JSON.');
+      lines.push('- Chapters, groups, and mini todo lists each expose two editable targets: one for their content and one ending in ":title" for their label. Preserve the requested block type; never flatten a prompt, chapter, checklist, or heading into a plain paragraph or JSON.');
       lines.push("- Change the fewest pieces that answer the request. Do not silently rewrite parts the user did not mention.");
       lines.push("- If the document is empty and the user has just rambled at you, propose a title plus clean prose paragraphs that keep every point they made. Leave the transcribed audio group as the raw ramble.");
       if(typeof collab!=="undefined"&&collab.voice&&collab.voice.dictation&&(collab.voice.dictation.committed||collab.voice.dictation.baseText)){
@@ -6945,9 +7138,9 @@
         edits:{type:"array",description:"The changes, in document order.",items:{type:"object",properties:{
           target_id:{type:"string",description:'A target_id from the OPEN DOCUMENT list. Use "body" for the main note text, "title" for the title, or "end" when inserting at the bottom.'},
           action:{type:"string",enum:["replace","append","prepend","insert_after"]},
-          text:{type:"string",description:"For replace, the complete new text. For the others, only the new text being added. For embed/link, the URL may go here or in url."},
-          block_type:{type:"string",enum:agentBlockTypeEnum(),description:"For insert_after only. Defaults to paragraph."},
-          block_title:{type:"string",description:"Chapter or group title when inserting or updating those blocks."},
+          text:{type:"string",description:"For replace, the complete new text. For the others, only the new text being added. For embed/link, the URL may go here or in url. For a checklist, one item per line, with [x] when that item is done."},
+          block_type:{type:"string",enum:agentBlockTypeEnum(),description:"For insert_after only. Defaults to paragraph. Use checklist for a mini todo list."},
+          block_title:{type:"string",description:"Chapter, group, or checklist title when inserting or updating those blocks."},
           heading_level:{type:"integer",description:"Heading size 1 (large), 2, or 3 (small)."},
           url:{type:"string",description:"For embed or link blocks."},
           language:{type:"string",description:"For code blocks: javascript, html, css, python, csharp, json, or sql."},
@@ -7011,10 +7204,10 @@
         title:{type:"string",description:"Short todo title."},
         due_date:{type:"string",description:"Optional due date, YYYY-MM-DD or a phrase like tomorrow."},
         detail:{type:"string",description:"Optional extra text stored in the todo."},
-        blocks:{type:"array",description:"Optional structured blocks for the todo body (prompts, headings, and so on).",items:{type:"object",properties:{
+        blocks:{type:"array",description:"Optional structured blocks for the todo body (prompts, headings, mini todo lists, and so on).",items:{type:"object",properties:{
           type:{type:"string",enum:agentBlockTypeEnum()},
-          text:{type:"string"},
-          title:{type:"string"},
+          text:{type:"string",description:"For a checklist, one item per line. Prefix [x] when the item is done."},
+          title:{type:"string",description:"Checklist, chapter, or group title."},
           level:{type:"integer"},
           url:{type:"string"},
           language:{type:"string"}
@@ -7043,17 +7236,17 @@
     }});
     tools.push({type:"function",function:{
       name:"create_note",
-      description:"Create a note, todo, YouTube script, workout, audio item, code file, or other enabled type after asking the user for confirmation. Prefer blocks so prompts, headings, chapters, comments, groups, code, embeds, and links are created as themselves rather than as a single paragraph. The new item is then opened so you can keep editing it.",
+      description:"Create a note, todo, YouTube script, workout, audio item, code file, or other enabled type after asking the user for confirmation. Prefer blocks so prompts, headings, chapters, comments, groups, mini todo lists, code, embeds, and links are created as themselves rather than as a single paragraph. The new item is then opened so you can keep editing it.",
       parameters:{type:"object",properties:{
         title:{type:"string",description:"Short title."},
         kind:{type:"string",enum:agentCreateKindEnum(),description:"What to create. Defaults to note."},
         content:{type:"string",description:"Optional body when you are not passing blocks. For a Code item this is the source. For a todo this is extra detail."},
         due_date:{type:"string",description:"For todos: YYYY-MM-DD or a phrase like tomorrow."},
         language:{type:"string",description:"For Code items or code blocks: javascript, html, css, python, csharp, json, or sql."},
-        blocks:{type:"array",description:"Structured note blocks. Use this when the item should contain prompts, headings, chapters, or other Insert-menu types.",items:{type:"object",properties:{
+        blocks:{type:"array",description:"Structured note blocks. Use this when the item should contain prompts, headings, chapters, mini todo lists, or other Insert-menu types.",items:{type:"object",properties:{
           type:{type:"string",enum:agentBlockTypeEnum()},
-          text:{type:"string",description:"Body of the block. For code blocks this is the source."},
-          title:{type:"string",description:"Chapter or group title."},
+          text:{type:"string",description:"Body of the block. For code blocks this is the source. For a checklist, one item per line, with [x] when that item is done."},
+          title:{type:"string",description:"Chapter, group, or checklist title."},
           level:{type:"integer",description:"Heading size 1–3."},
           url:{type:"string",description:"For embed or link."},
           language:{type:"string",description:"For code blocks."}
@@ -8055,8 +8248,7 @@
   }
   function noteBlockFromAgent(raw){
     if(!raw||typeof raw!=="object") return null;
-    var type=String(raw.type||raw.block_type||"paragraph").toLowerCase();
-    if(type==="text") type="paragraph";
+    var type=canonicalBlockType(raw.type||raw.block_type||"paragraph");
     if(AGENT_NOTE_BLOCK_TYPES.indexOf(type)<0) type="paragraph";
     var text=typeof raw.text==="string"?raw.text:(typeof raw.content==="string"?raw.content:(typeof raw.code==="string"?raw.code:""));
     return createNoteBlock(type,{
@@ -8064,7 +8256,8 @@
       title:raw.title||raw.block_title||"",
       level:raw.level||raw.heading_level,
       url:raw.url||"",
-      language:raw.language||""
+      language:raw.language||"",
+      items:raw.items
     });
   }
   function applyAgentBlocksToItem(it,rawBlocks,fallbackText){
@@ -8352,7 +8545,8 @@
       var headingLevel=Math.max(1,Math.min(3,Number(raw.heading_level||raw.level)||0))||0;
       var language=cleanText(raw.language);
       if(!targetId) targetId=action==="insert_after"?"end":"body";
-      var blockType=agentBlockTypeEnum().indexOf(raw.block_type)>=0?raw.block_type:"paragraph";
+      var blockType=canonicalBlockType(raw.block_type);
+      if(agentBlockTypeEnum().indexOf(blockType)<0) blockType="paragraph";
       if(action==="insert_after"){
         if(!text&&url) text=url;
         if(!text&&!blockTitle&&!url&&blockType==="paragraph") return;
@@ -8433,7 +8627,7 @@
       if(!ok){ skipped++; return; }
       if(target.block){
         if(edit.headingLevel&&target.block.type==="heading") target.block.level=edit.headingLevel;
-        if(edit.blockTitle&&(target.block.type==="chapter"||target.block.type==="group")) target.block.title=edit.blockTitle;
+        if(edit.blockTitle&&(target.block.type==="chapter"||target.block.type==="group"||target.block.type==="checklist")) target.block.title=edit.blockTitle;
         if(edit.language&&target.block.type==="code") target.block.language=edit.language;
         if(edit.url&&(target.block.type==="embed"||target.block.type==="link")) setBlockText(target.block,edit.url);
       }
@@ -8483,7 +8677,7 @@
   function flashAgentEdits(ids){
     (ids||[]).forEach(function(id){
       if(!id) return;
-      var nodes=canvas.querySelectorAll('[data-note-block="'+id+'"], [data-group-id="'+id+'"]');
+      var nodes=canvas.querySelectorAll('[data-note-block="'+id+'"], [data-group-id="'+id+'"], [data-checklist-id="'+id+'"]');
       Array.prototype.forEach.call(nodes,function(node){
         node.classList.add("agent-writing-block");
         setTimeout(function(){ node.classList.remove("agent-writing-block"); },1800);
@@ -12520,7 +12714,7 @@
     } else if(settingsPage==="usage"){
       content=settingsHeading("Usage",true)+'<p class="hint">Hosted credits show dollars we charged (5× provider cost) plus tokens. Your own keys still log tokens locally; provider invoices stay on OpenAI, Gemini, and ElevenLabs.</p><div id="usageSettings"></div>';
     } else if(settingsPage==="manage"){
-      content=settingsHeading("Manage",true)+'<p class="hint">Choose what appears under New and in a note’s Insert menu. Existing content is never removed when an option is turned off.</p><div class="grp"><div class="srow"><div class="sl">Notes<small>Flexible rich-text notes</small></div><button class="toggle" id="typeNote"><b></b></button></div><div class="srow"><div class="sl">YouTube Script<small>Chaptered note template</small></div><button class="toggle" id="typeScript"><b></b></button></div><div class="srow"><div class="sl">Audio<small>Record or upload audio clips</small></div><button class="toggle" id="typeAudio"><b></b></button></div><div class="srow"><div class="sl">Todos<small>A note with a completion checkbox</small></div><button class="toggle" id="typeTodo"><b></b></button></div><div class="srow"><div class="sl">Agent<small>AI collaborators you can talk to inside a note</small></div><button class="toggle" id="typeAgent"><b></b></button></div></div><div class="grp" id="moduleTypes"></div><div class="grp"><h4>Note insert menu</h4><div class="srow"><div class="sl">Photo, video, or file<small>Inline images and videos, plus any attachment</small></div><button class="toggle" id="insertFile"><b></b></button></div><div class="srow"><div class="sl">YouTube video<small>Paste a link and play it inside the note</small></div><button class="toggle" id="insertEmbed"><b></b></button></div><div class="srow"><div class="sl">Link with photo<small>A link card with your own picture, title, and summary</small></div><button class="toggle" id="insertLink"><b></b></button></div><div class="srow"><div class="sl">Paragraph<small>Rich text with bold, italic, and underline</small></div><button class="toggle" id="insertParagraph"><b></b></button></div><div class="srow"><div class="sl">Comment<small>A cue-style note to yourself</small></div><button class="toggle" id="insertComment"><b></b></button></div><div class="srow"><div class="sl">Prompt<small>A copy-ready prompt drafting box</small></div><button class="toggle" id="insertPrompt"><b></b></button></div><div class="srow"><div class="sl">Heading<small>Simple size picker when selected</small></div><button class="toggle" id="insertHeading"><b></b></button></div><div class="srow"><div class="sl">Chapter<small>Named section with its own Listen button</small></div><button class="toggle" id="insertChapter"><b></b></button></div><div class="srow"><div class="sl">Collapsible group<small>Hide supporting details until needed</small></div><button class="toggle" id="insertGroup"><b></b></button></div><div class="srow"><div class="sl">Code<small>Syntax-highlighted editor, preview, and run tools</small></div><button class="toggle" id="insertCode"><b></b></button></div></div>';
+      content=settingsHeading("Manage",true)+'<p class="hint">Choose what appears under New and in a note’s Insert menu. Existing content is never removed when an option is turned off.</p><div class="grp"><div class="srow"><div class="sl">Notes<small>Flexible rich-text notes</small></div><button class="toggle" id="typeNote"><b></b></button></div><div class="srow"><div class="sl">YouTube Script<small>Chaptered note template</small></div><button class="toggle" id="typeScript"><b></b></button></div><div class="srow"><div class="sl">Audio<small>Record or upload audio clips</small></div><button class="toggle" id="typeAudio"><b></b></button></div><div class="srow"><div class="sl">Todos<small>A note with a completion checkbox</small></div><button class="toggle" id="typeTodo"><b></b></button></div><div class="srow"><div class="sl">Agent<small>AI collaborators you can talk to inside a note</small></div><button class="toggle" id="typeAgent"><b></b></button></div></div><div class="grp" id="moduleTypes"></div><div class="grp"><h4>Note insert menu</h4><div class="srow"><div class="sl">Photo, video, or file<small>Inline images and videos, plus any attachment</small></div><button class="toggle" id="insertFile"><b></b></button></div><div class="srow"><div class="sl">YouTube video<small>Paste a link and play it inside the note</small></div><button class="toggle" id="insertEmbed"><b></b></button></div><div class="srow"><div class="sl">Link with photo<small>A link card with your own picture, title, and summary</small></div><button class="toggle" id="insertLink"><b></b></button></div><div class="srow"><div class="sl">Paragraph<small>Rich text with bold, italic, and underline</small></div><button class="toggle" id="insertParagraph"><b></b></button></div><div class="srow"><div class="sl">Mini todo list<small>A checklist you can tick off inside the note</small></div><button class="toggle" id="insertChecklist"><b></b></button></div><div class="srow"><div class="sl">Comment<small>A cue-style note to yourself</small></div><button class="toggle" id="insertComment"><b></b></button></div><div class="srow"><div class="sl">Prompt<small>A copy-ready prompt drafting box</small></div><button class="toggle" id="insertPrompt"><b></b></button></div><div class="srow"><div class="sl">Heading<small>Simple size picker when selected</small></div><button class="toggle" id="insertHeading"><b></b></button></div><div class="srow"><div class="sl">Chapter<small>Named section with its own Listen button</small></div><button class="toggle" id="insertChapter"><b></b></button></div><div class="srow"><div class="sl">Collapsible group<small>Hide supporting details until needed</small></div><button class="toggle" id="insertGroup"><b></b></button></div><div class="srow"><div class="sl">Code<small>Syntax-highlighted editor, preview, and run tools</small></div><button class="toggle" id="insertCode"><b></b></button></div></div>';
     } else { settingsPage="home"; renderSettingsPage(); return; }
     box.innerHTML=content;
     $("closeSettings").onclick=function(){ $("settingsModal").classList.remove("open"); };
@@ -12992,7 +13186,7 @@
       });
     }
     [["typeNote","note"],["typeScript","script"],["typeAudio","audio"],["typeTodo","todo"],["typeAgent","agent"]].forEach(function(pair){ var button=$(pair[0]); button.classList.toggle("on",state.enabledTypes[pair[1]]); button.onclick=function(){ state.enabledTypes[pair[1]]=!state.enabledTypes[pair[1]]; button.classList.toggle("on",state.enabledTypes[pair[1]]); persist(); }; });
-    [["insertFile","file"],["insertEmbed","embed"],["insertLink","link"],["insertParagraph","paragraph"],["insertComment","comment"],["insertPrompt","prompt"],["insertHeading","heading"],["insertChapter","chapter"],["insertGroup","group"],["insertCode","code"]].forEach(function(pair){ var button=$(pair[0]); button.classList.toggle("on",state.noteInsertOptions[pair[1]]); button.onclick=function(){ state.noteInsertOptions[pair[1]]=!state.noteInsertOptions[pair[1]]; button.classList.toggle("on",state.noteInsertOptions[pair[1]]); persist(); }; });
+    [["insertFile","file"],["insertEmbed","embed"],["insertLink","link"],["insertParagraph","paragraph"],["insertChecklist","checklist"],["insertComment","comment"],["insertPrompt","prompt"],["insertHeading","heading"],["insertChapter","chapter"],["insertGroup","group"],["insertCode","code"]].forEach(function(pair){ var button=$(pair[0]); button.classList.toggle("on",state.noteInsertOptions[pair[1]]); button.onclick=function(){ state.noteInsertOptions[pair[1]]=!state.noteInsertOptions[pair[1]]; button.classList.toggle("on",state.noteInsertOptions[pair[1]]); persist(); }; });
   }
   var apiKeySaveTimer=null;
   function setupApiKeySettings(){
