@@ -128,6 +128,7 @@ test("more actions live in the modal and the title can fade into the bar", funct
   assert.match(html, /\.is-brainstorm\{/);
   assert.match(html, /\.bar-title\{/);
   assert.match(html, /function syncBarTitle\(/);
+  assert.match(html, /canvas\.scrollTop-top/);
   assert.match(html, /Approve/);
   assert.match(html, /brainstorm-delete/);
 });
