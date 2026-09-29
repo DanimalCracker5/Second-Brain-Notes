@@ -32,6 +32,7 @@
 <link rel="stylesheet" href="./code/code-editor.css">
 <!-- Hosted AI credits client. Provider keys never enter this file. -->
 <script src="./hosted/hosted-ai.js"></script>
+<script src="./hosted/agent-access.js"></script>
 
 <style>
   :root{
@@ -695,6 +696,18 @@
   .grp{ margin-top:22px; }
   .grp > h4{ font-family:"DM Mono",monospace; font-size:.58rem; letter-spacing:.22em; text-transform:uppercase; color:var(--ink-faint); margin:0 0 11px; }
   .hint{ font-size:.8rem; color:var(--ink-dim); line-height:1.55; margin:0 0 12px; }
+  .agent-token{ font-family:"DM Mono",ui-monospace,monospace; font-size:.78rem; line-height:1.45; white-space:pre; overflow-x:auto; background:rgba(255,255,255,.04); border:1px solid var(--line); border-radius:12px; padding:10px 12px; margin:0 0 10px; }
+  .agent-token-row{ display:flex; gap:10px; align-items:center; justify-content:space-between; padding:10px 0; border-top:1px solid var(--line); }
+  .agent-token-row .sl b{ display:block; font-size:.9rem; }
+  .agent-token-row .sl small{ color:var(--ink-dim); }
+  .agent-steps{ list-style:none; margin:0; padding:0; display:grid; gap:14px; }
+  .agent-steps li{ display:grid; grid-template-columns:28px minmax(0,1fr); gap:10px; align-items:start; }
+  .agent-steps .n{ width:28px; height:28px; display:grid; place-items:center; border-radius:999px; background:var(--accent-soft); color:var(--accent); font:600 .75rem "DM Mono",monospace; }
+  .agent-steps b{ display:block; margin-bottom:3px; color:var(--ink); font-size:.88rem; }
+  .agent-steps p{ margin:0; color:var(--ink-dim); font-size:.82rem; line-height:1.55; }
+  .agent-steps code,.agent-can p code{ font-family:"DM Mono",ui-monospace,monospace; font-size:.76rem; color:var(--ink); }
+  .agent-can{ margin:8px 0 0; padding:0; list-style:disc; }
+  .agent-can li{ display:list-item; margin:0 0 4px 1.1em; color:var(--ink-dim); font-size:.82rem; line-height:1.45; }
   .hint a{ color:var(--accent); }
   .settings-nav{ display:grid; gap:8px; margin-top:20px; }
   .settings-nav button{ display:flex; align-items:center; justify-content:space-between; gap:16px; width:100%; padding:13px 14px; cursor:pointer; text-align:left; color:var(--ink); background:rgba(255,255,255,.035); border:1px solid var(--line); border-radius:13px; transition:background .16s,border-color .16s,transform .16s cubic-bezier(.2,.9,.3,1.2); }
@@ -11359,7 +11372,16 @@
     }
     var primary=preferLocal?local:remote, secondary=preferLocal?remote:local, used={}, out=[];
     primary.forEach(function(entry){ if(!entry||!entry.id||used[entry.id]) return; out.push(choose(entry.id)); used[entry.id]=true; });
-    secondary.forEach(function(entry){ if(!entry||!entry.id||used[entry.id]) return; out.push(choose(entry.id)); used[entry.id]=true; });
+    /* An agent rewrite marks the incoming note authoritative. Drop local blocks
+       the owner is not actively typing, so a replace does not grow back the
+       paragraphs it removed. A new block from the other device is still added
+       when this flag is absent. */
+    var authoritative=!!options.authoritativePrimary&&!preferLocal;
+    secondary.forEach(function(entry){
+      if(!entry||!entry.id||used[entry.id]) return;
+      if(authoritative&&!protectIds[entry.id]) return;
+      out.push(choose(entry.id)); used[entry.id]=true;
+    });
     return out;
   }
   function dirtyBlockProtectIds(local, previous){
@@ -11417,6 +11439,7 @@
     if(itemSyncSignature(local)===itemSyncSignature(remote)){
       var same=cloneData(local);
       adoptItemRecency(same, remote);
+      if(same.blockSync) delete same.blockSync;
       return same;
     }
     var preferLocal=typeof options.preferLocal==="boolean"?options.preferLocal:revisionIsNewer(itemRevision(local),itemRevision(remote));
@@ -11424,7 +11447,7 @@
     var merged=cloneData(preferLocal?local:remote);
     var protectIds=options.protectBlockIds||{};
     if(local.type==="note"){
-      merged.blocks=mergeKeyedRecords(local.blocks,remote.blocks,{protectIds:protectIds,preferLocal:preferLocal});
+      merged.blocks=mergeKeyedRecords(local.blocks,remote.blocks,{protectIds:protectIds,preferLocal:preferLocal,authoritativePrimary:remote.blockSync==="authoritative"});
       merged.attachments=mergeAttachmentLists(local.attachments,remote.attachments);
       if(options.protectTitle) merged.title=local.title||"";
       else merged.title=(preferLocal?local:remote).title||"";
@@ -11448,6 +11471,7 @@
     merged.version=Math.max(localRev.version,remoteRev.version);
     merged.versionChangedAt=Math.max(localRev.versionChangedAt,remoteRev.versionChangedAt);
     merged.updated=Math.max(Number(local.updated)||0,Number(remote.updated)||0);
+    if(merged.blockSync) delete merged.blockSync;
     return merged;
   }
   function applyIncomingItemOnto(local,incoming,options){
@@ -12050,7 +12074,7 @@
   }
 
   /* =================== settings =================== */
-  var settingsPage="home";
+  var settingsPage="home", revealedAgentToken="";
   function settingsHeading(title,back){ return '<div class="mh"><h3>'+title+'</h3><button class="x" id="closeSettings">✕</button></div>'+(back?'<button class="settings-back" id="settingsBack">← Settings</button>':''); }
   function openSettings(page){ settingsPage=page||"home"; renderSettingsPage(); $("settingsModal").classList.add("open"); }
   function renderSettingsPage(){
@@ -12066,6 +12090,7 @@
         '<button data-settings="keys"><span><b>Your own keys</b><small>Advanced: use OpenAI, Gemini, or ElevenLabs directly</small></span><span class="arrow">›</span></button>'+
         '<button data-settings="voices"><span><b>Voice</b><small>Choose from your saved ElevenLabs voices</small></span><span class="arrow">›</span></button>'+
         '<button data-settings="collab"><span><b>AI collaborator</b><small>Agents, voice intelligence, and hidden notes (also in the sidebar footer)</small></span><span class="arrow">›</span></button>'+
+        '<button data-settings="agent"><span><b>Connect an agent</b><small>Full steps to let Hermes use your notes, the same way as TickTick</small></span><span class="arrow">›</span></button>'+
         '<button data-settings="manage"><span><b>Manage</b><small>Choose which things New can create</small></span><span class="arrow">›</span></button></div><div class="grp"><h4>Editor behaviour</h4><div class="srow"><div class="sl">Open notes in the body<small>Focus the first editable block instead of the title. Turn off to start at the title.</small></div><button class="toggle" id="focusNoteBodyToggle"><b></b></button></div><div class="srow"><div class="sl">AI handoff in note menus<small>Copy or package a note, including attachment data, for Cursor, ChatGPT, or Claude.</small></div><button class="toggle" id="quickAiHandoffToggle"><b></b></button></div></div><div class="grp"><h4>AI text changes</h4><div class="srow"><div class="sl">Ask before changing my text<small>Keep AI edits as suggestions until you choose Apply.</small></div><button class="toggle" id="settingsRequireApprovalToggle"><b></b></button></div></div>';
     } else if(settingsPage==="appearance"){
       content=settingsHeading("Appearance",true)+'<div class="grp"><div class="srow"><div class="sl">Background movement<small>Slow drifting color that works on desktop and mobile</small></div><button class="toggle" id="motionToggle"><b></b></button></div></div><div class="grp"><div class="range-row"><label for="darknessRange"><span>Background darkness</span><output id="darknessOutput"></output></label><input id="darknessRange" type="range" min="0" max="100" step="1"><p class="hint">At 100%, the background is pure AMOLED black. Lower it to reveal more of the moving theme color while keeping the surface black.</p></div></div>';
@@ -12081,6 +12106,8 @@
       content=settingsHeading("Your own keys",true)+'<p class="hint">Advanced. Keys sync to your signed-in account and are used from this browser, so anyone with the device can read them. Hosted credits never put our keys here.</p><div class="agent-edit"><label>OpenAI (ChatGPT) API key<input id="openaiKey" type="password" autocomplete="off" placeholder="sk-…" disabled></label><label>Gemini API key<input id="geminiKey" type="password" autocomplete="off" placeholder="AIza…" disabled></label><label>ElevenLabs API key<input id="elevenlabsKey" type="password" autocomplete="off" placeholder="Your ElevenLabs key" disabled></label><p class="hint" id="apiKeyStatus">Sign in to add API keys.</p></div>';
     } else if(settingsPage==="voices"){
       content=settingsHeading("Voice",true)+'<p class="hint">This is the app-wide Listen voice for chapters. Each agent can pick a different spoken voice on its Voice or Edit tab.</p><div class="grp"><div class="srow"><div class="sl">Read chapter names aloud<small>Off by default. This controls both full-document and individual chapter Listen buttons.</small></div><button class="toggle" id="readChapterNamesToggle"><b></b></button></div></div><div class="agent-edit"><label>Voice<button class="voice-picker" id="elevenlabsVoicePicker" type="button" aria-expanded="false" disabled><span class="voice-picker-copy"><b>Loading voices…</b><small>Your saved ElevenLabs voices</small></span><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="m6 9 6 6 6-6"/></svg></button></label><div class="voice-picker-menu" id="elevenlabsVoiceMenu" hidden><input class="voice-search" id="elevenlabsVoiceSearch" type="search" autocomplete="off" placeholder="Search voices or styles"><div class="voice-options" id="elevenlabsVoiceOptions"></div></div><div id="customVoiceEntry" hidden><label>ElevenLabs Voice ID<input id="customElevenlabsVoiceId" type="text" autocomplete="off" placeholder="Paste a voice ID"></label><div class="btnrow"><button class="b2 primary" id="saveCustomVoiceBtn">Save to list &amp; select</button></div></div><p class="hint" id="voiceStatus">Loading your available voices…</p></div>';
+    } else if(settingsPage==="agent"){
+      content=settingsHeading("Connect an agent",true)+'<p class="hint">Read this page from top to bottom. It is the whole Hermes setup. You can come back and do it later. The token you create here lets Hermes use this account’s notes until you revoke it.</p><div id="agentAccessSettings"></div>';
     } else if(settingsPage==="collab"){
       content=settingsHeading("AI collaborator",true)+'<p class="hint">Each agent has two minds: a subconscious that decides whether to keep listening or hand off, and a conscious that writes the note and talks with you. Open a note first if you want it transcribed into a collapsible Transcribed audio group.</p><div class="agent-edit" id="collabSettings"></div>';
     } else if(settingsPage==="usage"){
@@ -12105,6 +12132,7 @@
     if(settingsPage==="keys") setupApiKeySettings();
     if(settingsPage==="credits") setupCreditsSettings();
     if(settingsPage==="voices") setupVoiceSettings();
+    if(settingsPage==="agent") setupAgentAccessSettings();
     if(settingsPage==="collab") setupCollabSettings();
     if(settingsPage==="usage") setupUsageSettings();
     if(settingsPage==="manage") setupManageSettings();
@@ -12240,6 +12268,128 @@
       ?"Hosted credits keep provider keys on the server. Name this agent whatever you like — nothing here is branded with a default character name."
       :"Your own keys are used straight from this browser, so treat them like any other saved password. Hosted credits never put our keys on this device.";
     box.appendChild(note);
+  }
+  function setupAgentAccessSettings(){
+    var box=$("agentAccessSettings"); if(!box) return;
+    box.innerHTML="";
+    var client=window.SecondBrainAgent;
+    if(!client||!client.configured()){
+      var missing=document.createElement("p"); missing.className="hint"; missing.textContent="Agent access is not configured in this build.";
+      box.appendChild(missing); return;
+    }
+    var mcpUrl=client.mcpUrl();
+    var underExisting=["  second_brain:","    url: "+mcpUrl,"    headers:","      Authorization: Bearer ${SECOND_BRAIN_TOKEN}","    timeout: 120","    connect_timeout: 60"].join("\n");
+    var wholeBlock=["mcp_servers:",underExisting].join("\n");
+    function snippet(text, buttonLabel, toast){
+      var pre=document.createElement("pre"); pre.className="agent-token"; pre.textContent=text;
+      var row=document.createElement("div"); row.className="btnrow";
+      var button=document.createElement("button"); button.type="button"; button.className="b2"; button.textContent=buttonLabel;
+      button.onclick=function(){ copy(text,function(){ showToast(toast); }); };
+      row.appendChild(button);
+      var wrap=document.createElement("div"); wrap.appendChild(pre); wrap.appendChild(row); return wrap;
+    }
+    function addStep(list, number, title, body){
+      var li=document.createElement("li");
+      var n=document.createElement("span"); n.className="n"; n.textContent=String(number);
+      var copyWrap=document.createElement("div");
+      var heading=document.createElement("b"); heading.textContent=title;
+      var p=document.createElement("p"); p.textContent=body;
+      copyWrap.appendChild(heading); copyWrap.appendChild(p); li.appendChild(n); li.appendChild(copyWrap); list.appendChild(li);
+      return copyWrap;
+    }
+    if(revealedAgentToken){
+      var once=document.createElement("div"); once.className="grp";
+      var onceTitle=document.createElement("h4"); onceTitle.textContent="Copy this line now"; once.appendChild(onceTitle);
+      var onceHint=document.createElement("p"); onceHint.className="hint"; onceHint.textContent="This is the line for step 3. Paste it into ~/.hermes/.env. This page will not show the full token again. If you lose it, revoke the token below and create another."; once.appendChild(onceHint);
+      once.appendChild(snippet("SECOND_BRAIN_TOKEN="+revealedAgentToken,"Copy token line","Token line copied"));
+      var dismiss=document.createElement("button"); dismiss.type="button"; dismiss.className="b2"; dismiss.textContent="I've saved it";
+      dismiss.onclick=function(){ revealedAgentToken=""; renderSettingsPage(); };
+      once.appendChild(dismiss); box.appendChild(once);
+    }
+    var guide=document.createElement("div"); guide.className="grp";
+    var guideTitle=document.createElement("h4"); guideTitle.textContent="Do this on the Hermes computer"; guide.appendChild(guideTitle);
+    var guideHint=document.createElement("p"); guideHint.className="hint"; guideHint.textContent="Same idea as TickTick: Hermes gets a token, and an MCP block in its config. The token belongs to the account you are signed into here. Another person’s Hermes sees your notes only if you give them a token."; guide.appendChild(guideHint);
+    var list=document.createElement("ol"); list.className="agent-steps";
+    addStep(list,1,"Sign in to the account Hermes should see","The token opens that account’s notes, todos, titles, and note text. Hidden notes stay hidden. The in-app assistant’s private memory stays private.");
+    addStep(list,2,"Create a token at the bottom of this page","Name it Hermes and press Create token. A line appears that starts with SECOND_BRAIN_TOKEN=sb_. Copy it immediately. Closing this page hides the full token.");
+    var step3=addStep(list,3,"Paste the token into Hermes’s env file","On Mac or Linux, open ~/.hermes/.env. On Windows, open C:\\Users\\YourName\\.hermes\\.env. If Hermes runs inside WSL, use the Linux path inside WSL. Create the file if it is missing. Paste the copied line on its own line. Keep the sb_ token out of config.yaml.");
+    step3.appendChild(snippet("SECOND_BRAIN_TOKEN=sb_paste_the_token_from_step_2","Copy the env line shape","Env line shape copied"));
+    var step4=addStep(list,4,"Add Second Brain under mcp_servers","Open ~/.hermes/config.yaml (Windows: C:\\Users\\YourName\\.hermes\\config.yaml). TickTick is probably already under mcp_servers:. Paste only the second_brain block beneath that heading. Do not add a second mcp_servers: line. second_brain: is indented two spaces. url, headers, timeout, and connect_timeout are indented four. If the file has no mcp_servers: heading yet, paste the whole block instead. The box scrolls sideways; Copy takes the full text.");
+    var which=document.createElement("p"); which.textContent="Already have TickTick or another server? Paste this under the existing mcp_servers: line."; which.style.marginTop="8px"; step4.appendChild(which);
+    step4.appendChild(snippet(underExisting,"Copy the second_brain block","second_brain block copied"));
+    var fresh=document.createElement("p"); fresh.textContent="No mcp_servers: heading in the file yet? Paste this whole block instead."; fresh.style.marginTop="8px"; step4.appendChild(fresh);
+    step4.appendChild(snippet(wholeBlock,"Copy the whole mcp_servers block","mcp_servers block copied"));
+    addStep(list,5,"Reload Hermes, then ask it to look","In a Hermes chat, send /reload-mcp. Then ask: Search my Second Brain notes. Hermes should come back with titles from this account. After that it can read a note, create a note or todo, add text, rewrite a note when you ask it to replace the body, mark a todo done, and set a due date like 2026-10-01, today, or tomorrow. It deletes a note only when you explicitly tell it to delete that note.");
+    addStep(list,6,"Disconnect by revoking the token","Use Revoke on the token list at the bottom of this page, then send /reload-mcp again. That token cannot read or change notes after it is revoked. Create a new one any time.");
+    guide.appendChild(list); box.appendChild(guide);
+    var asks=document.createElement("div"); asks.className="grp";
+    var asksTitle=document.createElement("h4"); asksTitle.textContent="Phrases that work"; asks.appendChild(asksTitle);
+    var askList=document.createElement("ul"); askList.className="agent-can";
+    ["Search my Second Brain for the trip note.","Add a Second Brain todo to email Alex tomorrow.","Append this paragraph to my Second Brain note called Ship plan.","Mark the taxes todo done in Second Brain."].forEach(function(line){
+      var item=document.createElement("li"); item.textContent=line; askList.appendChild(item);
+    });
+    asks.appendChild(askList); box.appendChild(asks);
+    var deploy=document.createElement("div"); deploy.className="grp";
+    var deployTitle=document.createElement("h4"); deployTitle.textContent="If Create token cannot reach the server"; deploy.appendChild(deployTitle);
+    var deployHint=document.createElement("p"); deployHint.className="hint"; deployHint.textContent="People using secondbrainnotes.com can skip this once the owner has deployed it. If you run this project yourself and Create token fails, the agent function is not deployed yet. From the project folder, run this once, then come back and create the token."; deploy.appendChild(deployHint);
+    deploy.appendChild(snippet("firebase deploy --project second-brain-4077e --only functions:agent,firestore:rules","Copy the deploy command","Deploy command copied"));
+    box.appendChild(deploy);
+    if(!currentUser){
+      var sign=document.createElement("p"); sign.className="hint"; sign.textContent="Sign in to create the token in step 2. The steps above stay on this page either way.";
+      box.appendChild(sign); return;
+    }
+    var create=document.createElement("div"); create.className="grp agent-edit";
+    var createTitle=document.createElement("h4"); createTitle.textContent="Step 2 · Create the token"; create.appendChild(createTitle);
+    var warn=document.createElement("p"); warn.className="hint"; warn.textContent="Name it after the agent. The token can read, create, edit, and delete your notes until you revoke it. After you create it, the exact SECOND_BRAIN_TOKEN line appears at the top of this page."; create.appendChild(warn);
+    var nameLabel=document.createElement("label"); nameLabel.textContent="Name";
+    var nameInput=document.createElement("input"); nameInput.type="text"; nameInput.maxLength=40; nameInput.placeholder="Hermes"; nameInput.value="Hermes";
+    nameLabel.appendChild(nameInput); create.appendChild(nameLabel);
+    var createRow=document.createElement("div"); createRow.className="btnrow";
+    var createBtn=document.createElement("button"); createBtn.type="button"; createBtn.className="b2 primary"; createBtn.textContent="Create token";
+    createBtn.onclick=function(){
+      createBtn.disabled=true;
+      client.createToken(function(){ return hostedIdToken(); }, nameInput.value).then(function(result){
+        revealedAgentToken=result&&result.token||"";
+        showToast("Token created. Copy it into Hermes.");
+        renderSettingsPage();
+      }).catch(function(error){
+        createBtn.disabled=false;
+        showToast((error&&error.message)||"Could not create a token", true);
+      });
+    };
+    createRow.appendChild(createBtn); create.appendChild(createRow); box.appendChild(create);
+    var list=document.createElement("div"); list.className="grp";
+    var listTitle=document.createElement("h4"); listTitle.textContent="Tokens"; list.appendChild(listTitle);
+    var status=document.createElement("p"); status.className="hint"; status.textContent="Loading tokens…"; list.appendChild(status);
+    box.appendChild(list);
+    client.listTokens(function(){ return hostedIdToken(); }).then(function(result){
+      var tokens=result&&result.tokens||[];
+      if(!tokens.length){ status.textContent="No tokens yet. Create one above, copy the line into ~/.hermes/.env, then follow steps 4 and 5."; return; }
+      status.textContent="Revoke a token to disconnect that agent, then send /reload-mcp in Hermes. The prefix is enough to recognize it. The full secret is not stored here.";
+      tokens.forEach(function(token){
+        var row=document.createElement("div"); row.className="agent-token-row";
+        var label=document.createElement("div"); label.className="sl";
+        var title=document.createElement("b"); title.textContent=token.name||"Agent";
+        var meta=document.createElement("small");
+        meta.textContent=(token.prefix||"sb_…")+" · "+(token.lastUsedAt?("Last used "+new Date(token.lastUsedAt).toLocaleString()):"Not used yet");
+        label.appendChild(title); label.appendChild(meta);
+        var revoke=document.createElement("button"); revoke.type="button"; revoke.className="b2"; revoke.textContent="Revoke";
+        revoke.onclick=function(){
+          if(!confirm("Revoke "+(token.name||"this token")+"? Hermes will lose access until you create a new one.")) return;
+          revoke.disabled=true;
+          client.revokeToken(function(){ return hostedIdToken(); }, token.id).then(function(){
+            showToast("Token revoked");
+            renderSettingsPage();
+          }).catch(function(error){
+            revoke.disabled=false;
+            showToast((error&&error.message)||"Could not revoke that token", true);
+          });
+        };
+        row.appendChild(label); row.appendChild(revoke); list.appendChild(row);
+      });
+    }).catch(function(error){
+      status.textContent=(error&&error.message)||"Could not load tokens. Deploy the agent Cloud Function, then try again.";
+    });
   }
   function setupCreditsSettings(){
     var box=$("creditsSettings"); if(!box) return;

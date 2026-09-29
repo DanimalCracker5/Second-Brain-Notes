@@ -83,6 +83,13 @@ service cloud.firestore {
       }
     }
 
+    // Agent tokens are hashes of secrets the owner created in Settings →
+    // Connect an agent. Clients cannot read or write them. Cloud Functions
+    // use the Admin SDK, which bypasses these rules.
+    match /agentTokens/{tokenId} {
+      allow read, write: if false;
+    }
+
     match /{document=**} {
       allow read, write: if false;
     }

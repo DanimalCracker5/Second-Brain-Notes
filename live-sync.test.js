@@ -137,6 +137,22 @@ test("applyIncomingItemOnto mutates the local note in place so the open editor k
   assert.equal(local.blocks[1].text, "two");
 });
 
+test("an authoritative rewrite drops untouched paragraphs and keeps the block being typed", function () {
+  const local = note("n1", [
+    { id: "a", type: "text", text: "typing" },
+    { id: "b", type: "text", text: "old paragraph" }
+  ], [], { version: 2, versionChangedAt: 2, updated: 2, title: "Note" });
+  const remote = note("n1", [
+    { id: "c", type: "text", text: "rewritten" }
+  ], [], { version: 3, versionChangedAt: 3, updated: 3, title: "Note" });
+  remote.blockSync = "authoritative";
+  const merged = sandbox.mergeLiveItems(local, remote, { preferLocal: false, protectBlockIds: { a: true } });
+  assert.equal(merged.blocks.some(function (block) { return block.id === "b"; }), false);
+  assert.equal(merged.blocks.some(function (block) { return block.id === "a"; }), true);
+  assert.equal(merged.blocks.some(function (block) { return block.id === "c"; }), true);
+  assert.equal(merged.blockSync, undefined);
+});
+
 test("same-content live merge still takes the newer updated time so recency sort matches", function () {
   const local = note("n1", [{ id: "a", type: "text", text: "hello" }], [], { version: 4, versionChangedAt: 40, updated: 40 });
   const remote = note("n1", [{ id: "a", type: "text", text: "hello" }], [], { version: 4, versionChangedAt: 40, updated: 90 });

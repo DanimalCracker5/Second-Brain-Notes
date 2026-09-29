@@ -7,7 +7,7 @@
   "main": "index.js",
   "private": true,
   "scripts": {
-    "test": "node --test pricing.test.js billing.test.js"
+    "test": "node --test pricing.test.js billing.test.js agent-notes.test.js agent-mcp.test.js"
   },
   "dependencies": {
     "firebase-admin": "^12.6.0",
