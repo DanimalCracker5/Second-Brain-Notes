@@ -1151,6 +1151,46 @@
   @keyframes companionWrite{ 0%,100%{ transform:translate(0,0) rotate(0); } 50%{ transform:translate(3px,-2px) rotate(6deg); } }
   .note-editor.agent-writing{ outline:1px solid var(--accent-line); box-shadow:0 0 0 6px var(--accent-soft); border-radius:14px; }
   .agent-writing-block{ outline:1px solid var(--accent-line); box-shadow:0 0 0 4px var(--accent-soft); border-radius:10px; transition:outline .2s ease, box-shadow .2s ease; }
+  /* Dictation: the open note's edges breathe in the active theme color with the mic. */
+  body.voice-dictating .canvas > .sheet:not(.home-sheet){
+    border-radius:28px;
+    box-shadow:
+      0 0 0 1px color-mix(in srgb, var(--accent) calc(18% + var(--voice-amp, .16) * 46%), transparent),
+      0 0 calc(10px + var(--voice-amp, .16) * 64px) color-mix(in srgb, var(--accent) calc(12% + var(--voice-amp, .16) * 58%), transparent),
+      inset 0 0 calc(16px + var(--voice-amp, .16) * 52px) color-mix(in srgb, var(--accent) calc(7% + var(--voice-amp, .16) * 32%), transparent);
+  }
+  body.reduce-fx.voice-dictating .canvas > .sheet:not(.home-sheet){
+    box-shadow:
+      0 0 0 1px color-mix(in srgb, var(--accent) 46%, transparent),
+      inset 0 0 26px color-mix(in srgb, var(--accent) 16%, transparent);
+  }
+  .dictation-interim{
+    color:color-mix(in srgb, var(--accent) 72%, var(--ink));
+    background-image:linear-gradient(transparent 64%, color-mix(in srgb, var(--accent) 40%, transparent) 64%);
+    border-radius:2px;
+  }
+  .note-paragraph.dictating{ caret-color:var(--accent); }
+  .d-foot .agent-mic.dictating{
+    color:#08080a; border-color:transparent; background:var(--accent);
+    box-shadow:0 0 calc(6px + var(--voice-amp, .2) * 16px) var(--accent);
+  }
+  .voice-overlay.dictation-mode{ pointer-events:none; background:transparent; }
+  .voice-overlay.dictation-mode .voice-overlay-bg,
+  .voice-overlay.dictation-mode .voice-stage-art,
+  .voice-overlay.dictation-mode .voice-overlay-copy,
+  .voice-overlay.dictation-mode .voice-overlay-transcript,
+  .voice-overlay.dictation-mode .voice-overlay-decision,
+  .voice-overlay.dictation-mode .voice-overlay-tasks,
+  .voice-overlay.dictation-mode .voice-edit{ display:none !important; }
+  .voice-overlay.dictation-mode .voice-overlay-actions{
+    display:flex !important; pointer-events:auto;
+    padding:8px 10px 8px 16px; border-radius:999px;
+    border:1px solid color-mix(in srgb, var(--accent) calc(28% + var(--voice-amp, .2) * 40%), transparent);
+    background:rgba(10,10,14,.84);
+    box-shadow:0 12px 40px rgba(0,0,0,.38), 0 0 calc(8px + var(--voice-amp, .2) * 26px) color-mix(in srgb, var(--accent) 42%, transparent);
+  }
+  .dictation-live-label{ color:var(--accent); font:600 .78rem "DM Sans",sans-serif; letter-spacing:.01em; }
+  .dictation-live-label[hidden]{ display:none; }
 
   .agent-mind{ display:grid; gap:12px; }
   .agent-mind .mind-block{ padding:12px 14px; border:1px solid var(--line); border-radius:14px; background:rgba(255,255,255,.03); }
@@ -1411,6 +1451,7 @@
     <div class="voice-overlay-decision" id="voiceOverlayDecision" hidden></div>
     <div class="voice-overlay-tasks" id="voiceOverlayTasks"></div>
     <div class="voice-overlay-actions">
+      <span class="dictation-live-label" id="dictationLiveLabel" hidden role="status">Dictating</span>
       <button type="button" class="voice-edit" id="voiceOverlayEdit">Customize</button>
       <button type="button" class="mic-live" id="voiceOverlayMic" title="Stop listening" aria-label="Stop listening"></button>
       <button type="button" class="end-voice" id="voiceOverlayEnd">End</button>
@@ -5264,7 +5305,7 @@
       var behave=section("Behaviour");
       var approvalCurrent=typeof a.requireApproval==="boolean"?String(a.requireApproval):"";
       selectOn(behave,"Edit permission",approvalCurrent,[["","Use Settings default"],["false","Work on the note without asking"],["true","Ask me to apply every edit"]],function(value){ a.requireApproval=value===""?null:value==="true"; });
-      toggleFieldOn(behave,"Capture transcribed audio in the open note","Keeps a collapsible group of everything you said, indented by pause.","transcribeToNote");
+      toggleFieldOn(behave,"Capture transcribed audio in the open note","Dictation types straight into the note. This keeps a collapsible raw-speech group when it can't.","transcribeToNote");
       toggleFieldOn(behave,"Gemini Live ears","Stream the mic to Gemini so listening never stops while ElevenLabs talks. Falls back to the browser if Live is unavailable.","liveListen");
       toggleFieldOn(behave,"Keep listening while speaking","So you can interrupt or keep rambling during a reply.","keepListeningWhileSpeaking");
       toggleFieldOn(behave,"Barge in","If you start talking over it, cut the spoken reply and listen.","bargeIn");
@@ -6453,6 +6494,9 @@
       lines.push('- Chapters and groups each expose two editable targets: one for their content and one ending in ":title" for their label. Preserve the requested block type; never flatten a prompt, chapter, or heading into a plain paragraph or JSON.');
       lines.push("- Change the fewest pieces that answer the request. Do not silently rewrite parts the user did not mention.");
       lines.push("- If the document is empty and the user has just rambled at you, propose a title plus clean prose paragraphs that keep every point they made. Leave the transcribed audio group as the raw ramble.");
+      if(typeof collab!=="undefined"&&collab.voice&&collab.voice.dictation&&(collab.voice.dictation.committed||collab.voice.dictation.baseText)){
+        lines.push("- Live dictation is on. Words they already spoke are in the open note. Do not paste that dictation in again. When they ask you to edit, clean, retitle, structure, or rewrite, change the note that is already on screen. A spoken instruction is not note content.");
+      }
     }
     var pendingProposalContext=collabPendingProposalContext();
     if(pendingProposalContext){
@@ -7945,6 +7989,7 @@
   function refreshOpenItemAfterAgent(it,flashIds){
     persist();
     renderList();
+    rebaseLiveDictation();
     updateCollabContextLabel();
     if(!it||!current()||current().id!==it.id) return;
     var editor=canvas.querySelector('.note-editor[data-note-id="'+it.id+'"]');
@@ -8305,6 +8350,42 @@
     if(!request&&(looksLikeEditCapabilityQuestion(userText)||isMetaNoteWriteUtterance(userText))) request=lastGenerativeNoteRequest();
     if(!request) return Promise.resolve({ok:false,text:echoed||denied?"":text});
     return generateAndWriteNote(targetItem,request,text);
+  }
+  function joinDictationText(base,extra,paragraphBreak){
+    var head=String(base||""), tail=cleanText(extra);
+    if(!tail) return head;
+    if(!cleanText(head)) return tail;
+    if(paragraphBreak) return head.replace(/\s+$/,"")+"\n\n"+tail;
+    if(/\n\n$/.test(head)) return head+tail;
+    return head.replace(/[ \t]+$/,"")+" "+tail;
+  }
+  function stripLastDictationUtterance(committed,utterance){
+    var text=String(committed||""), said=cleanText(utterance);
+    if(!said) return text;
+    var end=text.replace(/\s+$/,"");
+    if(end.slice(-said.length)!==said) return text;
+    return end.slice(0,-said.length).replace(/[ \t]+$/,"").replace(/\n+$/,"");
+  }
+  function dictationHtmlFromParts(baseHtml,committed,interim){
+    var html=baseHtml||"";
+    var committedText=String(committed||"");
+    var interimText=cleanText(interim);
+    if(!committedText&&!interimText) return html;
+    var gap=html&&!/(<br\s*\/?>|&nbsp;|\s)$/i.test(html)?" ":"";
+    var committedHtml=escapeHtml(committedText).replace(/\n/g,"<br>");
+    var interimHtml=interimText?'<span class="dictation-interim">'+escapeHtml(interimText).replace(/\n/g,"<br>")+"</span>":"";
+    var between=committedText&&interimText&&!/\s$/.test(committedText)?" ":"";
+    return html+gap+committedHtml+between+interimHtml;
+  }
+  function shouldLiftDictatedUtterance(text){
+    var value=cleanText(text);
+    if(!value) return false;
+    if(looksLikeNoteWriteQuestion(value)||looksLikeEditCapabilityQuestion(value)||looksLikeGenerativeNoteRequest(value)||looksLikeNoteWriteRequest(value)||isMetaNoteWriteUtterance(value)) return true;
+    if(/^(um+|uh+|hmm+|ah+|er+)[.!?]*$/i.test(value)) return true;
+    if(/^(hi|hey|hello|thanks|thank you|are you there|can you hear me|what'?s up|whats up)[.!?]*$/i.test(value)) return true;
+    if(/^(why|how come|what|who|when|where)\b/i.test(value)&&value.split(/\s+/).length<=8&&/\?/.test(value)) return true;
+    if(value.split(/\s+/).length<=16&&/\b(make|turn|change|rewrite|clean|format|organize|fix|retitle|rename)\b/i.test(value)&&/\b(this|that|it|note|list|bullets?|title|paragraph)\b/i.test(value)) return true;
+    return false;
   }
   function collabApiMessages(agentItem,targetItem,targets){
     var messages=[{role:"system",content:collabSystemPrompt(agentItem,targetItem,targets)}];
@@ -8678,11 +8759,203 @@
     if(!patchTranscriptGroupDom(note,group,!existed)) refreshNoteEditor(note);
   }
 
+  /* ---------- live dictation into the open note ---------- */
+  function dictationNote(){
+    if(typeof viewingHome!=="undefined"&&viewingHome) return null;
+    var note=collabWritableItem();
+    if(!note||note.locked||note.type!=="note") return null;
+    var open=typeof current==="function"?current():null;
+    if(!open||open.id!==note.id) return null;
+    return note;
+  }
+  function bindVoiceToOpenNote(){
+    var note=typeof current==="function"?current():null;
+    if(typeof viewingHome!=="undefined"&&viewingHome) return;
+    if(!note||note.type!=="note"||note.locked) return;
+    collab.mode="document";
+    collab.itemId=note.id;
+    if(!collab.agentId){
+      var agent=preferredAgent()||ensureBuiltinAgent();
+      if(agent) collab.agentId=agent.id;
+    }
+  }
+  function dictationFocusedBlock(note){
+    var active=document.activeElement;
+    if(!active||!active.getAttribute||!active.isContentEditable) return null;
+    var id=active.getAttribute("data-note-block");
+    if(!id) return null;
+    return (note.blocks||[]).find(function(block){ return block&&block.id===id&&(block.type==="text"||block.type==="chapter"); })||null;
+  }
+  function ensureDictationBlock(note){
+    ensureNoteBlocks(note);
+    var focused=dictationFocusedBlock(note);
+    if(focused) return focused;
+    var blocks=note.blocks||[], last=null, i;
+    for(i=0;i<blocks.length;i++) if(blocks[i]&&blocks[i].type==="text") last=blocks[i];
+    if(last) return last;
+    var created=textBlock("");
+    note.blocks.push(created);
+    syncNoteBody(note);
+    refreshNoteEditor(note);
+    return created;
+  }
+  function liveDictationState(session){
+    if(!session||!session.active) return null;
+    var note=dictationNote();
+    if(!note) return null;
+    if(!session.dictation||session.dictation.noteId!==note.id){
+      var seeded=ensureDictationBlock(note);
+      session.dictation={noteId:note.id,blockId:seeded.id,baseHtml:seeded.html||"",baseText:seeded.text||"",committed:"",interim:"",lastUtterance:"",lifted:"",lastFinalAt:0};
+    }
+    var block=(note.blocks||[]).find(function(item){ return item&&item.id===session.dictation.blockId; });
+    if(!block){ session.dictation=null; return liveDictationState(session); }
+    return {note:note,block:block,session:session};
+  }
+  function dictationField(found){
+    if(!found||typeof canvas==="undefined"||!canvas) return null;
+    return canvas.querySelector('.note-editor[data-note-id="'+found.note.id+'"] .note-paragraph[data-note-block="'+found.block.id+'"]');
+  }
+  function placeDictationCaret(field){
+    if(!field) return;
+    var active=document.activeElement;
+    var elsewhere=active&&active!==field&&active!==document.body&&active!==document.documentElement;
+    if(!elsewhere){
+      try{ field.focus({preventScroll:true}); }catch(e){}
+      var selection=window.getSelection&&window.getSelection();
+      if(selection){
+        var range=document.createRange();
+        range.selectNodeContents(field);
+        range.collapse(false);
+        selection.removeAllRanges();
+        selection.addRange(range);
+      }
+    }
+    var rect=field.getBoundingClientRect();
+    if(rect.bottom>window.innerHeight-96||rect.top<72){
+      try{ field.scrollIntoView({block:"nearest"}); }catch(e){ field.scrollIntoView(false); }
+    }
+  }
+  function paintLiveDictation(found){
+    var field=dictationField(found);
+    if(!field) return;
+    var draft=found.session.dictation;
+    var html=dictationHtmlFromParts(draft.baseHtml,draft.committed,draft.interim);
+    field.classList.toggle("dictating",!!(draft.interim||draft.committed));
+    if(field.innerHTML!==html){
+      field.innerHTML=html;
+      placeDictationCaret(field);
+    }
+  }
+  function persistLiveDictation(found){
+    var draft=found.session.dictation, block=found.block;
+    block.html=sanitizeRichHtml(dictationHtmlFromParts(draft.baseHtml,draft.committed,""));
+    block.text=richTextToPlain(block.html);
+    saveNoteBlockChange(found.note,block,false);
+  }
+  function retargetLiveDictation(found){
+    var focused=dictationFocusedBlock(found.note), draft=found.session.dictation;
+    if(!focused||focused.id===draft.blockId||cleanText(draft.interim)) return found;
+    draft.blockId=focused.id;
+    draft.baseHtml=focused.html||"";
+    draft.baseText=focused.text||"";
+    draft.committed="";
+    draft.lastUtterance="";
+    draft.lifted="";
+    draft.lastFinalAt=0;
+    return {note:found.note,block:focused,session:found.session};
+  }
+  function previewLiveDictation(text){
+    var found=liveDictationState(collab.voice);
+    if(!found) return;
+    found.session.dictation.interim=cleanText(text);
+    paintLiveDictation(found);
+    syncDictationChrome();
+  }
+  function commitLiveDictation(text,force){
+    var said=cleanText(text);
+    var found=liveDictationState(collab.voice);
+    if(!found) return "unavailable";
+    found=retargetLiveDictation(found);
+    var draft=found.session.dictation;
+    draft.interim="";
+    if(!said){ paintLiveDictation(found); return "empty"; }
+    if(!force&&shouldLiftDictatedUtterance(said)){
+      draft.lifted=said;
+      paintLiveDictation(found);
+      syncDictationChrome();
+      return "lifted";
+    }
+    var now=Date.now();
+    var paragraphBreak=!!(draft.lastFinalAt&&now-draft.lastFinalAt>2200&&cleanText(draft.committed));
+    draft.committed=joinDictationText(draft.committed,said,paragraphBreak);
+    draft.lastUtterance=said;
+    draft.lifted="";
+    draft.lastFinalAt=now;
+    persistLiveDictation(found);
+    paintLiveDictation(found);
+    syncDictationChrome();
+    return "wrote";
+  }
+  function sealLiveDictation(){
+    var session=collab.voice;
+    if(!session||!session.dictation) return;
+    session.dictation.interim="";
+    var note=dictationNote();
+    var block=note&&(note.blocks||[]).find(function(item){ return item&&item.id===session.dictation.blockId; });
+    if(!note||!block) return;
+    var found={note:note,block:block,session:session};
+    paintLiveDictation(found);
+    var field=dictationField(found);
+    if(field) field.classList.remove("dictating");
+  }
+  function rebaseLiveDictation(){
+    var session=collab.voice;
+    if(!session||!session.active||!session.dictation) return;
+    var note=dictationNote();
+    if(!note){ session.dictation=null; return; }
+    var block=(note.blocks||[]).find(function(item){ return item&&item.id===session.dictation.blockId; });
+    if(!block){ session.dictation=null; return; }
+    session.dictation.baseHtml=block.html||"";
+    session.dictation.baseText=block.text||"";
+    session.dictation.committed="";
+    session.dictation.interim="";
+    session.dictation.lastUtterance="";
+    session.dictation.lifted="";
+    session.dictation.lastFinalAt=0;
+  }
+  function syncDictationChrome(){
+    var on=!!(collab.voice&&collab.voice.active&&dictationNote());
+    document.body.classList.toggle("voice-dictating",on);
+    var overlay=$("voiceOverlay");
+    if(overlay) overlay.classList.toggle("dictation-mode",on);
+    var label=$("dictationLiveLabel");
+    if(label){
+      label.hidden=!on;
+      if(on){
+        var status=$("voiceOverlayStatus");
+        var shown=status&&status.textContent||"";
+        label.textContent=!shown||shown==="Listening"?"Dictating":shown;
+      }
+    }
+    if(typeof updateCollabButton==="function") updateCollabButton();
+  }
+  function voiceHandoffText(buffered,decision){
+    var draft=collab.voice&&collab.voice.dictation;
+    var latest=cleanText(draft&&(draft.lifted||draft.lastUtterance));
+    if(draft&&cleanText(draft.committed||draft.baseText)&&latest) return latest;
+    return cleanText(decision&&decision.compressed)||buffered;
+  }
+
   /* ---------- voice stage ---------- */
   function setVoiceStatus(text){
     var el=$("voiceOverlayStatus"); if(el) el.textContent=text||"";
     setCollabStatus(text||"");
     paintVoiceMind();
+    var label=$("dictationLiveLabel");
+    if(label&&document.body.classList.contains("voice-dictating")){
+      label.hidden=false;
+      label.textContent=!text||text==="Listening"?"Dictating":text;
+    }
   }
   function setVoiceLink(text){
     var el=$("voiceOverlayLink"); if(!el) return;
@@ -8804,18 +9077,19 @@
     var agentItem=collabAgent(), a=agentItem?normalizeAgent(agentItem):null;
     var overlay=$("voiceOverlay"), companion=$("voiceCompanion"), nameEl=$("voiceOverlayName"), tasksEl=$("voiceOverlayTasks");
     var accent=agentAccent(agentItem)||"";
+    var dictating=!!(collab.voice&&collab.voice.active&&dictationNote());
     if(overlay){
       overlay.style.setProperty("--voice-accent",accent||"var(--accent)");
       overlay.style.setProperty("--voice-accent-soft",accent?accent+"33":"var(--accent-soft)");
-      overlay.classList.toggle("cinema",(a&&a.voicePresence==="cinema")||(a&&a.animationStyle==="cinema"));
-      overlay.classList.toggle("companion-mode",a&&(a.voicePresence==="companion"||a.animationStyle==="companion"));
+      overlay.classList.toggle("cinema",!dictating&&((a&&a.voicePresence==="cinema")||(a&&a.animationStyle==="cinema")));
+      overlay.classList.toggle("companion-mode",!dictating&&a&&(a.voicePresence==="companion"||a.animationStyle==="companion"));
       overlay.setAttribute("data-voice-look",a?a.animationStyle:"face");
     }
     if(nameEl) nameEl.textContent=a?a.name:"Assistant";
     if(companion){
       companion.style.setProperty("--voice-accent",accent||"var(--accent)");
       applyCompanionFace(a);
-      var showCompanion=!!(collab.voice&&collab.voice.active&&a&&(a.voicePresence==="companion"||a.animationStyle==="companion"));
+      var showCompanion=!!(collab.voice&&collab.voice.active&&!dictating&&a&&(a.voicePresence==="companion"||a.animationStyle==="companion"));
       companion.hidden=!showCompanion;
       companion.classList.toggle("open",showCompanion);
       companion.setAttribute("aria-hidden",showCompanion?"false":"true");
@@ -8829,23 +9103,28 @@
     var micBtn=$("voiceOverlayMic");
     if(micBtn){ micBtn.innerHTML=ICON_STOPSQ; }
     paintVoiceMind();
+    syncDictationChrome();
   }
   function hideVoiceStage(){
     var overlay=$("voiceOverlay"), companion=$("voiceCompanion");
-    if(overlay){ overlay.classList.remove("open","cinema","companion-mode"); overlay.setAttribute("aria-hidden","true"); }
+    if(overlay){ overlay.classList.remove("open","cinema","companion-mode","dictation-mode"); overlay.setAttribute("aria-hidden","true"); }
     if(companion){ companion.hidden=true; companion.classList.remove("open"); companion.setAttribute("aria-hidden","true"); }
+    document.body.classList.remove("voice-dictating");
+    var label=$("dictationLiveLabel"); if(label) label.hidden=true;
     setVoiceLink("");
     markCompanionState("");
   }
   function showVoiceStage(){
     var agentItem=collabAgent(), a=agentItem?normalizeAgent(agentItem):null;
     var presence=a?a.voicePresence:"overlay";
-    if(presence==="panel"){ hideVoiceStage(); return; }
+    var dictating=!!dictationNote();
+    if(presence==="panel"&&!dictating){ hideVoiceStage(); return; }
     var overlay=$("voiceOverlay");
     if(overlay){ overlay.classList.add("open"); overlay.setAttribute("aria-hidden","false"); }
-    buildVoiceArt(a?a.animationStyle:"face",null,a);
+    if(!dictating) buildVoiceArt(a?a.animationStyle:"face",null,a);
     renderVoiceChrome();
     markCompanionState("listening");
+    if(dictating) setVoiceStatus("Dictating");
   }
 
   function listenSystemPrompt(agentItem){
@@ -8866,7 +9145,8 @@
       "- respond if they asked a question, addressed you by name with a request, said that's it / go / write that down, or clearly handed you work. That passes the turn to the conscious model.",
       "- Also respond to greetings and check-ins: hi, hey, what's going on, can you hear me, are you there.",
       "- Treat \""+a.name+"\", assistant, and hey you as names for this agent.",
-      "- dictate_only if they are only dumping raw notes and do not want a reply yet.",
+      "- dictate_only if they are only dumping raw notes and do not want a reply yet. Those words are already being typed into the open note.",
+      "- respond when they want a reply or an edit. An edit command is not note content; the note already holds the dictation.",
       "- Prefer keep_listening when unsure."
     ].join("\n");
   }
@@ -8902,7 +9182,7 @@
     var text=cleanText(utterance); if(!text) return session.buffer||"";
     if(!alreadyBuffered){
       session.buffer=session.buffer?session.buffer+"\n"+text:text;
-      appendTranscriptUtterance(text,session.buffer.split("\n").length>1);
+      if(commitLiveDictation(text)==="unavailable") appendTranscriptUtterance(text,session.buffer.split("\n").length>1);
     } else if(!session.buffer) session.buffer=text;
     setVoiceTranscriptPreview(session.buffer);
     return session.buffer;
@@ -8912,7 +9192,7 @@
     if(!session||!session.active||!agentItem||!decision) return;
     showListenDecision(decision);
     if(decision.action==="keep_listening"){
-      setVoiceStatus("Listening");
+      setVoiceStatus(dictationNote()?"Dictating":"Listening");
       markCompanionState("listening");
       if(session.pendingReview){
         var extra=session.pendingReview; session.pendingReview="";
@@ -8924,16 +9204,23 @@
     var buffered=session.buffer; session.buffer="";
     setVoiceTranscriptPreview(buffered);
     if(decision.action==="dictate_only"){
-      setVoiceStatus("Listening");
-      if(captureDictationIntoNote(buffered)) pushCollabNote("Captured into the note without a reply.");
-      else pushCollabNote("Dictation captured without a reply.");
+      var lifted=cleanText(session.dictation&&session.dictation.lifted);
+      if(lifted) commitLiveDictation(lifted,true);
+      if(session.dictation&&cleanText(session.dictation.committed||session.dictation.baseText)) collab.pendingDictation="";
+      setVoiceStatus(dictationNote()?"Dictating":"Listening");
+      markCompanionState("listening");
+      if(!(session.dictation&&cleanText(session.dictation.committed))){
+        if(captureDictationIntoNote(buffered)) pushCollabNote("Captured into the note without a reply.");
+        else pushCollabNote("Dictation captured without a reply.");
+      }
       return;
     }
     if(collab.busy){ collab.queuedUtterance=(collab.queuedUtterance?collab.queuedUtterance+"\n":"")+buffered; setVoiceStatus("One moment"); return; }
-    if(looksLikeGenerativeNoteRequest(buffered)||looksLikeNoteWriteRequest(buffered)||looksLikeNoteWriteQuestion(buffered)||looksLikeEditCapabilityQuestion(buffered)||looksLikeDirectNoteContent(buffered)){
+    var handed=voiceHandoffText(buffered,decision);
+    if(looksLikeGenerativeNoteRequest(handed)||looksLikeNoteWriteRequest(handed)||looksLikeNoteWriteQuestion(handed)||looksLikeEditCapabilityQuestion(handed)||looksLikeDirectNoteContent(handed)){
       agentTaskUpsertRunning(agentItem,"Work on the note",decision.reason,agentModelForRole(agentItem,"conscious"));
     }
-    handoffVoiceBuffer(decision.compressed||buffered,decision);
+    handoffVoiceBuffer(handed,decision);
   }
   function considerVoiceTurn(utterance,alreadyBuffered){
     var agentItem=collabAgent(); if(!agentItem||!collab.voice||!collab.voice.active) return;
@@ -8969,7 +9256,9 @@
     var agentItem=collabAgent(); if(!agentItem) return;
     var a=normalizeAgent(agentItem);
     var message=cleanText(text); if(!message||collab.busy){ if(message) collab.queuedUtterance=(collab.queuedUtterance?collab.queuedUtterance+"\n":"")+message; return; }
-    if(captureDictationIntoNote(message)) pushCollabNote("Added to the open note.");
+    var draft=collab.voice&&collab.voice.dictation;
+    if(draft&&cleanText(draft.committed||draft.baseText)) collab.pendingDictation="";
+    else if(captureDictationIntoNote(message)) pushCollabNote("Added to the open note.");
     startCollabSession();
     pushCollabMessage("user",message);
     runCollabTurn({
@@ -9085,6 +9374,7 @@
       session.live.partial=mergeLiveTranscript(session.live.partial,piece);
       session.live.utterance=session.live.partial;
       setVoiceTranscriptPreview((session.buffer?session.buffer+"\n":"")+session.live.partial);
+      previewLiveDictation(session.live.partial);
     }
     var parts=sc.modelTurn&&sc.modelTurn.parts||[];
     parts.forEach(function(part){ if(part&&part.text&&!part.thought) session.live.reply=(session.live.reply||"")+part.text; });
@@ -9181,12 +9471,13 @@
       }
     }
     setVoiceLink("");
-    setVoiceStatus("Listening");
+    setVoiceStatus(dictationNote()?"Dictating":"Listening");
   }
 
   function stopVoiceSession(){
     var session=collab.voice;
     if(!session) return;
+    sealLiveDictation();
     session.active=false;
     if(session.raf) cancelAnimationFrame(session.raf);
     if(session.silenceTimer) clearTimeout(session.silenceTimer);
@@ -9200,6 +9491,7 @@
     collab.recorder=null; collab.recorderStream=null; collab.recorderStop=false;
     hideVoiceStage();
     updateCollabControls();
+    updateCollabButton();
     setCollabStatus("");
   }
   function voiceLevelFromAnalyser(analyser){
@@ -9301,6 +9593,7 @@
         if(collab.voice.live&&collab.voice.live.ready) ingestVoiceUtterance(finalText,false);
         else considerVoiceTurn(finalText,false);
       }
+      if(collab.voice&&collab.voice.active) previewLiveDictation(interim);
     };
     rec.onerror=function(event){ if(event&&event.error==="not-allowed") setVoiceStatus("Microphone permission was blocked",true); };
     rec.onend=function(){ if(collab.voice&&collab.voice.active){ try{ rec.start(); }catch(e){} } };
@@ -9335,6 +9628,7 @@
     if(activeAudioRecorder){ setCollabStatus("Finish the audio recording first.",true); return; }
     if(!navigator.mediaDevices||!navigator.mediaDevices.getUserMedia){ setCollabStatus("This browser can’t record audio.",true); return; }
     if(!hasThinkingAccess()&&!hasVoiceAccess()){ setCollabStatus("Buy AI credits or add a key in Settings first.",true); return; }
+    bindVoiceToOpenNote();
     startCollabSession();
     setCollabStatus("Waiting for the microphone…");
     navigator.mediaDevices.getUserMedia({audio:{echoCancellation:true,noiseSuppression:true,autoGainControl:true}}).then(function(stream){
@@ -9352,14 +9646,18 @@
       startVoiceAnalyserLoop();
       updateCollabControls();
       var agentItem=collabAgent(), a=agentItem?normalizeAgent(agentItem):null;
-      maybeGenerateContextGreeting(true);
+      var dictating=!!dictationNote();
+      if(dictating){
+        setVoiceStatus("Dictating");
+        if(collab.open) closeCollabPanel({keepVoice:true});
+      } else maybeGenerateContextGreeting(true);
       var wantLive=!!(a&&a.liveListen&&runtimeApiKeys.gemini&&!usingHostedAi()&&collab.voice.audioContext&&typeof collab.voice.audioContext.createScriptProcessor==="function");
       if(wantLive){
-        setVoiceStatus("Connecting…");
+        setVoiceStatus(dictating?"Dictating":"Connecting…");
         setVoiceLink("");
         connectGeminiLive(collab.voice,agentItem).then(function(ok){
           if(!collab.voice||!collab.voice.active) return;
-          if(ok) setVoiceStatus("Listening");
+          if(ok) setVoiceStatus(dictationNote()?"Dictating":"Listening");
           else startBrowserListen(collab.voice);
         });
       } else startBrowserListen(collab.voice);
@@ -9609,7 +9907,7 @@
     var mic=document.createElement("button"); mic.type="button"; mic.className="mic"; mic.innerHTML=ICON_MIC;
     mic.onclick=function(){ toggleCollabMic(); };
     var input=document.createElement("textarea"); input.rows=1; input.value=collab.draft||"";
-    input.placeholder="Ask, or tap the mic and talk…";
+    input.placeholder=doc?"Dictate into the note, or ask for an edit…":"Ask, or tap the mic and talk…";
     input.oninput=function(){ collab.draft=input.value; input.style.height="auto"; input.style.height=Math.min(132,input.scrollHeight)+"px"; updateCollabControls(); };
     input.onkeydown=function(event){
       if(event.key==="Enter"&&!event.shiftKey){ event.preventDefault(); submit(); }
@@ -9646,7 +9944,15 @@
   }
   function updateCollabButton(){
     var button=$("agentMicBtn");
-    if(button) button.classList.toggle("on",collab.open||!!(collab.voice&&collab.voice.active));
+    if(!button) return;
+    var live=!!(collab.voice&&collab.voice.active);
+    var dictating=live&&!!dictationNote();
+    button.classList.toggle("on",collab.open||live);
+    button.classList.toggle("dictating",dictating);
+    button.innerHTML=live?ICON_STOPSQ:ICON_MIC;
+    var label=dictating?"Stop dictating":live?"Stop listening":"Dictate into the open note, or talk to your assistant";
+    button.title=label;
+    button.setAttribute("aria-label",label);
   }
   function openCollabAgentPicker(anchor){
     ensureBuiltinAgent();
@@ -9693,10 +9999,11 @@
     if(input&&!opts.listen) setTimeout(function(){ input.focus(); },260);
     if(opts.listen) setTimeout(function(){ toggleCollabMic(); },260);
   }
-  function closeCollabPanel(){
+  function closeCollabPanel(opts){
+    opts=opts||{};
     var panel=$("collabPanel");
     var a=collabAgent()?normalizeAgent(collabAgent()):null;
-    var keepVoice=collab.voice&&collab.voice.active&&a&&a.voicePresence!=="panel";
+    var keepVoice=!!opts.keepVoice||(collab.voice&&collab.voice.active&&a&&a.voicePresence!=="panel");
     if(!keepVoice){ stopVoiceSession(); stopCollabRecording(); stopCollabSpeech(); }
     collab.open=false;
     if(panel){ panel.classList.remove("open"); panel.setAttribute("aria-hidden","true"); }
@@ -11716,8 +12023,17 @@
     }
     var mic=document.createElement("button"); mic.className="sbtn icon-sbtn agent-mic"; mic.id="agentMicBtn"; mic.type="button";
     mic.innerHTML=ICON_MIC;
-    mic.title="Talk to your AI collaborator"; mic.setAttribute("aria-label","Talk to your AI collaborator");
-    mic.onclick=function(){ toggleCollabPanel(); };
+    mic.title="Dictate into the open note, or talk to your assistant"; mic.setAttribute("aria-label",mic.title);
+    mic.onclick=function(){
+      if(collab.voice&&collab.voice.active){ stopVoiceSession(); return; }
+      var note=current();
+      if(!(typeof viewingHome!=="undefined"&&viewingHome)&&note&&note.type==="note"&&!note.locked){
+        bindVoiceToOpenNote();
+        startVoiceSession();
+        return;
+      }
+      toggleCollabPanel();
+    };
     dfoot.appendChild(mic);
     var upcoming=document.createElement("button"); upcoming.className="sbtn icon-sbtn upcoming-button"; upcoming.id="upcomingBtn"; upcoming.type="button"; upcoming.innerHTML=ICON_CALENDAR; upcoming.title="Upcoming todos"; upcoming.setAttribute("aria-label","Upcoming todos");
     upcoming.onclick=function(){ setSidebarView(state.sidebarView==="upcoming"?"all":"upcoming"); };
