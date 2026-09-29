@@ -1175,6 +1175,46 @@
   @keyframes companionWrite{ 0%,100%{ transform:translate(0,0) rotate(0); } 50%{ transform:translate(3px,-2px) rotate(6deg); } }
   .note-editor.agent-writing{ outline:1px solid var(--accent-line); box-shadow:0 0 0 6px var(--accent-soft); border-radius:14px; }
   .agent-writing-block{ outline:1px solid var(--accent-line); box-shadow:0 0 0 4px var(--accent-soft); border-radius:10px; transition:outline .2s ease, box-shadow .2s ease; }
+  /* Dictation: the open note's edges breathe in the active theme color with the mic. */
+  body.voice-dictating .canvas > .sheet:not(.home-sheet){
+    border-radius:28px;
+    box-shadow:
+      0 0 0 1px color-mix(in srgb, var(--accent) calc(18% + var(--voice-amp, .16) * 46%), transparent),
+      0 0 calc(10px + var(--voice-amp, .16) * 64px) color-mix(in srgb, var(--accent) calc(12% + var(--voice-amp, .16) * 58%), transparent),
+      inset 0 0 calc(16px + var(--voice-amp, .16) * 52px) color-mix(in srgb, var(--accent) calc(7% + var(--voice-amp, .16) * 32%), transparent);
+  }
+  body.reduce-fx.voice-dictating .canvas > .sheet:not(.home-sheet){
+    box-shadow:
+      0 0 0 1px color-mix(in srgb, var(--accent) 46%, transparent),
+      inset 0 0 26px color-mix(in srgb, var(--accent) 16%, transparent);
+  }
+  .dictation-interim{
+    color:color-mix(in srgb, var(--accent) 72%, var(--ink));
+    background-image:linear-gradient(transparent 64%, color-mix(in srgb, var(--accent) 40%, transparent) 64%);
+    border-radius:2px;
+  }
+  .note-paragraph.dictating{ caret-color:var(--accent); }
+  .d-foot .agent-mic.dictating{
+    color:#08080a; border-color:transparent; background:var(--accent);
+    box-shadow:0 0 calc(6px + var(--voice-amp, .2) * 16px) var(--accent);
+  }
+  .voice-overlay.dictation-mode{ pointer-events:none; background:transparent; }
+  .voice-overlay.dictation-mode .voice-overlay-bg,
+  .voice-overlay.dictation-mode .voice-stage-art,
+  .voice-overlay.dictation-mode .voice-overlay-copy,
+  .voice-overlay.dictation-mode .voice-overlay-transcript,
+  .voice-overlay.dictation-mode .voice-overlay-decision,
+  .voice-overlay.dictation-mode .voice-overlay-tasks,
+  .voice-overlay.dictation-mode .voice-edit{ display:none !important; }
+  .voice-overlay.dictation-mode .voice-overlay-actions{
+    display:flex !important; pointer-events:auto;
+    padding:8px 10px 8px 16px; border-radius:999px;
+    border:1px solid color-mix(in srgb, var(--accent) calc(28% + var(--voice-amp, .2) * 40%), transparent);
+    background:rgba(10,10,14,.84);
+    box-shadow:0 12px 40px rgba(0,0,0,.38), 0 0 calc(8px + var(--voice-amp, .2) * 26px) color-mix(in srgb, var(--accent) 42%, transparent);
+  }
+  .dictation-live-label{ color:var(--accent); font:600 .78rem "DM Sans",sans-serif; letter-spacing:.01em; }
+  .dictation-live-label[hidden]{ display:none; }
 
   .agent-mind{ display:grid; gap:12px; }
   .agent-mind .mind-block{ padding:12px 14px; border:1px solid var(--line); border-radius:14px; background:rgba(255,255,255,.03); }
@@ -1298,6 +1338,21 @@
   .home-add .add-choice{ display:flex; flex-direction:column; align-items:flex-start; gap:3px; padding:12px 14px; border:1px solid var(--line); border-radius:14px; color:var(--ink); background:rgba(255,255,255,.03); cursor:pointer; text-align:left; font:inherit; }
   .home-add .add-choice small{ color:var(--ink-faint); line-height:1.4; }
   .home-add .add-choice:hover{ border-color:var(--accent-line); background:var(--accent-soft); }
+  .home-notes-slot{ margin-top:14px; }
+  .home-search{ display:flex; margin-bottom:8px; }
+  .home-search input,.home-scratch{ width:100%; border:1px solid var(--line); border-radius:12px; padding:12px 14px; color:var(--ink); background:rgba(0,0,0,.28); font:inherit; outline:none; }
+  .home-search input{ border-radius:12px; }
+  .home-search input:focus,.home-scratch:focus{ border-color:var(--accent-line); }
+  .home-scratch{ min-height:108px; resize:vertical; line-height:1.5; border:0; padding:2px 2px 10px; background:transparent; }
+  .home-todo{ display:grid; grid-template-columns:22px minmax(0,1fr) auto; gap:8px; align-items:center; width:100%; margin:0 0 4px; padding:8px; border:0; border-radius:12px; color:inherit; background:transparent; text-align:left; font:inherit; }
+  .home-todo:hover{ background:rgba(255,255,255,.05); }
+  .home-todo .box{ width:18px; height:18px; border:1px solid var(--accent-line); border-radius:6px; background:transparent; color:transparent; cursor:pointer; font-weight:700; }
+  .home-todo .box:hover{ background:var(--accent-soft); color:var(--accent); }
+  .home-todo b{ display:block; font-weight:600; font-size:.92rem; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+  .home-todo button.title{ border:0; background:transparent; color:inherit; cursor:pointer; text-align:left; font:inherit; min-width:0; padding:0; }
+  .home-todo em{ color:var(--ink-faint); font:500 .68rem "DM Mono",monospace; font-style:normal; white-space:nowrap; }
+  .home-filters{ display:flex; flex-wrap:wrap; gap:6px; margin:0 2px 8px; }
+  .home-filters button{ border:1px solid var(--accent-line); border-radius:999px; padding:4px 8px; color:var(--accent); background:var(--accent-soft); cursor:pointer; font:600 .72rem "DM Sans",sans-serif; }
   .tag-empty{ animation:fadeIn .25s ease both; }
 
   body.reduce-fx *,body.reduce-fx *::before,body.reduce-fx *::after{ animation-duration:.001s !important; animation-delay:0s !important; transition-duration:.001s !important; }
@@ -1420,6 +1475,7 @@
     <div class="voice-overlay-decision" id="voiceOverlayDecision" hidden></div>
     <div class="voice-overlay-tasks" id="voiceOverlayTasks"></div>
     <div class="voice-overlay-actions">
+      <span class="dictation-live-label" id="dictationLiveLabel" hidden role="status">Dictating</span>
       <button type="button" class="voice-edit" id="voiceOverlayEdit">Customize</button>
       <button type="button" class="mic-live" id="voiceOverlayMic" title="Stop listening" aria-label="Stop listening"></button>
       <button type="button" class="end-voice" id="voiceOverlayEnd">End</button>
@@ -1552,7 +1608,7 @@
   }
   function loadLocal(){ var v=readKey(KEY); if(v&&v.items) return v; if(!canPersist&&mem) return mem; return migrate(); }
   function setSaveState(label,kind){ var el=$("saveState"); if(!el) return; el.textContent=label; el.className="save-state"+(kind?" "+kind:""); }
-  function backupPayload(){ return { app:"second-brain", version:16, items:state.items, folders:state.folders, tags:state.tags, deletedItems:state.deletedItems||{}, preferences:{theme:state.theme,motion:state.motion,darkness:state.darkness,enabledTypes:state.enabledTypes,typeDefaults:state.typeDefaults,noteInsertOptions:state.noteInsertOptions,tagsCollapsed:state.tagsCollapsed,typesCollapsed:state.typesCollapsed,allNotesCollapsed:state.allNotesCollapsed,focusNoteBody:state.focusNoteBody,quickAiHandoff:state.quickAiHandoff,allNotesName:state.allNotesName,readChapterNames:state.readChapterNames,listSort:state.listSort,homeLayout:normalizeHomeLayout(state.homeLayout),agentSettings:agentSettings()}, created:Date.now() }; }
+  function backupPayload(){ return { app:"second-brain", version:16, items:state.items, folders:state.folders, tags:state.tags, deletedItems:state.deletedItems||{}, preferences:{theme:state.theme,motion:state.motion,darkness:state.darkness,enabledTypes:state.enabledTypes,typeDefaults:state.typeDefaults,noteInsertOptions:state.noteInsertOptions,tagsCollapsed:state.tagsCollapsed,typesCollapsed:state.typesCollapsed,allNotesCollapsed:state.allNotesCollapsed,focusNoteBody:state.focusNoteBody,quickAiHandoff:state.quickAiHandoff,allNotesName:state.allNotesName,readChapterNames:state.readChapterNames,listSort:state.listSort,homeLayout:normalizeHomeLayout(state.homeLayout),homeExtrasVersion:state.homeExtrasVersion||0,homeScratch:state.homeScratch||"",agentSettings:agentSettings()}, created:Date.now() }; }
   function autoBackups(){ return deviceBackups; }
   function backupSnapshot(data){
     try{ return JSON.parse(JSON.stringify(data)); }catch(e){ console.warn("Backup snapshot could not be copied:",e); return data; }
@@ -2059,6 +2115,7 @@
   state.upcomingSort=normalizeUpcomingSort(state.upcomingSort);
   state.upcomingFilter=normalizeUpcomingFilter(state.upcomingFilter);
   state.homeLayout=normalizeHomeLayout(state.homeLayout);
+  if(typeof state.homeScratch!=="string") state.homeScratch="";
   agentSettings();
   if(state.agentEditDefaultsVersion!==1){ agentSettings().requireApproval=false; state.agentEditDefaultsVersion=1; }
   if(typeof state.pendingCloudSync!=="boolean") state.pendingCloudSync=false;
@@ -2077,9 +2134,10 @@
   migrateFoldersToTags(state);
   if(!state.items.length) state.items.push(newNoteItem());
   if(!state.currentId || !state.items.some(function(i){return i.id===state.currentId;})) state.currentId=state.items[0].id;
+  if(ensureHomeExtras()) persistLocalStateQuietly();
 
   function blankDeviceState(){
-    return {items:[],folders:[],tags:[],deletedItems:{},currentId:null,motion:true,theme:"nebula",darkness:82,enabledTypes:defaultEnabledTypes(),typeDefaults:TYPE_DEFAULTS_VERSION,noteInsertOptions:{file:true,paragraph:true,checklist:true,comment:true,prompt:true,heading:true,chapter:true,group:true,code:true},tagsCollapsed:false,typesCollapsed:false,allNotesCollapsed:false,focusNoteBody:true,quickAiHandoff:true,allNotesName:"All notes",readChapterNames:false,filterTag:null,filterType:"",sidebarView:"all",tagAssignMode:false,noteSearch:"",listSort:"updated",upcomingSort:"due",upcomingFilter:{range:"all",tagId:null,showDone:false},homeLayout:defaultHomeLayout(),version:1,agentSettings:defaultAgentSettings(),pendingCloudSync:false,syncBaseline:null};
+    return {items:[],folders:[],tags:[],deletedItems:{},currentId:null,motion:true,theme:"nebula",darkness:82,enabledTypes:defaultEnabledTypes(),typeDefaults:TYPE_DEFAULTS_VERSION,noteInsertOptions:{file:true,paragraph:true,checklist:true,comment:true,prompt:true,heading:true,chapter:true,group:true,code:true},tagsCollapsed:false,typesCollapsed:false,allNotesCollapsed:false,focusNoteBody:true,quickAiHandoff:true,allNotesName:"All notes",readChapterNames:false,filterTag:null,filterType:"",sidebarView:"all",tagAssignMode:false,noteSearch:"",listSort:"updated",upcomingSort:"due",upcomingFilter:{range:"all",tagId:null,showDone:false},homeLayout:defaultHomeLayout(),homeExtrasVersion:1,homeScratch:"",version:1,agentSettings:defaultAgentSettings(),pendingCloudSync:false,syncBaseline:null};
   }
   function clearAttachmentStore(){
     if(!window.indexedDB) return;
@@ -2111,7 +2169,7 @@
   }
 
   /* Opening the site lands on Home. A note is shown only after it is chosen. */
-  var viewingHome=true, homeCustomizing=false, homeTagId=null;
+  var viewingHome=true, homeCustomizing=false, homeTagId=null, homeTypeFilter="", homeQuery="", homeSearchFocus=false, homeScratchTimer=null;
   function current(){ return state.items.find(function(s){return s.id===state.currentId;})||state.items[0]; }
   /* Time is counted only while this app is the focused, visible tab. It is kept
      separately from `updated` so opening a note does not change its recency. */
@@ -3264,27 +3322,65 @@
      list is one of them and starts on. Visiting the site always opens Home. */
   function homeWidgetCatalog(){
     return [
-      {type:"notes",label:"Notes list",hint:"Every note in one list. On by default, and you can turn it off."},
+      {type:"notes",label:"Notes list",hint:"Every note in one list, under the widgets. On by default."},
       {type:"capture",label:"Quick capture",hint:"Jot a note without leaving home."},
       {type:"continue",label:"Continue",hint:"Jump back into the note you had open."},
       {type:"upcoming",label:"Upcoming",hint:"What is due next."},
+      {type:"glance",label:"At a glance",hint:"Counts for notes, open todos, and what is due."},
+      {type:"todos",label:"Open todos",hint:"Unchecked todos, with the due ones first."},
+      {type:"search",label:"Search",hint:"Find a note and filter the list below."},
       {type:"tags",label:"Tags",hint:"Pick a tag to filter the notes list."},
-      {type:"glance",label:"At a glance",hint:"Counts for notes, open todos, and what is due."}
+      {type:"revisit",label:"Revisit",hint:"Notes that have been quiet for a while."},
+      {type:"time",label:"Time spent",hint:"Where your time in notes has gone."},
+      {type:"today",label:"Today",hint:"Notes touched since this morning."},
+      {type:"done",label:"Finished",hint:"Todos you recently checked off."},
+      {type:"types",label:"Types",hint:"Jump to notes, todos, scripts, and the rest."},
+      {type:"scratch",label:"Scratch pad",hint:"A little pad that stays on Home, not in a note."},
+      {type:"agents",label:"Agents",hint:"Open an assistant without hunting through the list."}
     ];
   }
-  function defaultHomeLayout(){ return {widgets:[{type:"notes",enabled:true}]}; }
+  function homeStarterWidgets(){ return ["capture","continue","upcoming","glance","todos","search","tags","revisit","time","today","done","types","scratch","agents"]; }
+  function defaultHomeLayout(){
+    return {widgets:homeStarterWidgets().map(function(type){ return {type:type, enabled:true}; }).concat([{type:"notes", enabled:true}])};
+  }
   function normalizeHomeLayout(layout){
     var known={};
     homeWidgetCatalog().forEach(function(entry){ known[entry.type]=true; });
     var incoming=layout&&Array.isArray(layout.widgets)?layout.widgets:[];
-    var seen={}, widgets=[];
+    var seen={}, widgets=[], notes=null;
     incoming.forEach(function(widget){
       if(!widget||!known[widget.type]||seen[widget.type]) return;
       seen[widget.type]=true;
-      widgets.push({type:widget.type, enabled:widget.enabled!==false});
+      var entry={type:widget.type, enabled:widget.enabled!==false};
+      if(widget.type==="notes") notes=entry;
+      else widgets.push(entry);
     });
-    if(!seen.notes) widgets.unshift({type:"notes", enabled:true});
+    widgets.push(notes||{type:"notes", enabled:true});
     return {widgets:widgets};
+  }
+  function ensureHomeExtras(){
+    var before=JSON.stringify(state.homeLayout||null), versionBefore=state.homeExtrasVersion||0;
+    var layout=normalizeHomeLayout(state.homeLayout);
+    if((state.homeExtrasVersion||0)!==1){
+      var have={};
+      layout.widgets.forEach(function(widget){ have[widget.type]=true; });
+      var notes=layout.widgets.pop();
+      homeStarterWidgets().forEach(function(type){ if(!have[type]) layout.widgets.push({type:type, enabled:true}); });
+      layout.widgets.push(notes);
+      state.homeExtrasVersion=1;
+    }
+    state.homeLayout=normalizeHomeLayout(layout);
+    return JSON.stringify(state.homeLayout)!==before||(state.homeExtrasVersion||0)!==versionBefore;
+  }
+  function applyHomePreferences(prefs){
+    if(!prefs) return;
+    if(prefs.homeLayout){
+      state.homeLayout=normalizeHomeLayout(prefs.homeLayout);
+      state.homeExtrasVersion=typeof prefs.homeExtrasVersion==="number"?prefs.homeExtrasVersion:0;
+    } else if(typeof prefs.homeExtrasVersion==="number") state.homeExtrasVersion=prefs.homeExtrasVersion;
+    if(typeof prefs.homeScratch==="string") state.homeScratch=prefs.homeScratch;
+    var changed=ensureHomeExtras();
+    if(changed&&currentUser&&cloudHydrated&&!cloudSyncPaused&&!cloudSyncLoading) saveCloud(1);
   }
   function homeLayout(){ state.homeLayout=normalizeHomeLayout(state.homeLayout); return state.homeLayout; }
   function homeWidgetOn(type){
@@ -3305,12 +3401,15 @@
     persistHomeLayout();
   }
   function moveHomeWidget(type,direction){
-    var widgets=homeLayout().widgets, index=-1, i;
+    if(type==="notes") return;
+    var layout=homeLayout(), notes=layout.widgets.filter(function(widget){ return widget.type==="notes"; });
+    var widgets=layout.widgets.filter(function(widget){ return widget.type!=="notes"; }), index=-1, i;
     for(i=0;i<widgets.length;i++) if(widgets[i].type===type) index=i;
     var target=index+direction;
     if(index<0||target<0||target>=widgets.length) return;
     var moved=widgets.splice(index,1)[0];
     widgets.splice(target,0,moved);
+    layout.widgets=widgets.concat(notes);
     persistHomeLayout();
   }
   function removeHomeWidget(type){
@@ -3376,10 +3475,17 @@
     return mod&&mod.icon?mod.icon:(it.type==="script"?ICON_SCRIPT:(todoItem?ICON_TODO:(it.type==="audio"?ICON_AUDIO:(it.type==="agent"?ICON_AGENT:ICON_NOTE))));
   }
   function homeNotes(){
+    var query=(homeQuery||"").trim().toLowerCase();
     var items=(state.items||[]).filter(function(it){
       if(!it||it.hidden) return false;
-      if(homeTagId) return (it.tagIds||[]).indexOf(homeTagId)>=0;
-      return !(it.tagIds||[]).some(function(id){ var tag=tagById(id); return tag&&tag.hidden; });
+      if(homeTypeFilter&&itemKindForAgent(it)!==homeTypeFilter) return false;
+      if(homeTagId){ if((it.tagIds||[]).indexOf(homeTagId)<0) return false; }
+      else if((it.tagIds||[]).some(function(id){ var tag=tagById(id); return tag&&tag.hidden; })) return false;
+      if(query){
+        var tagNames=(it.tagIds||[]).map(function(id){ var tag=tagById(id); return tag?tag.name:""; }).join(" ");
+        if((it.title+" "+itemText(it)+" "+tagNames).toLowerCase().indexOf(query)<0) return false;
+      }
+      return true;
     });
     var sort=state.listSort||"updated";
     return items.sort(function(a,b){
@@ -3415,16 +3521,16 @@
   }
   function homeWidgetFrame(type,body,count){
     var def=homeWidgetDef(type), card=document.createElement("section");
-    card.className="home-widget"+((type==="notes"||type==="upcoming")?" span":"");
+    card.className="home-widget"+((type==="notes"||type==="upcoming"||type==="search"||type==="scratch")?" span":"");
     card.setAttribute("data-home-widget",type);
     var head=document.createElement("div"); head.className="home-widget-head";
     var title=document.createElement("h2"); title.textContent=def.label; head.appendChild(title);
     if(typeof count==="number"){ var badge=document.createElement("span"); badge.className="home-count"; badge.textContent=String(count); head.appendChild(badge); }
-    if(homeCustomizing){
+    if(homeCustomizing&&type!=="notes"){
       var actions=document.createElement("div"); actions.className="home-widget-actions";
       actions.appendChild(homeMiniButton("Move up","Up",function(){ moveHomeWidget(type,-1); }));
       actions.appendChild(homeMiniButton("Move down","Down",function(){ moveHomeWidget(type,1); }));
-      if(type!=="notes") actions.appendChild(homeMiniButton("Remove "+def.label,"Remove",function(){ removeHomeWidget(type); }));
+      actions.appendChild(homeMiniButton("Remove "+def.label,"Remove",function(){ removeHomeWidget(type); }));
       head.appendChild(actions);
     }
     card.appendChild(head); card.appendChild(body); return card;
@@ -3434,7 +3540,7 @@
     var copy=document.createElement("div");
     var kicker=document.createElement("p"); kicker.className="home-kicker"; kicker.textContent=homeGreeting();
     var title=document.createElement("h1"); title.textContent="Home";
-    var sub=document.createElement("p"); sub.className="home-sub"; sub.textContent="Land here instead of a note. Turn the notes list on or off, and add the widgets you want.";
+    var sub=document.createElement("p"); sub.className="home-sub"; sub.textContent="Widgets up top. The notes list sits underneath, and you can turn it off.";
     copy.appendChild(kicker); copy.appendChild(title); copy.appendChild(sub);
     var tools=document.createElement("div"); tools.className="home-tools";
     var notesOn=homeWidgetOn("notes");
@@ -3473,15 +3579,22 @@
       body.appendChild(off); return homeWidgetFrame("notes", body);
     }
     if(homeTagId&&!tagById(homeTagId)) homeTagId=null;
-    if(homeTagId){
-      var tag=tagById(homeTagId), bar=document.createElement("div"); bar.className="home-filter";
-      var label=document.createElement("span"); label.textContent="Showing "+(tag?tag.name:"this tag");
-      var clear=document.createElement("button"); clear.type="button"; clear.textContent="Clear"; clear.onclick=function(){ homeTagId=null; renderMain(); };
-      bar.appendChild(label); bar.appendChild(clear); body.appendChild(bar);
+    var filters=[];
+    if(homeTagId){ var tag=tagById(homeTagId); if(tag) filters.push(tag.name); }
+    if(homeTypeFilter) filters.push(itemLabel({type:homeTypeFilter}));
+    if((homeQuery||"").trim()) filters.push("Search: "+homeQuery.trim());
+    if(filters.length){
+      var bar=document.createElement("div"); bar.className="home-filters";
+      filters.forEach(function(text){
+        var chip=document.createElement("button"); chip.type="button"; chip.textContent=text+"  ×";
+        chip.onclick=function(){ homeTagId=null; homeTypeFilter=""; homeQuery=""; renderMain(); };
+        bar.appendChild(chip);
+      });
+      body.appendChild(bar);
     }
     var items=homeNotes();
     if(!items.length){
-      var empty=document.createElement("p"); empty.className="home-muted"; empty.textContent=homeTagId?"Nothing in this tag.":"No notes yet.";
+      var empty=document.createElement("p"); empty.className="home-muted"; empty.textContent=homeTagId?"Nothing in this tag.":((homeQuery||"").trim()||homeTypeFilter)?"Nothing matches.":"No notes yet.";
       body.appendChild(empty);
     } else items.forEach(function(it){ body.appendChild(buildHomeNoteRow(it)); });
     return homeWidgetFrame("notes", body, items.length);
@@ -3575,6 +3688,132 @@
     });
     return homeWidgetFrame("glance", body);
   }
+  function homeLinkRow(it, meta){
+    var button=document.createElement("button"); button.type="button"; button.className="home-due";
+    var text=document.createElement("span"); var title=document.createElement("b"); title.textContent=it.title||("Untitled "+itemLabel(it).toLowerCase()); text.appendChild(title);
+    var when=document.createElement("em"); when.textContent=meta||"";
+    button.appendChild(text); button.appendChild(when);
+    button.onclick=function(){ openHomeItem(it.id); };
+    return button;
+  }
+  function buildHomeListWidget(type, items, metaFor, emptyText){
+    var body=document.createElement("div");
+    if(!items.length){
+      var empty=document.createElement("p"); empty.className="home-muted"; empty.textContent=emptyText;
+      body.appendChild(empty); return homeWidgetFrame(type, body, 0);
+    }
+    items.forEach(function(it){ body.appendChild(homeLinkRow(it, metaFor(it))); });
+    return homeWidgetFrame(type, body, items.length);
+  }
+  function homeOpenTodos(){
+    return (state.items||[]).filter(function(it){ return it&&!it.hidden&&(isTodoNote(it)||it.type==="todo")&&!it.done; }).sort(function(a,b){
+      return (itemDueDate(a)||"9999").localeCompare(itemDueDate(b)||"9999")||((b.updated||0)-(a.updated||0));
+    }).slice(0,8);
+  }
+  function homeQuietNotes(){
+    var cutoff=Date.now()-14*86400000;
+    return (state.items||[]).filter(function(it){
+      return it&&!it.hidden&&it.type!=="agent"&&(it.updated||0)<cutoff&&(it.title||itemText(it));
+    }).sort(function(a,b){ return (a.updated||0)-(b.updated||0); }).slice(0,5);
+  }
+  function homeSpentLabel(ms){
+    ms=Number(ms)||0;
+    if(ms<60000) return ms?"Under 1m":"";
+    var mins=Math.round(ms/60000);
+    if(mins<60) return mins+"m";
+    var hours=Math.floor(mins/60), rest=mins%60;
+    return hours+"h"+(rest?" "+rest+"m":"");
+  }
+  function homeTimeNotes(){
+    return (state.items||[]).filter(function(it){ return it&&!it.hidden&&(Number(it.timeSpentMs)||0)>0; }).sort(function(a,b){
+      return (Number(b.timeSpentMs)||0)-(Number(a.timeSpentMs)||0);
+    }).slice(0,5);
+  }
+  function homeTodayNotes(){
+    var start=new Date(); start.setHours(0,0,0,0); var from=start.getTime();
+    return (state.items||[]).filter(function(it){ return it&&!it.hidden&&it.type!=="agent"&&(it.updated||0)>=from; }).sort(function(a,b){
+      return (b.updated||0)-(a.updated||0);
+    }).slice(0,6);
+  }
+  function homeFinishedTodos(){
+    return (state.items||[]).filter(function(it){ return it&&!it.hidden&&(isTodoNote(it)||it.type==="todo")&&it.done; }).sort(function(a,b){
+      return (b.completed||b.updated||0)-(a.completed||a.updated||0);
+    }).slice(0,6);
+  }
+  function buildHomeTodosWidget(){
+    var items=homeOpenTodos(), body=document.createElement("div");
+    if(!items.length){
+      var empty=document.createElement("p"); empty.className="home-muted"; empty.textContent="No open todos.";
+      body.appendChild(empty); return homeWidgetFrame("todos", body, 0);
+    }
+    items.forEach(function(it){
+      var row=document.createElement("div"); row.className="home-todo";
+      var check=document.createElement("button"); check.type="button"; check.className="box"; check.textContent="✓"; check.title="Mark complete"; check.setAttribute("aria-label","Mark complete");
+      check.onclick=function(){ setTodoDone(it, true); if(viewingHome) renderMain(); };
+      var open=document.createElement("button"); open.type="button"; open.className="title";
+      var title=document.createElement("b"); title.textContent=it.title||"Untitled todo"; open.appendChild(title);
+      open.onclick=function(){ openHomeItem(it.id); };
+      var due=itemDueDate(it), when=document.createElement("em"); when.textContent=due?dueDateLabel(due):"";
+      if(dueDateClass(due)==="overdue") when.style.color="#fca5a5";
+      row.appendChild(check); row.appendChild(open); row.appendChild(when);
+      body.appendChild(row);
+    });
+    return homeWidgetFrame("todos", body, items.length);
+  }
+  function buildHomeSearchWidget(){
+    var body=document.createElement("div"); body.className="home-search";
+    var input=document.createElement("input"); input.type="search"; input.className="home-search-input"; input.placeholder="Search notes…"; input.setAttribute("aria-label","Search notes"); input.value=homeQuery||"";
+    input.oninput=function(){
+      homeQuery=input.value; homeSearchFocus=true;
+      if((homeQuery||"").trim()&&!homeWidgetOn("notes")) setHomeWidgetEnabled("notes", true);
+      else renderMain();
+    };
+    body.appendChild(input);
+    return homeWidgetFrame("search", body);
+  }
+  function buildHomeRevisitWidget(){ return buildHomeListWidget("revisit", homeQuietNotes(), function(it){ return homeWhen(it.updated); }, "Nothing has been sitting for two weeks."); }
+  function buildHomeTimeWidget(){ return buildHomeListWidget("time", homeTimeNotes(), function(it){ return homeSpentLabel(it.timeSpentMs); }, "Time shows up here after you spend a minute in a note."); }
+  function buildHomeTodayWidget(){ return buildHomeListWidget("today", homeTodayNotes(), function(it){ return homeWhen(it.updated); }, "Nothing touched today yet."); }
+  function buildHomeDoneWidget(){ return buildHomeListWidget("done", homeFinishedTodos(), function(it){ return homeWhen(it.completed||it.updated); }, "No finished todos yet."); }
+  function buildHomeTypesWidget(){
+    var body=document.createElement("div"); body.className="home-tags";
+    var counts={};
+    (state.items||[]).forEach(function(it){ if(!it||it.hidden) return; var kind=itemKindForAgent(it); counts[kind]=(counts[kind]||0)+1; });
+    var kinds=Object.keys(counts).sort(function(a,b){ return counts[b]-counts[a]||a.localeCompare(b); });
+    if(!kinds.length){
+      var empty=document.createElement("p"); empty.className="home-muted"; empty.textContent="No notes yet.";
+      return homeWidgetFrame("types", empty);
+    }
+    kinds.forEach(function(kind){
+      var chip=document.createElement("button"); chip.type="button"; chip.className="home-tag"+(homeTypeFilter===kind?" on":"");
+      chip.textContent=itemLabel({type:kind})+"  "+counts[kind];
+      chip.onclick=function(){
+        homeTypeFilter=homeTypeFilter===kind?"":kind;
+        if(homeTypeFilter&&!homeWidgetOn("notes")) setHomeWidgetEnabled("notes", true);
+        else renderMain();
+      };
+      body.appendChild(chip);
+    });
+    return homeWidgetFrame("types", body);
+  }
+  function buildHomeScratchWidget(){
+    var body=document.createElement("div");
+    var area=document.createElement("textarea"); area.className="home-scratch"; area.placeholder="Scratch pad. This stays on Home."; area.value=state.homeScratch||"";
+    area.oninput=function(){
+      state.homeScratch=area.value;
+      clearTimeout(homeScratchTimer);
+      homeScratchTimer=setTimeout(function(){
+        persist();
+        if(currentUser&&cloudHydrated&&!cloudSyncPaused&&!cloudSyncLoading) saveCloud(1);
+      }, 500);
+    };
+    body.appendChild(area);
+    return homeWidgetFrame("scratch", body);
+  }
+  function buildHomeAgentsWidget(){
+    var agents=(state.items||[]).filter(function(it){ return it&&!it.hidden&&it.type==="agent"; });
+    return buildHomeListWidget("agents", agents, function(){ return "Open"; }, "No agents yet. Create one from New.");
+  }
   function buildHomeWidget(widget){
     if(widget.type==="notes") return buildHomeNotesWidget(widget.enabled===false);
     if(widget.type==="capture") return buildHomeCaptureWidget();
@@ -3582,6 +3821,15 @@
     if(widget.type==="upcoming") return buildHomeUpcomingWidget();
     if(widget.type==="tags") return buildHomeTagsWidget();
     if(widget.type==="glance") return buildHomeGlanceWidget();
+    if(widget.type==="todos") return buildHomeTodosWidget();
+    if(widget.type==="search") return buildHomeSearchWidget();
+    if(widget.type==="revisit") return buildHomeRevisitWidget();
+    if(widget.type==="time") return buildHomeTimeWidget();
+    if(widget.type==="today") return buildHomeTodayWidget();
+    if(widget.type==="done") return buildHomeDoneWidget();
+    if(widget.type==="types") return buildHomeTypesWidget();
+    if(widget.type==="scratch") return buildHomeScratchWidget();
+    if(widget.type==="agents") return buildHomeAgentsWidget();
     return document.createElement("div");
   }
   function buildHomeAddPanel(){
@@ -3620,18 +3868,26 @@
     var sheet=document.createElement("div"); sheet.className="sheet home-sheet"+(entering?" enter":"");
     sheet.appendChild(buildHomeHeader());
     var grid=document.createElement("div"); grid.className="home-grid";
-    var widgets=homeLayout().widgets.filter(function(widget){
-      if(widget.enabled===false) return homeCustomizing&&widget.type==="notes";
-      return true;
-    });
+    var widgets=homeLayout().widgets.filter(function(widget){ return widget.type!=="notes"&&widget.enabled!==false; });
+    var notesWidget=homeLayout().widgets.filter(function(widget){ return widget.type==="notes"; })[0];
     if(homeCustomizing) grid.appendChild(buildHomeAddPanel());
-    if(!widgets.length){
+    if(!widgets.length&&!(notesWidget&&notesWidget.enabled!==false)&&!homeCustomizing){
       var empty=document.createElement("div"); empty.className="home-empty";
       empty.textContent="Your home page is clear. Turn the notes list on, or add a widget.";
       grid.appendChild(empty);
     } else widgets.forEach(function(widget){ grid.appendChild(buildHomeWidget(widget)); });
     sheet.appendChild(grid);
+    if(notesWidget&&notesWidget.enabled!==false){
+      var slot=document.createElement("div"); slot.className="home-notes-slot";
+      slot.appendChild(buildHomeNotesWidget(false));
+      sheet.appendChild(slot);
+    }
     canvas.appendChild(sheet);
+    if(homeSearchFocus){
+      homeSearchFocus=false;
+      var search=sheet.querySelector(".home-search-input");
+      if(search){ search.focus(); var end=search.value.length; try{ search.setSelectionRange(end, end); }catch(e){} }
+    }
   }
   var lastMainId=null;
   function renderMain(){
@@ -5226,7 +5482,7 @@
       var behave=section("Behaviour");
       var approvalCurrent=typeof a.requireApproval==="boolean"?String(a.requireApproval):"";
       selectOn(behave,"Edit permission",approvalCurrent,[["","Use Settings default"],["false","Work on the note without asking"],["true","Ask me to apply every edit"]],function(value){ a.requireApproval=value===""?null:value==="true"; });
-      toggleFieldOn(behave,"Capture transcribed audio in the open note","Keeps a collapsible group of everything you said, indented by pause.","transcribeToNote");
+      toggleFieldOn(behave,"Capture transcribed audio in the open note","Dictation types straight into the note. This keeps a collapsible raw-speech group when it can't.","transcribeToNote");
       toggleFieldOn(behave,"Gemini Live ears","Stream the mic to Gemini so listening never stops while ElevenLabs talks. Falls back to the browser if Live is unavailable.","liveListen");
       toggleFieldOn(behave,"Keep listening while speaking","So you can interrupt or keep rambling during a reply.","keepListeningWhileSpeaking");
       toggleFieldOn(behave,"Barge in","If you start talking over it, cut the spoken reply and listen.","bargeIn");
@@ -6431,6 +6687,9 @@
       lines.push('- Chapters, groups, and mini todo lists each expose two editable targets: one for their content and one ending in ":title" for their label. Preserve the requested block type; never flatten a prompt, chapter, checklist, or heading into a plain paragraph or JSON.');
       lines.push("- Change the fewest pieces that answer the request. Do not silently rewrite parts the user did not mention.");
       lines.push("- If the document is empty and the user has just rambled at you, propose a title plus clean prose paragraphs that keep every point they made. Leave the transcribed audio group as the raw ramble.");
+      if(typeof collab!=="undefined"&&collab.voice&&collab.voice.dictation&&(collab.voice.dictation.committed||collab.voice.dictation.baseText)){
+        lines.push("- Live dictation is on. Words they already spoke are in the open note. Do not paste that dictation in again. When they ask you to edit, clean, retitle, structure, or rewrite, change the note that is already on screen. A spoken instruction is not note content.");
+      }
     }
     var pendingProposalContext=collabPendingProposalContext();
     if(pendingProposalContext){
@@ -7924,6 +8183,7 @@
   function refreshOpenItemAfterAgent(it,flashIds){
     persist();
     renderList();
+    rebaseLiveDictation();
     updateCollabContextLabel();
     if(!it||!current()||current().id!==it.id) return;
     var editor=canvas.querySelector('.note-editor[data-note-id="'+it.id+'"]');
@@ -8284,6 +8544,42 @@
     if(!request&&(looksLikeEditCapabilityQuestion(userText)||isMetaNoteWriteUtterance(userText))) request=lastGenerativeNoteRequest();
     if(!request) return Promise.resolve({ok:false,text:echoed||denied?"":text});
     return generateAndWriteNote(targetItem,request,text);
+  }
+  function joinDictationText(base,extra,paragraphBreak){
+    var head=String(base||""), tail=cleanText(extra);
+    if(!tail) return head;
+    if(!cleanText(head)) return tail;
+    if(paragraphBreak) return head.replace(/\s+$/,"")+"\n\n"+tail;
+    if(/\n\n$/.test(head)) return head+tail;
+    return head.replace(/[ \t]+$/,"")+" "+tail;
+  }
+  function stripLastDictationUtterance(committed,utterance){
+    var text=String(committed||""), said=cleanText(utterance);
+    if(!said) return text;
+    var end=text.replace(/\s+$/,"");
+    if(end.slice(-said.length)!==said) return text;
+    return end.slice(0,-said.length).replace(/[ \t]+$/,"").replace(/\n+$/,"");
+  }
+  function dictationHtmlFromParts(baseHtml,committed,interim){
+    var html=baseHtml||"";
+    var committedText=String(committed||"");
+    var interimText=cleanText(interim);
+    if(!committedText&&!interimText) return html;
+    var gap=html&&!/(<br\s*\/?>|&nbsp;|\s)$/i.test(html)?" ":"";
+    var committedHtml=escapeHtml(committedText).replace(/\n/g,"<br>");
+    var interimHtml=interimText?'<span class="dictation-interim">'+escapeHtml(interimText).replace(/\n/g,"<br>")+"</span>":"";
+    var between=committedText&&interimText&&!/\s$/.test(committedText)?" ":"";
+    return html+gap+committedHtml+between+interimHtml;
+  }
+  function shouldLiftDictatedUtterance(text){
+    var value=cleanText(text);
+    if(!value) return false;
+    if(looksLikeNoteWriteQuestion(value)||looksLikeEditCapabilityQuestion(value)||looksLikeGenerativeNoteRequest(value)||looksLikeNoteWriteRequest(value)||isMetaNoteWriteUtterance(value)) return true;
+    if(/^(um+|uh+|hmm+|ah+|er+)[.!?]*$/i.test(value)) return true;
+    if(/^(hi|hey|hello|thanks|thank you|are you there|can you hear me|what'?s up|whats up)[.!?]*$/i.test(value)) return true;
+    if(/^(why|how come|what|who|when|where)\b/i.test(value)&&value.split(/\s+/).length<=8&&/\?/.test(value)) return true;
+    if(value.split(/\s+/).length<=16&&/\b(make|turn|change|rewrite|clean|format|organize|fix|retitle|rename)\b/i.test(value)&&/\b(this|that|it|note|list|bullets?|title|paragraph)\b/i.test(value)) return true;
+    return false;
   }
   function collabApiMessages(agentItem,targetItem,targets){
     var messages=[{role:"system",content:collabSystemPrompt(agentItem,targetItem,targets)}];
@@ -8657,11 +8953,203 @@
     if(!patchTranscriptGroupDom(note,group,!existed)) refreshNoteEditor(note);
   }
 
+  /* ---------- live dictation into the open note ---------- */
+  function dictationNote(){
+    if(typeof viewingHome!=="undefined"&&viewingHome) return null;
+    var note=collabWritableItem();
+    if(!note||note.locked||note.type!=="note") return null;
+    var open=typeof current==="function"?current():null;
+    if(!open||open.id!==note.id) return null;
+    return note;
+  }
+  function bindVoiceToOpenNote(){
+    var note=typeof current==="function"?current():null;
+    if(typeof viewingHome!=="undefined"&&viewingHome) return;
+    if(!note||note.type!=="note"||note.locked) return;
+    collab.mode="document";
+    collab.itemId=note.id;
+    if(!collab.agentId){
+      var agent=preferredAgent()||ensureBuiltinAgent();
+      if(agent) collab.agentId=agent.id;
+    }
+  }
+  function dictationFocusedBlock(note){
+    var active=document.activeElement;
+    if(!active||!active.getAttribute||!active.isContentEditable) return null;
+    var id=active.getAttribute("data-note-block");
+    if(!id) return null;
+    return (note.blocks||[]).find(function(block){ return block&&block.id===id&&(block.type==="text"||block.type==="chapter"); })||null;
+  }
+  function ensureDictationBlock(note){
+    ensureNoteBlocks(note);
+    var focused=dictationFocusedBlock(note);
+    if(focused) return focused;
+    var blocks=note.blocks||[], last=null, i;
+    for(i=0;i<blocks.length;i++) if(blocks[i]&&blocks[i].type==="text") last=blocks[i];
+    if(last) return last;
+    var created=textBlock("");
+    note.blocks.push(created);
+    syncNoteBody(note);
+    refreshNoteEditor(note);
+    return created;
+  }
+  function liveDictationState(session){
+    if(!session||!session.active) return null;
+    var note=dictationNote();
+    if(!note) return null;
+    if(!session.dictation||session.dictation.noteId!==note.id){
+      var seeded=ensureDictationBlock(note);
+      session.dictation={noteId:note.id,blockId:seeded.id,baseHtml:seeded.html||"",baseText:seeded.text||"",committed:"",interim:"",lastUtterance:"",lifted:"",lastFinalAt:0};
+    }
+    var block=(note.blocks||[]).find(function(item){ return item&&item.id===session.dictation.blockId; });
+    if(!block){ session.dictation=null; return liveDictationState(session); }
+    return {note:note,block:block,session:session};
+  }
+  function dictationField(found){
+    if(!found||typeof canvas==="undefined"||!canvas) return null;
+    return canvas.querySelector('.note-editor[data-note-id="'+found.note.id+'"] .note-paragraph[data-note-block="'+found.block.id+'"]');
+  }
+  function placeDictationCaret(field){
+    if(!field) return;
+    var active=document.activeElement;
+    var elsewhere=active&&active!==field&&active!==document.body&&active!==document.documentElement;
+    if(!elsewhere){
+      try{ field.focus({preventScroll:true}); }catch(e){}
+      var selection=window.getSelection&&window.getSelection();
+      if(selection){
+        var range=document.createRange();
+        range.selectNodeContents(field);
+        range.collapse(false);
+        selection.removeAllRanges();
+        selection.addRange(range);
+      }
+    }
+    var rect=field.getBoundingClientRect();
+    if(rect.bottom>window.innerHeight-96||rect.top<72){
+      try{ field.scrollIntoView({block:"nearest"}); }catch(e){ field.scrollIntoView(false); }
+    }
+  }
+  function paintLiveDictation(found){
+    var field=dictationField(found);
+    if(!field) return;
+    var draft=found.session.dictation;
+    var html=dictationHtmlFromParts(draft.baseHtml,draft.committed,draft.interim);
+    field.classList.toggle("dictating",!!(draft.interim||draft.committed));
+    if(field.innerHTML!==html){
+      field.innerHTML=html;
+      placeDictationCaret(field);
+    }
+  }
+  function persistLiveDictation(found){
+    var draft=found.session.dictation, block=found.block;
+    block.html=sanitizeRichHtml(dictationHtmlFromParts(draft.baseHtml,draft.committed,""));
+    block.text=richTextToPlain(block.html);
+    saveNoteBlockChange(found.note,block,false);
+  }
+  function retargetLiveDictation(found){
+    var focused=dictationFocusedBlock(found.note), draft=found.session.dictation;
+    if(!focused||focused.id===draft.blockId||cleanText(draft.interim)) return found;
+    draft.blockId=focused.id;
+    draft.baseHtml=focused.html||"";
+    draft.baseText=focused.text||"";
+    draft.committed="";
+    draft.lastUtterance="";
+    draft.lifted="";
+    draft.lastFinalAt=0;
+    return {note:found.note,block:focused,session:found.session};
+  }
+  function previewLiveDictation(text){
+    var found=liveDictationState(collab.voice);
+    if(!found) return;
+    found.session.dictation.interim=cleanText(text);
+    paintLiveDictation(found);
+    syncDictationChrome();
+  }
+  function commitLiveDictation(text,force){
+    var said=cleanText(text);
+    var found=liveDictationState(collab.voice);
+    if(!found) return "unavailable";
+    found=retargetLiveDictation(found);
+    var draft=found.session.dictation;
+    draft.interim="";
+    if(!said){ paintLiveDictation(found); return "empty"; }
+    if(!force&&shouldLiftDictatedUtterance(said)){
+      draft.lifted=said;
+      paintLiveDictation(found);
+      syncDictationChrome();
+      return "lifted";
+    }
+    var now=Date.now();
+    var paragraphBreak=!!(draft.lastFinalAt&&now-draft.lastFinalAt>2200&&cleanText(draft.committed));
+    draft.committed=joinDictationText(draft.committed,said,paragraphBreak);
+    draft.lastUtterance=said;
+    draft.lifted="";
+    draft.lastFinalAt=now;
+    persistLiveDictation(found);
+    paintLiveDictation(found);
+    syncDictationChrome();
+    return "wrote";
+  }
+  function sealLiveDictation(){
+    var session=collab.voice;
+    if(!session||!session.dictation) return;
+    session.dictation.interim="";
+    var note=dictationNote();
+    var block=note&&(note.blocks||[]).find(function(item){ return item&&item.id===session.dictation.blockId; });
+    if(!note||!block) return;
+    var found={note:note,block:block,session:session};
+    paintLiveDictation(found);
+    var field=dictationField(found);
+    if(field) field.classList.remove("dictating");
+  }
+  function rebaseLiveDictation(){
+    var session=collab.voice;
+    if(!session||!session.active||!session.dictation) return;
+    var note=dictationNote();
+    if(!note){ session.dictation=null; return; }
+    var block=(note.blocks||[]).find(function(item){ return item&&item.id===session.dictation.blockId; });
+    if(!block){ session.dictation=null; return; }
+    session.dictation.baseHtml=block.html||"";
+    session.dictation.baseText=block.text||"";
+    session.dictation.committed="";
+    session.dictation.interim="";
+    session.dictation.lastUtterance="";
+    session.dictation.lifted="";
+    session.dictation.lastFinalAt=0;
+  }
+  function syncDictationChrome(){
+    var on=!!(collab.voice&&collab.voice.active&&dictationNote());
+    document.body.classList.toggle("voice-dictating",on);
+    var overlay=$("voiceOverlay");
+    if(overlay) overlay.classList.toggle("dictation-mode",on);
+    var label=$("dictationLiveLabel");
+    if(label){
+      label.hidden=!on;
+      if(on){
+        var status=$("voiceOverlayStatus");
+        var shown=status&&status.textContent||"";
+        label.textContent=!shown||shown==="Listening"?"Dictating":shown;
+      }
+    }
+    if(typeof updateCollabButton==="function") updateCollabButton();
+  }
+  function voiceHandoffText(buffered,decision){
+    var draft=collab.voice&&collab.voice.dictation;
+    var latest=cleanText(draft&&(draft.lifted||draft.lastUtterance));
+    if(draft&&cleanText(draft.committed||draft.baseText)&&latest) return latest;
+    return cleanText(decision&&decision.compressed)||buffered;
+  }
+
   /* ---------- voice stage ---------- */
   function setVoiceStatus(text){
     var el=$("voiceOverlayStatus"); if(el) el.textContent=text||"";
     setCollabStatus(text||"");
     paintVoiceMind();
+    var label=$("dictationLiveLabel");
+    if(label&&document.body.classList.contains("voice-dictating")){
+      label.hidden=false;
+      label.textContent=!text||text==="Listening"?"Dictating":text;
+    }
   }
   function setVoiceLink(text){
     var el=$("voiceOverlayLink"); if(!el) return;
@@ -8783,18 +9271,19 @@
     var agentItem=collabAgent(), a=agentItem?normalizeAgent(agentItem):null;
     var overlay=$("voiceOverlay"), companion=$("voiceCompanion"), nameEl=$("voiceOverlayName"), tasksEl=$("voiceOverlayTasks");
     var accent=agentAccent(agentItem)||"";
+    var dictating=!!(collab.voice&&collab.voice.active&&dictationNote());
     if(overlay){
       overlay.style.setProperty("--voice-accent",accent||"var(--accent)");
       overlay.style.setProperty("--voice-accent-soft",accent?accent+"33":"var(--accent-soft)");
-      overlay.classList.toggle("cinema",(a&&a.voicePresence==="cinema")||(a&&a.animationStyle==="cinema"));
-      overlay.classList.toggle("companion-mode",a&&(a.voicePresence==="companion"||a.animationStyle==="companion"));
+      overlay.classList.toggle("cinema",!dictating&&((a&&a.voicePresence==="cinema")||(a&&a.animationStyle==="cinema")));
+      overlay.classList.toggle("companion-mode",!dictating&&a&&(a.voicePresence==="companion"||a.animationStyle==="companion"));
       overlay.setAttribute("data-voice-look",a?a.animationStyle:"face");
     }
     if(nameEl) nameEl.textContent=a?a.name:"Assistant";
     if(companion){
       companion.style.setProperty("--voice-accent",accent||"var(--accent)");
       applyCompanionFace(a);
-      var showCompanion=!!(collab.voice&&collab.voice.active&&a&&(a.voicePresence==="companion"||a.animationStyle==="companion"));
+      var showCompanion=!!(collab.voice&&collab.voice.active&&!dictating&&a&&(a.voicePresence==="companion"||a.animationStyle==="companion"));
       companion.hidden=!showCompanion;
       companion.classList.toggle("open",showCompanion);
       companion.setAttribute("aria-hidden",showCompanion?"false":"true");
@@ -8808,23 +9297,28 @@
     var micBtn=$("voiceOverlayMic");
     if(micBtn){ micBtn.innerHTML=ICON_STOPSQ; }
     paintVoiceMind();
+    syncDictationChrome();
   }
   function hideVoiceStage(){
     var overlay=$("voiceOverlay"), companion=$("voiceCompanion");
-    if(overlay){ overlay.classList.remove("open","cinema","companion-mode"); overlay.setAttribute("aria-hidden","true"); }
+    if(overlay){ overlay.classList.remove("open","cinema","companion-mode","dictation-mode"); overlay.setAttribute("aria-hidden","true"); }
     if(companion){ companion.hidden=true; companion.classList.remove("open"); companion.setAttribute("aria-hidden","true"); }
+    document.body.classList.remove("voice-dictating");
+    var label=$("dictationLiveLabel"); if(label) label.hidden=true;
     setVoiceLink("");
     markCompanionState("");
   }
   function showVoiceStage(){
     var agentItem=collabAgent(), a=agentItem?normalizeAgent(agentItem):null;
     var presence=a?a.voicePresence:"overlay";
-    if(presence==="panel"){ hideVoiceStage(); return; }
+    var dictating=!!dictationNote();
+    if(presence==="panel"&&!dictating){ hideVoiceStage(); return; }
     var overlay=$("voiceOverlay");
     if(overlay){ overlay.classList.add("open"); overlay.setAttribute("aria-hidden","false"); }
-    buildVoiceArt(a?a.animationStyle:"face",null,a);
+    if(!dictating) buildVoiceArt(a?a.animationStyle:"face",null,a);
     renderVoiceChrome();
     markCompanionState("listening");
+    if(dictating) setVoiceStatus("Dictating");
   }
 
   function listenSystemPrompt(agentItem){
@@ -8845,7 +9339,8 @@
       "- respond if they asked a question, addressed you by name with a request, said that's it / go / write that down, or clearly handed you work. That passes the turn to the conscious model.",
       "- Also respond to greetings and check-ins: hi, hey, what's going on, can you hear me, are you there.",
       "- Treat \""+a.name+"\", assistant, and hey you as names for this agent.",
-      "- dictate_only if they are only dumping raw notes and do not want a reply yet.",
+      "- dictate_only if they are only dumping raw notes and do not want a reply yet. Those words are already being typed into the open note.",
+      "- respond when they want a reply or an edit. An edit command is not note content; the note already holds the dictation.",
       "- Prefer keep_listening when unsure."
     ].join("\n");
   }
@@ -8881,7 +9376,7 @@
     var text=cleanText(utterance); if(!text) return session.buffer||"";
     if(!alreadyBuffered){
       session.buffer=session.buffer?session.buffer+"\n"+text:text;
-      appendTranscriptUtterance(text,session.buffer.split("\n").length>1);
+      if(commitLiveDictation(text)==="unavailable") appendTranscriptUtterance(text,session.buffer.split("\n").length>1);
     } else if(!session.buffer) session.buffer=text;
     setVoiceTranscriptPreview(session.buffer);
     return session.buffer;
@@ -8891,7 +9386,7 @@
     if(!session||!session.active||!agentItem||!decision) return;
     showListenDecision(decision);
     if(decision.action==="keep_listening"){
-      setVoiceStatus("Listening");
+      setVoiceStatus(dictationNote()?"Dictating":"Listening");
       markCompanionState("listening");
       if(session.pendingReview){
         var extra=session.pendingReview; session.pendingReview="";
@@ -8903,16 +9398,23 @@
     var buffered=session.buffer; session.buffer="";
     setVoiceTranscriptPreview(buffered);
     if(decision.action==="dictate_only"){
-      setVoiceStatus("Listening");
-      if(captureDictationIntoNote(buffered)) pushCollabNote("Captured into the note without a reply.");
-      else pushCollabNote("Dictation captured without a reply.");
+      var lifted=cleanText(session.dictation&&session.dictation.lifted);
+      if(lifted) commitLiveDictation(lifted,true);
+      if(session.dictation&&cleanText(session.dictation.committed||session.dictation.baseText)) collab.pendingDictation="";
+      setVoiceStatus(dictationNote()?"Dictating":"Listening");
+      markCompanionState("listening");
+      if(!(session.dictation&&cleanText(session.dictation.committed))){
+        if(captureDictationIntoNote(buffered)) pushCollabNote("Captured into the note without a reply.");
+        else pushCollabNote("Dictation captured without a reply.");
+      }
       return;
     }
     if(collab.busy){ collab.queuedUtterance=(collab.queuedUtterance?collab.queuedUtterance+"\n":"")+buffered; setVoiceStatus("One moment"); return; }
-    if(looksLikeGenerativeNoteRequest(buffered)||looksLikeNoteWriteRequest(buffered)||looksLikeNoteWriteQuestion(buffered)||looksLikeEditCapabilityQuestion(buffered)||looksLikeDirectNoteContent(buffered)){
+    var handed=voiceHandoffText(buffered,decision);
+    if(looksLikeGenerativeNoteRequest(handed)||looksLikeNoteWriteRequest(handed)||looksLikeNoteWriteQuestion(handed)||looksLikeEditCapabilityQuestion(handed)||looksLikeDirectNoteContent(handed)){
       agentTaskUpsertRunning(agentItem,"Work on the note",decision.reason,agentModelForRole(agentItem,"conscious"));
     }
-    handoffVoiceBuffer(decision.compressed||buffered,decision);
+    handoffVoiceBuffer(handed,decision);
   }
   function considerVoiceTurn(utterance,alreadyBuffered){
     var agentItem=collabAgent(); if(!agentItem||!collab.voice||!collab.voice.active) return;
@@ -8948,7 +9450,9 @@
     var agentItem=collabAgent(); if(!agentItem) return;
     var a=normalizeAgent(agentItem);
     var message=cleanText(text); if(!message||collab.busy){ if(message) collab.queuedUtterance=(collab.queuedUtterance?collab.queuedUtterance+"\n":"")+message; return; }
-    if(captureDictationIntoNote(message)) pushCollabNote("Added to the open note.");
+    var draft=collab.voice&&collab.voice.dictation;
+    if(draft&&cleanText(draft.committed||draft.baseText)) collab.pendingDictation="";
+    else if(captureDictationIntoNote(message)) pushCollabNote("Added to the open note.");
     startCollabSession();
     pushCollabMessage("user",message);
     runCollabTurn({
@@ -9064,6 +9568,7 @@
       session.live.partial=mergeLiveTranscript(session.live.partial,piece);
       session.live.utterance=session.live.partial;
       setVoiceTranscriptPreview((session.buffer?session.buffer+"\n":"")+session.live.partial);
+      previewLiveDictation(session.live.partial);
     }
     var parts=sc.modelTurn&&sc.modelTurn.parts||[];
     parts.forEach(function(part){ if(part&&part.text&&!part.thought) session.live.reply=(session.live.reply||"")+part.text; });
@@ -9160,12 +9665,13 @@
       }
     }
     setVoiceLink("");
-    setVoiceStatus("Listening");
+    setVoiceStatus(dictationNote()?"Dictating":"Listening");
   }
 
   function stopVoiceSession(){
     var session=collab.voice;
     if(!session) return;
+    sealLiveDictation();
     session.active=false;
     if(session.raf) cancelAnimationFrame(session.raf);
     if(session.silenceTimer) clearTimeout(session.silenceTimer);
@@ -9179,6 +9685,7 @@
     collab.recorder=null; collab.recorderStream=null; collab.recorderStop=false;
     hideVoiceStage();
     updateCollabControls();
+    updateCollabButton();
     setCollabStatus("");
   }
   function voiceLevelFromAnalyser(analyser){
@@ -9280,6 +9787,7 @@
         if(collab.voice.live&&collab.voice.live.ready) ingestVoiceUtterance(finalText,false);
         else considerVoiceTurn(finalText,false);
       }
+      if(collab.voice&&collab.voice.active) previewLiveDictation(interim);
     };
     rec.onerror=function(event){ if(event&&event.error==="not-allowed") setVoiceStatus("Microphone permission was blocked",true); };
     rec.onend=function(){ if(collab.voice&&collab.voice.active){ try{ rec.start(); }catch(e){} } };
@@ -9314,6 +9822,7 @@
     if(activeAudioRecorder){ setCollabStatus("Finish the audio recording first.",true); return; }
     if(!navigator.mediaDevices||!navigator.mediaDevices.getUserMedia){ setCollabStatus("This browser can’t record audio.",true); return; }
     if(!hasThinkingAccess()&&!hasVoiceAccess()){ setCollabStatus("Buy AI credits or add a key in Settings first.",true); return; }
+    bindVoiceToOpenNote();
     startCollabSession();
     setCollabStatus("Waiting for the microphone…");
     navigator.mediaDevices.getUserMedia({audio:{echoCancellation:true,noiseSuppression:true,autoGainControl:true}}).then(function(stream){
@@ -9331,14 +9840,18 @@
       startVoiceAnalyserLoop();
       updateCollabControls();
       var agentItem=collabAgent(), a=agentItem?normalizeAgent(agentItem):null;
-      maybeGenerateContextGreeting(true);
+      var dictating=!!dictationNote();
+      if(dictating){
+        setVoiceStatus("Dictating");
+        if(collab.open) closeCollabPanel({keepVoice:true});
+      } else maybeGenerateContextGreeting(true);
       var wantLive=!!(a&&a.liveListen&&runtimeApiKeys.gemini&&!usingHostedAi()&&collab.voice.audioContext&&typeof collab.voice.audioContext.createScriptProcessor==="function");
       if(wantLive){
-        setVoiceStatus("Connecting…");
+        setVoiceStatus(dictating?"Dictating":"Connecting…");
         setVoiceLink("");
         connectGeminiLive(collab.voice,agentItem).then(function(ok){
           if(!collab.voice||!collab.voice.active) return;
-          if(ok) setVoiceStatus("Listening");
+          if(ok) setVoiceStatus(dictationNote()?"Dictating":"Listening");
           else startBrowserListen(collab.voice);
         });
       } else startBrowserListen(collab.voice);
@@ -9588,7 +10101,7 @@
     var mic=document.createElement("button"); mic.type="button"; mic.className="mic"; mic.innerHTML=ICON_MIC;
     mic.onclick=function(){ toggleCollabMic(); };
     var input=document.createElement("textarea"); input.rows=1; input.value=collab.draft||"";
-    input.placeholder="Ask, or tap the mic and talk…";
+    input.placeholder=doc?"Dictate into the note, or ask for an edit…":"Ask, or tap the mic and talk…";
     input.oninput=function(){ collab.draft=input.value; input.style.height="auto"; input.style.height=Math.min(132,input.scrollHeight)+"px"; updateCollabControls(); };
     input.onkeydown=function(event){
       if(event.key==="Enter"&&!event.shiftKey){ event.preventDefault(); submit(); }
@@ -9625,7 +10138,15 @@
   }
   function updateCollabButton(){
     var button=$("agentMicBtn");
-    if(button) button.classList.toggle("on",collab.open||!!(collab.voice&&collab.voice.active));
+    if(!button) return;
+    var live=!!(collab.voice&&collab.voice.active);
+    var dictating=live&&!!dictationNote();
+    button.classList.toggle("on",collab.open||live);
+    button.classList.toggle("dictating",dictating);
+    button.innerHTML=live?ICON_STOPSQ:ICON_MIC;
+    var label=dictating?"Stop dictating":live?"Stop listening":"Dictate into the open note, or talk to your assistant";
+    button.title=label;
+    button.setAttribute("aria-label",label);
   }
   function openCollabAgentPicker(anchor){
     ensureBuiltinAgent();
@@ -9672,10 +10193,11 @@
     if(input&&!opts.listen) setTimeout(function(){ input.focus(); },260);
     if(opts.listen) setTimeout(function(){ toggleCollabMic(); },260);
   }
-  function closeCollabPanel(){
+  function closeCollabPanel(opts){
+    opts=opts||{};
     var panel=$("collabPanel");
     var a=collabAgent()?normalizeAgent(collabAgent()):null;
-    var keepVoice=collab.voice&&collab.voice.active&&a&&a.voicePresence!=="panel";
+    var keepVoice=!!opts.keepVoice||(collab.voice&&collab.voice.active&&a&&a.voicePresence!=="panel");
     if(!keepVoice){ stopVoiceSession(); stopCollabRecording(); stopCollabSpeech(); }
     collab.open=false;
     if(panel){ panel.classList.remove("open"); panel.setAttribute("aria-hidden","true"); }
@@ -10462,7 +10984,7 @@
       if(cloud.deletedItems) state.deletedItems=mergeTombstones(state.deletedItems,cloud.deletedItems);
       var prefs=accountPreferences(cloud);
       if(prefs&&typeof prefs.listSort==="string"&&["manual","updated","due","timeSpent","title","tag"].indexOf(prefs.listSort)>=0) state.listSort=prefs.listSort;
-      if(prefs&&prefs.homeLayout) state.homeLayout=normalizeHomeLayout(prefs.homeLayout);
+      if(prefs) applyHomePreferences(prefs);
       persistLocalStateQuietly();
       if(added||changedCurrent) refreshOpenItemFromLive(current());
       else if(viewingHome) renderMain();
@@ -11254,7 +11776,7 @@
     if(typeof prefs.allNotesName==="string"&&prefs.allNotesName.trim()) state.allNotesName=prefs.allNotesName.trim();
     if(typeof prefs.readChapterNames==="boolean") state.readChapterNames=prefs.readChapterNames;
     if(typeof prefs.listSort==="string"&&["manual","updated","due","timeSpent","title","tag"].indexOf(prefs.listSort)>=0) state.listSort=prefs.listSort;
-    if(prefs.homeLayout) state.homeLayout=normalizeHomeLayout(prefs.homeLayout);
+    applyHomePreferences(prefs);
     if(prefs.agentSettings&&typeof prefs.agentSettings==="object"){
       var incoming=prefs.agentSettings, local=agentSettings();
       ["defaultAgentId","activeAgentId"].forEach(function(key){ if(typeof incoming[key]==="string") local[key]=incoming[key]; });
@@ -11568,7 +12090,7 @@
       deletedItems:pruneTombstones(data.deletedItems||{}),
       version:Number(data.version)||1,
       versionChangedAt:Number(data.versionChangedAt)||sentAt,
-      preferences:{theme:state.theme,motion:state.motion,darkness:state.darkness,enabledTypes:state.enabledTypes,typeDefaults:state.typeDefaults,noteInsertOptions:state.noteInsertOptions,tagsCollapsed:state.tagsCollapsed,typesCollapsed:state.typesCollapsed,allNotesCollapsed:state.allNotesCollapsed,focusNoteBody:state.focusNoteBody,quickAiHandoff:state.quickAiHandoff,allNotesName:state.allNotesName,readChapterNames:state.readChapterNames,listSort:state.listSort,homeLayout:normalizeHomeLayout(state.homeLayout),agentSettings:agentSettings()},
+      preferences:{theme:state.theme,motion:state.motion,darkness:state.darkness,enabledTypes:state.enabledTypes,typeDefaults:state.typeDefaults,noteInsertOptions:state.noteInsertOptions,tagsCollapsed:state.tagsCollapsed,typesCollapsed:state.typesCollapsed,allNotesCollapsed:state.allNotesCollapsed,focusNoteBody:state.focusNoteBody,quickAiHandoff:state.quickAiHandoff,allNotesName:state.allNotesName,readChapterNames:state.readChapterNames,listSort:state.listSort,homeLayout:normalizeHomeLayout(state.homeLayout),homeExtrasVersion:state.homeExtrasVersion||0,homeScratch:state.homeScratch||"",agentSettings:agentSettings()},
       theme:state.theme,
       motion:state.motion,
       updated:sentAt
@@ -11695,8 +12217,17 @@
     }
     var mic=document.createElement("button"); mic.className="sbtn icon-sbtn agent-mic"; mic.id="agentMicBtn"; mic.type="button";
     mic.innerHTML=ICON_MIC;
-    mic.title="Talk to your AI collaborator"; mic.setAttribute("aria-label","Talk to your AI collaborator");
-    mic.onclick=function(){ toggleCollabPanel(); };
+    mic.title="Dictate into the open note, or talk to your assistant"; mic.setAttribute("aria-label",mic.title);
+    mic.onclick=function(){
+      if(collab.voice&&collab.voice.active){ stopVoiceSession(); return; }
+      var note=current();
+      if(!(typeof viewingHome!=="undefined"&&viewingHome)&&note&&note.type==="note"&&!note.locked){
+        bindVoiceToOpenNote();
+        startVoiceSession();
+        return;
+      }
+      toggleCollabPanel();
+    };
     dfoot.appendChild(mic);
     var upcoming=document.createElement("button"); upcoming.className="sbtn icon-sbtn upcoming-button"; upcoming.id="upcomingBtn"; upcoming.type="button"; upcoming.innerHTML=ICON_CALENDAR; upcoming.title="Upcoming todos"; upcoming.setAttribute("aria-label","Upcoming todos");
     upcoming.onclick=function(){ setSidebarView(state.sidebarView==="upcoming"?"all":"upcoming"); };
