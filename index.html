@@ -1177,6 +1177,46 @@
   @keyframes companionWrite{ 0%,100%{ transform:translate(0,0) rotate(0); } 50%{ transform:translate(3px,-2px) rotate(6deg); } }
   .note-editor.agent-writing{ outline:1px solid var(--accent-line); box-shadow:0 0 0 6px var(--accent-soft); border-radius:14px; }
   .agent-writing-block{ outline:1px solid var(--accent-line); box-shadow:0 0 0 4px var(--accent-soft); border-radius:10px; transition:outline .2s ease, box-shadow .2s ease; }
+  /* Dictation: the open note's edges breathe in the active theme color with the mic. */
+  body.voice-dictating .canvas > .sheet:not(.home-sheet){
+    border-radius:28px;
+    box-shadow:
+      0 0 0 1px color-mix(in srgb, var(--accent) calc(18% + var(--voice-amp, .16) * 46%), transparent),
+      0 0 calc(10px + var(--voice-amp, .16) * 64px) color-mix(in srgb, var(--accent) calc(12% + var(--voice-amp, .16) * 58%), transparent),
+      inset 0 0 calc(16px + var(--voice-amp, .16) * 52px) color-mix(in srgb, var(--accent) calc(7% + var(--voice-amp, .16) * 32%), transparent);
+  }
+  body.reduce-fx.voice-dictating .canvas > .sheet:not(.home-sheet){
+    box-shadow:
+      0 0 0 1px color-mix(in srgb, var(--accent) 46%, transparent),
+      inset 0 0 26px color-mix(in srgb, var(--accent) 16%, transparent);
+  }
+  .dictation-interim{
+    color:color-mix(in srgb, var(--accent) 72%, var(--ink));
+    background-image:linear-gradient(transparent 64%, color-mix(in srgb, var(--accent) 40%, transparent) 64%);
+    border-radius:2px;
+  }
+  .note-paragraph.dictating{ caret-color:var(--accent); }
+  .d-foot .agent-mic.dictating{
+    color:#08080a; border-color:transparent; background:var(--accent);
+    box-shadow:0 0 calc(6px + var(--voice-amp, .2) * 16px) var(--accent);
+  }
+  .voice-overlay.dictation-mode{ pointer-events:none; background:transparent; }
+  .voice-overlay.dictation-mode .voice-overlay-bg,
+  .voice-overlay.dictation-mode .voice-stage-art,
+  .voice-overlay.dictation-mode .voice-overlay-copy,
+  .voice-overlay.dictation-mode .voice-overlay-transcript,
+  .voice-overlay.dictation-mode .voice-overlay-decision,
+  .voice-overlay.dictation-mode .voice-overlay-tasks,
+  .voice-overlay.dictation-mode .voice-edit{ display:none !important; }
+  .voice-overlay.dictation-mode .voice-overlay-actions{
+    display:flex !important; pointer-events:auto;
+    padding:8px 10px 8px 16px; border-radius:999px;
+    border:1px solid color-mix(in srgb, var(--accent) calc(28% + var(--voice-amp, .2) * 40%), transparent);
+    background:rgba(10,10,14,.84);
+    box-shadow:0 12px 40px rgba(0,0,0,.38), 0 0 calc(8px + var(--voice-amp, .2) * 26px) color-mix(in srgb, var(--accent) 42%, transparent);
+  }
+  .dictation-live-label{ color:var(--accent); font:600 .78rem "DM Sans",sans-serif; letter-spacing:.01em; }
+  .dictation-live-label[hidden]{ display:none; }
 
   .agent-mind{ display:grid; gap:12px; }
   .agent-mind .mind-block{ padding:12px 14px; border:1px solid var(--line); border-radius:14px; background:rgba(255,255,255,.03); }
@@ -1238,6 +1278,83 @@
      row should flash, not queue up behind the others. */
   .d-list .d-item.just-added{ animation:justAdded .55s cubic-bezier(.2,.9,.3,1.1) both; animation-delay:0s; }
   .sheet.enter{ animation:sheetIn .34s cubic-bezier(.2,.9,.3,1) both; }
+
+  /* ---------- home ---------- */
+  .home-sheet{ max-width:980px; }
+  .home-brand{ flex:1; min-width:0; margin:0; padding:0; border:0; background:transparent; color:inherit; text-align:left; cursor:pointer; font:inherit; }
+  .home-brand:hover h2{ color:var(--accent); }
+  .home-bar.on{ color:var(--accent); background:var(--accent-soft); }
+  .home-head{ display:flex; align-items:flex-end; justify-content:space-between; gap:18px; margin:6px 0 22px; }
+  .home-kicker{ margin:0 0 6px; color:var(--accent); font:600 .72rem "DM Mono",monospace; letter-spacing:.14em; text-transform:uppercase; }
+  .home-head h1{ margin:0; font-weight:700; letter-spacing:-.03em; font-size:clamp(2rem,5vw,2.8rem); line-height:1.05; }
+  .home-sub{ margin:8px 0 0; max-width:48ch; color:var(--ink-dim); font-size:.92rem; line-height:1.5; }
+  .home-tools{ display:flex; align-items:center; gap:10px; flex:none; }
+  .home-notes-toggle{ display:flex; align-items:center; gap:10px; padding:6px 8px 6px 12px; border:1px solid var(--line); border-radius:999px; color:var(--ink-dim); background:rgba(255,255,255,.035); font-size:.78rem; font-weight:600; }
+  .home-notes-toggle.on{ color:var(--ink); border-color:var(--accent-line); }
+  .home-grid{ display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:14px; }
+  .home-widget{ min-width:0; padding:14px 14px 8px; border:1px solid var(--line); border-radius:16px; background:rgba(255,255,255,.03); }
+  .home-widget.span{ grid-column:1 / -1; }
+  .home-widget-head{ display:flex; align-items:center; gap:8px; margin-bottom:8px; }
+  .home-widget-head h2{ margin:0; font-size:.95rem; letter-spacing:-.01em; }
+  .home-count{ color:var(--ink-faint); font:500 .68rem "DM Mono",monospace; }
+  .home-widget-actions{ display:flex; gap:6px; margin-left:auto; }
+  .home-widget-actions button{ border:1px solid var(--line); border-radius:8px; padding:4px 8px; color:var(--ink-dim); background:rgba(255,255,255,.03); cursor:pointer; font:600 .72rem "DM Sans",sans-serif; }
+  .home-widget-actions button:hover{ color:var(--ink); border-color:var(--accent-line); background:var(--accent-soft); }
+  .home-muted{ margin:2px 2px 10px; color:var(--ink-faint); font-size:.86rem; line-height:1.5; }
+  .home-empty{ grid-column:1 / -1; padding:28px 16px; border:1px dashed rgba(255,255,255,.14); border-radius:16px; color:var(--ink-faint); text-align:center; line-height:1.5; }
+  .home-note{ display:grid; grid-template-columns:18px minmax(0,1fr) auto; gap:10px; align-items:start; width:100%; margin:0 0 2px; padding:10px 8px; border:0; border-radius:12px; color:inherit; background:transparent; cursor:pointer; text-align:left; font:inherit; }
+  .home-note:hover{ background:rgba(255,255,255,.05); }
+  .home-note.just-added{ background:var(--accent-soft); }
+  .home-note .item-icon{ margin-top:2px; color:var(--ink-dim); }
+  .home-note .item-icon svg{ width:16px; height:16px; }
+  .home-note-copy{ min-width:0; display:grid; gap:2px; }
+  .home-note-copy b{ font-weight:600; font-size:.96rem; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+  .home-note-copy small,.home-note .when{ color:var(--ink-faint); font:500 .68rem "DM Mono",monospace; }
+  .home-note .when{ white-space:nowrap; padding-top:2px; }
+  .home-snippet{ color:var(--ink-dim); font-size:.82rem; line-height:1.45; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+  .home-note.todo-done b{ color:var(--ink-faint); text-decoration:line-through; }
+  .home-filter{ display:flex; align-items:center; justify-content:space-between; gap:8px; margin:0 2px 8px; color:var(--ink-dim); font-size:.78rem; }
+  .home-filter button{ border:0; background:transparent; color:var(--accent); cursor:pointer; font:600 .78rem "DM Sans",sans-serif; }
+  .home-capture{ display:flex; gap:8px; margin-bottom:8px; }
+  .home-capture input{ flex:1; min-width:0; border:1px solid var(--line); border-radius:12px; padding:12px 14px; color:var(--ink); background:rgba(0,0,0,.28); font:inherit; outline:none; }
+  .home-capture input:focus{ border-color:var(--accent-line); }
+  .home-continue,.home-due{ display:flex; align-items:center; justify-content:space-between; gap:12px; width:100%; margin:0 0 6px; padding:10px 8px; border:0; border-radius:12px; color:inherit; background:transparent; cursor:pointer; text-align:left; font:inherit; }
+  .home-continue:hover,.home-due:hover{ background:rgba(255,255,255,.05); }
+  .home-continue span:first-child,.home-due span:first-child{ min-width:0; display:grid; gap:3px; }
+  .home-continue b,.home-due b{ font-weight:600; font-size:.92rem; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+  .home-open,.home-due em{ flex:none; color:var(--ink-faint); font:500 .68rem "DM Mono",monospace; font-style:normal; }
+  .home-due.overdue em{ color:#fca5a5; }
+  .home-due.today em{ color:var(--accent); }
+  .home-tags{ display:flex; flex-wrap:wrap; gap:8px; margin-bottom:8px; }
+  .home-tag{ display:inline-flex; align-items:center; gap:7px; border:1px solid var(--line); border-radius:999px; padding:6px 10px; color:var(--ink-dim); background:rgba(255,255,255,.03); cursor:pointer; font:600 .78rem "DM Sans",sans-serif; }
+  .home-tag i{ width:8px; height:8px; border-radius:50%; background:var(--ink-dim); }
+  .home-tag.on{ color:var(--ink); border-color:var(--accent-line); background:var(--accent-soft); }
+  .home-stats{ display:grid; grid-template-columns:1fr 1fr; gap:8px; margin-bottom:8px; }
+  .home-stat{ padding:12px; border:1px solid var(--line-soft); border-radius:12px; background:rgba(255,255,255,.025); }
+  .home-stat b{ display:block; font-size:1.35rem; letter-spacing:-.03em; }
+  .home-stat span{ color:var(--ink-faint); font-size:.75rem; }
+  .home-stat.overdue b{ color:#fca5a5; }
+  .home-add{ grid-column:1 / -1; display:grid; gap:8px; padding:4px 0 12px; }
+  .home-add h2{ margin:0; font-size:.95rem; }
+  .home-add-grid{ display:grid; grid-template-columns:1fr 1fr; gap:8px; }
+  .home-add .add-choice{ display:flex; flex-direction:column; align-items:flex-start; gap:3px; padding:12px 14px; border:1px solid var(--line); border-radius:14px; color:var(--ink); background:rgba(255,255,255,.03); cursor:pointer; text-align:left; font:inherit; }
+  .home-add .add-choice small{ color:var(--ink-faint); line-height:1.4; }
+  .home-add .add-choice:hover{ border-color:var(--accent-line); background:var(--accent-soft); }
+  .home-notes-slot{ margin-top:14px; }
+  .home-search{ display:flex; margin-bottom:8px; }
+  .home-search input,.home-scratch{ width:100%; border:1px solid var(--line); border-radius:12px; padding:12px 14px; color:var(--ink); background:rgba(0,0,0,.28); font:inherit; outline:none; }
+  .home-search input{ border-radius:12px; }
+  .home-search input:focus,.home-scratch:focus{ border-color:var(--accent-line); }
+  .home-scratch{ min-height:108px; resize:vertical; line-height:1.5; border:0; padding:2px 2px 10px; background:transparent; }
+  .home-todo{ display:grid; grid-template-columns:22px minmax(0,1fr) auto; gap:8px; align-items:center; width:100%; margin:0 0 4px; padding:8px; border:0; border-radius:12px; color:inherit; background:transparent; text-align:left; font:inherit; }
+  .home-todo:hover{ background:rgba(255,255,255,.05); }
+  .home-todo .box{ width:18px; height:18px; border:1px solid var(--accent-line); border-radius:6px; background:transparent; color:transparent; cursor:pointer; font-weight:700; }
+  .home-todo .box:hover{ background:var(--accent-soft); color:var(--accent); }
+  .home-todo b{ display:block; font-weight:600; font-size:.92rem; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+  .home-todo button.title{ border:0; background:transparent; color:inherit; cursor:pointer; text-align:left; font:inherit; min-width:0; padding:0; }
+  .home-todo em{ color:var(--ink-faint); font:500 .68rem "DM Mono",monospace; font-style:normal; white-space:nowrap; }
+  .home-filters{ display:flex; flex-wrap:wrap; gap:6px; margin:0 2px 8px; }
+  .home-filters button{ border:1px solid var(--accent-line); border-radius:999px; padding:4px 8px; color:var(--accent); background:var(--accent-soft); cursor:pointer; font:600 .72rem "DM Sans",sans-serif; }
   .tag-empty{ animation:fadeIn .25s ease both; }
 
   body.reduce-fx *,body.reduce-fx *::before,body.reduce-fx *::after{ animation-duration:.001s !important; animation-delay:0s !important; transition-duration:.001s !important; }
@@ -1269,6 +1386,9 @@
     .bar .copy-all svg{ width:13px; height:13px; }
     .modal-box{ padding:20px; }
     .themes{ grid-template-columns:1fr; }
+    .home-head{ flex-direction:column; align-items:stretch; }
+    .home-tools{ justify-content:space-between; }
+    .home-grid,.home-add-grid{ grid-template-columns:1fr; }
   }
 </style>
 </head>
@@ -1280,7 +1400,7 @@
   <div class="scrim" id="scrim"></div>
 
   <aside class="drawer">
-    <div class="d-head"><div><h2>Second Brain Notes</h2><small>by Astral Studios LLC</small></div><button class="sidebar-fullscreen" id="sidebarFullscreenBtn" type="button" title="Open sidebar focus" aria-label="Open sidebar focus"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M8 3H3v5M16 3h5v5M21 16v5h-5M3 16v5h5"/></svg></button></div>
+    <div class="d-head"><button class="home-brand" id="homeBrand" type="button" title="Home" aria-label="Home"><h2>Second Brain Notes</h2><small>by Astral Studios LLC</small></button><button class="sidebar-fullscreen" id="sidebarFullscreenBtn" type="button" title="Open sidebar focus" aria-label="Open sidebar focus"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M8 3H3v5M16 3h5v5M21 16v5h-5M3 16v5h5"/></svg></button></div>
     <button class="d-new" id="newBtn"><span class="plus" aria-hidden="true">＋</span><span>New</span></button>
     <div class="d-scroll">
       <label class="note-search" id="noteSearchWrap"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="11" cy="11" r="6"/><path d="m16 16 4 4"/></svg><input id="noteSearch" type="search" autocomplete="off" placeholder="Search notes…" aria-label="Search notes"><button class="quick-add-note" id="quickAddNoteBtn" type="button" title="Add note from search" aria-label="Add note from search">＋</button><button id="clearNoteSearch" type="button" aria-label="Clear note search">×</button></label>
@@ -1298,6 +1418,7 @@
   <div class="main">
     <div class="bar">
       <button class="icon hide-wide" id="menuBtn" aria-label="Toggle sidebar"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><line x1="4" y1="7" x2="20" y2="7"/><line x1="4" y1="12" x2="20" y2="12"/><line x1="4" y1="17" x2="20" y2="17"/></svg></button>
+      <button class="icon home-bar on" id="homeBtn" type="button" title="Home" aria-label="Home" aria-pressed="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M4 10.5 12 4l8 6.5V20a1 1 0 0 1-1 1h-5v-6H10v6H5a1 1 0 0 1-1-1z"/></svg></button>
       <div class="spacer"></div>
       <button class="icon" id="settingsBtn" aria-label="Settings"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.7 1.7 0 0 0 .3 1.9l.1.1a2 2 0 1 1-2.8 2.8l-.1-.1a1.7 1.7 0 0 0-1.9-.3 1.7 1.7 0 0 0-1 1.5v.2a2 2 0 1 1-4 0v-.1a1.7 1.7 0 0 0-1.1-1.5 1.7 1.7 0 0 0-1.9.3l-.1.1a2 2 0 1 1-2.8-2.8l.1-.1a1.7 1.7 0 0 0 .3-1.9 1.7 1.7 0 0 0-1.5-1H2a2 2 0 1 1 0-4h.1A1.7 1.7 0 0 0 3.7 9a1.7 1.7 0 0 0-.3-1.9l-.1-.1a2 2 0 1 1 2.8-2.8l.1.1a1.7 1.7 0 0 0 1.9.3H9a1.7 1.7 0 0 0 1-1.5V3a2 2 0 1 1 4 0v.1a1.7 1.7 0 0 0 1 1.5 1.7 1.7 0 0 0 1.9-.3l.1-.1a2 2 0 1 1 2.8 2.8l-.1.1a1.7 1.7 0 0 0-.3 1.9V9a1.7 1.7 0 0 0 1.5 1h.2a2 2 0 1 1 0 4h-.1a1.7 1.7 0 0 0-1.5 1z"/></svg></button>
       <div class="bar-actions">
@@ -1357,6 +1478,7 @@
     <div class="voice-overlay-decision" id="voiceOverlayDecision" hidden></div>
     <div class="voice-overlay-tasks" id="voiceOverlayTasks"></div>
     <div class="voice-overlay-actions">
+      <span class="dictation-live-label" id="dictationLiveLabel" hidden role="status">Dictating</span>
       <button type="button" class="voice-edit" id="voiceOverlayEdit">Customize</button>
       <button type="button" class="mic-live" id="voiceOverlayMic" title="Stop listening" aria-label="Stop listening"></button>
       <button type="button" class="end-voice" id="voiceOverlayEnd">End</button>
@@ -1489,7 +1611,7 @@
   }
   function loadLocal(){ var v=readKey(KEY); if(v&&v.items) return v; if(!canPersist&&mem) return mem; return migrate(); }
   function setSaveState(label,kind){ var el=$("saveState"); if(!el) return; el.textContent=label; el.className="save-state"+(kind?" "+kind:""); }
-  function backupPayload(){ return { app:"second-brain", version:16, items:state.items, folders:state.folders, tags:state.tags, deletedItems:state.deletedItems||{}, preferences:{theme:state.theme,motion:state.motion,darkness:state.darkness,enabledTypes:state.enabledTypes,typeDefaults:state.typeDefaults,noteInsertOptions:state.noteInsertOptions,tagsCollapsed:state.tagsCollapsed,typesCollapsed:state.typesCollapsed,allNotesCollapsed:state.allNotesCollapsed,focusNoteBody:state.focusNoteBody,quickAiHandoff:state.quickAiHandoff,allNotesName:state.allNotesName,readChapterNames:state.readChapterNames,listSort:state.listSort,tagGroups:state.tagGroups||[],tagOrder:state.tagOrder||[],agentSettings:agentSettings()}, created:Date.now() }; }
+  function backupPayload(){ return { app:"second-brain", version:16, items:state.items, folders:state.folders, tags:state.tags, deletedItems:state.deletedItems||{}, preferences:{theme:state.theme,motion:state.motion,darkness:state.darkness,enabledTypes:state.enabledTypes,typeDefaults:state.typeDefaults,noteInsertOptions:state.noteInsertOptions,tagsCollapsed:state.tagsCollapsed,typesCollapsed:state.typesCollapsed,allNotesCollapsed:state.allNotesCollapsed,focusNoteBody:state.focusNoteBody,quickAiHandoff:state.quickAiHandoff,allNotesName:state.allNotesName,readChapterNames:state.readChapterNames,listSort:state.listSort,tagGroups:state.tagGroups||[],tagOrder:state.tagOrder||[],homeLayout:normalizeHomeLayout(state.homeLayout),homeExtrasVersion:state.homeExtrasVersion||0,homeScratch:state.homeScratch||"",agentSettings:agentSettings()}, created:Date.now() }; }
   function autoBackups(){ return deviceBackups; }
   function backupSnapshot(data){
     try{ return JSON.parse(JSON.stringify(data)); }catch(e){ console.warn("Backup snapshot could not be copied:",e); return data; }
@@ -1867,7 +1989,7 @@
       createItem:function(item){ createItem(item); },
       openItem:function(id){
         if(!state.items.some(function(entry){ return entry.id===id; })) return false;
-        state.currentId=id; exitSidebarFocus(); app.classList.remove("open"); persist(); renderAll(); return true;
+        revealItem(id); exitSidebarFocus(); app.classList.remove("open"); persist(); renderAll(); return true;
       },
       scheduleUsageRefresh:function(delay){ scheduleAccountUsageRefresh(delay); },
       forEachOwnedFile:function(handler){ forEachContentDocument(function(doc,item){ contentFiles(doc).forEach(function(file){ handler(file,doc,item); }); }); }
@@ -1939,6 +2061,8 @@
   state.listSort=state.listSort||"updated";
   state.upcomingSort=normalizeUpcomingSort(state.upcomingSort);
   state.upcomingFilter=normalizeUpcomingFilter(state.upcomingFilter);
+  state.homeLayout=normalizeHomeLayout(state.homeLayout);
+  if(typeof state.homeScratch!=="string") state.homeScratch="";
   agentSettings();
   if(state.agentEditDefaultsVersion!==1){ agentSettings().requireApproval=false; state.agentEditDefaultsVersion=1; }
   if(typeof state.pendingCloudSync!=="boolean") state.pendingCloudSync=false;
@@ -1957,9 +2081,10 @@
   migrateFoldersToTags(state);
   if(!state.items.length) state.items.push(newNoteItem());
   if(!state.currentId || !state.items.some(function(i){return i.id===state.currentId;})) state.currentId=state.items[0].id;
+  if(ensureHomeExtras()) persistLocalStateQuietly();
 
   function blankDeviceState(){
-    return {items:[],folders:[],tags:[],tagGroups:[],tagOrder:[],deletedItems:{},currentId:null,motion:true,theme:"nebula",darkness:82,enabledTypes:defaultEnabledTypes(),typeDefaults:TYPE_DEFAULTS_VERSION,noteInsertOptions:{file:true,paragraph:true,comment:true,prompt:true,heading:true,chapter:true,group:true,code:true},tagsCollapsed:false,typesCollapsed:false,allNotesCollapsed:false,focusNoteBody:true,quickAiHandoff:true,allNotesName:"All notes",readChapterNames:false,filterTag:null,filterType:"",sidebarView:"all",tagAssignMode:false,noteSearch:"",listSort:"updated",upcomingSort:"due",upcomingFilter:{range:"all",tagId:null,showDone:false},version:1,agentSettings:defaultAgentSettings(),pendingCloudSync:false,syncBaseline:null};
+    return {items:[],folders:[],tags:[],tagGroups:[],tagOrder:[],deletedItems:{},currentId:null,motion:true,theme:"nebula",darkness:82,enabledTypes:defaultEnabledTypes(),typeDefaults:TYPE_DEFAULTS_VERSION,noteInsertOptions:{file:true,paragraph:true,comment:true,prompt:true,heading:true,chapter:true,group:true,code:true},tagsCollapsed:false,typesCollapsed:false,allNotesCollapsed:false,focusNoteBody:true,quickAiHandoff:true,allNotesName:"All notes",readChapterNames:false,filterTag:null,filterType:"",sidebarView:"all",tagAssignMode:false,noteSearch:"",listSort:"updated",upcomingSort:"due",upcomingFilter:{range:"all",tagId:null,showDone:false},homeLayout:defaultHomeLayout(),homeExtrasVersion:1,homeScratch:"",version:1,agentSettings:defaultAgentSettings(),pendingCloudSync:false,syncBaseline:null};
   }
   function clearAttachmentStore(){
     if(!window.indexedDB) return;
@@ -1990,6 +2115,8 @@
     if(window.__astral) window.__astral.state=state;
   }
 
+  /* Opening the site lands on Home. A note is shown only after it is chosen. */
+  var viewingHome=true, homeCustomizing=false, homeTagId=null, homeTypeFilter="", homeQuery="", homeSearchFocus=false, homeScratchTimer=null;
   function current(){ return state.items.find(function(s){return s.id===state.currentId;})||state.items[0]; }
   /* Time is counted only while this app is the focused, visible tab. It is kept
      separately from `updated` so opening a note does not change its recency. */
@@ -2001,7 +2128,7 @@
       var item=state.items.find(function(entry){ return entry.id===timeTracker.itemId; }), elapsed=Math.max(0,now-timeTracker.lastAt);
       if(item&&elapsed){ item.timeSpentMs=(Number(item.timeSpentMs)||0)+elapsed; changed=true; }
     }
-    timeTracker.itemId=state.currentId;
+    timeTracker.itemId=viewingHome?null:state.currentId;
     timeTracker.lastAt=now;
     timeTracker.active=canTrackTime();
     return changed;
@@ -3097,6 +3224,7 @@
     persist();
     if(changed&&currentUser&&cloudHydrated&&!cloudSyncPaused&&!cloudSyncLoading) saveCloud(1);
     renderList();
+    if(viewingHome) renderMain();
   }
   function prepareManualOrder(){
     if(state.listSort==="manual"&&state.items.every(function(item){ return typeof item.manualOrder==="number"; })) return;
@@ -3137,7 +3265,7 @@
     }
     var ordered=visibleItems(), index=ordered.findIndex(function(item){ return item.id===it.id; }), next=ordered[index+1];
     copy.manualOrder=next?(it.manualOrder+next.manualOrder)/2:it.manualOrder+5;
-    state.items.push(copy); state.currentId=copy.id;
+    state.items.push(copy); revealItem(copy.id);
     if(copy.type==="note"||copy.type==="audio") Object.keys(attachmentIds).forEach(function(sourceId){ readAttachmentFile(it.id,sourceId).then(function(file){ if(file) return storeAttachmentFile(copy.id,attachmentIds[sourceId],file); }).catch(function(){}); });
     taskCopies.forEach(function(taskCopy){ Object.keys(taskCopy.attachmentIds).forEach(function(sourceAttachmentId){ readAttachmentFile(taskCopy.sourceId,sourceAttachmentId).then(function(file){ if(file) return storeAttachmentFile(taskCopy.targetId,taskCopy.attachmentIds[sourceAttachmentId],file); }).catch(function(){}); }); });
     persist(); renderAll(); showToast("Duplicate created");
@@ -3187,7 +3315,7 @@
     if(recovery&&currentUser&&db) writeCloudDocumentBackup(item,"recovery",recovery.created,recovery.data).catch(function(error){ console.warn("Cloud recovery point could not be saved:",error); });
     var index=state.items.findIndex(function(currentItem){ return currentItem.id===item.id; });
     if(index<0) return;
-    saved=backupSnapshot(saved); saved.id=item.id; state.items[index]=saved; normalizeItem(saved); state.currentId=saved.id; persist(); renderAll(); showToast("Document backup restored");
+    saved=backupSnapshot(saved); saved.id=item.id; state.items[index]=saved; normalizeItem(saved); revealItem(saved.id); persist(); renderAll(); showToast("Document backup restored");
   }
   function renderDocumentBackupList(item,el){
     if(!el) return;
@@ -3400,7 +3528,7 @@
   function buildListRow(it,index){
       var todoItem=isTodoNote(it)||it.type==="todo";
       var selected=state.selectedItemIds.indexOf(it.id)>=0;
-      var el=document.createElement("div"); el.className="d-item"+(it.id===state.currentId?" active":"")+(todoItem&&it.done?" todo-done":"")+(state.selectingNotes?" selecting":"")+(it.id===justAddedId?" just-added":"");
+      var el=document.createElement("div"); el.className="d-item"+(!viewingHome&&it.id===state.currentId?" active":"")+(todoItem&&it.done?" todo-done":"")+(state.selectingNotes?" selecting":"")+(it.id===justAddedId?" just-added":"");
       el.setAttribute("data-item-id",it.id);
       el.style.setProperty("--i",Math.min(index,11));
       var dots=(it.tagIds||[]).map(function(id){ var t=tagById(id); return t&&!t.hidden?'<span class="dot" style="background:'+tagColor(t)+'"></span>':""; }).join("");
@@ -3425,12 +3553,12 @@
           taskRow.innerHTML='<button class="side-task-check" aria-label="'+(task.done?"Mark incomplete":"Mark complete")+'">'+(task.done?"✓":"")+'</button><button class="side-task-open"></button>';
           taskRow.querySelector(".side-task-open").textContent=task.text||"Untitled task";
           taskRow.querySelector(".side-task-check").onclick=function(e){ e.stopPropagation(); task.done=!task.done; task.completed=task.done?Date.now():null; it.updated=Date.now(); persist(); renderList(); if(current().id===it.id) renderMain(); };
-          taskRow.querySelector(".side-task-open").onclick=function(e){ e.stopPropagation(); if(activeAudioRecorder&&activeAudioRecorder.itemId!==it.id){ showToast("Finish the current recording before leaving it",true); return; } state.currentId=it.id; exitSidebarFocus(); app.classList.remove("open"); renderList(); renderMain(); };
+          taskRow.querySelector(".side-task-open").onclick=function(e){ e.stopPropagation(); if(activeAudioRecorder&&activeAudioRecorder.itemId!==it.id){ showToast("Finish the current recording before leaving it",true); return; } revealItem(it.id); exitSidebarFocus(); app.classList.remove("open"); renderList(); renderMain(); };
           taskBox.appendChild(taskRow);
         });
         el.appendChild(taskBox);
       }
-      el.onclick=function(e){ if(e.target.closest(".dx")||e.target.closest(".side-task")||e.target.closest(".side-todo-check")||e.target.closest(".note-select")) return; if(state.selectingNotes){ toggleNoteSelection(it.id,!selected); return; } if(activeAudioRecorder&&activeAudioRecorder.itemId!==it.id){ showToast("Finish the current recording before leaving it",true); return; } state.currentId=it.id; exitSidebarFocus(); app.classList.remove("open"); renderList(); renderMain(); };
+      el.onclick=function(e){ if(e.target.closest(".dx")||e.target.closest(".side-task")||e.target.closest(".side-todo-check")||e.target.closest(".note-select")) return; if(state.selectingNotes){ toggleNoteSelection(it.id,!selected); return; } if(activeAudioRecorder&&activeAudioRecorder.itemId!==it.id){ showToast("Finish the current recording before leaving it",true); return; } revealItem(it.id); exitSidebarFocus(); app.classList.remove("open"); renderList(); renderMain(); };
       el.querySelector(".dx").onclick=function(e){ e.stopPropagation(); if(todoItem&&it.done) delItem(it.id,"Delete this completed todo? This can't be undone."); else openItemActions(e.currentTarget,it); };
       return el;
   }
@@ -3485,8 +3613,580 @@
 
   /* =================== editor =================== */
   function grow(el){ el.style.height="auto"; el.style.height=el.scrollHeight+"px"; }
+  /* Home is the right-hand page. Widgets are saved on the account; the notes
+     list is one of them and starts on. Visiting the site always opens Home. */
+  function homeWidgetCatalog(){
+    return [
+      {type:"notes",label:"Notes list",hint:"Every note in one list, under the widgets. On by default."},
+      {type:"capture",label:"Quick capture",hint:"Jot a note without leaving home."},
+      {type:"continue",label:"Continue",hint:"Jump back into the note you had open."},
+      {type:"upcoming",label:"Upcoming",hint:"What is due next."},
+      {type:"glance",label:"At a glance",hint:"Counts for notes, open todos, and what is due."},
+      {type:"todos",label:"Open todos",hint:"Unchecked todos, with the due ones first."},
+      {type:"search",label:"Search",hint:"Find a note and filter the list below."},
+      {type:"tags",label:"Tags",hint:"Pick a tag to filter the notes list."},
+      {type:"revisit",label:"Revisit",hint:"Notes that have been quiet for a while."},
+      {type:"time",label:"Time spent",hint:"Where your time in notes has gone."},
+      {type:"today",label:"Today",hint:"Notes touched since this morning."},
+      {type:"done",label:"Finished",hint:"Todos you recently checked off."},
+      {type:"types",label:"Types",hint:"Jump to notes, todos, scripts, and the rest."},
+      {type:"scratch",label:"Scratch pad",hint:"A little pad that stays on Home, not in a note."},
+      {type:"agents",label:"Agents",hint:"Open an assistant without hunting through the list."}
+    ];
+  }
+  function homeStarterWidgets(){ return ["capture","continue","upcoming","glance","todos","search","tags","revisit","time","today","done","types","scratch","agents"]; }
+  function defaultHomeLayout(){
+    return {widgets:homeStarterWidgets().map(function(type){ return {type:type, enabled:true}; }).concat([{type:"notes", enabled:true}])};
+  }
+  function normalizeHomeLayout(layout){
+    var known={};
+    homeWidgetCatalog().forEach(function(entry){ known[entry.type]=true; });
+    var incoming=layout&&Array.isArray(layout.widgets)?layout.widgets:[];
+    var seen={}, widgets=[], notes=null;
+    incoming.forEach(function(widget){
+      if(!widget||!known[widget.type]||seen[widget.type]) return;
+      seen[widget.type]=true;
+      var entry={type:widget.type, enabled:widget.enabled!==false};
+      if(widget.type==="notes") notes=entry;
+      else widgets.push(entry);
+    });
+    widgets.push(notes||{type:"notes", enabled:true});
+    return {widgets:widgets};
+  }
+  function ensureHomeExtras(){
+    var before=JSON.stringify(state.homeLayout||null), versionBefore=state.homeExtrasVersion||0;
+    var layout=normalizeHomeLayout(state.homeLayout);
+    if((state.homeExtrasVersion||0)!==1){
+      var have={};
+      layout.widgets.forEach(function(widget){ have[widget.type]=true; });
+      var notes=layout.widgets.pop();
+      homeStarterWidgets().forEach(function(type){ if(!have[type]) layout.widgets.push({type:type, enabled:true}); });
+      layout.widgets.push(notes);
+      state.homeExtrasVersion=1;
+    }
+    state.homeLayout=normalizeHomeLayout(layout);
+    return JSON.stringify(state.homeLayout)!==before||(state.homeExtrasVersion||0)!==versionBefore;
+  }
+  function applyHomePreferences(prefs){
+    if(!prefs) return;
+    if(prefs.homeLayout){
+      state.homeLayout=normalizeHomeLayout(prefs.homeLayout);
+      state.homeExtrasVersion=typeof prefs.homeExtrasVersion==="number"?prefs.homeExtrasVersion:0;
+    } else if(typeof prefs.homeExtrasVersion==="number") state.homeExtrasVersion=prefs.homeExtrasVersion;
+    if(typeof prefs.homeScratch==="string") state.homeScratch=prefs.homeScratch;
+    var changed=ensureHomeExtras();
+    if(changed&&currentUser&&cloudHydrated&&!cloudSyncPaused&&!cloudSyncLoading) saveCloud(1);
+  }
+  function homeLayout(){ state.homeLayout=normalizeHomeLayout(state.homeLayout); return state.homeLayout; }
+  function homeWidgetOn(type){
+    var widget=homeLayout().widgets.filter(function(entry){ return entry.type===type; })[0];
+    return !!(widget&&widget.enabled!==false);
+  }
+  function homeWidgetDef(type){ return homeWidgetCatalog().filter(function(entry){ return entry.type===type; })[0]||{type:type,label:type,hint:""}; }
+  function persistHomeLayout(){
+    state.homeLayout=normalizeHomeLayout(state.homeLayout);
+    persist();
+    if(currentUser&&cloudHydrated&&!cloudSyncPaused&&!cloudSyncLoading) saveCloud(1);
+    if(viewingHome) renderMain();
+  }
+  function setHomeWidgetEnabled(type,enabled){
+    var layout=homeLayout(), widget=layout.widgets.filter(function(entry){ return entry.type===type; })[0];
+    if(!widget){ if(!enabled) return; layout.widgets.push({type:type, enabled:true}); }
+    else widget.enabled=!!enabled;
+    persistHomeLayout();
+  }
+  function moveHomeWidget(type,direction){
+    if(type==="notes") return;
+    var layout=homeLayout(), notes=layout.widgets.filter(function(widget){ return widget.type==="notes"; });
+    var widgets=layout.widgets.filter(function(widget){ return widget.type!=="notes"; }), index=-1, i;
+    for(i=0;i<widgets.length;i++) if(widgets[i].type===type) index=i;
+    var target=index+direction;
+    if(index<0||target<0||target>=widgets.length) return;
+    var moved=widgets.splice(index,1)[0];
+    widgets.splice(target,0,moved);
+    layout.widgets=widgets.concat(notes);
+    persistHomeLayout();
+  }
+  function removeHomeWidget(type){
+    if(type==="notes"){ setHomeWidgetEnabled("notes", false); return; }
+    var layout=homeLayout();
+    layout.widgets=layout.widgets.filter(function(widget){ return widget.type!==type; });
+    persistHomeLayout();
+  }
+  function addHomeWidget(type){
+    if(!homeWidgetCatalog().some(function(entry){ return entry.type===type&&type!=="notes"; })) return;
+    var layout=homeLayout(), existing=layout.widgets.filter(function(widget){ return widget.type===type; })[0];
+    if(existing) existing.enabled=true;
+    else layout.widgets.push({type:type, enabled:true});
+    persistHomeLayout();
+  }
+  function showHome(){
+    if(activeAudioRecorder){ showToast("Finish the current recording before leaving it",true); return; }
+    viewingHome=true;
+    exitSidebarFocus();
+    app.classList.remove("open");
+    renderList();
+    renderMain();
+  }
+  function revealItem(id){ viewingHome=false; if(id) state.currentId=id; }
+  function syncHomeButton(){
+    var button=$("homeBtn"), brand=$("homeBrand");
+    if(button){ button.classList.toggle("on",!!viewingHome); button.setAttribute("aria-pressed",viewingHome?"true":"false"); }
+    if(brand){ brand.classList.toggle("on",!!viewingHome); brand.setAttribute("aria-current",viewingHome?"page":"false"); }
+  }
+  function openHomeItem(id){
+    if(activeAudioRecorder&&activeAudioRecorder.itemId!==id){ showToast("Finish the current recording before leaving it",true); return; }
+    revealItem(id);
+    exitSidebarFocus();
+    app.classList.remove("open");
+    renderList();
+    renderMain();
+  }
+  function homeGreeting(){
+    var hour=new Date().getHours();
+    if(hour<12) return "Good morning";
+    if(hour<17) return "Good afternoon";
+    return "Good evening";
+  }
+  function homeWhen(ts){
+    var time=Number(ts)||0;
+    if(!time) return "";
+    var diff=Date.now()-time;
+    if(diff<45000) return "Just now";
+    if(diff<3600000) return Math.max(1,Math.floor(diff/60000))+"m ago";
+    if(diff<86400000) return Math.floor(diff/3600000)+"h ago";
+    if(diff<604800000) return Math.floor(diff/86400000)+"d ago";
+    try{ return new Date(time).toLocaleDateString(undefined,{month:"short",day:"numeric"}); }catch(e){ return ""; }
+  }
+  function homeSnippet(it){
+    var text=(itemText(it)||"").replace(/\s+/g," ").trim(), title=(it.title||"").replace(/\s+/g," ").trim();
+    if(!text||text===title) return "";
+    if(title&&text.indexOf(title)===0) text=text.slice(title.length).trim();
+    if(!text) return "";
+    return text.length>160?text.slice(0,160)+"…":text;
+  }
+  function itemIconMarkup(it){
+    var mod=itemModule(it), todoItem=isTodoNote(it)||it.type==="todo";
+    return mod&&mod.icon?mod.icon:(it.type==="script"?ICON_SCRIPT:(todoItem?ICON_TODO:(it.type==="audio"?ICON_AUDIO:(it.type==="agent"?ICON_AGENT:ICON_NOTE))));
+  }
+  function homeNotes(){
+    var query=(homeQuery||"").trim().toLowerCase();
+    var items=(state.items||[]).filter(function(it){
+      if(!it||it.hidden) return false;
+      if(homeTypeFilter&&itemKindForAgent(it)!==homeTypeFilter) return false;
+      if(homeTagId){ if((it.tagIds||[]).indexOf(homeTagId)<0) return false; }
+      else if((it.tagIds||[]).some(function(id){ var tag=tagById(id); return tag&&tag.hidden; })) return false;
+      if(query){
+        var tagNames=(it.tagIds||[]).map(function(id){ var tag=tagById(id); return tag?tag.name:""; }).join(" ");
+        if((it.title+" "+itemText(it)+" "+tagNames).toLowerCase().indexOf(query)<0) return false;
+      }
+      return true;
+    });
+    var sort=state.listSort||"updated";
+    return items.sort(function(a,b){
+      if(sort==="manual") return (typeof a.manualOrder==="number"?a.manualOrder:state.items.indexOf(a))-(typeof b.manualOrder==="number"?b.manualOrder:state.items.indexOf(b));
+      if(sort==="title") return (a.title||"").localeCompare(b.title||"");
+      if(sort==="tag"){ var byTag=firstTagName(a).localeCompare(firstTagName(b)); return byTag||((b.updated||0)-(a.updated||0)); }
+      if(sort==="due"){
+        var ad=itemDueDate(a), bd=itemDueDate(b);
+        if(ad&&!bd) return -1;
+        if(!ad&&bd) return 1;
+        return (ad||"").localeCompare(bd||"")||((b.updated||0)-(a.updated||0));
+      }
+      if(sort==="timeSpent") return (Number(b.timeSpentMs)||0)-(Number(a.timeSpentMs)||0)||((b.updated||0)-(a.updated||0));
+      return (b.updated||0)-(a.updated||0);
+    });
+  }
+  function homeContinueItem(){
+    var open=(state.items||[]).find(function(it){ return it&&it.id===state.currentId&&!it.hidden; });
+    if(open) return open;
+    var latest=null;
+    (state.items||[]).forEach(function(it){ if(!it||it.hidden) return; if(!latest||(it.updated||0)>(latest.updated||0)) latest=it; });
+    return latest;
+  }
+  function homeUpcomingItems(){
+    return (state.items||[]).filter(function(it){ return it&&!it.hidden&&itemDueDate(it); }).sort(function(a,b){
+      return itemDueDate(a).localeCompare(itemDueDate(b))||((b.updated||0)-(a.updated||0));
+    }).slice(0,8);
+  }
+  function homeMiniButton(label,text,fn){
+    var button=document.createElement("button");
+    button.type="button"; button.textContent=text; button.title=label; button.setAttribute("aria-label",label); button.onclick=fn;
+    return button;
+  }
+  function homeWidgetFrame(type,body,count){
+    var def=homeWidgetDef(type), card=document.createElement("section");
+    card.className="home-widget"+((type==="notes"||type==="upcoming"||type==="search"||type==="scratch")?" span":"");
+    card.setAttribute("data-home-widget",type);
+    var head=document.createElement("div"); head.className="home-widget-head";
+    var title=document.createElement("h2"); title.textContent=def.label; head.appendChild(title);
+    if(typeof count==="number"){ var badge=document.createElement("span"); badge.className="home-count"; badge.textContent=String(count); head.appendChild(badge); }
+    if(homeCustomizing&&type!=="notes"){
+      var actions=document.createElement("div"); actions.className="home-widget-actions";
+      actions.appendChild(homeMiniButton("Move up","Up",function(){ moveHomeWidget(type,-1); }));
+      actions.appendChild(homeMiniButton("Move down","Down",function(){ moveHomeWidget(type,1); }));
+      actions.appendChild(homeMiniButton("Remove "+def.label,"Remove",function(){ removeHomeWidget(type); }));
+      head.appendChild(actions);
+    }
+    card.appendChild(head); card.appendChild(body); return card;
+  }
+  function buildHomeHeader(){
+    var head=document.createElement("header"); head.className="home-head";
+    var copy=document.createElement("div");
+    var kicker=document.createElement("p"); kicker.className="home-kicker"; kicker.textContent=homeGreeting();
+    var title=document.createElement("h1"); title.textContent="Home";
+    var sub=document.createElement("p"); sub.className="home-sub"; sub.textContent="Widgets up top. The notes list sits underneath, and you can turn it off.";
+    copy.appendChild(kicker); copy.appendChild(title); copy.appendChild(sub);
+    var tools=document.createElement("div"); tools.className="home-tools";
+    var notesOn=homeWidgetOn("notes");
+    var toggleWrap=document.createElement("div"); toggleWrap.className="home-notes-toggle"+(notesOn?" on":"");
+    var toggleLabel=document.createElement("span"); toggleLabel.textContent="Notes list";
+    var toggle=document.createElement("button"); toggle.type="button"; toggle.id="homeNotesToggle"; toggle.className="toggle"+(notesOn?" on":""); toggle.innerHTML="<b></b>";
+    toggle.setAttribute("aria-pressed",notesOn?"true":"false");
+    toggle.setAttribute("aria-label",notesOn?"Turn notes list off":"Turn notes list on");
+    toggle.onclick=function(){ setHomeWidgetEnabled("notes",!notesOn); };
+    toggleWrap.appendChild(toggleLabel); toggleWrap.appendChild(toggle);
+    var custom=document.createElement("button"); custom.type="button"; custom.id="homeCustomizeBtn"; custom.className="copy-all"+(homeCustomizing?" done":"");
+    custom.textContent=homeCustomizing?"Done":"Customize";
+    custom.onclick=function(){ homeCustomizing=!homeCustomizing; renderMain(); };
+    tools.appendChild(toggleWrap); tools.appendChild(custom);
+    head.appendChild(copy); head.appendChild(tools); return head;
+  }
+  function buildHomeNoteRow(it){
+    var button=document.createElement("button"); button.type="button";
+    button.className="home-note"+((isTodoNote(it)||it.type==="todo")&&it.done?" todo-done":"")+(it.id===justAddedId?" just-added":"");
+    var icon=document.createElement("span"); icon.className="item-icon"; icon.innerHTML=itemIconMarkup(it);
+    var color=itemIconColor(it); if(color) icon.style.color=color;
+    var text=document.createElement("span"); text.className="home-note-copy";
+    var title=document.createElement("b"); title.textContent=it.title||("Untitled "+itemLabel(it).toLowerCase());
+    var preview=homeSnippet(it), snippet=document.createElement("span"); snippet.className="home-snippet"; snippet.textContent=preview; if(!preview) snippet.hidden=true;
+    var meta=document.createElement("small"); var due=itemDueDate(it); meta.textContent=itemLabel(it)+(due?" · "+dueDateLabel(due):"");
+    text.appendChild(title); text.appendChild(snippet); text.appendChild(meta);
+    var when=document.createElement("span"); when.className="when"; when.textContent=homeWhen(it.updated);
+    button.appendChild(icon); button.appendChild(text); button.appendChild(when);
+    button.onclick=function(){ openHomeItem(it.id); };
+    return button;
+  }
+  function buildHomeNotesWidget(hidden){
+    var body=document.createElement("div"); body.className="home-notes";
+    if(hidden){
+      var off=document.createElement("p"); off.className="home-muted"; off.textContent="Hidden. Turn Notes list back on to show your notes here.";
+      body.appendChild(off); return homeWidgetFrame("notes", body);
+    }
+    if(homeTagId&&!tagById(homeTagId)) homeTagId=null;
+    var filters=[];
+    if(homeTagId){ var tag=tagById(homeTagId); if(tag) filters.push(tag.name); }
+    if(homeTypeFilter) filters.push(itemLabel({type:homeTypeFilter}));
+    if((homeQuery||"").trim()) filters.push("Search: "+homeQuery.trim());
+    if(filters.length){
+      var bar=document.createElement("div"); bar.className="home-filters";
+      filters.forEach(function(text){
+        var chip=document.createElement("button"); chip.type="button"; chip.textContent=text+"  ×";
+        chip.onclick=function(){ homeTagId=null; homeTypeFilter=""; homeQuery=""; renderMain(); };
+        bar.appendChild(chip);
+      });
+      body.appendChild(bar);
+    }
+    var items=homeNotes();
+    if(!items.length){
+      var empty=document.createElement("p"); empty.className="home-muted"; empty.textContent=homeTagId?"Nothing in this tag.":((homeQuery||"").trim()||homeTypeFilter)?"Nothing matches.":"No notes yet.";
+      body.appendChild(empty);
+    } else items.forEach(function(it){ body.appendChild(buildHomeNoteRow(it)); });
+    return homeWidgetFrame("notes", body, items.length);
+  }
+  function addHomeCapture(raw){
+    var due=parseDueDateText(raw), note=due?newTodoItem():newNoteItem();
+    note.blocks=[textBlock(raw)]; syncNoteBody(note);
+    if(due) note.dueDate=due;
+    note.title=quickNoteFallbackTitle(raw); note.updated=Date.now();
+    state.items.unshift(note);
+    justAddedId=note.id; clearTimeout(justAddedTimer); justAddedTimer=setTimeout(function(){ justAddedId=null; },700);
+    persist(); renderAll();
+    showToast(due?"Added todo with a due date":"Added to your notes");
+  }
+  function buildHomeCaptureWidget(){
+    var body=document.createElement("div"); body.className="home-capture";
+    var input=document.createElement("input"); input.type="text"; input.className="home-capture-input"; input.placeholder="Jot something down…"; input.setAttribute("aria-label","Quick capture");
+    var add=document.createElement("button"); add.type="button"; add.className="copy-all primary"; add.textContent="Add";
+    function commit(){ var raw=cleanText(input.value); if(!raw){ input.focus(); return; } addHomeCapture(raw); }
+    add.onclick=commit;
+    input.onkeydown=function(event){ if(event.key==="Enter"){ event.preventDefault(); commit(); } };
+    body.appendChild(input); body.appendChild(add);
+    return homeWidgetFrame("capture", body);
+  }
+  function buildHomeContinueWidget(){
+    var body=document.createElement("div"), item=homeContinueItem();
+    if(!item){
+      var empty=document.createElement("p"); empty.className="home-muted"; empty.textContent="When you open a note, it will wait here.";
+      body.appendChild(empty); return homeWidgetFrame("continue", body);
+    }
+    var button=document.createElement("button"); button.type="button"; button.className="home-continue";
+    var text=document.createElement("span");
+    var title=document.createElement("b"); title.textContent=item.title||("Untitled "+itemLabel(item).toLowerCase());
+    var preview=document.createElement("span"); preview.className="home-snippet"; preview.textContent=homeSnippet(item)||itemLabel(item);
+    text.appendChild(title); text.appendChild(preview);
+    var open=document.createElement("span"); open.className="home-open"; open.textContent="Open";
+    button.appendChild(text); button.appendChild(open);
+    button.onclick=function(){ openHomeItem(item.id); };
+    body.appendChild(button);
+    return homeWidgetFrame("continue", body);
+  }
+  function buildHomeUpcomingWidget(){
+    var body=document.createElement("div"), items=homeUpcomingItems();
+    if(!items.length){
+      var empty=document.createElement("p"); empty.className="home-muted"; empty.textContent="Nothing due.";
+      body.appendChild(empty); return homeWidgetFrame("upcoming", body, 0);
+    }
+    items.forEach(function(it){
+      var due=itemDueDate(it), tone=dueDateClass(due);
+      var button=document.createElement("button"); button.type="button"; button.className="home-due"+(tone?" "+tone:"");
+      var text=document.createElement("span"); var title=document.createElement("b"); title.textContent=it.title||("Untitled "+itemLabel(it).toLowerCase()); text.appendChild(title);
+      var when=document.createElement("em"); when.textContent=dueDateLabel(due);
+      button.appendChild(text); button.appendChild(when);
+      button.onclick=function(){ openHomeItem(it.id); };
+      body.appendChild(button);
+    });
+    return homeWidgetFrame("upcoming", body, items.length);
+  }
+  function buildHomeTagsWidget(){
+    var body=document.createElement("div"); body.className="home-tags";
+    var tags=(state.tags||[]).filter(function(tag){ return tag&&!tag.hidden; });
+    if(!tags.length){
+      var empty=document.createElement("p"); empty.className="home-muted"; empty.textContent="No tags yet. Add one from the sidebar.";
+      return homeWidgetFrame("tags", empty);
+    }
+    tags.forEach(function(tag){
+      var chip=document.createElement("button"); chip.type="button"; chip.className="home-tag"+(homeTagId===tag.id?" on":"");
+      var dot=document.createElement("i"); dot.style.background=tagColor(tag);
+      var name=document.createElement("span"); name.textContent=tag.name||"Tag";
+      chip.appendChild(dot); chip.appendChild(name);
+      chip.onclick=function(){
+        homeTagId=homeTagId===tag.id?null:tag.id;
+        if(homeTagId&&!homeWidgetOn("notes")) setHomeWidgetEnabled("notes", true);
+        else renderMain();
+      };
+      body.appendChild(chip);
+    });
+    return homeWidgetFrame("tags", body);
+  }
+  function buildHomeGlanceWidget(){
+    var body=document.createElement("div"); body.className="home-stats";
+    var items=(state.items||[]).filter(function(it){ return it&&!it.hidden&&it.type!=="agent"; });
+    var openTodos=(state.items||[]).filter(function(it){ return it&&!it.hidden&&(isTodoNote(it)||it.type==="todo")&&!it.done; });
+    var dueToday=(state.items||[]).filter(function(it){ return it&&!it.hidden&&dueDateClass(itemDueDate(it))==="today"; });
+    var overdue=(state.items||[]).filter(function(it){ return it&&!it.hidden&&dueDateClass(itemDueDate(it))==="overdue"; });
+    [[items.length,"Notes"],[openTodos.length,"Open todos"],[dueToday.length,"Due today"],[overdue.length,"Overdue"]].forEach(function(pair){
+      var cell=document.createElement("div"); cell.className="home-stat"+(pair[1]==="Overdue"&&pair[0]?" overdue":"");
+      var value=document.createElement("b"); value.textContent=String(pair[0]);
+      var name=document.createElement("span"); name.textContent=pair[1];
+      cell.appendChild(value); cell.appendChild(name); body.appendChild(cell);
+    });
+    return homeWidgetFrame("glance", body);
+  }
+  function homeLinkRow(it, meta){
+    var button=document.createElement("button"); button.type="button"; button.className="home-due";
+    var text=document.createElement("span"); var title=document.createElement("b"); title.textContent=it.title||("Untitled "+itemLabel(it).toLowerCase()); text.appendChild(title);
+    var when=document.createElement("em"); when.textContent=meta||"";
+    button.appendChild(text); button.appendChild(when);
+    button.onclick=function(){ openHomeItem(it.id); };
+    return button;
+  }
+  function buildHomeListWidget(type, items, metaFor, emptyText){
+    var body=document.createElement("div");
+    if(!items.length){
+      var empty=document.createElement("p"); empty.className="home-muted"; empty.textContent=emptyText;
+      body.appendChild(empty); return homeWidgetFrame(type, body, 0);
+    }
+    items.forEach(function(it){ body.appendChild(homeLinkRow(it, metaFor(it))); });
+    return homeWidgetFrame(type, body, items.length);
+  }
+  function homeOpenTodos(){
+    return (state.items||[]).filter(function(it){ return it&&!it.hidden&&(isTodoNote(it)||it.type==="todo")&&!it.done; }).sort(function(a,b){
+      return (itemDueDate(a)||"9999").localeCompare(itemDueDate(b)||"9999")||((b.updated||0)-(a.updated||0));
+    }).slice(0,8);
+  }
+  function homeQuietNotes(){
+    var cutoff=Date.now()-14*86400000;
+    return (state.items||[]).filter(function(it){
+      return it&&!it.hidden&&it.type!=="agent"&&(it.updated||0)<cutoff&&(it.title||itemText(it));
+    }).sort(function(a,b){ return (a.updated||0)-(b.updated||0); }).slice(0,5);
+  }
+  function homeSpentLabel(ms){
+    ms=Number(ms)||0;
+    if(ms<60000) return ms?"Under 1m":"";
+    var mins=Math.round(ms/60000);
+    if(mins<60) return mins+"m";
+    var hours=Math.floor(mins/60), rest=mins%60;
+    return hours+"h"+(rest?" "+rest+"m":"");
+  }
+  function homeTimeNotes(){
+    return (state.items||[]).filter(function(it){ return it&&!it.hidden&&(Number(it.timeSpentMs)||0)>0; }).sort(function(a,b){
+      return (Number(b.timeSpentMs)||0)-(Number(a.timeSpentMs)||0);
+    }).slice(0,5);
+  }
+  function homeTodayNotes(){
+    var start=new Date(); start.setHours(0,0,0,0); var from=start.getTime();
+    return (state.items||[]).filter(function(it){ return it&&!it.hidden&&it.type!=="agent"&&(it.updated||0)>=from; }).sort(function(a,b){
+      return (b.updated||0)-(a.updated||0);
+    }).slice(0,6);
+  }
+  function homeFinishedTodos(){
+    return (state.items||[]).filter(function(it){ return it&&!it.hidden&&(isTodoNote(it)||it.type==="todo")&&it.done; }).sort(function(a,b){
+      return (b.completed||b.updated||0)-(a.completed||a.updated||0);
+    }).slice(0,6);
+  }
+  function buildHomeTodosWidget(){
+    var items=homeOpenTodos(), body=document.createElement("div");
+    if(!items.length){
+      var empty=document.createElement("p"); empty.className="home-muted"; empty.textContent="No open todos.";
+      body.appendChild(empty); return homeWidgetFrame("todos", body, 0);
+    }
+    items.forEach(function(it){
+      var row=document.createElement("div"); row.className="home-todo";
+      var check=document.createElement("button"); check.type="button"; check.className="box"; check.textContent="✓"; check.title="Mark complete"; check.setAttribute("aria-label","Mark complete");
+      check.onclick=function(){ setTodoDone(it, true); if(viewingHome) renderMain(); };
+      var open=document.createElement("button"); open.type="button"; open.className="title";
+      var title=document.createElement("b"); title.textContent=it.title||"Untitled todo"; open.appendChild(title);
+      open.onclick=function(){ openHomeItem(it.id); };
+      var due=itemDueDate(it), when=document.createElement("em"); when.textContent=due?dueDateLabel(due):"";
+      if(dueDateClass(due)==="overdue") when.style.color="#fca5a5";
+      row.appendChild(check); row.appendChild(open); row.appendChild(when);
+      body.appendChild(row);
+    });
+    return homeWidgetFrame("todos", body, items.length);
+  }
+  function buildHomeSearchWidget(){
+    var body=document.createElement("div"); body.className="home-search";
+    var input=document.createElement("input"); input.type="search"; input.className="home-search-input"; input.placeholder="Search notes…"; input.setAttribute("aria-label","Search notes"); input.value=homeQuery||"";
+    input.oninput=function(){
+      homeQuery=input.value; homeSearchFocus=true;
+      if((homeQuery||"").trim()&&!homeWidgetOn("notes")) setHomeWidgetEnabled("notes", true);
+      else renderMain();
+    };
+    body.appendChild(input);
+    return homeWidgetFrame("search", body);
+  }
+  function buildHomeRevisitWidget(){ return buildHomeListWidget("revisit", homeQuietNotes(), function(it){ return homeWhen(it.updated); }, "Nothing has been sitting for two weeks."); }
+  function buildHomeTimeWidget(){ return buildHomeListWidget("time", homeTimeNotes(), function(it){ return homeSpentLabel(it.timeSpentMs); }, "Time shows up here after you spend a minute in a note."); }
+  function buildHomeTodayWidget(){ return buildHomeListWidget("today", homeTodayNotes(), function(it){ return homeWhen(it.updated); }, "Nothing touched today yet."); }
+  function buildHomeDoneWidget(){ return buildHomeListWidget("done", homeFinishedTodos(), function(it){ return homeWhen(it.completed||it.updated); }, "No finished todos yet."); }
+  function buildHomeTypesWidget(){
+    var body=document.createElement("div"); body.className="home-tags";
+    var counts={};
+    (state.items||[]).forEach(function(it){ if(!it||it.hidden) return; var kind=itemKindForAgent(it); counts[kind]=(counts[kind]||0)+1; });
+    var kinds=Object.keys(counts).sort(function(a,b){ return counts[b]-counts[a]||a.localeCompare(b); });
+    if(!kinds.length){
+      var empty=document.createElement("p"); empty.className="home-muted"; empty.textContent="No notes yet.";
+      return homeWidgetFrame("types", empty);
+    }
+    kinds.forEach(function(kind){
+      var chip=document.createElement("button"); chip.type="button"; chip.className="home-tag"+(homeTypeFilter===kind?" on":"");
+      chip.textContent=itemLabel({type:kind})+"  "+counts[kind];
+      chip.onclick=function(){
+        homeTypeFilter=homeTypeFilter===kind?"":kind;
+        if(homeTypeFilter&&!homeWidgetOn("notes")) setHomeWidgetEnabled("notes", true);
+        else renderMain();
+      };
+      body.appendChild(chip);
+    });
+    return homeWidgetFrame("types", body);
+  }
+  function buildHomeScratchWidget(){
+    var body=document.createElement("div");
+    var area=document.createElement("textarea"); area.className="home-scratch"; area.placeholder="Scratch pad. This stays on Home."; area.value=state.homeScratch||"";
+    area.oninput=function(){
+      state.homeScratch=area.value;
+      clearTimeout(homeScratchTimer);
+      homeScratchTimer=setTimeout(function(){
+        persist();
+        if(currentUser&&cloudHydrated&&!cloudSyncPaused&&!cloudSyncLoading) saveCloud(1);
+      }, 500);
+    };
+    body.appendChild(area);
+    return homeWidgetFrame("scratch", body);
+  }
+  function buildHomeAgentsWidget(){
+    var agents=(state.items||[]).filter(function(it){ return it&&!it.hidden&&it.type==="agent"; });
+    return buildHomeListWidget("agents", agents, function(){ return "Open"; }, "No agents yet. Create one from New.");
+  }
+  function buildHomeWidget(widget){
+    if(widget.type==="notes") return buildHomeNotesWidget(widget.enabled===false);
+    if(widget.type==="capture") return buildHomeCaptureWidget();
+    if(widget.type==="continue") return buildHomeContinueWidget();
+    if(widget.type==="upcoming") return buildHomeUpcomingWidget();
+    if(widget.type==="tags") return buildHomeTagsWidget();
+    if(widget.type==="glance") return buildHomeGlanceWidget();
+    if(widget.type==="todos") return buildHomeTodosWidget();
+    if(widget.type==="search") return buildHomeSearchWidget();
+    if(widget.type==="revisit") return buildHomeRevisitWidget();
+    if(widget.type==="time") return buildHomeTimeWidget();
+    if(widget.type==="today") return buildHomeTodayWidget();
+    if(widget.type==="done") return buildHomeDoneWidget();
+    if(widget.type==="types") return buildHomeTypesWidget();
+    if(widget.type==="scratch") return buildHomeScratchWidget();
+    if(widget.type==="agents") return buildHomeAgentsWidget();
+    return document.createElement("div");
+  }
+  function buildHomeAddPanel(){
+    var panel=document.createElement("div"); panel.className="home-add";
+    var title=document.createElement("h2"); title.textContent="Add a widget"; panel.appendChild(title);
+    var have={};
+    homeLayout().widgets.forEach(function(widget){ if(widget.enabled!==false) have[widget.type]=true; });
+    var choices=homeWidgetCatalog().filter(function(entry){ return entry.type!=="notes"&&!have[entry.type]; });
+    if(!choices.length){
+      var none=document.createElement("p"); none.className="home-muted"; none.textContent="Every widget is already on your home page.";
+      panel.appendChild(none); return panel;
+    }
+    var grid=document.createElement("div"); grid.className="home-add-grid";
+    choices.forEach(function(entry){
+      var button=document.createElement("button"); button.type="button"; button.className="add-choice";
+      var name=document.createElement("b"); name.textContent=entry.label;
+      var hint=document.createElement("small"); hint.textContent=entry.hint;
+      button.appendChild(name); button.appendChild(hint);
+      button.onclick=function(){ addHomeWidget(entry.type); };
+      grid.appendChild(button);
+    });
+    panel.appendChild(grid); return panel;
+  }
+  function renderHome(){
+    if(renderedModule&&renderedModule.detach) renderedModule.detach();
+    else if(window.SecondBrainCode&&typeof window.SecondBrainCode.detach==="function") window.SecondBrainCode.detach();
+    renderedModule=null;
+    if(collab.hostKind==="stage"){ collab.host=null; collab.hostKind=null; }
+    var entering=lastMainId!=="home";
+    lastMainId="home";
+    canvas.innerHTML="";
+    updateShareButton(null); updateTtsButton(null);
+    var copyBtn=$("copyAll"); if(copyBtn) copyBtn.style.display="none";
+    stopLiveNoteWatch();
+    if(entering) canvas.scrollTop=0;
+    var sheet=document.createElement("div"); sheet.className="sheet home-sheet"+(entering?" enter":"");
+    sheet.appendChild(buildHomeHeader());
+    var grid=document.createElement("div"); grid.className="home-grid";
+    var widgets=homeLayout().widgets.filter(function(widget){ return widget.type!=="notes"&&widget.enabled!==false; });
+    var notesWidget=homeLayout().widgets.filter(function(widget){ return widget.type==="notes"; })[0];
+    if(homeCustomizing) grid.appendChild(buildHomeAddPanel());
+    if(!widgets.length&&!(notesWidget&&notesWidget.enabled!==false)&&!homeCustomizing){
+      var empty=document.createElement("div"); empty.className="home-empty";
+      empty.textContent="Your home page is clear. Turn the notes list on, or add a widget.";
+      grid.appendChild(empty);
+    } else widgets.forEach(function(widget){ grid.appendChild(buildHomeWidget(widget)); });
+    sheet.appendChild(grid);
+    if(notesWidget&&notesWidget.enabled!==false){
+      var slot=document.createElement("div"); slot.className="home-notes-slot";
+      slot.appendChild(buildHomeNotesWidget(false));
+      sheet.appendChild(slot);
+    }
+    canvas.appendChild(sheet);
+    if(homeSearchFocus){
+      homeSearchFocus=false;
+      var search=sheet.querySelector(".home-search-input");
+      if(search){ search.focus(); var end=search.value.length; try{ search.setSelectionRange(end, end); }catch(e){} }
+    }
+  }
   var lastMainId=null;
   function renderMain(){
+    syncHomeButton();
     if(currentUser&&cloudSyncLoading&&countRealAccountItems(state.items)===0){
       if(renderedModule&&renderedModule.detach) renderedModule.detach();
       else if(window.SecondBrainCode&&typeof window.SecondBrainCode.detach==="function") window.SecondBrainCode.detach();
@@ -3498,6 +4198,7 @@
       loading.appendChild(hint);       canvas.appendChild(loading);
       updateShareButton(null); stopLiveNoteWatch(); return;
     }
+    if(viewingHome){ renderHome(); return; }
     var it=current();
     /* Let a registered type tear down timers, media elements, and listeners
        before its DOM is thrown away. */
@@ -4990,7 +5691,7 @@
       var behave=section("Behaviour");
       var approvalCurrent=typeof a.requireApproval==="boolean"?String(a.requireApproval):"";
       selectOn(behave,"Edit permission",approvalCurrent,[["","Use Settings default"],["false","Work on the note without asking"],["true","Ask me to apply every edit"]],function(value){ a.requireApproval=value===""?null:value==="true"; });
-      toggleFieldOn(behave,"Capture transcribed audio in the open note","Keeps a collapsible group of everything you said, indented by pause.","transcribeToNote");
+      toggleFieldOn(behave,"Capture transcribed audio in the open note","Dictation types straight into the note. This keeps a collapsible raw-speech group when it can't.","transcribeToNote");
       toggleFieldOn(behave,"Gemini Live ears","Stream the mic to Gemini so listening never stops while ElevenLabs talks. Falls back to the browser if Live is unavailable.","liveListen");
       toggleFieldOn(behave,"Keep listening while speaking","So you can interrupt or keep rambling during a reply.","keepListeningWhileSpeaking");
       toggleFieldOn(behave,"Barge in","If you start talking over it, cut the spoken reply and listen.","bargeIn");
@@ -5558,7 +6259,7 @@
     closeCollabPanel();
     var settings=$("settingsModal");
     if(settings) settings.classList.remove("open");
-    state.currentId=agentItem.id;
+    revealItem(agentItem.id);
     if(state.sidebarView==="upcoming"||state.sidebarView==="hidden") state.sidebarView="all";
     persist(); renderAll();
     exitSidebarFocus();
@@ -6179,6 +6880,9 @@
       lines.push('- Chapters and groups each expose two editable targets: one for their content and one ending in ":title" for their label. Preserve the requested block type; never flatten a prompt, chapter, or heading into a plain paragraph or JSON.');
       lines.push("- Change the fewest pieces that answer the request. Do not silently rewrite parts the user did not mention.");
       lines.push("- If the document is empty and the user has just rambled at you, propose a title plus clean prose paragraphs that keep every point they made. Leave the transcribed audio group as the raw ramble.");
+      if(typeof collab!=="undefined"&&collab.voice&&collab.voice.dictation&&(collab.voice.dictation.committed||collab.voice.dictation.baseText)){
+        lines.push("- Live dictation is on. Words they already spoke are in the open note. Do not paste that dictation in again. When they ask you to edit, clean, retitle, structure, or rewrite, change the note that is already on screen. A spoken instruction is not note content.");
+      }
     }
     var pendingProposalContext=collabPendingProposalContext();
     if(pendingProposalContext){
@@ -6840,7 +7544,7 @@
     var raw=cleanText(noteSearch&&noteSearch.value);
     if(!raw){ showToast("Type something to add first",true); if(noteSearch) noteSearch.focus(); return; }
     var note=newNoteItem(); note.todo=true; note.done=false; note.completed=null; note.dueDate=parseDueDateText(raw); note.blocks=[textBlock(raw)]; syncNoteBody(note); note.title=quickNoteFallbackTitle(raw); note.updated=Date.now();
-    state.items.unshift(note); state.currentId=note.id; state.sidebarView="all"; state.filterTag=null; state.selectingNotes=false; state.selectedItemIds=[]; state.tagAssignMode=false;
+    state.items.unshift(note); revealItem(note.id); state.sidebarView="all"; state.filterTag=null; state.selectingNotes=false; state.selectedItemIds=[]; state.tagAssignMode=false;
     noteSearch.value=""; state.noteSearch=""; noteSearchWrap.classList.remove("has-value");
     persist(); renderAll(); exitSidebarFocus(); app.classList.remove("open");
     var titleTarget=canvas.querySelector(".title"); if(titleTarget) titleTarget.focus();
@@ -7381,7 +8085,7 @@
   }
   function createAgentNote(title,content){
     var note=newNoteItem(); note.title=cleanText(title)||"New note"; note.blocks=[textBlock(content||"")]; syncNoteBody(note);
-    state.items.unshift(note); state.currentId=note.id; note.updated=Date.now();
+    state.items.unshift(note); revealItem(note.id); note.updated=Date.now();
     persist(); renderAll(); return note;
   }
   function createAgentItem(kind,title,extra){
@@ -7394,15 +8098,15 @@
     } else if(spec.kind==="script"){
       it=newYoutubeScriptNote();
       it.title=cleanText(title)||"New YouTube script";
-      state.items.unshift(it); state.currentId=it.id;
+      state.items.unshift(it); revealItem(it.id);
     } else if(spec.kind==="audio"){
       it=newAudioItem();
       it.title=cleanText(title)||"New audio";
-      state.items.unshift(it); state.currentId=it.id;
+      state.items.unshift(it); revealItem(it.id);
     } else if(spec.kind==="workout"){
       it=newWorkoutRoutine();
       it.title=cleanText(title)||it.title;
-      state.items.unshift(it); state.currentId=it.id;
+      state.items.unshift(it); revealItem(it.id);
     } else if(spec.module&&typeModule(spec.type)&&typeof typeModule(spec.type).create==="function"){
       it=typeModule(spec.type).create();
       it.title=cleanText(title)||it.title||("New "+spec.label);
@@ -7410,7 +8114,7 @@
         if(extra.content) it.code=String(extra.content);
         if(extra.language) it.language=String(extra.language);
       }
-      state.items.unshift(it); state.currentId=it.id;
+      state.items.unshift(it); revealItem(it.id);
     } else {
       it=createAgentNote(title, blocks.length?"":extra.content);
     }
@@ -7525,7 +8229,7 @@
   }
   function attachCollabDocument(it){
     if(!it||it.type==="agent") return false;
-    state.currentId=it.id;
+    revealItem(it.id);
     collab.mode="document";
     collab.itemId=it.id;
     collab.grantedNoteIds=collab.grantedNoteIds||{};
@@ -7671,6 +8375,7 @@
   function refreshOpenItemAfterAgent(it,flashIds){
     persist();
     renderList();
+    rebaseLiveDictation();
     updateCollabContextLabel();
     if(!it||!current()||current().id!==it.id) return;
     var editor=canvas.querySelector('.note-editor[data-note-id="'+it.id+'"]');
@@ -8031,6 +8736,42 @@
     if(!request&&(looksLikeEditCapabilityQuestion(userText)||isMetaNoteWriteUtterance(userText))) request=lastGenerativeNoteRequest();
     if(!request) return Promise.resolve({ok:false,text:echoed||denied?"":text});
     return generateAndWriteNote(targetItem,request,text);
+  }
+  function joinDictationText(base,extra,paragraphBreak){
+    var head=String(base||""), tail=cleanText(extra);
+    if(!tail) return head;
+    if(!cleanText(head)) return tail;
+    if(paragraphBreak) return head.replace(/\s+$/,"")+"\n\n"+tail;
+    if(/\n\n$/.test(head)) return head+tail;
+    return head.replace(/[ \t]+$/,"")+" "+tail;
+  }
+  function stripLastDictationUtterance(committed,utterance){
+    var text=String(committed||""), said=cleanText(utterance);
+    if(!said) return text;
+    var end=text.replace(/\s+$/,"");
+    if(end.slice(-said.length)!==said) return text;
+    return end.slice(0,-said.length).replace(/[ \t]+$/,"").replace(/\n+$/,"");
+  }
+  function dictationHtmlFromParts(baseHtml,committed,interim){
+    var html=baseHtml||"";
+    var committedText=String(committed||"");
+    var interimText=cleanText(interim);
+    if(!committedText&&!interimText) return html;
+    var gap=html&&!/(<br\s*\/?>|&nbsp;|\s)$/i.test(html)?" ":"";
+    var committedHtml=escapeHtml(committedText).replace(/\n/g,"<br>");
+    var interimHtml=interimText?'<span class="dictation-interim">'+escapeHtml(interimText).replace(/\n/g,"<br>")+"</span>":"";
+    var between=committedText&&interimText&&!/\s$/.test(committedText)?" ":"";
+    return html+gap+committedHtml+between+interimHtml;
+  }
+  function shouldLiftDictatedUtterance(text){
+    var value=cleanText(text);
+    if(!value) return false;
+    if(looksLikeNoteWriteQuestion(value)||looksLikeEditCapabilityQuestion(value)||looksLikeGenerativeNoteRequest(value)||looksLikeNoteWriteRequest(value)||isMetaNoteWriteUtterance(value)) return true;
+    if(/^(um+|uh+|hmm+|ah+|er+)[.!?]*$/i.test(value)) return true;
+    if(/^(hi|hey|hello|thanks|thank you|are you there|can you hear me|what'?s up|whats up)[.!?]*$/i.test(value)) return true;
+    if(/^(why|how come|what|who|when|where)\b/i.test(value)&&value.split(/\s+/).length<=8&&/\?/.test(value)) return true;
+    if(value.split(/\s+/).length<=16&&/\b(make|turn|change|rewrite|clean|format|organize|fix|retitle|rename)\b/i.test(value)&&/\b(this|that|it|note|list|bullets?|title|paragraph)\b/i.test(value)) return true;
+    return false;
   }
   function collabApiMessages(agentItem,targetItem,targets){
     var messages=[{role:"system",content:collabSystemPrompt(agentItem,targetItem,targets)}];
@@ -8404,11 +9145,203 @@
     if(!patchTranscriptGroupDom(note,group,!existed)) refreshNoteEditor(note);
   }
 
+  /* ---------- live dictation into the open note ---------- */
+  function dictationNote(){
+    if(typeof viewingHome!=="undefined"&&viewingHome) return null;
+    var note=collabWritableItem();
+    if(!note||note.locked||note.type!=="note") return null;
+    var open=typeof current==="function"?current():null;
+    if(!open||open.id!==note.id) return null;
+    return note;
+  }
+  function bindVoiceToOpenNote(){
+    var note=typeof current==="function"?current():null;
+    if(typeof viewingHome!=="undefined"&&viewingHome) return;
+    if(!note||note.type!=="note"||note.locked) return;
+    collab.mode="document";
+    collab.itemId=note.id;
+    if(!collab.agentId){
+      var agent=preferredAgent()||ensureBuiltinAgent();
+      if(agent) collab.agentId=agent.id;
+    }
+  }
+  function dictationFocusedBlock(note){
+    var active=document.activeElement;
+    if(!active||!active.getAttribute||!active.isContentEditable) return null;
+    var id=active.getAttribute("data-note-block");
+    if(!id) return null;
+    return (note.blocks||[]).find(function(block){ return block&&block.id===id&&(block.type==="text"||block.type==="chapter"); })||null;
+  }
+  function ensureDictationBlock(note){
+    ensureNoteBlocks(note);
+    var focused=dictationFocusedBlock(note);
+    if(focused) return focused;
+    var blocks=note.blocks||[], last=null, i;
+    for(i=0;i<blocks.length;i++) if(blocks[i]&&blocks[i].type==="text") last=blocks[i];
+    if(last) return last;
+    var created=textBlock("");
+    note.blocks.push(created);
+    syncNoteBody(note);
+    refreshNoteEditor(note);
+    return created;
+  }
+  function liveDictationState(session){
+    if(!session||!session.active) return null;
+    var note=dictationNote();
+    if(!note) return null;
+    if(!session.dictation||session.dictation.noteId!==note.id){
+      var seeded=ensureDictationBlock(note);
+      session.dictation={noteId:note.id,blockId:seeded.id,baseHtml:seeded.html||"",baseText:seeded.text||"",committed:"",interim:"",lastUtterance:"",lifted:"",lastFinalAt:0};
+    }
+    var block=(note.blocks||[]).find(function(item){ return item&&item.id===session.dictation.blockId; });
+    if(!block){ session.dictation=null; return liveDictationState(session); }
+    return {note:note,block:block,session:session};
+  }
+  function dictationField(found){
+    if(!found||typeof canvas==="undefined"||!canvas) return null;
+    return canvas.querySelector('.note-editor[data-note-id="'+found.note.id+'"] .note-paragraph[data-note-block="'+found.block.id+'"]');
+  }
+  function placeDictationCaret(field){
+    if(!field) return;
+    var active=document.activeElement;
+    var elsewhere=active&&active!==field&&active!==document.body&&active!==document.documentElement;
+    if(!elsewhere){
+      try{ field.focus({preventScroll:true}); }catch(e){}
+      var selection=window.getSelection&&window.getSelection();
+      if(selection){
+        var range=document.createRange();
+        range.selectNodeContents(field);
+        range.collapse(false);
+        selection.removeAllRanges();
+        selection.addRange(range);
+      }
+    }
+    var rect=field.getBoundingClientRect();
+    if(rect.bottom>window.innerHeight-96||rect.top<72){
+      try{ field.scrollIntoView({block:"nearest"}); }catch(e){ field.scrollIntoView(false); }
+    }
+  }
+  function paintLiveDictation(found){
+    var field=dictationField(found);
+    if(!field) return;
+    var draft=found.session.dictation;
+    var html=dictationHtmlFromParts(draft.baseHtml,draft.committed,draft.interim);
+    field.classList.toggle("dictating",!!(draft.interim||draft.committed));
+    if(field.innerHTML!==html){
+      field.innerHTML=html;
+      placeDictationCaret(field);
+    }
+  }
+  function persistLiveDictation(found){
+    var draft=found.session.dictation, block=found.block;
+    block.html=sanitizeRichHtml(dictationHtmlFromParts(draft.baseHtml,draft.committed,""));
+    block.text=richTextToPlain(block.html);
+    saveNoteBlockChange(found.note,block,false);
+  }
+  function retargetLiveDictation(found){
+    var focused=dictationFocusedBlock(found.note), draft=found.session.dictation;
+    if(!focused||focused.id===draft.blockId||cleanText(draft.interim)) return found;
+    draft.blockId=focused.id;
+    draft.baseHtml=focused.html||"";
+    draft.baseText=focused.text||"";
+    draft.committed="";
+    draft.lastUtterance="";
+    draft.lifted="";
+    draft.lastFinalAt=0;
+    return {note:found.note,block:focused,session:found.session};
+  }
+  function previewLiveDictation(text){
+    var found=liveDictationState(collab.voice);
+    if(!found) return;
+    found.session.dictation.interim=cleanText(text);
+    paintLiveDictation(found);
+    syncDictationChrome();
+  }
+  function commitLiveDictation(text,force){
+    var said=cleanText(text);
+    var found=liveDictationState(collab.voice);
+    if(!found) return "unavailable";
+    found=retargetLiveDictation(found);
+    var draft=found.session.dictation;
+    draft.interim="";
+    if(!said){ paintLiveDictation(found); return "empty"; }
+    if(!force&&shouldLiftDictatedUtterance(said)){
+      draft.lifted=said;
+      paintLiveDictation(found);
+      syncDictationChrome();
+      return "lifted";
+    }
+    var now=Date.now();
+    var paragraphBreak=!!(draft.lastFinalAt&&now-draft.lastFinalAt>2200&&cleanText(draft.committed));
+    draft.committed=joinDictationText(draft.committed,said,paragraphBreak);
+    draft.lastUtterance=said;
+    draft.lifted="";
+    draft.lastFinalAt=now;
+    persistLiveDictation(found);
+    paintLiveDictation(found);
+    syncDictationChrome();
+    return "wrote";
+  }
+  function sealLiveDictation(){
+    var session=collab.voice;
+    if(!session||!session.dictation) return;
+    session.dictation.interim="";
+    var note=dictationNote();
+    var block=note&&(note.blocks||[]).find(function(item){ return item&&item.id===session.dictation.blockId; });
+    if(!note||!block) return;
+    var found={note:note,block:block,session:session};
+    paintLiveDictation(found);
+    var field=dictationField(found);
+    if(field) field.classList.remove("dictating");
+  }
+  function rebaseLiveDictation(){
+    var session=collab.voice;
+    if(!session||!session.active||!session.dictation) return;
+    var note=dictationNote();
+    if(!note){ session.dictation=null; return; }
+    var block=(note.blocks||[]).find(function(item){ return item&&item.id===session.dictation.blockId; });
+    if(!block){ session.dictation=null; return; }
+    session.dictation.baseHtml=block.html||"";
+    session.dictation.baseText=block.text||"";
+    session.dictation.committed="";
+    session.dictation.interim="";
+    session.dictation.lastUtterance="";
+    session.dictation.lifted="";
+    session.dictation.lastFinalAt=0;
+  }
+  function syncDictationChrome(){
+    var on=!!(collab.voice&&collab.voice.active&&dictationNote());
+    document.body.classList.toggle("voice-dictating",on);
+    var overlay=$("voiceOverlay");
+    if(overlay) overlay.classList.toggle("dictation-mode",on);
+    var label=$("dictationLiveLabel");
+    if(label){
+      label.hidden=!on;
+      if(on){
+        var status=$("voiceOverlayStatus");
+        var shown=status&&status.textContent||"";
+        label.textContent=!shown||shown==="Listening"?"Dictating":shown;
+      }
+    }
+    if(typeof updateCollabButton==="function") updateCollabButton();
+  }
+  function voiceHandoffText(buffered,decision){
+    var draft=collab.voice&&collab.voice.dictation;
+    var latest=cleanText(draft&&(draft.lifted||draft.lastUtterance));
+    if(draft&&cleanText(draft.committed||draft.baseText)&&latest) return latest;
+    return cleanText(decision&&decision.compressed)||buffered;
+  }
+
   /* ---------- voice stage ---------- */
   function setVoiceStatus(text){
     var el=$("voiceOverlayStatus"); if(el) el.textContent=text||"";
     setCollabStatus(text||"");
     paintVoiceMind();
+    var label=$("dictationLiveLabel");
+    if(label&&document.body.classList.contains("voice-dictating")){
+      label.hidden=false;
+      label.textContent=!text||text==="Listening"?"Dictating":text;
+    }
   }
   function setVoiceLink(text){
     var el=$("voiceOverlayLink"); if(!el) return;
@@ -8530,18 +9463,19 @@
     var agentItem=collabAgent(), a=agentItem?normalizeAgent(agentItem):null;
     var overlay=$("voiceOverlay"), companion=$("voiceCompanion"), nameEl=$("voiceOverlayName"), tasksEl=$("voiceOverlayTasks");
     var accent=agentAccent(agentItem)||"";
+    var dictating=!!(collab.voice&&collab.voice.active&&dictationNote());
     if(overlay){
       overlay.style.setProperty("--voice-accent",accent||"var(--accent)");
       overlay.style.setProperty("--voice-accent-soft",accent?accent+"33":"var(--accent-soft)");
-      overlay.classList.toggle("cinema",(a&&a.voicePresence==="cinema")||(a&&a.animationStyle==="cinema"));
-      overlay.classList.toggle("companion-mode",a&&(a.voicePresence==="companion"||a.animationStyle==="companion"));
+      overlay.classList.toggle("cinema",!dictating&&((a&&a.voicePresence==="cinema")||(a&&a.animationStyle==="cinema")));
+      overlay.classList.toggle("companion-mode",!dictating&&a&&(a.voicePresence==="companion"||a.animationStyle==="companion"));
       overlay.setAttribute("data-voice-look",a?a.animationStyle:"face");
     }
     if(nameEl) nameEl.textContent=a?a.name:"Assistant";
     if(companion){
       companion.style.setProperty("--voice-accent",accent||"var(--accent)");
       applyCompanionFace(a);
-      var showCompanion=!!(collab.voice&&collab.voice.active&&a&&(a.voicePresence==="companion"||a.animationStyle==="companion"));
+      var showCompanion=!!(collab.voice&&collab.voice.active&&!dictating&&a&&(a.voicePresence==="companion"||a.animationStyle==="companion"));
       companion.hidden=!showCompanion;
       companion.classList.toggle("open",showCompanion);
       companion.setAttribute("aria-hidden",showCompanion?"false":"true");
@@ -8555,23 +9489,28 @@
     var micBtn=$("voiceOverlayMic");
     if(micBtn){ micBtn.innerHTML=ICON_STOPSQ; }
     paintVoiceMind();
+    syncDictationChrome();
   }
   function hideVoiceStage(){
     var overlay=$("voiceOverlay"), companion=$("voiceCompanion");
-    if(overlay){ overlay.classList.remove("open","cinema","companion-mode"); overlay.setAttribute("aria-hidden","true"); }
+    if(overlay){ overlay.classList.remove("open","cinema","companion-mode","dictation-mode"); overlay.setAttribute("aria-hidden","true"); }
     if(companion){ companion.hidden=true; companion.classList.remove("open"); companion.setAttribute("aria-hidden","true"); }
+    document.body.classList.remove("voice-dictating");
+    var label=$("dictationLiveLabel"); if(label) label.hidden=true;
     setVoiceLink("");
     markCompanionState("");
   }
   function showVoiceStage(){
     var agentItem=collabAgent(), a=agentItem?normalizeAgent(agentItem):null;
     var presence=a?a.voicePresence:"overlay";
-    if(presence==="panel"){ hideVoiceStage(); return; }
+    var dictating=!!dictationNote();
+    if(presence==="panel"&&!dictating){ hideVoiceStage(); return; }
     var overlay=$("voiceOverlay");
     if(overlay){ overlay.classList.add("open"); overlay.setAttribute("aria-hidden","false"); }
-    buildVoiceArt(a?a.animationStyle:"face",null,a);
+    if(!dictating) buildVoiceArt(a?a.animationStyle:"face",null,a);
     renderVoiceChrome();
     markCompanionState("listening");
+    if(dictating) setVoiceStatus("Dictating");
   }
 
   function listenSystemPrompt(agentItem){
@@ -8592,7 +9531,8 @@
       "- respond if they asked a question, addressed you by name with a request, said that's it / go / write that down, or clearly handed you work. That passes the turn to the conscious model.",
       "- Also respond to greetings and check-ins: hi, hey, what's going on, can you hear me, are you there.",
       "- Treat \""+a.name+"\", assistant, and hey you as names for this agent.",
-      "- dictate_only if they are only dumping raw notes and do not want a reply yet.",
+      "- dictate_only if they are only dumping raw notes and do not want a reply yet. Those words are already being typed into the open note.",
+      "- respond when they want a reply or an edit. An edit command is not note content; the note already holds the dictation.",
       "- Prefer keep_listening when unsure."
     ].join("\n");
   }
@@ -8628,7 +9568,7 @@
     var text=cleanText(utterance); if(!text) return session.buffer||"";
     if(!alreadyBuffered){
       session.buffer=session.buffer?session.buffer+"\n"+text:text;
-      appendTranscriptUtterance(text,session.buffer.split("\n").length>1);
+      if(commitLiveDictation(text)==="unavailable") appendTranscriptUtterance(text,session.buffer.split("\n").length>1);
     } else if(!session.buffer) session.buffer=text;
     setVoiceTranscriptPreview(session.buffer);
     return session.buffer;
@@ -8638,7 +9578,7 @@
     if(!session||!session.active||!agentItem||!decision) return;
     showListenDecision(decision);
     if(decision.action==="keep_listening"){
-      setVoiceStatus("Listening");
+      setVoiceStatus(dictationNote()?"Dictating":"Listening");
       markCompanionState("listening");
       if(session.pendingReview){
         var extra=session.pendingReview; session.pendingReview="";
@@ -8650,16 +9590,23 @@
     var buffered=session.buffer; session.buffer="";
     setVoiceTranscriptPreview(buffered);
     if(decision.action==="dictate_only"){
-      setVoiceStatus("Listening");
-      if(captureDictationIntoNote(buffered)) pushCollabNote("Captured into the note without a reply.");
-      else pushCollabNote("Dictation captured without a reply.");
+      var lifted=cleanText(session.dictation&&session.dictation.lifted);
+      if(lifted) commitLiveDictation(lifted,true);
+      if(session.dictation&&cleanText(session.dictation.committed||session.dictation.baseText)) collab.pendingDictation="";
+      setVoiceStatus(dictationNote()?"Dictating":"Listening");
+      markCompanionState("listening");
+      if(!(session.dictation&&cleanText(session.dictation.committed))){
+        if(captureDictationIntoNote(buffered)) pushCollabNote("Captured into the note without a reply.");
+        else pushCollabNote("Dictation captured without a reply.");
+      }
       return;
     }
     if(collab.busy){ collab.queuedUtterance=(collab.queuedUtterance?collab.queuedUtterance+"\n":"")+buffered; setVoiceStatus("One moment"); return; }
-    if(looksLikeGenerativeNoteRequest(buffered)||looksLikeNoteWriteRequest(buffered)||looksLikeNoteWriteQuestion(buffered)||looksLikeEditCapabilityQuestion(buffered)||looksLikeDirectNoteContent(buffered)){
+    var handed=voiceHandoffText(buffered,decision);
+    if(looksLikeGenerativeNoteRequest(handed)||looksLikeNoteWriteRequest(handed)||looksLikeNoteWriteQuestion(handed)||looksLikeEditCapabilityQuestion(handed)||looksLikeDirectNoteContent(handed)){
       agentTaskUpsertRunning(agentItem,"Work on the note",decision.reason,agentModelForRole(agentItem,"conscious"));
     }
-    handoffVoiceBuffer(decision.compressed||buffered,decision);
+    handoffVoiceBuffer(handed,decision);
   }
   function considerVoiceTurn(utterance,alreadyBuffered){
     var agentItem=collabAgent(); if(!agentItem||!collab.voice||!collab.voice.active) return;
@@ -8695,7 +9642,9 @@
     var agentItem=collabAgent(); if(!agentItem) return;
     var a=normalizeAgent(agentItem);
     var message=cleanText(text); if(!message||collab.busy){ if(message) collab.queuedUtterance=(collab.queuedUtterance?collab.queuedUtterance+"\n":"")+message; return; }
-    if(captureDictationIntoNote(message)) pushCollabNote("Added to the open note.");
+    var draft=collab.voice&&collab.voice.dictation;
+    if(draft&&cleanText(draft.committed||draft.baseText)) collab.pendingDictation="";
+    else if(captureDictationIntoNote(message)) pushCollabNote("Added to the open note.");
     startCollabSession();
     pushCollabMessage("user",message);
     runCollabTurn({
@@ -8811,6 +9760,7 @@
       session.live.partial=mergeLiveTranscript(session.live.partial,piece);
       session.live.utterance=session.live.partial;
       setVoiceTranscriptPreview((session.buffer?session.buffer+"\n":"")+session.live.partial);
+      previewLiveDictation(session.live.partial);
     }
     var parts=sc.modelTurn&&sc.modelTurn.parts||[];
     parts.forEach(function(part){ if(part&&part.text&&!part.thought) session.live.reply=(session.live.reply||"")+part.text; });
@@ -8907,12 +9857,13 @@
       }
     }
     setVoiceLink("");
-    setVoiceStatus("Listening");
+    setVoiceStatus(dictationNote()?"Dictating":"Listening");
   }
 
   function stopVoiceSession(){
     var session=collab.voice;
     if(!session) return;
+    sealLiveDictation();
     session.active=false;
     if(session.raf) cancelAnimationFrame(session.raf);
     if(session.silenceTimer) clearTimeout(session.silenceTimer);
@@ -8926,6 +9877,7 @@
     collab.recorder=null; collab.recorderStream=null; collab.recorderStop=false;
     hideVoiceStage();
     updateCollabControls();
+    updateCollabButton();
     setCollabStatus("");
   }
   function voiceLevelFromAnalyser(analyser){
@@ -9027,6 +9979,7 @@
         if(collab.voice.live&&collab.voice.live.ready) ingestVoiceUtterance(finalText,false);
         else considerVoiceTurn(finalText,false);
       }
+      if(collab.voice&&collab.voice.active) previewLiveDictation(interim);
     };
     rec.onerror=function(event){ if(event&&event.error==="not-allowed") setVoiceStatus("Microphone permission was blocked",true); };
     rec.onend=function(){ if(collab.voice&&collab.voice.active){ try{ rec.start(); }catch(e){} } };
@@ -9061,6 +10014,7 @@
     if(activeAudioRecorder){ setCollabStatus("Finish the audio recording first.",true); return; }
     if(!navigator.mediaDevices||!navigator.mediaDevices.getUserMedia){ setCollabStatus("This browser can’t record audio.",true); return; }
     if(!hasThinkingAccess()&&!hasVoiceAccess()){ setCollabStatus("Buy AI credits or add a key in Settings first.",true); return; }
+    bindVoiceToOpenNote();
     startCollabSession();
     setCollabStatus("Waiting for the microphone…");
     navigator.mediaDevices.getUserMedia({audio:{echoCancellation:true,noiseSuppression:true,autoGainControl:true}}).then(function(stream){
@@ -9078,14 +10032,18 @@
       startVoiceAnalyserLoop();
       updateCollabControls();
       var agentItem=collabAgent(), a=agentItem?normalizeAgent(agentItem):null;
-      maybeGenerateContextGreeting(true);
+      var dictating=!!dictationNote();
+      if(dictating){
+        setVoiceStatus("Dictating");
+        if(collab.open) closeCollabPanel({keepVoice:true});
+      } else maybeGenerateContextGreeting(true);
       var wantLive=!!(a&&a.liveListen&&runtimeApiKeys.gemini&&!usingHostedAi()&&collab.voice.audioContext&&typeof collab.voice.audioContext.createScriptProcessor==="function");
       if(wantLive){
-        setVoiceStatus("Connecting…");
+        setVoiceStatus(dictating?"Dictating":"Connecting…");
         setVoiceLink("");
         connectGeminiLive(collab.voice,agentItem).then(function(ok){
           if(!collab.voice||!collab.voice.active) return;
-          if(ok) setVoiceStatus("Listening");
+          if(ok) setVoiceStatus(dictationNote()?"Dictating":"Listening");
           else startBrowserListen(collab.voice);
         });
       } else startBrowserListen(collab.voice);
@@ -9335,7 +10293,7 @@
     var mic=document.createElement("button"); mic.type="button"; mic.className="mic"; mic.innerHTML=ICON_MIC;
     mic.onclick=function(){ toggleCollabMic(); };
     var input=document.createElement("textarea"); input.rows=1; input.value=collab.draft||"";
-    input.placeholder="Ask, or tap the mic and talk…";
+    input.placeholder=doc?"Dictate into the note, or ask for an edit…":"Ask, or tap the mic and talk…";
     input.oninput=function(){ collab.draft=input.value; input.style.height="auto"; input.style.height=Math.min(132,input.scrollHeight)+"px"; updateCollabControls(); };
     input.onkeydown=function(event){
       if(event.key==="Enter"&&!event.shiftKey){ event.preventDefault(); submit(); }
@@ -9372,7 +10330,15 @@
   }
   function updateCollabButton(){
     var button=$("agentMicBtn");
-    if(button) button.classList.toggle("on",collab.open||!!(collab.voice&&collab.voice.active));
+    if(!button) return;
+    var live=!!(collab.voice&&collab.voice.active);
+    var dictating=live&&!!dictationNote();
+    button.classList.toggle("on",collab.open||live);
+    button.classList.toggle("dictating",dictating);
+    button.innerHTML=live?ICON_STOPSQ:ICON_MIC;
+    var label=dictating?"Stop dictating":live?"Stop listening":"Dictate into the open note, or talk to your assistant";
+    button.title=label;
+    button.setAttribute("aria-label",label);
   }
   function openCollabAgentPicker(anchor){
     ensureBuiltinAgent();
@@ -9419,10 +10385,11 @@
     if(input&&!opts.listen) setTimeout(function(){ input.focus(); },260);
     if(opts.listen) setTimeout(function(){ toggleCollabMic(); },260);
   }
-  function closeCollabPanel(){
+  function closeCollabPanel(opts){
+    opts=opts||{};
     var panel=$("collabPanel");
     var a=collabAgent()?normalizeAgent(collabAgent()):null;
-    var keepVoice=collab.voice&&collab.voice.active&&a&&a.voicePresence!=="panel";
+    var keepVoice=!!opts.keepVoice||(collab.voice&&collab.voice.active&&a&&a.voicePresence!=="panel");
     if(!keepVoice){ stopVoiceSession(); stopCollabRecording(); stopCollabSpeech(); }
     collab.open=false;
     if(panel){ panel.classList.remove("open"); panel.setAttribute("aria-hidden","true"); }
@@ -9499,7 +10466,7 @@
   };
   function createItem(it){
     if(activeAudioRecorder){ showToast("Finish the current recording before creating another item",true); return; }
-    state.items.unshift(it); state.currentId=it.id; exitSidebarFocus(); app.classList.remove("open");
+    state.items.unshift(it); revealItem(it.id); exitSidebarFocus(); app.classList.remove("open");
     /* Flagged only for the render that follows, so the new row gets its accent
        flash once instead of on every later re-render. */
     justAddedId=it.id; clearTimeout(justAddedTimer); justAddedTimer=setTimeout(function(){ justAddedId=null; },700);
@@ -9520,7 +10487,7 @@
       var t=document.createElement("div"); t.className="mtitle"; t.textContent="New tag"; m.appendChild(t);
       var row=document.createElement("div"); row.className="mrow";
       var inp=document.createElement("input"); inp.placeholder="Tag name…";
-      inp.onkeydown=function(e){ if(e.key==="Enter"&&inp.value.trim()){ state.tags.push({id:uid(),name:inp.value.trim().replace(/^#+/,""),hue:0,color:"#000000"}); rememberTagOrder(); closeMenu(); persist(); renderTags(); showToast("Tag created"); } };
+      inp.onkeydown=function(e){ if(e.key==="Enter"&&inp.value.trim()){ state.tags.push({id:uid(),name:inp.value.trim().replace(/^#+/,""),hue:0,color:"#000000"}); rememberTagOrder(); closeMenu(); persist(); renderTags(); if(viewingHome) renderMain(); showToast("Tag created"); } };
       row.appendChild(inp); m.appendChild(row);
     });
   };
@@ -9595,6 +10562,8 @@
     app.classList.remove("sidebar-collapsed");
     app.classList.toggle("open",open);
   }
+  if($("homeBtn")) $("homeBtn").onclick=function(){ showHome(); };
+  if($("homeBrand")) $("homeBrand").onclick=function(){ showHome(); };
   menuBtn.onclick=function(){
     if(usesOverlaySidebar()) setOverlaySidebarOpen(!app.classList.contains("open"));
     else {
@@ -9623,7 +10592,7 @@
   document.addEventListener("touchcancel",function(){ sidebarSwipeStart=null; },{passive:true});
   document.addEventListener("keydown",function(e){
     if(!currentUser) return;
-    if((e.metaKey||e.ctrlKey)&&e.key==="Enter"){ e.preventDefault(); $("copyAll").click(); }
+    if((e.metaKey||e.ctrlKey)&&e.key==="Enter"){ e.preventDefault(); if(!viewingHome) $("copyAll").click(); }
     if(e.key==="Escape"){ stopVoiceSession(); closeMenu(); $("settingsModal").classList.remove("open"); }
   });
   document.addEventListener("paste", function(event){
@@ -9651,7 +10620,7 @@
         state.items=inc.concat(state.items);
         if(d.folders) state.folders=state.folders.concat(d.folders.map(function(f){ return {id:uid(),name:f.name}; }));
         if(d.tags) state.tags=state.tags.concat(d.tags.map(function(t){ return {id:uid(),name:t.name,hue:t.hue||265}; }));
-        state.currentId=inc[0].id; persist(); renderAll(); showToast("Imported "+inc.length+" item"+(inc.length===1?"":"s"));
+        revealItem(inc[0].id); persist(); renderAll(); showToast("Imported "+inc.length+" item"+(inc.length===1?"":"s"));
       }catch(err){ showToast("That file couldn’t be read",true); }
     };
     r.readAsText(file);
@@ -10010,6 +10979,12 @@
     }
   }
   function refreshOpenItemFromLive(item){
+    if(viewingHome){
+      renderList();
+      var active=document.activeElement;
+      if(!(active&&active.classList&&active.classList.contains("home-capture-input"))) renderMain();
+      return;
+    }
     if(!item){ renderList(); return; }
     renderList();
     if(item.id!==state.currentId) return;
@@ -10207,9 +11182,11 @@
       state.tagGroups=sanitizeTagGroups(state.tagGroups, state.tags);
       rememberTagOrder();
       var tagLayoutChanged=tagLayoutSignature(state)!==layoutBefore;
+      if(prefs) applyHomePreferences(prefs);
       persistLocalStateQuietly();
       if(tagLayoutChanged) renderTags();
       if(added||changedCurrent) refreshOpenItemFromLive(current());
+      else if(viewingHome) renderMain();
       else renderList();
       startSharedEditListeners();
       if(writeBack){ state.pendingCloudSync=true; saveCloud(1); }
@@ -11012,6 +11989,7 @@
     if(Array.isArray(prefs.tagOrder)) state.tags=applyTagOrder(state.tags, prefs.tagOrder);
     state.tagGroups=sanitizeTagGroups(state.tagGroups, state.tags);
     rememberTagOrder();
+    applyHomePreferences(prefs);
     if(prefs.agentSettings&&typeof prefs.agentSettings==="object"){
       var incoming=prefs.agentSettings, local=agentSettings();
       ["defaultAgentId","activeAgentId"].forEach(function(key){ if(typeof incoming[key]==="string") local[key]=incoming[key]; });
@@ -11325,7 +12303,7 @@
       deletedItems:pruneTombstones(data.deletedItems||{}),
       version:Number(data.version)||1,
       versionChangedAt:Number(data.versionChangedAt)||sentAt,
-      preferences:{theme:state.theme,motion:state.motion,darkness:state.darkness,enabledTypes:state.enabledTypes,typeDefaults:state.typeDefaults,noteInsertOptions:state.noteInsertOptions,tagsCollapsed:state.tagsCollapsed,typesCollapsed:state.typesCollapsed,allNotesCollapsed:state.allNotesCollapsed,focusNoteBody:state.focusNoteBody,quickAiHandoff:state.quickAiHandoff,allNotesName:state.allNotesName,readChapterNames:state.readChapterNames,listSort:state.listSort,tagGroups:state.tagGroups||[],tagOrder:state.tagOrder||[],agentSettings:agentSettings()},
+      preferences:{theme:state.theme,motion:state.motion,darkness:state.darkness,enabledTypes:state.enabledTypes,typeDefaults:state.typeDefaults,noteInsertOptions:state.noteInsertOptions,tagsCollapsed:state.tagsCollapsed,typesCollapsed:state.typesCollapsed,allNotesCollapsed:state.allNotesCollapsed,focusNoteBody:state.focusNoteBody,quickAiHandoff:state.quickAiHandoff,allNotesName:state.allNotesName,readChapterNames:state.readChapterNames,listSort:state.listSort,tagGroups:state.tagGroups||[],tagOrder:state.tagOrder||[],homeLayout:normalizeHomeLayout(state.homeLayout),homeExtrasVersion:state.homeExtrasVersion||0,homeScratch:state.homeScratch||"",agentSettings:agentSettings()},
       theme:state.theme,
       motion:state.motion,
       updated:sentAt
@@ -11452,8 +12430,17 @@
     }
     var mic=document.createElement("button"); mic.className="sbtn icon-sbtn agent-mic"; mic.id="agentMicBtn"; mic.type="button";
     mic.innerHTML=ICON_MIC;
-    mic.title="Talk to your AI collaborator"; mic.setAttribute("aria-label","Talk to your AI collaborator");
-    mic.onclick=function(){ toggleCollabPanel(); };
+    mic.title="Dictate into the open note, or talk to your assistant"; mic.setAttribute("aria-label",mic.title);
+    mic.onclick=function(){
+      if(collab.voice&&collab.voice.active){ stopVoiceSession(); return; }
+      var note=current();
+      if(!(typeof viewingHome!=="undefined"&&viewingHome)&&note&&note.type==="note"&&!note.locked){
+        bindVoiceToOpenNote();
+        startVoiceSession();
+        return;
+      }
+      toggleCollabPanel();
+    };
     dfoot.appendChild(mic);
     var upcoming=document.createElement("button"); upcoming.className="sbtn icon-sbtn upcoming-button"; upcoming.id="upcomingBtn"; upcoming.type="button"; upcoming.innerHTML=ICON_CALENDAR; upcoming.title="Upcoming todos"; upcoming.setAttribute("aria-label","Upcoming todos");
     upcoming.onclick=function(){ setSidebarView(state.sidebarView==="upcoming"?"all":"upcoming"); };
@@ -11784,7 +12771,7 @@
         var small=document.createElement("small"); small.textContent=formatTokenCount(a.stats.tokens)+" tokens · "+agentStatLabel(a.stats.calls)+" calls · "+agentMindSummary(a);
         copy.appendChild(small);
         var open=document.createElement("button"); open.type="button"; open.className="b2"; open.textContent="Edit";
-        open.onclick=function(){ state.currentId=item.id; normalizeAgent(item).tab="edit"; $("settingsModal").classList.remove("open"); persist(); renderAll(); };
+        open.onclick=function(){ revealItem(item.id); normalizeAgent(item).tab="edit"; $("settingsModal").classList.remove("open"); persist(); renderAll(); };
         row.appendChild(copy); row.appendChild(open); per.appendChild(row);
       });
     }
