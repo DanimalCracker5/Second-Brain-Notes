@@ -36,7 +36,9 @@ vm.createContext(sandbox);
 [
   ["hasContent", "unlinkedDeviceItems"],
   ["itemRevision", "notesMissingFrom"],
+  ["mergeDeletedTags", "mergeCloudWithBackup"],
   ["mergeCloudWithBackup", "recoverCloudAccount"],
+  ["tagNameDeleted", "sanitizeTagGroups"],
   ["accountPreferences", "applyAccountPreferences"]
 ].forEach(function (pair) {
   vm.runInContext(grab(pair[0], pair[1]), sandbox, { filename: pair[0] });
@@ -80,6 +82,51 @@ test("mergeCloudWithBackup restores missing owner notes onto an emptied live acc
   assert.ok(merged.items.every(function (item) { return item.id !== "seed"; }));
   assert.equal(merged.tags[0].name, "work");
   assert.ok(merged.version > 4);
+});
+
+test("mergeTagLists keeps tags from either side and drops ones that were deleted", function () {
+  const merged = sandbox.mergeTagLists(
+    [{ id: "t1", name: "work" }, { id: "t2", name: "home" }],
+    [{ id: "t2", name: "home" }, { id: "t3", name: "later" }],
+    { t1: { deletedAt: 10, name: "work" } }
+  );
+  assert.deepEqual(merged.map(function (tag) { return tag.id; }), ["t2", "t3"]);
+});
+
+test("mergeCloudWithBackup does not revive a deleted tag", function () {
+  const live = {
+    items: [untitled("seed")],
+    folders: [],
+    tags: [],
+    deletedItems: {},
+    deletedTags: { t1: { deletedAt: 20, name: "work" } },
+    version: 4
+  };
+  const backup = {
+    items: [note("n1", "Meeting")],
+    folders: [],
+    tags: [{ id: "t1", name: "work" }, { id: "t2", name: "home" }],
+    version: 3
+  };
+  const merged = sandbox.mergeCloudWithBackup(live, backup);
+  assert.deepEqual(merged.tags.map(function (tag) { return tag.id; }), ["t2"]);
+  assert.equal(merged.deletedTags.t1.name, "work");
+});
+
+test("a deleted folder name is not minted again when old folders sync back", function () {
+  sandbox.uid = function () { return "resurrected"; };
+  sandbox.TAG_HUES = [265];
+  const data = {
+    folders: [{ id: "f1", name: "work" }],
+    tags: [],
+    items: [{ id: "n1", folderId: "f1", tagIds: [] }],
+    deletedTags: { t1: { deletedAt: 5, name: "work" } }
+  };
+  sandbox.migrateFoldersToTags(data);
+  assert.deepEqual(data.tags, []);
+  assert.deepEqual(data.folders, []);
+  assert.deepEqual(data.items[0].tagIds, []);
+  assert.equal(data.items[0].folderId, undefined);
 });
 
 test("mergeCloudWithBackup does not revive tombstoned notes", function () {
