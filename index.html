@@ -180,8 +180,18 @@
   .note-comment small{ display:block; margin-bottom:4px; color:var(--accent); font:500 .6rem "DM Mono",monospace; letter-spacing:.15em; }
   .note-comment textarea{ width:100%; min-height:34px; border:0; outline:none; resize:none; color:inherit; background:transparent; text-align:center; font:italic .94rem/1.55 "DM Sans",sans-serif; }
   .note-prompt{ display:grid; gap:9px; margin:12px 0; padding:13px; border:1px solid var(--accent-line); border-radius:14px; background:linear-gradient(135deg,var(--accent-soft),rgba(255,255,255,.025)); }
-  .note-prompt-head{ display:flex; align-items:center; justify-content:space-between; gap:10px; } .note-prompt-head b{ color:var(--accent); font-size:.78rem; } .note-prompt-head button{ border:1px solid var(--line); border-radius:7px; padding:5px 8px; color:var(--ink-dim); background:rgba(0,0,0,.15); cursor:pointer; font:600 .68rem "DM Sans",sans-serif; }
+  .note-prompt-head{ display:flex; align-items:center; justify-content:space-between; gap:10px; } .note-prompt-head b{ color:var(--accent); font-size:.78rem; letter-spacing:.08em; }
+  .note-prompt-actions{ display:flex; align-items:center; justify-content:flex-end; gap:6px; flex-wrap:wrap; }
+  .note-prompt-head button{ border:1px solid var(--line); border-radius:7px; padding:5px 8px; color:var(--ink-dim); background:rgba(0,0,0,.15); cursor:pointer; font:600 .68rem "DM Sans",sans-serif; }
+  .note-prompt-head button:hover{ color:var(--ink); border-color:var(--accent-line); }
+  .note-prompt-head button:disabled{ opacity:.55; cursor:default; }
+  .note-prompt-head .prompt-status-btn{ color:var(--accent); border-color:var(--accent-line); background:var(--accent-soft); white-space:nowrap; }
+  .note-prompt-head .prompt-status-btn[hidden]{ display:none; }
   .note-prompt textarea{ width:100%; min-height:108px; border:0; outline:none; resize:vertical; color:var(--ink); background:transparent; font:.9rem/1.6 "DM Mono",monospace; }
+  .prompt-questions{ display:grid; gap:14px; margin:6px 0 16px; }
+  .prompt-questions label{ display:grid; gap:6px; color:var(--ink); font-size:.92rem; line-height:1.45; }
+  .prompt-questions textarea{ width:100%; min-height:76px; padding:10px 12px; border:1px solid var(--line); border-radius:12px; outline:none; resize:vertical; color:var(--ink); background:rgba(255,255,255,.04); font:.9rem/1.5 "DM Sans",sans-serif; }
+  .prompt-questions textarea:focus{ border-color:var(--accent-line); box-shadow:0 0 0 3px var(--accent-soft); }
   .note-group{ margin:12px 0; overflow:hidden; border:1px solid var(--line); border-radius:14px; background:rgba(255,255,255,.022); }
   .note-group summary{ display:flex; align-items:center; gap:9px; padding:11px 12px; color:var(--ink); cursor:pointer; list-style:none; font-size:.86rem; font-weight:600; } .note-group summary::-webkit-details-marker{ display:none; }
   .note-group summary::before{ content:"›"; color:var(--accent); font-size:1.2rem; transition:transform .16s; } .note-group[open] summary::before{ transform:rotate(90deg); }
@@ -468,6 +478,18 @@
   .tagcloud{ display:grid; gap:2px; padding:2px 10px 10px; }
   .typecloud{ display:grid; gap:2px; padding:2px 10px 10px; }
   .typecloud.is-collapsed{ display:none; }
+  #promptsSection[hidden],#promptsHub[hidden]{ display:none !important; }
+  #promptsHub.is-collapsed{ display:none; }
+  .prompt-status-h{ padding-top:2px; padding-bottom:2px; }
+  .prompt-status-count{ min-width:19px; padding:2px 6px; border-radius:6px; color:var(--ink-faint); background:rgba(255,255,255,.055); font:500 .58rem "DM Mono",monospace; text-align:center; }
+  .prompt-status-body{ display:grid; gap:2px; padding:0 10px 8px; }
+  .prompt-status-body.is-collapsed{ display:none; }
+  .prompt-hub-note{ display:grid; gap:2px; width:100%; padding:8px 10px; border:1px solid transparent; border-radius:10px; color:var(--ink-dim); background:transparent; cursor:pointer; text-align:left; font:inherit; }
+  .prompt-hub-note:hover,.prompt-hub-note.active{ color:var(--ink); border-color:var(--line); background:rgba(255,255,255,.05); }
+  .prompt-hub-note.active{ color:var(--accent); border-color:var(--accent-line); background:var(--accent-soft); }
+  .prompt-hub-note b{ font:600 .8rem "DM Sans",sans-serif; letter-spacing:-.01em; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+  .prompt-hub-note small{ color:var(--ink-faint); font:400 .7rem/1.35 "DM Sans",sans-serif; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+  .prompt-hub-note.active small{ color:var(--accent); opacity:.8; }
   .type-filter{ display:flex; align-items:center; gap:8px; width:100%; min-height:31px; padding:0 9px; border:1px solid transparent; border-radius:9px; color:var(--ink-dim); background:transparent; cursor:pointer; font:600 .79rem "DM Sans",sans-serif; text-align:left; }
   .type-filter:hover,.type-filter.active{ color:var(--ink); border-color:var(--line); background:rgba(255,255,255,.05); }
   .type-filter.active{ color:var(--accent); border-color:var(--accent-line); background:var(--accent-soft); }
@@ -1503,6 +1525,8 @@
       <div id="tagGroups"></div>
       <div class="sec-h"><button class="section-toggle" id="typesToggleBtn" type="button" aria-controls="types" aria-expanded="true" title="Collapse types"><span>Types</span><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m6 9 6 6 6-6"/></svg></button></div>
       <div class="typecloud" id="types"></div>
+      <div class="sec-h" id="promptsSection" hidden><button class="section-toggle" id="promptsToggleBtn" type="button" aria-controls="promptsHub" aria-expanded="true" title="Collapse prompts"><span>Prompts</span><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m6 9 6 6 6-6"/></svg></button></div>
+      <div id="promptsHub" hidden></div>
       <div class="sec-h"><button class="section-toggle" id="notesToggleBtn" type="button" aria-controls="notesListWrap" aria-expanded="true" title="Collapse notes"><span id="listLabel">All notes</span><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m6 9 6 6 6-6"/></svg></button><div class="list-tools"><button id="selectNotesBtn" title="Select notes" aria-label="Select notes">✓</button><button id="deleteNotesBtn" class="bulk-delete" type="button" hidden title="Delete selected notes" aria-label="Delete selected notes"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 6h18M8 6V4h8v2M19 6l-1 14H6L5 6"/></svg></button><button id="listToolsBtn" title="Filter and sort" aria-label="Filter and sort notes">⇅</button></div></div>
       <div id="notesListWrap"><div class="d-list" id="list"></div></div>
     </div>
@@ -1558,6 +1582,7 @@
 <div class="modal" id="syncConflictModal" role="dialog" aria-modal="true" aria-labelledby="syncConflictTitle"><div class="modal-box" id="syncConflictBox"></div></div>
 <div class="modal" id="accountMergeModal" role="dialog" aria-modal="true" aria-labelledby="accountMergeTitle"><div class="modal-box" id="accountMergeBox"></div></div>
 <div class="modal" id="documentBackupModal" role="dialog" aria-modal="true" aria-labelledby="documentBackupTitle"><div class="modal-box" id="documentBackupBox"></div></div>
+<div class="modal" id="promptQuestionsModal" role="dialog" aria-modal="true" aria-labelledby="promptQuestionsTitle"><div class="modal-box" id="promptQuestionsBox"></div></div>
 
 <!--
   AI collaborator dock. The header is static; the conversation below it is
@@ -1660,7 +1685,7 @@
   var liveClientId="d"+Math.random().toString(36).slice(2,10)+Date.now().toString(36);
   var applyingRemoteCloud=false, applyingLiveNote=false, cloudLiveReady=false, lastPersistChangedIds=[], lastCloudWriteSentAt=0, lastAppliedLiveFingerprint="", lastAppliedCloudUpdated=0, pendingRemoteAccount=null, watchedLiveNoteId="", liveNoteUnsub=null, liveNotePushTimers={}, liveNotePendingSince={}, lastLiveWrite={}, sharedEditUnsubs={};
   var DEFAULT_ELEVENLABS_VOICE="21m00Tcm4TlvDq8ikWAM", CUSTOM_VOICE_OPTION="__elevenlabs_voice_id__", APP_VOICE_OPTION="__app_voice__";
-  var runtimeApiKeys={openai:"",gemini:"",elevenlabs:"",elevenlabsVoice:DEFAULT_ELEVENLABS_VOICE,savedVoices:[],audio:null,audioUrl:null,ttsControl:null,ttsRequestId:0};
+  var runtimeApiKeys={openai:"",gemini:"",elevenlabs:"",openrouter:"",openrouterModel:"",elevenlabsVoice:DEFAULT_ELEVENLABS_VOICE,savedVoices:[],audio:null,audioUrl:null,ttsControl:null,ttsRequestId:0};
   var llmRoute="hosted";
   var hostedBilling={status:"idle",balanceMicros:0,reservedMicros:0,lifetimePaidMicros:0,lifetimeBilledMicros:0,lifetimeProviderMicros:0,providerBudgetMicros:0,events:[],packs:[],markup:5};
   var hostedBillingUnsub=null;
@@ -1722,7 +1747,7 @@
   }
   function loadLocal(){ var v=readKey(KEY); if(v&&v.items) return v; if(!canPersist&&mem) return mem; return migrate(); }
   function setSaveState(label,kind){ var el=$("saveState"); if(!el) return; el.textContent=label; el.className="save-state"+(kind?" "+kind:""); }
-  function backupPayload(){ return { app:"second-brain", version:16, items:state.items, folders:state.folders, tags:state.tags, deletedItems:state.deletedItems||{}, preferences:{theme:state.theme,motion:state.motion,darkness:state.darkness,enabledTypes:state.enabledTypes,typeDefaults:state.typeDefaults,noteInsertOptions:state.noteInsertOptions,tagsCollapsed:state.tagsCollapsed,typesCollapsed:state.typesCollapsed,allNotesCollapsed:state.allNotesCollapsed,focusNoteBody:state.focusNoteBody,quickAiHandoff:state.quickAiHandoff,allNotesName:state.allNotesName,readChapterNames:state.readChapterNames,listSort:state.listSort,tagGroups:state.tagGroups||[],tagOrder:state.tagOrder||[],homeLayout:normalizeHomeLayout(state.homeLayout),homeExtrasVersion:state.homeExtrasVersion||0,homeScratch:state.homeScratch||"",agentSettings:agentSettings()}, created:Date.now() }; }
+  function backupPayload(){ return { app:"second-brain", version:16, items:state.items, folders:state.folders, tags:state.tags, deletedItems:state.deletedItems||{}, preferences:{theme:state.theme,motion:state.motion,darkness:state.darkness,enabledTypes:state.enabledTypes,typeDefaults:state.typeDefaults,noteInsertOptions:state.noteInsertOptions,tagsCollapsed:state.tagsCollapsed,typesCollapsed:state.typesCollapsed,allNotesCollapsed:state.allNotesCollapsed,promptsCollapsed:!!state.promptsCollapsed,promptStatusCollapsed:sanitizePromptStatusCollapsed(state.promptStatusCollapsed),focusNoteBody:state.focusNoteBody,quickAiHandoff:state.quickAiHandoff,allNotesName:state.allNotesName,readChapterNames:state.readChapterNames,listSort:state.listSort,tagGroups:state.tagGroups||[],tagOrder:state.tagOrder||[],homeLayout:normalizeHomeLayout(state.homeLayout),homeExtrasVersion:state.homeExtrasVersion||0,homeScratch:state.homeScratch||"",agentSettings:agentSettings()}, created:Date.now() }; }
   function autoBackups(){ return deviceBackups; }
   function backupSnapshot(data){
     try{ return JSON.parse(JSON.stringify(data)); }catch(e){ console.warn("Backup snapshot could not be copied:",e); return data; }
@@ -1993,6 +2018,104 @@
       return false;
     });
   }
+  /* Prompt stages. A prompt with no text has no status, so the sidebar hub
+     only lists a stage when some note actually has a prompt sitting there. */
+  function promptStatuses(){
+    return [
+      {id:"brainstorming",label:"Brainstorming"},
+      {id:"draft",label:"Draft"},
+      {id:"ready",label:"Ready To Run"},
+      {id:"attempted",label:"Attempted"},
+      {id:"complete",label:"Complete"}
+    ];
+  }
+  function normalizePromptStatus(value){
+    var text=cleanText(value).toLowerCase().replace(/[_-]+/g," ").replace(/\s+/g," ");
+    if(text==="brainstorm"||text==="brainstorming") return "brainstorming";
+    if(text==="draft") return "draft";
+    if(text==="ready"||text==="ready to run") return "ready";
+    if(text==="attempted"||text==="attempt") return "attempted";
+    if(text==="complete"||text==="completed"||text==="done") return "complete";
+    return "";
+  }
+  function promptStatusLabel(id){
+    var match=promptStatuses().filter(function(status){ return status.id===id; })[0];
+    return match?match.label:"Draft";
+  }
+  function effectivePromptStatus(block){
+    return normalizePromptStatus(block&&block.status)||"draft";
+  }
+  function sanitizePromptStatusCollapsed(value){
+    var clean={};
+    promptStatuses().forEach(function(status){ if(value&&value[status.id]===true) clean[status.id]=true; });
+    return clean;
+  }
+  function promptPreview(text){
+    var line=cleanText(text).replace(/\s+/g," ");
+    if(line.length>88) return line.slice(0,87).trim()+"…";
+    return line;
+  }
+  function promptReading(item, block){
+    var shown=block;
+    if(block&&block.brainstorm===true&&!(item&&item.brainstorming===true)){
+      if(!block.approved||typeof block.approved!=="object") return null;
+      shown={};
+      Object.keys(block).forEach(function(key){ shown[key]=block[key]; });
+      Object.keys(block.approved).forEach(function(key){ shown[key]=block.approved[key]; });
+    }
+    if(!shown||shown.type!=="prompt"||!cleanText(shown.text)) return null;
+    return shown;
+  }
+  function collectItemPrompts(item, into){
+    function take(blocks){
+      (blocks||[]).forEach(function(block){
+        var shown=promptReading(item, block);
+        if(!shown||!block) return;
+        into.push({
+          itemId:item.id,
+          blockId:block.id,
+          title:cleanText(item.title)||"Untitled note",
+          preview:promptPreview(shown.text),
+          status:effectivePromptStatus(shown),
+          updated:Number(item.updated)||0
+        });
+      });
+    }
+    if(!item) return;
+    take(item.blocks);
+    (item.todos||[]).forEach(function(task){ take(task&&task.blocks); });
+  }
+  function promptHubGroups(items){
+    var entries=[];
+    (items||[]).forEach(function(item){ collectItemPrompts(item, entries); });
+    return promptStatuses().map(function(status){
+      var prompts=entries.filter(function(entry){ return entry.status===status.id; });
+      prompts.sort(function(a,b){ return b.updated-a.updated||String(a.title).localeCompare(String(b.title)); });
+      return {id:status.id, label:status.label, prompts:prompts};
+    }).filter(function(group){ return group.prompts.length; });
+  }
+  function parsePromptWriterReply(raw){
+    var text=String(raw||"").trim();
+    var fenced=text.match(/```(?:json)?\s*([\s\S]*?)```/i);
+    if(fenced) text=fenced[1].trim();
+    var start=text.indexOf("{"), end=text.lastIndexOf("}");
+    if(start<0||end<=start) return null;
+    var data=null;
+    try{ data=JSON.parse(text.slice(start, end+1)); }catch(e){ return null; }
+    if(!data||typeof data!=="object"||Array.isArray(data)) return null;
+    var questions=[], list=Array.isArray(data.questions)?data.questions:(Array.isArray(data.question)?data.question:[]);
+    list.forEach(function(entry){
+      var value="";
+      if(typeof entry==="string") value=entry;
+      else if(entry&&typeof entry==="object") value=entry.text||entry.question||entry.ask||"";
+      value=cleanText(String(value));
+      if(value&&questions.indexOf(value)<0) questions.push(value);
+    });
+    var prompt="";
+    if(typeof data.prompt==="string") prompt=data.prompt.trim();
+    else if(typeof data.text==="string") prompt=data.text.trim();
+    return {questions:questions.slice(0,6), prompt:prompt};
+  }
   function ensureNoteBlocks(note){
     if(!note||typeof note!=="object") return;
     var recoveredSections=serializedScriptSectionsForNote(note);
@@ -2019,7 +2142,13 @@
         if(block.type==="attachment"&&typeof block.width!=="number") block.width=100;
         if(block.type==="heading"){ if(typeof block.text!=="string") block.text=""; block.level=Math.max(1,Math.min(3,Number(block.level)||2)); }
         if(block.type==="chapter"){ if(typeof block.title!=="string") block.title=""; if(typeof block.text!=="string") block.text=""; block.html=sanitizeRichHtml(typeof block.html==="string"?block.html:escapeHtml(block.text).replace(/\n/g,"<br>")); block.text=richTextToPlain(block.html); }
-        if(block.type==="comment"||block.type==="prompt"){ if(typeof block.text!=="string") block.text=""; }
+        if(block.type==="comment"||block.type==="prompt"){
+          if(typeof block.text!=="string") block.text="";
+          if(block.type==="prompt"){
+            var promptStatus=normalizePromptStatus(block.status);
+            if(promptStatus) block.status=promptStatus; else delete block.status;
+          }
+        }
         if(block.type==="group"){ if(typeof block.title!=="string") block.title="Untitled group"; if(typeof block.text!=="string") block.text=""; if(typeof block.collapsed!=="boolean") block.collapsed=false; }
         if(block.type==="checklist") normalizeChecklistBlock(block);
         if(block.type==="code"){ if(typeof block.language!=="string") block.language="javascript"; if(typeof block.code!=="string") block.code=""; }
@@ -2228,6 +2357,8 @@
   if(typeof state.tagsCollapsed!=="boolean") state.tagsCollapsed=false;
   if(typeof state.typesCollapsed!=="boolean") state.typesCollapsed=false;
   if(typeof state.allNotesCollapsed!=="boolean") state.allNotesCollapsed=false;
+  if(typeof state.promptsCollapsed!=="boolean") state.promptsCollapsed=false;
+  state.promptStatusCollapsed=sanitizePromptStatusCollapsed(state.promptStatusCollapsed);
   if(typeof state.focusNoteBody!=="boolean") state.focusNoteBody=true;
   if(typeof state.quickAiHandoff!=="boolean") state.quickAiHandoff=true;
   state.filterType=typeof state.filterType==="string"?state.filterType:"";
@@ -2264,7 +2395,7 @@
   if(ensureHomeExtras()) persistLocalStateQuietly();
 
   function blankDeviceState(){
-    return {items:[],folders:[],tags:[],tagGroups:[],tagOrder:[],deletedItems:{},currentId:null,motion:true,theme:"nebula",darkness:82,enabledTypes:defaultEnabledTypes(),typeDefaults:TYPE_DEFAULTS_VERSION,noteInsertOptions:{file:true,paragraph:true,checklist:true,comment:true,prompt:true,heading:true,chapter:true,group:true,code:true},tagsCollapsed:false,typesCollapsed:false,allNotesCollapsed:false,focusNoteBody:true,quickAiHandoff:true,allNotesName:"All notes",readChapterNames:false,filterTag:null,filterType:"",sidebarView:"all",tagAssignMode:false,noteSearch:"",listSort:"updated",upcomingSort:"due",upcomingFilter:{range:"all",tagId:null,showDone:false},homeLayout:defaultHomeLayout(),homeExtrasVersion:1,homeScratch:"",version:1,agentSettings:defaultAgentSettings(),pendingCloudSync:false,syncBaseline:null};
+    return {items:[],folders:[],tags:[],tagGroups:[],tagOrder:[],deletedItems:{},currentId:null,motion:true,theme:"nebula",darkness:82,enabledTypes:defaultEnabledTypes(),typeDefaults:TYPE_DEFAULTS_VERSION,noteInsertOptions:{file:true,paragraph:true,checklist:true,comment:true,prompt:true,heading:true,chapter:true,group:true,code:true},tagsCollapsed:false,typesCollapsed:false,allNotesCollapsed:false,promptsCollapsed:false,promptStatusCollapsed:{},focusNoteBody:true,quickAiHandoff:true,allNotesName:"All notes",readChapterNames:false,filterTag:null,filterType:"",sidebarView:"all",tagAssignMode:false,noteSearch:"",listSort:"updated",upcomingSort:"due",upcomingFilter:{range:"all",tagId:null,showDone:false},homeLayout:defaultHomeLayout(),homeExtrasVersion:1,homeScratch:"",version:1,agentSettings:defaultAgentSettings(),pendingCloudSync:false,syncBaseline:null};
   }
   function clearAttachmentStore(){
     if(!window.indexedDB) return;
@@ -3660,7 +3791,74 @@
     deleteNotesBtn.title=canDelete?"Delete "+count+" selected note"+(count===1?"":"s"):(state.selectingNotes?"Select unlocked notes to delete":"Delete selected notes");
     deleteNotesBtn.setAttribute("aria-label",deleteNotesBtn.title);
   }
+  var PROMPT_CARET='<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m6 9 6 6 6-6"/></svg>';
+  function renderPromptHub(){
+    var section=$("promptsSection"), hub=$("promptsHub"), toggle=$("promptsToggleBtn");
+    if(!section||!hub) return;
+    var groups=promptHubGroups(state.items||[]);
+    section.hidden=!groups.length;
+    hub.hidden=!groups.length;
+    if(!groups.length){ hub.innerHTML=""; return; }
+    var collapsed=!!state.promptsCollapsed;
+    hub.classList.toggle("is-collapsed",collapsed);
+    if(toggle){
+      toggle.setAttribute("aria-expanded",collapsed?"false":"true");
+      toggle.title=collapsed?"Expand prompts":"Collapse prompts";
+    }
+    hub.innerHTML="";
+    if(collapsed) return;
+    var collapsedStatuses=sanitizePromptStatusCollapsed(state.promptStatusCollapsed);
+    groups.forEach(function(group){
+      var open=!collapsedStatuses[group.id];
+      var block=document.createElement("div"); block.className="prompt-status-block";
+      var head=document.createElement("div"); head.className="sec-h prompt-status-h";
+      var button=document.createElement("button"); button.type="button"; button.className="section-toggle";
+      button.setAttribute("aria-expanded",open?"true":"false");
+      button.title=(open?"Collapse ":"Expand ")+group.label;
+      button.innerHTML="<span></span>"+PROMPT_CARET;
+      button.querySelector("span").textContent=group.label;
+      var count=document.createElement("span"); count.className="prompt-status-count"; count.textContent=String(group.prompts.length);
+      var body=document.createElement("div"); body.className="prompt-status-body"+(open?"":" is-collapsed");
+      button.onclick=function(){
+        state.promptStatusCollapsed=sanitizePromptStatusCollapsed(state.promptStatusCollapsed);
+        if(open) state.promptStatusCollapsed[group.id]=true; else delete state.promptStatusCollapsed[group.id];
+        persist();
+        renderPromptHub();
+      };
+      group.prompts.forEach(function(entry){
+        var row=document.createElement("button"); row.type="button"; row.className="prompt-hub-note"+(!viewingHome&&entry.itemId===state.currentId?" active":"");
+        var title=document.createElement("b"); title.textContent=entry.title;
+        var preview=document.createElement("small"); preview.textContent=entry.preview;
+        row.appendChild(title); row.appendChild(preview);
+        row.onclick=function(){ openPromptFromHub(entry.itemId, entry.blockId); };
+        body.appendChild(row);
+      });
+      head.appendChild(button); head.appendChild(count);
+      block.appendChild(head); block.appendChild(body);
+      hub.appendChild(block);
+    });
+  }
+  function findPromptBlock(item, blockId){
+    var found=null;
+    function take(blocks){ (blocks||[]).forEach(function(block){ if(block&&block.id===blockId) found=block; }); }
+    if(!item) return null;
+    take(item.blocks);
+    (item.todos||[]).forEach(function(task){ take(task&&task.blocks); });
+    return found;
+  }
+  function openPromptFromHub(itemId, blockId){
+    if(activeAudioRecorder&&activeAudioRecorder.itemId!==itemId){ showToast("Finish the current recording before leaving it",true); return; }
+    revealItem(itemId);
+    exitSidebarFocus();
+    app.classList.remove("open");
+    renderList();
+    renderMain();
+    var item=(state.items||[]).filter(function(entry){ return entry.id===itemId; })[0];
+    var block=findPromptBlock(item, blockId);
+    if(block) focusNoteBlock(block);
+  }
   function renderList(){
+    renderPromptHub();
     trackTimeSpent();
     /* A signed-in phone with no local cache looks like one Untitled note while
        the account is still loading. Do not present that seed item as the
@@ -5273,7 +5471,7 @@
      Approve publishes the draft. Delete restores the approved copy, or removes
      a block that was created during brainstorming. */
   var brainstormArmed=new WeakMap();
-  var BLOCK_CONTENT_KEYS=["text","html","title","level","code","language","url","description","imageUrl","imageAttachmentId","videoId","provider","start","collapsed"];
+  var BLOCK_CONTENT_KEYS=["text","html","title","level","code","language","url","description","imageUrl","imageAttachmentId","videoId","provider","start","collapsed","status"];
   function snapshotBlockContent(block){
     var snap={};
     BLOCK_CONTENT_KEYS.forEach(function(key){ if(block&&block[key]!==undefined) snap[key]=block[key]; });
@@ -5290,7 +5488,7 @@
   function snapshotHasContent(snap){
     if(!snap) return false;
     var textual=BLOCK_CONTENT_KEYS.some(function(key){
-      if(key==="language"||key==="provider"||key==="html") return false;
+      if(key==="language"||key==="provider"||key==="html"||key==="status") return false;
       return typeof snap[key]==="string"&&snap[key].trim();
     });
     if(textual) return true;
@@ -5711,8 +5909,163 @@
     field.oninput=function(){ armBrainstorm(note,block); block.text=field.value; grow(field); saveNoteBlockChange(note,block,false); }; wrap.appendChild(label); wrap.appendChild(field); return wrap;
   }
   function buildNotePrompt(note,block){
-    var wrap=document.createElement("section"); wrap.className="note-prompt"; var head=document.createElement("div"); head.className="note-prompt-head"; var label=document.createElement("b"); label.textContent="PROMPT"; var copyButton=document.createElement("button"); copyButton.type="button"; copyButton.textContent="Copy"; copyButton.onclick=function(){ copy(block.text||"",function(){ copyButton.textContent="Copied"; setTimeout(function(){ copyButton.textContent="Copy"; },1200); }); }; head.appendChild(label); head.appendChild(copyButton);
-    var field=document.createElement("textarea"); field.value=block.text||""; field.placeholder="Draft a prompt you want to perfect…"; field.setAttribute("data-note-block",block.id); field.oninput=function(){ armBrainstorm(note,block); block.text=field.value; saveNoteBlockChange(note,block,false); }; wrap.appendChild(head); wrap.appendChild(field); return wrap;
+    var wrap=document.createElement("section"); wrap.className="note-prompt";
+    var head=document.createElement("div"); head.className="note-prompt-head";
+    var label=document.createElement("b"); label.textContent="PROMPT";
+    var actions=document.createElement("div"); actions.className="note-prompt-actions";
+    var statusBtn=document.createElement("button"); statusBtn.type="button"; statusBtn.className="prompt-status-btn"; statusBtn.title="Prompt status"; statusBtn.setAttribute("aria-haspopup","menu");
+    function syncStatus(){
+      var filled=!!cleanText(block.text);
+      statusBtn.hidden=!filled;
+      if(filled) statusBtn.textContent=promptStatusLabel(effectivePromptStatus(block));
+    }
+    statusBtn.onclick=function(){
+      if(!cleanText(block.text)) return;
+      openMenu(statusBtn,function(menu){
+        menu.appendChild(menuTitle("Prompt status"));
+        promptStatuses().forEach(function(status){
+          menu.appendChild(mkItem("",status.label,effectivePromptStatus(block)===status.id,function(){
+            armBrainstorm(note,block);
+            block.status=status.id;
+            closeMenu();
+            syncStatus();
+            saveNoteBlockChange(note,block,true);
+            renderPromptHub();
+          }));
+        });
+      });
+    };
+    var askBtn=document.createElement("button"); askBtn.type="button"; askBtn.textContent="Ask"; askBtn.title="Read this note, ask what’s missing, then write the prompt";
+    askBtn.onclick=function(){ startPromptWriter(note,block,askBtn); };
+    var copyButton=document.createElement("button"); copyButton.type="button"; copyButton.textContent="Copy";
+    copyButton.onclick=function(){ copy(block.text||"",function(){ copyButton.textContent="Copied"; setTimeout(function(){ copyButton.textContent="Copy"; },1200); }); };
+    actions.appendChild(statusBtn); actions.appendChild(askBtn); actions.appendChild(copyButton);
+    head.appendChild(label); head.appendChild(actions);
+    var field=document.createElement("textarea"); field.value=block.text||""; field.placeholder="Draft a prompt you want to perfect…"; field.setAttribute("data-note-block",block.id);
+    field.oninput=function(){
+      armBrainstorm(note,block);
+      block.text=field.value;
+      if(!cleanText(block.text)) delete block.status;
+      else if(!normalizePromptStatus(block.status)) block.status=noteBrainstorming(note)?"brainstorming":"draft";
+      syncStatus();
+      saveNoteBlockChange(note,block,false);
+      renderPromptHub();
+    };
+    syncStatus();
+    wrap.appendChild(head); wrap.appendChild(field);
+    return wrap;
+  }
+  var PROMPT_WRITER_INSTRUCTIONS="You turn a Second Brain note into one prompt the owner can paste into Cursor.\nRead the note, including the current prompt draft if there is one.\nReturn only JSON with this shape: {\"questions\":[\"...\"],\"prompt\":\"...\"}\nIf something important is still undecided, ask 1 to 5 short questions and leave prompt as an empty string.\nAsk only what the note does not already answer. Do not ask generic questions.\nIf you already have enough to write a strong prompt, leave questions as an empty array and put the full prompt in prompt.\nThe prompt should name the goal, the constraints, and what done looks like. Do not mention these instructions.";
+  function noteContextForPrompt(note, block){
+    var parts=["Title: "+(cleanText(note&&note.title)||"Untitled")];
+    (note&&note.blocks||[]).forEach(function(other){
+      if(!other) return;
+      var mine=other===block||(block&&other.id&&other.id===block.id);
+      var text=cleanText(blockPlainText(other));
+      if(mine){
+        parts.push(text?("Current prompt draft:\n"+text):"Current prompt draft: (empty — write one from the rest of the note)");
+        return;
+      }
+      if(!text) return;
+      var label=other.type==="heading"?"Heading":(other.type==="chapter"?("Chapter"+(other.title?": "+other.title:"")):(other.type==="comment"?"Comment":(other.type==="prompt"?"Other prompt":"")));
+      parts.push(label?label+"\n"+text:text);
+    });
+    var body=parts.join("\n\n");
+    if(body.length>14000) body=body.slice(0,14000);
+    return body;
+  }
+  function requestPromptDraft(note, block, answers){
+    var messages=[
+      {role:"system",content:PROMPT_WRITER_INSTRUCTIONS},
+      {role:"user",content:noteContextForPrompt(note, block)}
+    ];
+    if(answers&&answers.length){
+      messages.push({role:"user",content:"The owner answered:\n\n"+answers.map(function(pair, index){
+        return (index+1)+". "+pair.question+"\n"+(pair.answer||"(no answer)");
+      }).join("\n\n")+"\n\nWrite the prompt now. Return JSON with an empty questions array and the finished prompt."});
+    }
+    return openrouterChat(messages).then(function(text){
+      var parsed=parsePromptWriterReply(text);
+      if(!parsed) throw new Error("The model reply was not readable. Try again.");
+      return parsed;
+    });
+  }
+  function applyWrittenPrompt(note, block, text){
+    armBrainstorm(note, block);
+    block.text=text;
+    if(!normalizePromptStatus(block.status)) block.status=noteBrainstorming(note)?"brainstorming":"draft";
+    var field=document.querySelector('textarea[data-note-block="'+block.id+'"]');
+    if(field) field.value=text;
+    var section=field&&field.closest?field.closest(".note-prompt"):null;
+    var statusBtn=section&&section.querySelector(".prompt-status-btn");
+    if(statusBtn){ statusBtn.hidden=!cleanText(text); statusBtn.textContent=promptStatusLabel(effectivePromptStatus(block)); }
+    saveNoteBlockChange(note, block, true);
+    renderPromptHub();
+    showToast("Prompt written");
+  }
+  function closePromptQuestions(){
+    var modal=$("promptQuestionsModal");
+    if(modal) modal.classList.remove("open");
+  }
+  function openPromptQuestions(note, block, questions, round){
+    var modal=$("promptQuestionsModal"), box=$("promptQuestionsBox");
+    if(!modal||!box) return;
+    box.innerHTML="";
+    var head=document.createElement("div"); head.className="mh";
+    var title=document.createElement("h3"); title.id="promptQuestionsTitle"; title.textContent="Questions about this prompt";
+    var close=document.createElement("button"); close.className="x"; close.type="button"; close.textContent="✕"; close.setAttribute("aria-label","Close");
+    close.onclick=closePromptQuestions;
+    head.appendChild(title); head.appendChild(close);
+    var hint=document.createElement("p"); hint.className="hint";
+    hint.textContent="Answer what you know. The model writes the prompt from this note and your answers.";
+    var form=document.createElement("div"); form.className="prompt-questions";
+    var fields=[];
+    questions.forEach(function(question){
+      var label=document.createElement("label");
+      var copy=document.createElement("span"); copy.textContent=question; label.appendChild(copy);
+      var area=document.createElement("textarea"); area.rows=3; area.placeholder="Your answer";
+      label.appendChild(area); form.appendChild(label);
+      fields.push({question:question, area:area});
+    });
+    var row=document.createElement("div"); row.className="btnrow";
+    var cancel=document.createElement("button"); cancel.type="button"; cancel.className="b2"; cancel.textContent="Cancel";
+    var write=document.createElement("button"); write.type="button"; write.className="b2 primary"; write.textContent="Write the prompt";
+    cancel.onclick=closePromptQuestions;
+    write.onclick=function(){
+      var answers=fields.map(function(field){ return {question:field.question, answer:cleanText(field.area.value)}; });
+      write.disabled=true; cancel.disabled=true; write.textContent="Writing…";
+      fields.forEach(function(field){ field.area.disabled=true; });
+      requestPromptDraft(note, block, answers).then(function(result){
+        if(result.prompt){ applyWrittenPrompt(note, block, result.prompt); closePromptQuestions(); return; }
+        if(result.questions.length&&(round||0)<1){ openPromptQuestions(note, block, result.questions, (round||0)+1); return; }
+        throw new Error("The model still needs more detail. Add it to the note and ask again.");
+      }).catch(function(error){
+        write.disabled=false; cancel.disabled=false; write.textContent="Write the prompt";
+        fields.forEach(function(field){ field.area.disabled=false; });
+        showToast((error&&error.message)||"Could not write the prompt", true);
+      });
+    };
+    row.appendChild(cancel); row.appendChild(write);
+    box.appendChild(head); box.appendChild(hint); box.appendChild(form); box.appendChild(row);
+    modal.classList.add("open");
+    if(fields[0]) fields[0].area.focus();
+  }
+  function startPromptWriter(note, block, button){
+    if(!cleanText(runtimeApiKeys.openrouter)){
+      showToast("Add an OpenRouter API key in Settings → Your own keys", true);
+      openSettings("keys");
+      return;
+    }
+    if(button){ button.disabled=true; button.textContent="Reading…"; }
+    requestPromptDraft(note, block, []).then(function(result){
+      if(button){ button.disabled=false; button.textContent="Ask"; }
+      if(result.questions.length){ openPromptQuestions(note, block, result.questions, 0); return; }
+      if(!result.prompt) throw new Error("The model did not write a prompt.");
+      applyWrittenPrompt(note, block, result.prompt);
+    }).catch(function(error){
+      if(button){ button.disabled=false; button.textContent="Ask"; }
+      showToast((error&&error.message)||"Could not write the prompt", true);
+    });
   }
   function buildNoteGroup(note,block){
     var details=document.createElement("details"); details.className="note-group"; details.open=!block.collapsed;
@@ -7745,6 +8098,34 @@
         return data;
       });
     }).catch(function(error){ throw asLlmError(error); });
+  }
+  function openrouterModelId(){ return cleanText(runtimeApiKeys.openrouterModel)||"openai/gpt-4o-mini"; }
+  function openrouterChat(messages){
+    var key=runtimeApiKeys.openrouter;
+    if(!key) return Promise.reject(new Error("Add your OpenRouter API key in Settings → Your own keys."));
+    var watch=startLlmWatch(45000);
+    return fetch("https://openrouter.ai/api/v1/chat/completions",{
+      method:"POST",
+      headers:{
+        "Content-Type":"application/json",
+        "Authorization":"Bearer "+key,
+        "HTTP-Referer":"https://secondbrainnotes.com",
+        "X-Title":"Second Brain Notes"
+      },
+      body:JSON.stringify({model:openrouterModelId(),messages:messages,temperature:0.4}),
+      signal:watch.signal
+    }).then(function(response){
+      return response.text().then(function(raw){
+        watch.close();
+        var data=null;
+        try{ data=JSON.parse(raw); }catch(e){}
+        if(!response.ok) throw new Error(formatLlmError("OpenRouter",response.status,data,raw));
+        var message=data&&data.choices&&data.choices[0]&&data.choices[0].message;
+        var text=openaiContentText(message&&message.content);
+        if(!cleanText(text)) throw new Error("OpenRouter returned an empty reply.");
+        return text;
+      });
+    }).catch(function(error){ watch.close(); throw asLlmError(error); });
   }
   function readSseJsonStream(response,provider,onEvent,watch){
     if(!response.ok){
@@ -11049,6 +11430,7 @@
   };
   $("tagsToggleBtn").onclick=function(){ state.tagsCollapsed=!state.tagsCollapsed; persist(); renderTags(); };
   $("typesToggleBtn").onclick=function(){ state.typesCollapsed=!state.typesCollapsed; persist(); renderTypes(); };
+  $("promptsToggleBtn").onclick=function(){ state.promptsCollapsed=!state.promptsCollapsed; persist(); renderPromptHub(); };
   $("notesToggleBtn").onclick=function(){ state.allNotesCollapsed=!state.allNotesCollapsed; persist(); syncNotesListCollapse(); };
   if(noteSearch){
     noteSearch.value=state.noteSearch||"";
@@ -11398,6 +11780,8 @@
     runtimeApiKeys.openai=cleanText(keys.openai);
     runtimeApiKeys.gemini=cleanText(keys.gemini);
     runtimeApiKeys.elevenlabs=cleanText(keys.elevenlabs);
+    runtimeApiKeys.openrouter=cleanText(keys.openrouter);
+    runtimeApiKeys.openrouterModel=cleanText(keys.openrouterModel);
     runtimeApiKeys.elevenlabsVoice=cleanText(voiceSettings.selectedVoiceId)||cleanText(keys.elevenlabsVoice)||DEFAULT_ELEVENLABS_VOICE;
     runtimeApiKeys.savedVoices=cleanSavedVoices(voiceSettings.savedVoices);
     if(privateSettings&&(privateSettings.llmRoute==="hosted"||privateSettings.llmRoute==="own")) llmRoute=privateSettings.llmRoute;
@@ -11412,6 +11796,8 @@
     runtimeApiKeys.openai="";
     runtimeApiKeys.gemini="";
     runtimeApiKeys.elevenlabs="";
+    runtimeApiKeys.openrouter="";
+    runtimeApiKeys.openrouterModel="";
     runtimeApiKeys.elevenlabsVoice=DEFAULT_ELEVENLABS_VOICE;
     runtimeApiKeys.savedVoices=[];
     llmRoute="hosted";
@@ -12556,6 +12942,8 @@
     if(typeof prefs.tagsCollapsed==="boolean") state.tagsCollapsed=prefs.tagsCollapsed;
     if(typeof prefs.typesCollapsed==="boolean") state.typesCollapsed=prefs.typesCollapsed;
     if(typeof prefs.allNotesCollapsed==="boolean") state.allNotesCollapsed=prefs.allNotesCollapsed;
+    if(typeof prefs.promptsCollapsed==="boolean") state.promptsCollapsed=prefs.promptsCollapsed;
+    if(prefs.promptStatusCollapsed&&typeof prefs.promptStatusCollapsed==="object") state.promptStatusCollapsed=sanitizePromptStatusCollapsed(prefs.promptStatusCollapsed);
     if(typeof prefs.focusNoteBody==="boolean") state.focusNoteBody=prefs.focusNoteBody;
     if(typeof prefs.quickAiHandoff==="boolean") state.quickAiHandoff=prefs.quickAiHandoff;
     if(typeof prefs.allNotesName==="string"&&prefs.allNotesName.trim()) state.allNotesName=prefs.allNotesName.trim();
@@ -12879,7 +13267,7 @@
       deletedItems:pruneTombstones(data.deletedItems||{}),
       version:Number(data.version)||1,
       versionChangedAt:Number(data.versionChangedAt)||sentAt,
-      preferences:{theme:state.theme,motion:state.motion,darkness:state.darkness,enabledTypes:state.enabledTypes,typeDefaults:state.typeDefaults,noteInsertOptions:state.noteInsertOptions,tagsCollapsed:state.tagsCollapsed,typesCollapsed:state.typesCollapsed,allNotesCollapsed:state.allNotesCollapsed,focusNoteBody:state.focusNoteBody,quickAiHandoff:state.quickAiHandoff,allNotesName:state.allNotesName,readChapterNames:state.readChapterNames,listSort:state.listSort,tagGroups:state.tagGroups||[],tagOrder:state.tagOrder||[],homeLayout:normalizeHomeLayout(state.homeLayout),homeExtrasVersion:state.homeExtrasVersion||0,homeScratch:state.homeScratch||"",agentSettings:agentSettings()},
+      preferences:{theme:state.theme,motion:state.motion,darkness:state.darkness,enabledTypes:state.enabledTypes,typeDefaults:state.typeDefaults,noteInsertOptions:state.noteInsertOptions,tagsCollapsed:state.tagsCollapsed,typesCollapsed:state.typesCollapsed,allNotesCollapsed:state.allNotesCollapsed,promptsCollapsed:!!state.promptsCollapsed,promptStatusCollapsed:sanitizePromptStatusCollapsed(state.promptStatusCollapsed),focusNoteBody:state.focusNoteBody,quickAiHandoff:state.quickAiHandoff,allNotesName:state.allNotesName,readChapterNames:state.readChapterNames,listSort:state.listSort,tagGroups:state.tagGroups||[],tagOrder:state.tagOrder||[],homeLayout:normalizeHomeLayout(state.homeLayout),homeExtrasVersion:state.homeExtrasVersion||0,homeScratch:state.homeScratch||"",agentSettings:agentSettings()},
       theme:state.theme,
       motion:state.motion,
       updated:sentAt
@@ -13046,7 +13434,7 @@
         '<button data-settings="account"><span><b>Account &amp; sync</b><small>Cloud storage and sign-in</small></span><span class="arrow">›</span></button>'+
         '<button data-settings="credits"><span><b>AI credits</b><small>Talk without pasting keys — prepaid, 5× model cost</small></span><span class="arrow">›</span></button>'+
         '<button data-settings="usage"><span><b>Usage</b><small>Tokens, dollars, conscious / subconscious / voice</small></span><span class="arrow">›</span></button>'+
-        '<button data-settings="keys"><span><b>Your own keys</b><small>Advanced: use OpenAI, Gemini, or ElevenLabs directly</small></span><span class="arrow">›</span></button>'+
+        '<button data-settings="keys"><span><b>Your own keys</b><small>Advanced: use OpenAI, Gemini, ElevenLabs, or OpenRouter directly</small></span><span class="arrow">›</span></button>'+
         '<button data-settings="voices"><span><b>Voice</b><small>Choose from your saved ElevenLabs voices</small></span><span class="arrow">›</span></button>'+
         '<button data-settings="collab"><span><b>AI collaborator</b><small>Agents, voice intelligence, and hidden notes (also in the sidebar footer)</small></span><span class="arrow">›</span></button>'+
         '<button data-settings="agent"><span><b>Connect an agent</b><small>Full steps to let Hermes use your notes, the same way as TickTick</small></span><span class="arrow">›</span></button>'+
@@ -13062,7 +13450,7 @@
     } else if(settingsPage==="credits"){
       content=settingsHeading("AI credits",true)+'<p class="hint">Skip pasting provider keys. You buy credits here; we keep the API keys on the server and charge five dollars of credits for every dollar the models cost us.</p><div id="creditsSettings"></div>';
     } else if(settingsPage==="keys"){
-      content=settingsHeading("Your own keys",true)+'<p class="hint">Advanced. Keys sync to your signed-in account and are used from this browser, so anyone with the device can read them. Hosted credits never put our keys here.</p><div class="agent-edit"><label>OpenAI (ChatGPT) API key<input id="openaiKey" type="password" autocomplete="off" placeholder="sk-…" disabled></label><label>Gemini API key<input id="geminiKey" type="password" autocomplete="off" placeholder="AIza…" disabled></label><label>ElevenLabs API key<input id="elevenlabsKey" type="password" autocomplete="off" placeholder="Your ElevenLabs key" disabled></label><p class="hint" id="apiKeyStatus">Sign in to add API keys.</p></div>';
+      content=settingsHeading("Your own keys",true)+'<p class="hint">Advanced. Keys sync to your signed-in account and are used from this browser, so anyone with the device can read them. Hosted credits never put our keys here.</p><div class="agent-edit"><label>OpenAI (ChatGPT) API key<input id="openaiKey" type="password" autocomplete="off" placeholder="sk-…" disabled></label><label>Gemini API key<input id="geminiKey" type="password" autocomplete="off" placeholder="AIza…" disabled></label><label>ElevenLabs API key<input id="elevenlabsKey" type="password" autocomplete="off" placeholder="Your ElevenLabs key" disabled></label><label>OpenRouter API key<input id="openrouterKey" type="password" autocomplete="off" placeholder="sk-or-…" disabled><small>Used by Ask on a prompt. The model reads that note, asks what’s missing, then writes the prompt.</small></label><label>OpenRouter model<input id="openrouterModel" type="text" autocomplete="off" placeholder="openai/gpt-4o-mini" disabled><small>Any model id from OpenRouter. Leave this blank to use openai/gpt-4o-mini.</small></label><p class="hint" id="apiKeyStatus">Sign in to add API keys.</p></div>';
     } else if(settingsPage==="voices"){
       content=settingsHeading("Voice",true)+'<p class="hint">This is the app-wide Listen voice for chapters. Each agent can pick a different spoken voice on its Voice or Edit tab.</p><div class="grp"><div class="srow"><div class="sl">Read chapter names aloud<small>Off by default. This controls both full-document and individual chapter Listen buttons.</small></div><button class="toggle" id="readChapterNamesToggle"><b></b></button></div></div><div class="agent-edit"><label>Voice<button class="voice-picker" id="elevenlabsVoicePicker" type="button" aria-expanded="false" disabled><span class="voice-picker-copy"><b>Loading voices…</b><small>Your saved ElevenLabs voices</small></span><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="m6 9 6 6 6-6"/></svg></button></label><div class="voice-picker-menu" id="elevenlabsVoiceMenu" hidden><input class="voice-search" id="elevenlabsVoiceSearch" type="search" autocomplete="off" placeholder="Search voices or styles"><div class="voice-options" id="elevenlabsVoiceOptions"></div></div><div id="customVoiceEntry" hidden><label>ElevenLabs Voice ID<input id="customElevenlabsVoiceId" type="text" autocomplete="off" placeholder="Paste a voice ID"></label><div class="btnrow"><button class="b2 primary" id="saveCustomVoiceBtn">Save to list &amp; select</button></div></div><p class="hint" id="voiceStatus">Loading your available voices…</p></div>';
     } else if(settingsPage==="agent"){
@@ -13548,8 +13936,8 @@
   }
   var apiKeySaveTimer=null;
   function setupApiKeySettings(){
-    var openai=$("openaiKey"), gemini=$("geminiKey"), eleven=$("elevenlabsKey"), status=$("apiKeyStatus"), userId=currentUser&&currentUser.uid;
-    function setEnabled(on){ openai.disabled=!on; if(gemini) gemini.disabled=!on; eleven.disabled=!on; }
+    var openai=$("openaiKey"), gemini=$("geminiKey"), eleven=$("elevenlabsKey"), openrouter=$("openrouterKey"), openrouterModelInput=$("openrouterModel"), status=$("apiKeyStatus"), userId=currentUser&&currentUser.uid;
+    function setEnabled(on){ openai.disabled=!on; if(gemini) gemini.disabled=!on; eleven.disabled=!on; if(openrouter) openrouter.disabled=!on; if(openrouterModelInput) openrouterModelInput.disabled=!on; }
     if(!userId||!db){ status.textContent="Sign in first. API keys only sync to your signed-in account."; return; }
     status.textContent="Loading your synced API keys…";
     getPrivateSettings().then(function(settings){
@@ -13558,12 +13946,14 @@
       openai.value=cleanText(keys.openai)||runtimeApiKeys.openai;
       if(gemini) gemini.value=cleanText(keys.gemini)||runtimeApiKeys.gemini;
       eleven.value=cleanText(keys.elevenlabs)||runtimeApiKeys.elevenlabs;
+      if(openrouter) openrouter.value=cleanText(keys.openrouter)||runtimeApiKeys.openrouter;
+      if(openrouterModelInput) openrouterModelInput.value=cleanText(keys.openrouterModel)||runtimeApiKeys.openrouterModel;
       setEnabled(true);
       status.textContent=settings.apiVault&&!settings.apiKeys?"An older vault was found. Type your keys once to replace it.":"Changes save and sync automatically as you type.";
     }).catch(function(error){ console.warn(error); status.textContent="Could not load API keys. Check your cloud connection."; });
     function saveKeys(){
       if(!currentUser||currentUser.uid!==userId||!db) return;
-      var keys={version:1,openai:cleanText(openai.value),gemini:gemini?cleanText(gemini.value):"",elevenlabs:cleanText(eleven.value),updated:Date.now()};
+      var keys={version:1,openai:cleanText(openai.value),gemini:gemini?cleanText(gemini.value):"",elevenlabs:cleanText(eleven.value),openrouter:openrouter?cleanText(openrouter.value):"",openrouterModel:openrouterModelInput?cleanText(openrouterModelInput.value):"",updated:Date.now()};
       status.textContent="Saving and syncing…";
       savePrivateSettings({apiKeys:keys,apiVault:firebase.firestore.FieldValue.delete()}).then(function(){
         applyApiSettings({apiKeys:keys,voiceSettings:{selectedVoiceId:runtimeApiKeys.elevenlabsVoice,savedVoices:runtimeApiKeys.savedVoices},llmRoute:llmRoute});
@@ -13578,6 +13968,8 @@
     openai.oninput=queueSave;
     if(gemini) gemini.oninput=queueSave;
     eleven.oninput=queueSave;
+    if(openrouter) openrouter.oninput=queueSave;
+    if(openrouterModelInput) openrouterModelInput.oninput=queueSave;
   }
   function voiceChoice(voice){
     var id=cleanText(voice&&voice.id||voice&&voice.voice_id||voice), labels=voice&&voice.labels&&typeof voice.labels==="object"?voice.labels:{}, details=[];
@@ -14057,6 +14449,7 @@
     }
     container.appendChild(section);
   }
+  if($("promptQuestionsModal")) $("promptQuestionsModal").onclick=function(e){ if(e.target===$("promptQuestionsModal")) closePromptQuestions(); };
   $("settingsBtn").onclick=function(){ openSettings(); };
   $("settingsModal").onclick=function(e){ if(e.target===$("settingsModal")) $("settingsModal").classList.remove("open"); };
   $("moreBtn").onclick=function(){ if($("moreModal").classList.contains("open")) closeMore(); else openMore(); };
