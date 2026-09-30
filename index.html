@@ -11951,7 +11951,16 @@
       return;
     }
     setAuthGate(true,"Continue in the Google window to unlock your notes.");
-    auth.signInWithPopup(provider).catch(function(e){
+    auth.signInWithPopup(provider).then(function(result){
+      /* Some browsers accept the Google window but refuse to hand the session
+         back across sites (third-party storage partitioning), so the popup
+         resolves with no user and the gate just re-appears. Fall back to the
+         same-origin redirect flow that the iPhone path already relies on. */
+      if(!result||!result.user){
+        setAuthGate(true,"Taking you to Google…");
+        return auth.signInWithRedirect(provider);
+      }
+    }).catch(function(e){
       if(e&&(e.code==="auth/popup-blocked"||e.code==="auth/operation-not-supported-in-this-environment")){
         setAuthGate(true,"Taking you to Google…");
         return auth.signInWithRedirect(provider);
