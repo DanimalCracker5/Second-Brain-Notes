@@ -1452,10 +1452,9 @@
   .home-notes{ min-width:0; }
   /* Tags stay on one row and scroll, so a long library does not stretch the notes card. */
   .home-tag-rail{ display:flex; flex-wrap:nowrap; gap:8px; width:100%; min-width:0; margin:0 0 10px; padding:1px 1px 8px; overflow-x:auto; overflow-y:hidden; overscroll-behavior-x:contain; scrollbar-width:thin; scrollbar-color:rgba(255,255,255,.16) transparent; }
-  .home-tag-rail::-webkit-scrollbar{ height:8px; }
+  .home-tag-rail::-webkit-scrollbar{ height:4px; }
   .home-tag-rail::-webkit-scrollbar-thumb{ background:rgba(255,255,255,.14); border-radius:8px; }
-  .home-tag-rail .home-tag{ flex:none; scroll-snap-align:start; }
-  .home-tag-rail{ scroll-snap-type:x proximity; }
+  .home-tag-rail .home-tag{ flex:none; }
   .home-tag-rail .home-tag span{ max-width:22ch; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
   .home-tag em{ color:var(--ink-faint); font:500 .68rem "DM Mono",monospace; font-style:normal; }
   .home-tag.on em{ color:var(--ink-dim); }
@@ -2324,7 +2323,7 @@
   }
 
   /* Opening the site lands on Home. A note is shown only after it is chosen. */
-  var viewingHome=true, homeCustomizing=false, homeTagId=null, homeTypeFilter="", homeStatusFilter="", homeQuery="", homeSearchFocus=false, homeScratchTimer=null, homeTagRailScroll=0, homeTagRailTag;
+  var viewingHome=true, homeCustomizing=false, homeTagId=null, homeTypeFilter="", homeStatusFilter="", homeQuery="", homeSearchFocus=false, homeScratchTimer=null, homeTagRailScroll=0;
   function current(){ return state.items.find(function(s){return s.id===state.currentId;})||state.items[0]; }
   /* Time is counted only while this app is the focused, visible tab. It is kept
      separately from `updated` so opening a note does not change its recency. */
@@ -4216,14 +4215,19 @@
     var selected=homeTagId||"", chip=null, buttons=rail.querySelectorAll(".home-tag"), i;
     for(i=0;i<buttons.length;i++) if((buttons[i].dataset.tagId||"")===selected) chip=buttons[i];
     var view=homeTagRailScroll||0;
-    if((homeTagId||null)!==homeTagRailTag&&chip&&rail.clientWidth){
+    rail.scrollLeft=view;
+    /* A tag picked while the row was wide can sit past the edge once the row
+       gets narrower. Bring that chip back without yanking a chip the user can
+       already see. */
+    if(chip&&rail.clientWidth){
       var railBox=rail.getBoundingClientRect(), chipBox=chip.getBoundingClientRect();
       var left=chipBox.left-railBox.left+rail.scrollLeft, right=left+chipBox.width;
-      if(left<view+8) view=Math.max(0, left-8);
-      else if(right>view+rail.clientWidth-8) view=Math.max(0, right-rail.clientWidth+8);
+      var hidden=left<rail.scrollLeft+4||right>rail.scrollLeft+rail.clientWidth-4;
+      if(hidden){
+        view=left<rail.scrollLeft+8?Math.max(0, left-8):Math.max(0, right-rail.clientWidth+12);
+        rail.scrollLeft=view;
+      }
     }
-    homeTagRailTag=homeTagId||null;
-    rail.scrollLeft=view;
     homeTagRailScroll=rail.scrollLeft;
     rail.addEventListener("scroll", function(){ homeTagRailScroll=rail.scrollLeft; }, {passive:true});
   }

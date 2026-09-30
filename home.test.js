@@ -195,6 +195,7 @@ test("the home notes list has a horizontal tag rail, filters, and sorting", func
   assert.match(widget, /buildHomeNotesToolbar\(\)/);
   assert.match(html, /\.home-tag-rail\{[^}]*flex-wrap:\s*nowrap/);
   assert.match(html, /\.home-tag-rail\{[^}]*overflow-x:\s*auto/);
+  assert.match(grab("restoreHomeTagRail", "buildHomeNotesWidget"), /right-rail\.clientWidth\+12/);
   assert.match(grab("renderHome", "renderMain"), /restoreHomeTagRail\(sheet\.querySelector\("#homeTagRail"\)\)/);
   assert.match(grab("buildHomeTagsWidget", "buildHomeGlanceWidget"), /setHomeNotesTag\(tag\.id\)/);
   assert.match(grab("buildHomeTypesWidget", "buildHomeScratchWidget"), /setHomeNotesType\(kind\)/);
