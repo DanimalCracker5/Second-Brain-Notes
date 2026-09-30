@@ -760,7 +760,7 @@
   .modal.open .modal-box{ animation:modalIn .34s cubic-bezier(.2,.95,.3,1.08) both; }
   .more-modal{ z-index:64; background:rgba(0,0,0,.66); }
   .more-modal.open{ backdrop-filter:blur(8px); }
-  .more-box{ position:relative; max-width:440px; padding:18px 18px 16px; overflow:hidden; background:radial-gradient(120% 90% at 100% 0%,var(--accent-soft),transparent 52%),linear-gradient(180deg,rgba(255,255,255,.035),transparent 28%),#09090d; border-color:var(--accent-line); box-shadow:0 30px 90px rgba(0,0,0,.62),0 0 0 1px rgba(255,255,255,.03); }
+  .more-box{ position:relative; max-width:440px; padding:18px 18px 16px; overflow:auto; background:radial-gradient(120% 90% at 100% 0%,var(--accent-soft),transparent 52%),linear-gradient(180deg,rgba(255,255,255,.035),transparent 28%),#09090d; border-color:var(--accent-line); box-shadow:0 30px 90px rgba(0,0,0,.62),0 0 0 1px rgba(255,255,255,.03); }
   .more-modal.open .more-box{ animation:moreIn .48s cubic-bezier(.16,.84,.28,1.04) both; }
   .more-head{ display:flex; align-items:flex-start; justify-content:space-between; gap:12px; margin:2px 2px 14px; }
   .more-kicker{ margin:0 0 3px; color:var(--accent); font:500 .62rem "DM Mono",monospace; letter-spacing:.16em; text-transform:uppercase; }
@@ -769,6 +769,15 @@
   .more-close:hover{ color:var(--ink); border-color:var(--accent-line); background:var(--accent-soft); }
   .more-close:active{ transform:scale(.94); }
   .more-actions{ display:grid; gap:8px; }
+  .more-doc{ display:grid; gap:8px; margin-top:14px; padding-top:12px; border-top:1px solid var(--line); }
+  .more-doc[hidden]{ display:none; }
+  .more-doc-action{ width:100%; display:flex; align-items:center; justify-content:flex-start; gap:12px; min-height:46px; padding:10px 14px; border:1px solid var(--line); border-radius:14px; background:rgba(255,255,255,.03); color:var(--ink); cursor:pointer; font:600 .9rem "DM Sans",sans-serif; text-align:left; transition:transform .16s,background .18s,border-color .18s; }
+  .more-doc-action svg{ width:16px; height:16px; flex:none; }
+  .more-doc-action:hover{ background:rgba(255,255,255,.07); border-color:var(--accent-line); }
+  .more-doc-action:active{ transform:scale(.985); }
+  .more-doc-action.danger{ color:#fca5a5; border-color:rgba(248,113,113,.28); background:rgba(248,113,113,.08); }
+  .more-doc-action.danger:hover{ background:rgba(248,113,113,.16); border-color:rgba(248,113,113,.45); }
+  .more-modal.open .more-doc-action{ animation:moreRow .46s cubic-bezier(.2,.9,.3,1) both; }
   .more-actions .copy-all,.more-actions .brainstorm-mode{ width:100%; justify-content:flex-start; gap:12px; min-height:58px; padding:12px 14px; border-radius:16px; font-size:.94rem; background:rgba(255,255,255,.035); }
   .more-actions .copy-all svg,.brainstorm-mode > svg{ width:18px; height:18px; flex:none; }
   .more-modal.open .more-actions > *{ animation:moreRow .46s cubic-bezier(.2,.9,.3,1) both; }
@@ -1543,6 +1552,7 @@
       <button class="copy-all more-action" id="copyAll"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15V5a2 2 0 0 1 2-2h10"/></svg><span id="copyAllLabel">Copy all</span></button>
       <button class="brainstorm-mode" id="brainstormBtn" type="button" aria-pressed="false"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 3v2.2M12 18.8V21M4.8 4.8l1.6 1.6M17.6 17.6l1.6 1.6M3 12h2.2M18.8 12H21M4.8 19.2l1.6-1.6M17.6 6.4l1.6-1.6"/><circle cx="12" cy="12" r="3.2"/></svg><span class="brainstorm-copy"><b id="brainstormLabel">Enter Brainstorming Mode</b><small id="brainstormHint">Edits stay private until you approve them</small></span></button>
     </div>
+    <div class="more-doc" id="moreDocActions" hidden></div>
   </div>
 </div>
 <div class="modal" id="syncConflictModal" role="dialog" aria-modal="true" aria-labelledby="syncConflictTitle"><div class="modal-box" id="syncConflictBox"></div></div>
@@ -5432,15 +5442,50 @@
     if(brainstorm){ brainstorm.classList.toggle("on",on); brainstorm.setAttribute("aria-pressed",on?"true":"false"); }
     if(label) label.textContent=on?"Exit Brainstorming Mode":"Enter Brainstorming Mode";
     if(hint) hint.textContent=on?"New edits stay highlighted until you approve or delete them":"Edits stay private until you approve them";
+    renderMoreDocActions();
+  }
+  function renderMoreDocActions(){
+    var host=$("moreDocActions"); if(!host) return;
+    host.innerHTML="";
+    var it=typeof current==="function"?current():null;
+    if(!it||(typeof viewingHome!=="undefined"&&viewingHome)){ host.hidden=true; return; }
+    host.hidden=false;
+    var kicker=document.createElement("p"); kicker.className="more-kicker"; kicker.textContent="This note"; host.appendChild(kicker);
+    var list=document.createElement("div"); list.className="more-actions";
+    function row(icon,text,kind,handler){
+      var button=document.createElement("button"); button.type="button"; button.className="more-doc-action"+(kind?" "+kind:"");
+      button.innerHTML=icon+"<span>"+escapeHtml(text)+"</span>";
+      button.onclick=handler;
+      list.appendChild(button);
+    }
+    if(it.type==="note"||it.type==="todo"){
+      var asTodo=isTodoNote(it)||it.type==="todo";
+      row(asTodo?ICON_NOTE:ICON_TODO, asTodo?"Convert to note":"Convert to todo", "", function(){ closeMore(); convertNoteTodo(it); });
+    }
+    row(ICON_DUPLICATE, "Duplicate", "", function(){ closeMore(); duplicateItem(it); });
+    if(it.type!=="agent"){
+      row(ICON_NOTE, "Add or edit tags", "", function(){ closeMore(); setTimeout(function(){ openTagPick($("moreBtn"), it); },0); });
+      row(ICON_CALENDAR, it.dueDate?"Change due date":"Add due date", "", function(){ closeMore(); setTimeout(function(){ openTodoDueDatePicker($("moreBtn"), it); },0); });
+    }
+    row(it.hidden?ICON_EYE:ICON_EYE_OFF, it.hidden?"Show in notes list":"Hide from notes list", "", function(){
+      it.hidden=!it.hidden; it.updated=Date.now(); persist(); renderList(); renderMain();
+      showToast(it.hidden?"Hidden — open Hidden in the sidebar footer to find it":"Shown in the notes list");
+      closeMore();
+    });
+    row(it.locked?ICON_UNLOCK:ICON_LOCK, it.locked?"Unlock deletion":"Lock from deletion", "", function(){ toggleItemLock(it); });
+    row(ICON_UP, "Move up", "", function(){ moveItem(it,-1); });
+    row(ICON_DOWN, "Move down", "", function(){ moveItem(it,1); });
+    if(!it.locked) row(ICON_DELETE, "Delete", "danger", function(){ closeMore(); delItem(it.id); });
+    host.appendChild(list);
   }
   function openMore(){
     var modal=$("moreModal"); if(!modal) return;
     modal.classList.add("open");
-    var rows=modal.querySelectorAll(".more-actions > *");
+    syncMoreChrome();
+    var rows=modal.querySelectorAll(".more-actions > *, .more-doc-action");
     rows.forEach(function(row){ row.style.animation="none"; });
     void modal.offsetWidth;
     rows.forEach(function(row){ row.style.animation=""; });
-    syncMoreChrome();
     var close=$("moreClose"); if(close) close.focus();
   }
   function closeMore(){
