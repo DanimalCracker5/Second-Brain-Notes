@@ -84,10 +84,20 @@ function parseDueDate(value, now) {
 
 function accountFromData(data) {
   const src = data && typeof data === "object" ? data : {};
+  const deletedTags = src.deletedTags && typeof src.deletedTags === "object" && !Array.isArray(src.deletedTags) ? clone(src.deletedTags) : {};
+  const tags = (Array.isArray(src.tags) ? clone(src.tags) : []).filter(function (tag) {
+    return tag && tag.id && !deletedTags[tag.id];
+  });
+  const items = Array.isArray(src.items) ? clone(src.items) : [];
+  items.forEach(function (item) {
+    if (!item || !Array.isArray(item.tagIds)) return;
+    item.tagIds = item.tagIds.filter(function (id) { return !deletedTags[id]; });
+  });
   return {
-    items: Array.isArray(src.items) ? clone(src.items) : [],
-    tags: Array.isArray(src.tags) ? clone(src.tags) : [],
+    items: items,
+    tags: tags,
     deletedItems: src.deletedItems && typeof src.deletedItems === "object" ? clone(src.deletedItems) : {},
+    deletedTags: deletedTags,
     version: Math.max(1, Number(src.version) || 1),
     versionChangedAt: Number(src.versionChangedAt) || Number(src.updated) || 0,
     updated: Number(src.updated) || 0
@@ -281,7 +291,7 @@ function ensureTags(account, names, id) {
     if (!clean) return;
     let tag = (account.tags || []).find(function (entry) { return entry && String(entry.name || "").toLowerCase() === clean.toLowerCase(); });
     if (!tag) {
-      tag = { id: id(), name: clean, hue: 0, color: "#000000" };
+      tag = { id: id(), name: clean, hue: 0, color: "#000000", createdAt: Date.now() };
       account.tags = account.tags || [];
       account.tags.push(tag);
     }
