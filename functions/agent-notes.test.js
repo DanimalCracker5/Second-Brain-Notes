@@ -74,6 +74,21 @@ test("todos can be created, completed, and filtered as overdue", function () {
   assert.equal(run(done.account, "list_todos", { filter: "done" }).result.count, 1);
 });
 
+test("a deleted tag stays deleted and a later create mints a new id", function () {
+  const account = notes.accountFromData({
+    items: [{ id: "n1", type: "note", title: "Trip", body: "Pack", tagIds: ["t1", "t2"], blocks: [{ id: "b", type: "text", text: "Pack" }] }],
+    tags: [{ id: "t1", name: "travel" }, { id: "t2", name: "home" }],
+    deletedTags: { t1: { deletedAt: 10, name: "travel" } }
+  });
+  assert.deepEqual(account.tags.map(function (tag) { return tag.id; }), ["t2"]);
+  assert.deepEqual(account.items[0].tagIds, ["t2"]);
+  const created = run(account, "create_note", { title: "Again", content: "Go", tags: ["travel"] });
+  const travel = created.account.tags.filter(function (tag) { return tag.name === "travel"; });
+  assert.equal(travel.length, 1);
+  assert.notEqual(travel[0].id, "t1");
+  assert.equal(created.account.deletedTags.t1.name, "travel");
+});
+
 test("delete requires confirm and leaves a tombstone the client will honor", function () {
   const created = run({ items: [], tags: [], deletedItems: {} }, "create_note", { title: "Scratch" });
   const id = created.result.created.id;

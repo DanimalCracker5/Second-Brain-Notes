@@ -117,6 +117,7 @@ function createStore(db) {
         items: out.account.items,
         tags: out.account.tags,
         deletedItems: out.account.deletedItems,
+        deletedTags: out.account.deletedTags || {},
         version: out.account.version,
         versionChangedAt: out.account.versionChangedAt,
         updated: out.account.updated

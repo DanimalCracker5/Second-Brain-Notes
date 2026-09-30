@@ -1752,7 +1752,7 @@
   }
   function loadLocal(){ var v=readKey(KEY); if(v&&v.items) return v; if(!canPersist&&mem) return mem; return migrate(); }
   function setSaveState(label,kind){ var el=$("saveState"); if(!el) return; el.textContent=label; el.className="save-state"+(kind?" "+kind:""); }
-  function backupPayload(){ return { app:"second-brain", version:16, items:state.items, folders:state.folders, tags:state.tags, deletedItems:state.deletedItems||{}, preferences:{theme:state.theme,motion:state.motion,darkness:state.darkness,enabledTypes:state.enabledTypes,typeDefaults:state.typeDefaults,noteInsertOptions:state.noteInsertOptions,tagsCollapsed:state.tagsCollapsed,typesCollapsed:state.typesCollapsed,allNotesCollapsed:state.allNotesCollapsed,focusNoteBody:state.focusNoteBody,quickAiHandoff:state.quickAiHandoff,allNotesName:state.allNotesName,readChapterNames:state.readChapterNames,listSort:state.listSort,tagGroups:state.tagGroups||[],tagOrder:state.tagOrder||[],homeLayout:normalizeHomeLayout(state.homeLayout),homeExtrasVersion:state.homeExtrasVersion||0,homeScratch:state.homeScratch||"",agentSettings:agentSettings()}, created:Date.now() }; }
+  function backupPayload(){ return { app:"second-brain", version:16, items:state.items, folders:state.folders, tags:state.tags, deletedItems:state.deletedItems||{}, deletedTags:state.deletedTags||{}, preferences:{theme:state.theme,motion:state.motion,darkness:state.darkness,enabledTypes:state.enabledTypes,typeDefaults:state.typeDefaults,noteInsertOptions:state.noteInsertOptions,tagsCollapsed:state.tagsCollapsed,typesCollapsed:state.typesCollapsed,allNotesCollapsed:state.allNotesCollapsed,focusNoteBody:state.focusNoteBody,quickAiHandoff:state.quickAiHandoff,allNotesName:state.allNotesName,readChapterNames:state.readChapterNames,listSort:state.listSort,tagGroups:state.tagGroups||[],tagOrder:state.tagOrder||[],homeLayout:normalizeHomeLayout(state.homeLayout),homeExtrasVersion:state.homeExtrasVersion||0,homeScratch:state.homeScratch||"",agentSettings:agentSettings()}, created:Date.now() }; }
   function autoBackups(){ return deviceBackups; }
   function backupSnapshot(data){
     try{ return JSON.parse(JSON.stringify(data)); }catch(e){ console.warn("Backup snapshot could not be copied:",e); return data; }
@@ -1863,12 +1863,13 @@
     if(documentEntry&&currentUser&&db) writeCloudDocumentBackup(activeDocument,documentEntry.kind,documentEntry.created,documentEntry.data).catch(function(error){ console.warn("Automatic document backup could not reach the cloud:",error); });
     state.lastLocalChange=Date.now();
     var tagsChanged=tagLayoutSignature(previous)!==tagLayoutSignature(state);
-    if(currentUser&&(changedWeight>0||createdOrDeleted||tagsChanged)) state.pendingCloudSync=true;
+    var deletedTagsChanged=deletedTagSignature(previous&&previous.deletedTags)!==deletedTagSignature(state.deletedTags);
+    if(currentUser&&(changedWeight>0||createdOrDeleted||tagsChanged||deletedTagsChanged)) state.pendingCloudSync=true;
     var d=JSON.stringify(state); if(canPersist){ try{ localStorage.setItem(KEY,d); }catch(e){ mem=JSON.parse(d); } } else mem=JSON.parse(d);
     setSaveState(currentUser?(state.pendingCloudSync?"Saving to cloud":"Saved to cloud"):"Sign in to sync",currentUser?(state.pendingCloudSync?"saving":"cloud"):"");
-    if(!applyingRemoteCloud&&!applyingLiveNote&&!cloudSyncPaused&&!cloudSyncLoading&&cloudHydrated&&(changedWeight>0||createdOrDeleted||tagsChanged)){
+    if(!applyingRemoteCloud&&!applyingLiveNote&&!cloudSyncPaused&&!cloudSyncLoading&&cloudHydrated&&(changedWeight>0||createdOrDeleted||tagsChanged||deletedTagsChanged)){
       scheduleLiveNotePush(lastPersistChangedIds,createdOrDeleted);
-      if(createdOrDeleted) saveCloudNow();
+      if(createdOrDeleted||deletedTagsChanged) saveCloudNow();
       else saveCloud(Math.max(changedWeight, tagsChanged?1:0));
     }
   }
@@ -2227,6 +2228,9 @@
   var state=loadLocal();
   if(!state||!state.items){ state={ items:[], tags:[], currentId:null, motion:true, theme:"nebula", filterTag:null, sidebarView:"all", version:1 }; state.items.push(newNoteItem()); state.currentId=state.items[0].id; }
   state.folders=state.folders||[]; state.tags=state.tags||[]; state.items=state.items||[];
+  if(!state.deletedTags||typeof state.deletedTags!=="object"||Array.isArray(state.deletedTags)) state.deletedTags={};
+  state.tags=tagsWithoutDeleted(state.tags, state.deletedTags);
+  stripDeletedTagIds(state.items, state.deletedTags);
   state.tagGroups=Array.isArray(state.tagGroups)?state.tagGroups:[];
   if(Array.isArray(state.tagOrder)) state.tags=applyTagOrder(state.tags, state.tagOrder);
   state.tagGroups=sanitizeTagGroups(state.tagGroups, state.tags);
@@ -2294,7 +2298,7 @@
   if(ensureHomeExtras()) persistLocalStateQuietly();
 
   function blankDeviceState(){
-    return {items:[],folders:[],tags:[],tagGroups:[],tagOrder:[],deletedItems:{},currentId:null,motion:true,theme:"nebula",darkness:82,enabledTypes:defaultEnabledTypes(),typeDefaults:TYPE_DEFAULTS_VERSION,noteInsertOptions:{file:true,paragraph:true,checklist:true,comment:true,prompt:true,heading:true,chapter:true,group:true,code:true},tagsCollapsed:false,typesCollapsed:false,allNotesCollapsed:false,focusNoteBody:true,quickAiHandoff:true,allNotesName:"All notes",readChapterNames:false,filterTag:null,filterType:"",sidebarView:"all",tagAssignMode:false,noteSearch:"",listSort:"updated",upcomingSort:"due",upcomingFilter:{range:"all",tagId:null,showDone:false},homeLayout:defaultHomeLayout(),homeExtrasVersion:1,homeScratch:"",version:1,agentSettings:defaultAgentSettings(),pendingCloudSync:false,syncBaseline:null};
+    return {items:[],folders:[],tags:[],tagGroups:[],tagOrder:[],deletedItems:{},deletedTags:{},currentId:null,motion:true,theme:"nebula",darkness:82,enabledTypes:defaultEnabledTypes(),typeDefaults:TYPE_DEFAULTS_VERSION,noteInsertOptions:{file:true,paragraph:true,checklist:true,comment:true,prompt:true,heading:true,chapter:true,group:true,code:true},tagsCollapsed:false,typesCollapsed:false,allNotesCollapsed:false,focusNoteBody:true,quickAiHandoff:true,allNotesName:"All notes",readChapterNames:false,filterTag:null,filterType:"",sidebarView:"all",tagAssignMode:false,noteSearch:"",listSort:"updated",upcomingSort:"due",upcomingFilter:{range:"all",tagId:null,showDone:false},homeLayout:defaultHomeLayout(),homeExtrasVersion:1,homeScratch:"",version:1,agentSettings:defaultAgentSettings(),pendingCloudSync:false,syncBaseline:null};
   }
   function clearAttachmentStore(){
     if(!window.indexedDB) return;
@@ -2922,12 +2926,27 @@
   function sep(){ var s=document.createElement("div"); s.className="sep"; return s; }
 
   /* =================== sidebar =================== */
+  function tagNameDeleted(name, deleted){
+    var wanted=String(name||"").trim().toLowerCase();
+    if(!wanted) return false;
+    return Object.keys(deleted||{}).some(function(id){
+      var entry=deleted[id];
+      return !!(entry&&String(entry.name||"").trim().toLowerCase()===wanted);
+    });
+  }
   function migrateFoldersToTags(data){
     data=data||state; var folders=Array.isArray(data.folders)?data.folders:[], tags=Array.isArray(data.tags)?data.tags:[];
-    var mapped={}; folders.forEach(function(folder,index){
+    var deleted=data.deletedTags||{};
+    var mapped={}; folders.forEach(function(folder){
       if(!folder||!folder.id) return;
-      var tag=tags.find(function(entry){ return entry&&entry.name===folder.name; });
-      if(!tag){ tag={id:uid(),name:folder.name||"Untitled",hue:TAG_HUES[tags.length%TAG_HUES.length]}; tags.push(tag); }
+      var name=folder.name||"Untitled";
+      var tag=tags.find(function(entry){ return entry&&entry.name===name&&!(deleted&&deleted[entry.id]); });
+      /* Old folders used to become tags on every launch. Once that tag is
+         deleted, a leftover folder must not mint a new copy of it. */
+      if(!tag){
+        if(tagNameDeleted(name, deleted)) return;
+        tag={id:uid(),name:name,hue:TAG_HUES[tags.length%TAG_HUES.length]}; tags.push(tag);
+      }
       if(folder.color&&/^#[0-9a-f]{6}$/i.test(folder.color)) tag.color=folder.color.toLowerCase();
       mapped[folder.id]=tag.id;
     });
@@ -3018,6 +3037,9 @@
     var index=ungrouped.findIndex(function(tag){ return tag.id===tagId; }), next=index+offset;
     if(index<0||next<0||next>=ungrouped.length) return null;
     return relocateTag(tags, groups, tagId, {groupId:null, targetId:ungrouped[next].id, after:offset>0});
+  }
+  function makeTag(name, hue){
+    return {id:uid(), name:String(name||"").trim().replace(/^#+/,""), hue:typeof hue==="number"?hue:0, color:"#000000", createdAt:Date.now()};
   }
   function forgetTag(groups, tagId){
     var next=(groups||[]).map(function(group){ return {id:group.id, name:group.name, collapsed:!!group.collapsed, tagIds:(group.tagIds||[]).filter(function(id){ return id!==tagId; })}; });
@@ -3350,7 +3372,7 @@
     openMenu(anchor,function(menu){
       var title=document.createElement("div"); title.className="mtitle"; title.textContent="Merge “"+tag.name+"” into"; menu.appendChild(title);
       var targets=document.createElement("div"); targets.className="maxscroll";
-      state.tags.filter(function(other){ return other.id!==tag.id; }).forEach(function(other){ targets.appendChild(mkItem("",other.name,false,function(){ if(!confirm('Merge "'+tag.name+'" into "'+other.name+'"?')) return; state.items.forEach(function(item){ if((item.tagIds||[]).indexOf(tag.id)<0) return; item.tagIds=item.tagIds.filter(function(id){ return id!==tag.id; }); if(item.tagIds.indexOf(other.id)<0) item.tagIds.push(other.id); item.updated=Date.now(); }); var forgotten=forgetTag(state.tagGroups, tag.id); state.tagGroups=forgotten.groups; state.tags=state.tags.filter(function(entry){ return entry.id!==tag.id; }); rememberTagOrder(); if(state.filterTag===tag.id) state.filterTag=other.id; closeMenu(); persist(); renderAll(); showToast(forgotten.removedGroupIds.length?"Tags merged — group removed":"Tags merged"); })); });
+      state.tags.filter(function(other){ return other.id!==tag.id; }).forEach(function(other){ targets.appendChild(mkItem("",other.name,false,function(){ if(!confirm('Merge "'+tag.name+'" into "'+other.name+'"?')) return; state.items.forEach(function(item){ if((item.tagIds||[]).indexOf(tag.id)<0) return; item.tagIds=item.tagIds.filter(function(id){ return id!==tag.id; }); if(item.tagIds.indexOf(other.id)<0) item.tagIds.push(other.id); item.updated=Date.now(); }); recordDeletedTag(tag); var forgotten=forgetTag(state.tagGroups, tag.id); state.tagGroups=forgotten.groups; state.tags=state.tags.filter(function(entry){ return entry.id!==tag.id; }); rememberTagOrder(); if(state.filterTag===tag.id) state.filterTag=other.id; closeMenu(); persist(); renderAll(); showToast(forgotten.removedGroupIds.length?"Tags merged — group removed":"Tags merged"); })); });
       menu.appendChild(targets);
     });
   }
@@ -3364,7 +3386,7 @@
       menu.appendChild(mkItem(tag.hidden?ICON_EYE:ICON_EYE_OFF,tag.hidden?"Show tagged notes in All notes":"Hide tagged notes from All notes",false,function(){ tag.hidden=!tag.hidden; closeMenu(); persist(); renderAll(); }));
       menu.appendChild(sep()); if(nudgeTag(state.tags, state.tagGroups, tag.id, -1)) menu.appendChild(mkItem(ICON_UP,"Move up",false,function(){ closeMenu(); moveTag(tag,-1); })); if(nudgeTag(state.tags, state.tagGroups, tag.id, 1)) menu.appendChild(mkItem(ICON_DOWN,"Move down",false,function(){ closeMenu(); moveTag(tag,1); })); if(tagGroupIdOf(tag.id)) menu.appendChild(mkItem("","Remove from group",false,function(){ var result=relocateTag(state.tags, state.tagGroups, tag.id, {groupId:null}); var removed=result.removedGroupIds.length; closeMenu(); applyTagMove(result, removed?"Group removed":"Removed from group"); }));
       if(state.tags.length>1){ menu.appendChild(sep()); menu.appendChild(mkItem(ICON_DUPLICATE,"Merge into…",false,function(){ openTagMergeMenu(anchor,tag); })); }
-      menu.appendChild(sep()); var remove=mkItem(ICON_DELETE,"Delete tag",false,function(){ if(!confirm('Delete tag "'+tag.name+'"? It will be removed from its notes.')) return; state.items.forEach(function(item){ item.tagIds=(item.tagIds||[]).filter(function(id){ return id!==tag.id; }); }); var forgotten=forgetTag(state.tagGroups, tag.id); state.tagGroups=forgotten.groups; state.tags=state.tags.filter(function(entry){ return entry.id!==tag.id; }); rememberTagOrder(); if(state.filterTag===tag.id) state.filterTag=null; closeMenu(); persist(); renderAll(); showToast(forgotten.removedGroupIds.length?"Tag deleted — group removed":"Tag deleted"); }); remove.className+=" danger"; menu.appendChild(remove);
+      menu.appendChild(sep()); var remove=mkItem(ICON_DELETE,"Delete tag",false,function(){ if(!confirm('Delete tag "'+tag.name+'"? It will be removed from its notes.')) return; state.items.forEach(function(item){ item.tagIds=(item.tagIds||[]).filter(function(id){ return id!==tag.id; }); }); recordDeletedTag(tag); var forgotten=forgetTag(state.tagGroups, tag.id); state.tagGroups=forgotten.groups; state.tags=state.tags.filter(function(entry){ return entry.id!==tag.id; }); rememberTagOrder(); if(state.filterTag===tag.id) state.filterTag=null; closeMenu(); persist(); renderAll(); showToast(forgotten.removedGroupIds.length?"Tag deleted — group removed":"Tag deleted"); }); remove.className+=" danger"; menu.appendChild(remove);
     });
   }
   function openUpcomingTools(anchor){
@@ -6608,7 +6630,7 @@
         inp.value="";
         var existing=state.tags.find(function(tag){ return (tag.name||"").toLowerCase()===name.toLowerCase(); });
         if(existing){ setPicked(existing.id,true); return; }
-        var nt={id:uid(),name:name,hue:0,color:"#000000"};
+        var nt=makeTag(name);
         state.tags.push(nt); rememberTagOrder();
         if(empty.parentNode) empty.parentNode.removeChild(empty);
         addRow(nt);
@@ -6811,7 +6833,7 @@
       });
       m.appendChild(box); m.appendChild(sep());
       var row=document.createElement("div"); row.className="mrow"; var input=document.createElement("input"); input.placeholder="Create and apply tag…";
-      input.onkeydown=function(e){ if(e.key==="Enter"&&input.value.trim()){ var tag={id:uid(),name:input.value.trim().replace(/^#+/,""),hue:0,color:"#000000"}; state.tags.push(tag); rememberTagOrder(); selected.forEach(function(item){ item.tagIds=item.tagIds||[]; if(item.tagIds.indexOf(tag.id)<0) item.tagIds.push(tag.id); item.updated=Date.now(); }); closeMenu(); persist(); renderAll(); showToast("Tag created and applied"); } };
+      input.onkeydown=function(e){ if(e.key==="Enter"&&input.value.trim()){ var tag=makeTag(input.value); state.tags.push(tag); rememberTagOrder(); selected.forEach(function(item){ item.tagIds=item.tagIds||[]; if(item.tagIds.indexOf(tag.id)<0) item.tagIds.push(tag.id); item.updated=Date.now(); }); closeMenu(); persist(); renderAll(); showToast("Tag created and applied"); } };
       row.appendChild(input); m.appendChild(row);
     });
   }
@@ -11210,7 +11232,7 @@
       var t=document.createElement("div"); t.className="mtitle"; t.textContent="New tag"; m.appendChild(t);
       var row=document.createElement("div"); row.className="mrow";
       var inp=document.createElement("input"); inp.placeholder="Tag name…";
-      inp.onkeydown=function(e){ if(e.key==="Enter"&&inp.value.trim()){ state.tags.push({id:uid(),name:inp.value.trim().replace(/^#+/,""),hue:0,color:"#000000"}); rememberTagOrder(); closeMenu(); persist(); renderTags(); if(viewingHome) renderMain(); showToast("Tag created"); } };
+      inp.onkeydown=function(e){ if(e.key==="Enter"&&inp.value.trim()){ state.tags.push(makeTag(inp.value)); rememberTagOrder(); closeMenu(); persist(); renderTags(); if(viewingHome) renderMain(); showToast("Tag created"); } };
       row.appendChild(inp); m.appendChild(row);
     });
   };
@@ -11342,7 +11364,7 @@
         inc.forEach(function(s){ s.id=uid(); delete s.shareId; delete s.shareCreatedAt; if(!s.type) s.type=s.sections?"script":"note"; s.tagIds=[]; s.folderId=null; if(s.type==="script"&&!Array.isArray(s.sections)) s.sections=[sec("",s.body||"")]; if(s.type==="todo"&&!Array.isArray(s.todos)) s.todos=[]; normalizeItem(s); });
         state.items=inc.concat(state.items);
         if(d.folders) state.folders=state.folders.concat(d.folders.map(function(f){ return {id:uid(),name:f.name}; }));
-        if(d.tags) state.tags=state.tags.concat(d.tags.map(function(t){ return {id:uid(),name:t.name,hue:t.hue||265}; }));
+        if(d.tags) state.tags=state.tags.concat(d.tags.map(function(t){ var tag=makeTag(t.name, t.hue||265); if(t.color) tag.color=t.color; return tag; }));
         revealItem(inc[0].id); persist(); renderAll(); showToast("Imported "+inc.length+" item"+(inc.length===1?"":"s"));
       }catch(err){ showToast("That file couldn’t be read",true); }
     };
@@ -11894,12 +11916,18 @@
         if(!isSeedDeviceItem(item)) writeBack=true;
         return true;
       });
+      var layoutBefore=tagLayoutSignature(state);
+      state.deletedTags=pruneDeletedTags(mergeDeletedTags(state.deletedTags, cloud.deletedTags));
       state.folders=unionById(cloud.folders,state.folders);
-      state.tags=unionById(cloud.tags,state.tags);
+      state.tags=mergeTagLists(cloud.tags,state.tags,state.deletedTags);
+      if((state.folders||[]).some(function(folder){ return folder&&folder.id; })) migrateFoldersToTags(state);
+      state.tags=tagsWithoutDeleted(state.tags, state.deletedTags);
+      if(stripDeletedTagIds(state.items, state.deletedTags)) writeBack=true;
+      if(deletedTagSignature(state.deletedTags)!==deletedTagSignature(cloud.deletedTags)) writeBack=true;
+      if(tagIdSignature(state.tags)!==tagIdSignature(cloud.tags)) writeBack=true;
       if(cloud.deletedItems) state.deletedItems=mergeTombstones(state.deletedItems,cloud.deletedItems);
       var prefs=accountPreferences(cloud);
       if(prefs&&typeof prefs.listSort==="string"&&["manual","updated","due","timeSpent","title","tag"].indexOf(prefs.listSort)>=0) state.listSort=prefs.listSort;
-      var layoutBefore=tagLayoutSignature(state);
       if(prefs&&Array.isArray(prefs.tagGroups)) state.tagGroups=prefs.tagGroups;
       if(prefs&&Array.isArray(prefs.tagOrder)) state.tags=applyTagOrder(state.tags, prefs.tagOrder);
       state.tagGroups=sanitizeTagGroups(state.tagGroups, state.tags);
@@ -11919,7 +11947,7 @@
   }
   function armCloudLiveSync(){
     cloudLiveReady=true;
-    lastAppliedLiveFingerprint=liveAccountFingerprint({items:state.items,deletedItems:state.deletedItems,version:state.version,updated:state.lastCloudSync,preferences:{listSort:state.listSort}});
+    lastAppliedLiveFingerprint=liveAccountFingerprint({items:state.items,deletedItems:state.deletedItems,deletedTags:state.deletedTags,tags:state.tags,version:state.version,updated:state.lastCloudSync,preferences:{listSort:state.listSort}});
     lastAppliedCloudUpdated=Math.max(lastAppliedCloudUpdated, Number(state.lastCloudSync)||0);
     watchLiveNote(state.currentId);
     startSharedEditListeners();
@@ -12281,6 +12309,69 @@
     data.updated=data.versionChangedAt;
     return data;
   }
+  function mergeDeletedTags(left,right){
+    var out={};
+    function add(map){
+      Object.keys(map||{}).forEach(function(id){
+        var entry=map[id];
+        if(!entry||typeof entry!=="object") return;
+        var next={deletedAt:Number(entry.deletedAt)||0, name:typeof entry.name==="string"?entry.name:""};
+        if(!out[id]||next.deletedAt>=(Number(out[id].deletedAt)||0)) out[id]=next;
+      });
+    }
+    add(left); add(right);
+    return out;
+  }
+  function pruneDeletedTags(map){
+    var rows=Object.keys(map||{}).map(function(id){ return {id:id, entry:map[id]}; });
+    rows.sort(function(a,b){ return (Number(b.entry&&b.entry.deletedAt)||0)-(Number(a.entry&&a.entry.deletedAt)||0); });
+    var out={};
+    rows.slice(0,400).forEach(function(row){ if(row.entry) out[row.id]=row.entry; });
+    return out;
+  }
+  function deletedTagSignature(map){
+    return Object.keys(map||{}).sort().map(function(id){
+      var entry=map[id]||{};
+      return id+"\n"+(Number(entry.deletedAt)||0)+"\n"+(typeof entry.name==="string"?entry.name:"");
+    }).join("\n");
+  }
+  function tagIdSignature(list){
+    return (list||[]).map(function(tag){ return tag&&tag.id; }).filter(Boolean).sort().join("\n");
+  }
+  function recordDeletedTag(tag){
+    if(!tag||!tag.id) return;
+    state.deletedTags=state.deletedTags||{};
+    var entry={deletedAt:Date.now(), name:typeof tag.name==="string"?tag.name:""};
+    var prior=state.deletedTags[tag.id];
+    if(!prior||entry.deletedAt>=(Number(prior.deletedAt)||0)) state.deletedTags[tag.id]=entry;
+    state.deletedTags=pruneDeletedTags(state.deletedTags);
+  }
+  function tagWasDeleted(tag, deleted){
+    return !!(tag&&tag.id&&deleted&&deleted[tag.id]);
+  }
+  function tagsWithoutDeleted(list, deleted){
+    var seen={}, out=[];
+    (list||[]).forEach(function(tag){
+      if(!tag||!tag.id||seen[tag.id]||tagWasDeleted(tag, deleted)) return;
+      seen[tag.id]=true; out.push(cloneData(tag));
+    });
+    return out;
+  }
+  /* Tags are created on whichever device is handy, so a sync unions them.
+     A delete has to be remembered on its own — otherwise the cloud copy, a
+     live snapshot, or an older backup puts the tag straight back. */
+  function mergeTagLists(cloudList, localList, deleted){
+    return tagsWithoutDeleted(unionById(cloudList, localList), deleted);
+  }
+  function stripDeletedTagIds(items, deleted){
+    var changed=false, ids=deleted||{};
+    (items||[]).forEach(function(item){
+      if(!item||!Array.isArray(item.tagIds)) return;
+      var next=item.tagIds.filter(function(id){ return !ids[id]; });
+      if(next.length!==item.tagIds.length){ item.tagIds=next; changed=true; }
+    });
+    return changed;
+  }
   function mergeCloudWithBackup(cloud, backupData){
     var live=cloneData(cloud&&typeof cloud==="object"?cloud:{});
     var backup=cloneData(backupData&&typeof backupData==="object"?backupData:{});
@@ -12302,8 +12393,9 @@
     });
     if(!added) return live;
     if(countRealAccountItems(live.items)) live.items=live.items.filter(function(item){ return !isSeedDeviceItem(item); });
+    live.deletedTags=pruneDeletedTags(mergeDeletedTags(live.deletedTags, backup.deletedTags));
     live.folders=unionById(live.folders, backup.folders);
-    live.tags=unionById(live.tags, backup.tags);
+    live.tags=mergeTagLists(live.tags, backup.tags, live.deletedTags);
     if(!accountPreferences(live)&&accountPreferences(backup)){
       live.preferences=backup.preferences;
       if(backup.theme) live.theme=backup.theme;
@@ -12351,7 +12443,7 @@
       if(folder){ data.folders=data.folders||[]; data.folders.push(cloneData(folder)); folders[folder.id]=true; }
     }
     (item.tagIds||[]).forEach(function(tagId){
-      if(tags[tagId]) return;
+      if(tags[tagId]||(state.deletedTags&&state.deletedTags[tagId])) return;
       var tag=(state.tags||[]).find(function(entry){ return entry.id===tagId; });
       if(tag){ data.tags=data.tags||[]; data.tags.push(cloneData(tag)); tags[tag.id]=true; }
     });
@@ -12376,7 +12468,7 @@
     return localChangedAt>remoteChangedAt;
   }
   function reconcileWithCloud(cloud){
-    var localData={items:state.items,folders:state.folders,tags:state.tags,deletedItems:state.deletedItems,version:state.version,versionChangedAt:state.versionChangedAt};
+    var localData={items:state.items,folders:state.folders,tags:state.tags,deletedItems:state.deletedItems,deletedTags:state.deletedTags,version:state.version,versionChangedAt:state.versionChangedAt};
     cloud=cloud&&typeof cloud==="object"?cloud:{};
     var result={cloud:cloneData(cloud),data:cloneData(cloud),conflicts:[],needsCloudWrite:false};
     result.data.items=Array.isArray(result.data.items)?result.data.items:[];
@@ -12431,7 +12523,13 @@
     Object.keys(localChanges).forEach(function(id){ if(localChanges[id].kind==="delete") consider(id,null,cloudById[id]); });
     result.data.items=merged;
     result.data.folders=unionById(result.data.folders,localData.folders);
-    result.data.tags=unionById(result.data.tags,localData.tags);
+    result.data.deletedTags=pruneDeletedTags(mergeDeletedTags(cloud.deletedTags, localData.deletedTags));
+    result.data.tags=mergeTagLists(result.data.tags, localData.tags, result.data.deletedTags);
+    var hadFolders=(result.data.folders||[]).some(function(folder){ return folder&&folder.id; });
+    migrateFoldersToTags(result.data);
+    result.data.tags=tagsWithoutDeleted(result.data.tags, result.data.deletedTags);
+    if(stripDeletedTagIds(result.data.items, result.data.deletedTags)) result.needsCloudWrite=true;
+    if(hadFolders) result.needsCloudWrite=true;
     var cloudPrefs=accountPreferences(cloud)||{};
     var localLayout={tags:state.tags, tagOrder:state.tagOrder, tagGroups:state.tagGroups};
     var cloudLayout={tags:result.data.tags, tagOrder:cloudPrefs.tagOrder, tagGroups:cloudPrefs.tagGroups};
@@ -12439,6 +12537,8 @@
       result.needsCloudWrite=true;
       result.data.preferences=Object.assign({}, cloudPrefs, {tagGroups:cloneData(state.tagGroups||[]), tagOrder:(state.tagOrder||[]).slice()});
     }
+    if(tagIdSignature(result.data.tags)!==tagIdSignature(cloud.tags)) result.needsCloudWrite=true;
+    if(deletedTagSignature(result.data.deletedTags)!==deletedTagSignature(pruneDeletedTags(cloud.deletedTags))) result.needsCloudWrite=true;
     result.data.deletedItems=pruneTombstones(result.data.deletedItems);
     if(result.needsCloudWrite){
       result.data.version=Math.max(1,Number(cloud.version)||0,Number(localData.version)||0)+1;
@@ -12607,7 +12707,8 @@
   function liveAccountFingerprint(cloud){
     var items={};
     ((cloud&&cloud.items)||[]).forEach(function(item){ if(item&&item.id) items[item.id]=itemSyncSignature(item)+":"+(Number(item.updated)||0); });
-    return stableStringify({updated:Number(cloud&&cloud.updated)||0,version:Number(cloud&&cloud.version)||0,items:items,deleted:cloud&&cloud.deletedItems||{},listSort:(cloud&&cloud.preferences&&cloud.preferences.listSort)||""});
+    var tagIds=((cloud&&cloud.tags)||[]).map(function(tag){ return tag&&tag.id; }).filter(Boolean).sort();
+    return stableStringify({updated:Number(cloud&&cloud.updated)||0,version:Number(cloud&&cloud.version)||0,items:items,deleted:cloud&&cloud.deletedItems||{},deletedTags:cloud&&cloud.deletedTags||{},tags:tagIds,listSort:(cloud&&cloud.preferences&&cloud.preferences.listSort)||""});
   }
   function isStaleAccountSnapshot(cloud,lastAppliedUpdated,lastSentAt){
     var incoming=Number(cloud&&cloud.updated)||0;
@@ -12624,9 +12725,12 @@
     var keepId=state.currentId;
     state.items=(d.items&&d.items.length)?d.items:[newNoteItem()];
     state.items.forEach(normalizeItem);
-    state.folders=d.folders||[]; state.tags=d.tags||[];
+    state.folders=d.folders||[]; state.tags=Array.isArray(d.tags)?d.tags:[];
     state.deletedItems=d.deletedItems&&typeof d.deletedItems==="object"?cloneData(d.deletedItems):{};
+    state.deletedTags=d.deletedTags&&typeof d.deletedTags==="object"&&!Array.isArray(d.deletedTags)?cloneData(d.deletedTags):{};
     migrateFoldersToTags(state);
+    state.tags=tagsWithoutDeleted(state.tags, state.deletedTags);
+    stripDeletedTagIds(state.items, state.deletedTags);
     var highestItemVersion=state.items.reduce(function(highest,item){ return Math.max(highest,Number(item&&item.version)||Number(item&&item.updated)||1); },1);
     state.version=Math.max(1,Number(d.version)||highestItemVersion);
     state.versionChangedAt=Number(d.versionChangedAt)||Number(d.updated)||Date.now();
@@ -12651,6 +12755,8 @@
     merged.tags=Array.isArray(merged.tags)?merged.tags:[];
     merged.items.forEach(function(item){ if(item&&item.id) usedItemIds[item.id]=item; });
     merged.folders.forEach(function(folder){ if(folder&&folder.id) usedFolderIds[folder.id]=folder; });
+    merged.deletedTags=pruneDeletedTags(mergeDeletedTags(cloud&&cloud.deletedTags, device&&device.deletedTags));
+    merged.tags=tagsWithoutDeleted(merged.tags, merged.deletedTags);
     merged.tags.forEach(function(tag){ if(tag&&tag.id) usedTagIds[tag.id]=tag; });
     (device.folders||[]).forEach(function(folder){
       if(!folder||!folder.id) return;
@@ -12658,7 +12764,7 @@
       var copy=cloneData(folder); usedFolderIds[copy.id]=copy; folderIds[folder.id]=copy.id; merged.folders.push(copy);
     });
     (device.tags||[]).forEach(function(tag){
-      if(!tag||!tag.id) return;
+      if(!tag||!tag.id||tagWasDeleted(tag, merged.deletedTags)) return;
       if(usedTagIds[tag.id]){ tagIds[tag.id]=tag.id; return; }
       var copy=cloneData(tag); usedTagIds[copy.id]=copy; tagIds[tag.id]=copy.id; merged.tags.push(copy);
     });
@@ -13044,6 +13150,7 @@
       folders:data.folders,
       tags:data.tags,
       deletedItems:pruneTombstones(data.deletedItems||{}),
+      deletedTags:pruneDeletedTags(data.deletedTags||{}),
       version:Number(data.version)||1,
       versionChangedAt:Number(data.versionChangedAt)||sentAt,
       preferences:{theme:state.theme,motion:state.motion,darkness:state.darkness,enabledTypes:state.enabledTypes,typeDefaults:state.typeDefaults,noteInsertOptions:state.noteInsertOptions,tagsCollapsed:state.tagsCollapsed,typesCollapsed:state.typesCollapsed,allNotesCollapsed:state.allNotesCollapsed,focusNoteBody:state.focusNoteBody,quickAiHandoff:state.quickAiHandoff,allNotesName:state.allNotesName,readChapterNames:state.readChapterNames,listSort:state.listSort,tagGroups:state.tagGroups||[],tagOrder:state.tagOrder||[],homeLayout:normalizeHomeLayout(state.homeLayout),homeExtrasVersion:state.homeExtrasVersion||0,homeScratch:state.homeScratch||"",agentSettings:agentSettings()},
@@ -13111,6 +13218,7 @@
           }
         });
         if(payload.deletedItems&&typeof payload.deletedItems==="object") state.deletedItems=cloneData(payload.deletedItems);
+        if(payload.deletedTags&&typeof payload.deletedTags==="object") state.deletedTags=pruneDeletedTags(mergeDeletedTags(state.deletedTags, payload.deletedTags));
         state.version=Math.max(1,Number(state.version)||1,Number(payload.version)||1);
         state.versionChangedAt=Number(payload.versionChangedAt)||state.versionChangedAt||sentAt;
         lastAppliedLiveFingerprint=liveAccountFingerprint(payload);
