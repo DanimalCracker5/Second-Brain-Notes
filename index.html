@@ -1450,6 +1450,29 @@
   .home-todo em{ color:var(--ink-faint); font:500 .68rem "DM Mono",monospace; font-style:normal; white-space:nowrap; }
   .home-filters{ display:flex; flex-wrap:wrap; gap:6px; margin:0 2px 8px; }
   .home-filters button{ border:1px solid var(--accent-line); border-radius:999px; padding:4px 8px; color:var(--accent); background:var(--accent-soft); cursor:pointer; font:600 .72rem "DM Sans",sans-serif; }
+  .home-notes{ min-width:0; }
+  /* Tags stay on one row and scroll, so a long library does not stretch the notes card. */
+  .home-tag-rail{ display:flex; flex-wrap:nowrap; gap:8px; width:100%; min-width:0; margin:0 0 10px; padding:1px 1px 8px; overflow-x:auto; overflow-y:hidden; overscroll-behavior-x:contain; scrollbar-width:thin; scrollbar-color:rgba(255,255,255,.16) transparent; }
+  .home-tag-rail::-webkit-scrollbar{ height:4px; }
+  .home-tag-rail::-webkit-scrollbar-thumb{ background:rgba(255,255,255,.14); border-radius:8px; }
+  .home-tag-rail .home-tag{ flex:none; }
+  .home-tag-rail .home-tag span{ max-width:22ch; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+  .home-tag em{ color:var(--ink-faint); font:500 .68rem "DM Mono",monospace; font-style:normal; }
+  .home-tag.on em{ color:var(--ink-dim); }
+  .home-notes-controls{ display:flex; align-items:flex-start; justify-content:space-between; gap:12px 16px; margin:0 2px 12px; }
+  .home-filter-scroll{ display:flex; align-items:center; flex-wrap:wrap; gap:6px; min-width:0; }
+  .home-control-label{ margin-right:2px; color:var(--ink-faint); font:600 .64rem "DM Mono",monospace; letter-spacing:.14em; text-transform:uppercase; white-space:nowrap; }
+  .home-chip{ border:1px solid var(--line); border-radius:999px; padding:5px 10px; color:var(--ink-dim); background:rgba(255,255,255,.03); cursor:pointer; font:600 .75rem "DM Sans",sans-serif; white-space:nowrap; }
+  .home-chip:hover{ color:var(--ink); border-color:var(--accent-line); }
+  .home-chip.on{ color:var(--ink); border-color:var(--accent-line); background:var(--accent-soft); }
+  .home-chip.warn.on{ color:#fecaca; border-color:rgba(252,165,165,.4); background:rgba(248,113,113,.12); }
+  .home-chip.search{ color:var(--accent); border-color:var(--accent-line); background:var(--accent-soft); }
+  .home-filter-gap{ width:1px; align-self:stretch; min-height:18px; background:var(--line); margin:0 4px; }
+  .home-sort{ display:flex; align-items:center; gap:8px; flex:none; }
+  .home-sort select{ appearance:none; -webkit-appearance:none; border:1px solid var(--line); border-radius:999px; padding:5px 28px 5px 12px; color:var(--ink); background-color:rgba(255,255,255,.035); background-image:linear-gradient(45deg,transparent 50%,var(--ink-dim) 50%),linear-gradient(135deg,var(--ink-dim) 50%,transparent 50%); background-position:calc(100% - 16px) calc(50% - 1px),calc(100% - 11px) calc(50% - 1px); background-size:5px 5px,5px 5px; background-repeat:no-repeat; color-scheme:dark; cursor:pointer; font:600 .75rem "DM Sans",sans-serif; outline:none; }
+  .home-sort select:hover,.home-sort select:focus{ border-color:var(--accent-line); }
+  .home-sort select option{ color:#1a1a1a; background:#fff; }
+  .home-chip:focus-visible,.home-tag-rail .home-tag:focus-visible,.home-sort select:focus-visible{ outline:2px solid var(--accent-line); outline-offset:2px; }
   .tag-empty{ animation:fadeIn .25s ease both; }
 
   body.reduce-fx *,body.reduce-fx *::before,body.reduce-fx *::after{ animation-duration:.001s !important; animation-delay:0s !important; transition-duration:.001s !important; }
@@ -1484,6 +1507,11 @@
     .home-head{ flex-direction:column; align-items:stretch; }
     .home-tools{ justify-content:space-between; }
     .home-grid,.home-add-grid{ grid-template-columns:1fr; }
+    .home-notes-controls{ flex-direction:column; align-items:stretch; }
+    .home-sort{ width:100%; }
+    .home-sort select{ flex:1; min-width:0; }
+    .home-filter-scroll{ flex-wrap:nowrap; overflow-x:auto; padding-bottom:4px; scrollbar-width:none; }
+    .home-filter-scroll::-webkit-scrollbar{ display:none; }
   }
 </style>
 </head>
@@ -2298,7 +2326,7 @@
   }
 
   /* Opening the site lands on Home. A note is shown only after it is chosen. */
-  var viewingHome=true, homeCustomizing=false, homeTagId=null, homeTypeFilter="", homeQuery="", homeSearchFocus=false, homeScratchTimer=null;
+  var viewingHome=true, homeCustomizing=false, homeTagId=null, homeTypeFilter="", homeStatusFilter="", homeQuery="", homeSearchFocus=false, homeScratchTimer=null, homeTagRailScroll=0;
   function current(){ return state.items.find(function(s){return s.id===state.currentId;})||state.items[0]; }
   /* Time is counted only while this app is the focused, visible tab. It is kept
      separately from `updated` so opening a note does not change its recency. */
@@ -3966,19 +3994,31 @@
     var mod=itemModule(it), todoItem=isTodoNote(it)||it.type==="todo";
     return mod&&mod.icon?mod.icon:(it.type==="script"?ICON_SCRIPT:(todoItem?ICON_TODO:(it.type==="audio"?ICON_AUDIO:(it.type==="agent"?ICON_AGENT:ICON_NOTE))));
   }
-  function homeNotes(){
+  function homeListSortOptions(){
+    return [["updated","Recently updated"],["due","Due date · soonest"],["timeSpent","Most time spent"],["title","Title A–Z"],["tag","Tag A–Z"],["manual","Custom order"]];
+  }
+  function homeStatusFilters(){
+    return [["open","Open"],["done","Done"],["due","Due"],["overdue","Overdue"]];
+  }
+  function homeNoteVisible(it){
+    if(!it||it.hidden) return false;
+    if(homeTypeFilter&&itemKindForAgent(it)!==homeTypeFilter) return false;
+    if(homeTagId){ if((it.tagIds||[]).indexOf(homeTagId)<0) return false; }
+    else if((it.tagIds||[]).some(function(id){ var tag=tagById(id); return tag&&tag.hidden; })) return false;
+    var todo=isTodoNote(it)||it.type==="todo";
+    if(homeStatusFilter==="open"&&!(todo&&!it.done)) return false;
+    if(homeStatusFilter==="done"&&!(todo&&it.done)) return false;
+    if(homeStatusFilter==="due"&&!itemDueDate(it)) return false;
+    if(homeStatusFilter==="overdue"&&dueDateClass(itemDueDate(it))!=="overdue") return false;
     var query=(homeQuery||"").trim().toLowerCase();
-    var items=(state.items||[]).filter(function(it){
-      if(!it||it.hidden) return false;
-      if(homeTypeFilter&&itemKindForAgent(it)!==homeTypeFilter) return false;
-      if(homeTagId){ if((it.tagIds||[]).indexOf(homeTagId)<0) return false; }
-      else if((it.tagIds||[]).some(function(id){ var tag=tagById(id); return tag&&tag.hidden; })) return false;
-      if(query){
-        var tagNames=(it.tagIds||[]).map(function(id){ var tag=tagById(id); return tag?tag.name:""; }).join(" ");
-        if((it.title+" "+itemText(it)+" "+tagNames).toLowerCase().indexOf(query)<0) return false;
-      }
-      return true;
-    });
+    if(query){
+      var tagNames=(it.tagIds||[]).map(function(id){ var tag=tagById(id); return tag?tag.name:""; }).join(" ");
+      if((it.title+" "+itemText(it)+" "+tagNames).toLowerCase().indexOf(query)<0) return false;
+    }
+    return true;
+  }
+  function homeNotes(){
+    var items=(state.items||[]).filter(homeNoteVisible);
     var sort=state.listSort||"updated";
     return items.sort(function(a,b){
       if(sort==="manual") return (typeof a.manualOrder==="number"?a.manualOrder:state.items.indexOf(a))-(typeof b.manualOrder==="number"?b.manualOrder:state.items.indexOf(b));
@@ -4064,6 +4104,143 @@
     button.onclick=function(){ openHomeItem(it.id); };
     return button;
   }
+  function setHomeNotesTag(id){
+    homeTagId=homeTagId===id?null:id;
+    if(homeTagId&&!homeWidgetOn("notes")) setHomeWidgetEnabled("notes", true);
+    else renderMain();
+  }
+  function setHomeNotesType(kind){
+    homeTypeFilter=homeTypeFilter===kind?"":kind;
+    if(homeTypeFilter&&!homeWidgetOn("notes")) setHomeWidgetEnabled("notes", true);
+    else renderMain();
+  }
+  function setHomeNotesStatus(status){
+    homeStatusFilter=homeStatusFilter===status?"":status;
+    renderMain();
+  }
+  function homeTagCount(tagId){
+    var saved=homeTagId, count=0;
+    homeTagId=tagId;
+    try{ count=(state.items||[]).filter(homeNoteVisible).length; }
+    finally{ homeTagId=saved; }
+    return count;
+  }
+  function homeTypeFilters(){
+    var counts={};
+    (state.items||[]).forEach(function(it){
+      if(!it||it.hidden) return;
+      var kind=itemKindForAgent(it);
+      counts[kind]=(counts[kind]||0)+1;
+    });
+    if(homeTypeFilter&&!counts[homeTypeFilter]) counts[homeTypeFilter]=0;
+    return Object.keys(counts).sort(function(a,b){
+      return counts[b]-counts[a]||itemLabel({type:a}).localeCompare(itemLabel({type:b}));
+    }).map(function(kind){ return [kind, itemLabel({type:kind})]; });
+  }
+  function homeFilterChip(label, pressed, onClick, extraClass){
+    var chip=document.createElement("button");
+    chip.type="button";
+    chip.className="home-chip"+(pressed?" on":"")+(extraClass?" "+extraClass:"");
+    chip.textContent=label;
+    chip.setAttribute("aria-pressed",pressed?"true":"false");
+    chip.onclick=onClick;
+    return chip;
+  }
+  function buildHomeNotesToolbar(){
+    var tools=document.createElement("div");
+    if(["","open","done","due","overdue"].indexOf(homeStatusFilter)<0) homeStatusFilter="";
+    var tags=(state.tags||[]).filter(function(tag){ return tag&&(!tag.hidden||tag.id===homeTagId); });
+    if(tags.length){
+      var rail=document.createElement("div");
+      rail.id="homeTagRail";
+      rail.className="home-tag-rail";
+      rail.setAttribute("role","group");
+      rail.setAttribute("aria-label","Filter by tag");
+      var all=document.createElement("button");
+      all.type="button";
+      all.className="home-tag"+(!homeTagId?" on":"");
+      all.dataset.tagId="";
+      all.title="Show every tag";
+      all.setAttribute("aria-pressed",!homeTagId?"true":"false");
+      var allName=document.createElement("span"); allName.textContent="All";
+      var allCount=document.createElement("em"); allCount.textContent=String(homeTagCount(null));
+      all.appendChild(allName); all.appendChild(allCount);
+      all.onclick=function(){ if(homeTagId){ homeTagId=null; renderMain(); } };
+      rail.appendChild(all);
+      tags.forEach(function(tag){
+        var chip=document.createElement("button");
+        chip.type="button";
+        chip.className="home-tag"+(homeTagId===tag.id?" on":"");
+        chip.dataset.tagId=tag.id;
+        chip.title=tag.name||"Tag";
+        chip.setAttribute("aria-pressed",homeTagId===tag.id?"true":"false");
+        var dot=document.createElement("i"); dot.style.background=tagColor(tag);
+        var name=document.createElement("span"); name.textContent=tag.name||"Tag";
+        var count=document.createElement("em"); count.textContent=String(homeTagCount(tag.id));
+        chip.appendChild(dot); chip.appendChild(name); chip.appendChild(count);
+        chip.onclick=function(){ setHomeNotesTag(tag.id); };
+        rail.appendChild(chip);
+      });
+      tools.appendChild(rail);
+    }
+    var controls=document.createElement("div"); controls.className="home-notes-controls";
+    var filters=document.createElement("div"); filters.className="home-filter-scroll"; filters.setAttribute("role","group"); filters.setAttribute("aria-label","Filter notes");
+    var filterLabel=document.createElement("span"); filterLabel.className="home-control-label"; filterLabel.textContent="Filter";
+    filters.appendChild(filterLabel);
+    if((homeQuery||"").trim()){
+      filters.appendChild(homeFilterChip("Search: "+homeQuery.trim()+"  ×", true, function(){ homeQuery=""; renderMain(); }, "search"));
+    }
+    filters.appendChild(homeFilterChip("All types", !homeTypeFilter, function(){ if(homeTypeFilter){ homeTypeFilter=""; renderMain(); } }));
+    homeTypeFilters().forEach(function(row){
+      filters.appendChild(homeFilterChip(row[1], homeTypeFilter===row[0], function(){ setHomeNotesType(row[0]); }));
+    });
+    var gap=document.createElement("span"); gap.className="home-filter-gap"; gap.setAttribute("aria-hidden","true");
+    filters.appendChild(gap);
+    homeStatusFilters().forEach(function(row){
+      var extra=row[0]==="overdue"?"warn":"";
+      var chip=homeFilterChip(row[1], homeStatusFilter===row[0], function(){ setHomeNotesStatus(row[0]); }, extra);
+      chip.title=row[0]==="open"?"Open todos":(row[0]==="done"?"Finished todos":(row[0]==="due"?"Has a due date":"Past due"));
+      filters.appendChild(chip);
+    });
+    var sortWrap=document.createElement("label"); sortWrap.className="home-sort";
+    var sortLabel=document.createElement("span"); sortLabel.className="home-control-label"; sortLabel.textContent="Sort";
+    var select=document.createElement("select");
+    select.id="homeNotesSort";
+    select.setAttribute("aria-label","Sort notes");
+    var sorts=homeListSortOptions(), known=false;
+    sorts.forEach(function(opt){
+      var option=document.createElement("option"); option.value=opt[0]; option.textContent=opt[1];
+      if(opt[0]===state.listSort) known=true;
+      select.appendChild(option);
+    });
+    select.value=known?state.listSort:"updated";
+    select.onchange=function(){ setListSort(select.value); };
+    sortWrap.appendChild(sortLabel); sortWrap.appendChild(select);
+    controls.appendChild(filters); controls.appendChild(sortWrap);
+    tools.appendChild(controls);
+    return tools;
+  }
+  function restoreHomeTagRail(rail){
+    if(!rail) return;
+    var selected=homeTagId||"", chip=null, buttons=rail.querySelectorAll(".home-tag"), i;
+    for(i=0;i<buttons.length;i++) if((buttons[i].dataset.tagId||"")===selected) chip=buttons[i];
+    var view=homeTagRailScroll||0;
+    rail.scrollLeft=view;
+    /* A tag picked while the row was wide can sit past the edge once the row
+       gets narrower. Bring that chip back without yanking a chip the user can
+       already see. */
+    if(chip&&rail.clientWidth){
+      var railBox=rail.getBoundingClientRect(), chipBox=chip.getBoundingClientRect();
+      var left=chipBox.left-railBox.left+rail.scrollLeft, right=left+chipBox.width;
+      var hidden=left<rail.scrollLeft+4||right>rail.scrollLeft+rail.clientWidth-4;
+      if(hidden){
+        view=left<rail.scrollLeft+8?Math.max(0, left-8):Math.max(0, right-rail.clientWidth+12);
+        rail.scrollLeft=view;
+      }
+    }
+    homeTagRailScroll=rail.scrollLeft;
+    rail.addEventListener("scroll", function(){ homeTagRailScroll=rail.scrollLeft; }, {passive:true});
+  }
   function buildHomeNotesWidget(hidden){
     var body=document.createElement("div"); body.className="home-notes";
     if(hidden){
@@ -4071,22 +4248,10 @@
       body.appendChild(off); return homeWidgetFrame("notes", body);
     }
     if(homeTagId&&!tagById(homeTagId)) homeTagId=null;
-    var filters=[];
-    if(homeTagId){ var tag=tagById(homeTagId); if(tag) filters.push(tag.name); }
-    if(homeTypeFilter) filters.push(itemLabel({type:homeTypeFilter}));
-    if((homeQuery||"").trim()) filters.push("Search: "+homeQuery.trim());
-    if(filters.length){
-      var bar=document.createElement("div"); bar.className="home-filters";
-      filters.forEach(function(text){
-        var chip=document.createElement("button"); chip.type="button"; chip.textContent=text+"  ×";
-        chip.onclick=function(){ homeTagId=null; homeTypeFilter=""; homeQuery=""; renderMain(); };
-        bar.appendChild(chip);
-      });
-      body.appendChild(bar);
-    }
+    body.appendChild(buildHomeNotesToolbar());
     var items=homeNotes();
     if(!items.length){
-      var empty=document.createElement("p"); empty.className="home-muted"; empty.textContent=homeTagId?"Nothing in this tag.":((homeQuery||"").trim()||homeTypeFilter)?"Nothing matches.":"No notes yet.";
+      var empty=document.createElement("p"); empty.className="home-muted"; empty.textContent=homeTagId?"Nothing in this tag.":((homeQuery||"").trim()||homeTypeFilter||homeStatusFilter)?"Nothing matches.":"No notes yet.";
       body.appendChild(empty);
     } else items.forEach(function(it){ body.appendChild(buildHomeNoteRow(it)); });
     return homeWidgetFrame("notes", body, items.length);
@@ -4157,11 +4322,7 @@
       var dot=document.createElement("i"); dot.style.background=tagColor(tag);
       var name=document.createElement("span"); name.textContent=tag.name||"Tag";
       chip.appendChild(dot); chip.appendChild(name);
-      chip.onclick=function(){
-        homeTagId=homeTagId===tag.id?null:tag.id;
-        if(homeTagId&&!homeWidgetOn("notes")) setHomeWidgetEnabled("notes", true);
-        else renderMain();
-      };
+      chip.onclick=function(){ setHomeNotesTag(tag.id); };
       body.appendChild(chip);
     });
     return homeWidgetFrame("tags", body);
@@ -4279,11 +4440,7 @@
     kinds.forEach(function(kind){
       var chip=document.createElement("button"); chip.type="button"; chip.className="home-tag"+(homeTypeFilter===kind?" on":"");
       chip.textContent=itemLabel({type:kind})+"  "+counts[kind];
-      chip.onclick=function(){
-        homeTypeFilter=homeTypeFilter===kind?"":kind;
-        if(homeTypeFilter&&!homeWidgetOn("notes")) setHomeWidgetEnabled("notes", true);
-        else renderMain();
-      };
+      chip.onclick=function(){ setHomeNotesType(kind); };
       body.appendChild(chip);
     });
     return homeWidgetFrame("types", body);
@@ -4375,6 +4532,7 @@
       sheet.appendChild(slot);
     }
     canvas.appendChild(sheet);
+    restoreHomeTagRail(sheet.querySelector("#homeTagRail"));
     if(homeSearchFocus){
       homeSearchFocus=false;
       var search=sheet.querySelector(".home-search-input");
