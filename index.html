@@ -12495,15 +12495,36 @@
     }
     renderFoot();
   }
-  /* iPhone, iPad, and iPadOS Safari all use WebKit. signInWithRedirect leaves
-     this site, bounces through the Firebase auth domain, and comes back with
-     the session dropped (storage partitioning). The page then shows Sign in
-     with Google again, which is the loop. The Google window has to stay a
-     popup so this page can receive the account directly. */
+  /* iPhone browsers (Safari and Chrome) are WebKit. signInWithRedirect leaves
+     this site, signs in at Google, and comes back without the account because
+     the Firebase auth domain's storage is partitioned. That is the loop in
+     the screenshot. The account has to be delivered to a window this page
+     opened. Firebase opens that window only after an await, which iPhone
+     treats as unsolicited and blocks — so the window has to be opened inside
+     this tap and handed over when Firebase is ready. */
   function storagePartitionedSignIn(){
     var ua=navigator.userAgent||"";
     if(/iPhone|iPad|iPod/i.test(ua)) return true;
     return navigator.platform==="MacIntel"&&navigator.maxTouchPoints>1;
+  }
+  function reserveGoogleWindow(){
+    if(!storagePartitionedSignIn()) return null;
+    var popup=null;
+    try{ popup=window.open("about:blank","sb-google-auth","popup=yes,width=480,height=720,left=24,top=24"); }catch(e){ popup=null; }
+    if(!popup||popup.closed) return null;
+    var original=window.open, delivered=false;
+    window.open=function(url){
+      if(delivered) return original.apply(window, arguments);
+      delivered=true;
+      window.open=original;
+      try{ if(url) popup.location.replace(url); }catch(e){}
+      try{ popup.focus(); }catch(e){}
+      return popup;
+    };
+    return function release(unused){
+      if(window.open!==original) window.open=original;
+      if(unused&&!delivered&&popup&&!popup.closed){ try{ popup.close(); }catch(e){} }
+    };
   }
   function googleAuthProvider(){ return new firebase.auth.GoogleAuthProvider(); }
   function authErrorMessage(e){
@@ -12551,11 +12572,17 @@
     }
     if(button){ button.disabled=true; $("gateSignInLabel").textContent="Opening secure sign-in…"; }
     setAuthGate(true,"Continue in the Google window. Choose your account and leave that window open until it closes.");
-    /* Must call signInWithPopup in this tap. Waiting first makes iOS block
-       the window, and the old redirect fallback then dumped the session. */
+    var releaseWindow=reserveGoogleWindow();
+    function finishWindow(unused){
+      if(!releaseWindow) return;
+      var release=releaseWindow;
+      releaseWindow=null;
+      release(unused);
+    }
     auth.signInWithPopup(provider).then(function(result){
-      if(result&&result.user) return;
-      if(currentUser) return;
+      var signedIn=!!(result&&result.user)||!!currentUser;
+      finishWindow(!signedIn);
+      if(signedIn) return;
       if(storagePartitionedSignIn()){
         resetButton();
         setAuthGate(true,"Google closed before this page received the sign-in. Tap Sign in with Google again and leave the Google window open until it finishes.",true);
@@ -12563,6 +12590,7 @@
       }
       useRedirect();
     }).catch(function(e){
+      finishWindow(true);
       var code=e&&e.code||"";
       if(code==="auth/popup-closed-by-user"||code==="auth/cancelled-popup-request"){
         /* iPhone often reports the window as closed while the session is

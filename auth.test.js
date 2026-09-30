@@ -30,8 +30,12 @@ test("iPhone sign-in uses the Google window and does not start the redirect loop
   assert.match(guard, /iPhone\|iPad\|iPod/);
   const signIn = between("signIn", "hasContent");
   assert.equal(html.includes("function prefersRedirectSignIn("), false);
+  const reserve = between("reserveGoogleWindow", "googleAuthProvider");
+  assert.match(reserve, /window\.open\("about:blank"/);
+  assert.match(reserve, /popup\.location\.replace\(url\)/);
   const popupAt = signIn.indexOf("auth.signInWithPopup(provider)");
-  assert.ok(popupAt > 0, "sign-in opens the Google window");
+  const reserveAt = signIn.indexOf("reserveGoogleWindow()");
+  assert.ok(reserveAt > 0 && popupAt > reserveAt, "the Google window is reserved inside the tap, before Firebase opens it");
   const afterPopup = signIn.slice(popupAt);
   assert.match(afterPopup, /if\(storagePartitionedSignIn\(\)\)\{\s*resetButton\(\);[\s\S]*?return;\s*\}\s*useRedirect\(\)/);
   assert.match(afterPopup, /if\(storagePartitionedSignIn\(\)\)\{ fail\(e\); return; \}/);
