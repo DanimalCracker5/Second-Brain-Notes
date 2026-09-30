@@ -123,6 +123,83 @@ test("home has a notes-list toggle and a way back from a note", function () {
   assert.match(html, /data-home-widget/);
 });
 
+test("home notes honor tag, type, status, and search filters, then the chosen sort", function () {
+  const box = {
+    homeQuery: "",
+    homeTypeFilter: "",
+    homeTagId: null,
+    homeStatusFilter: "",
+    state: {
+      listSort: "title",
+      tags: [
+        { id: "t1", name: "Work", hidden: false },
+        { id: "t2", name: "Quiet", hidden: true }
+      ],
+      items: [
+        { id: "a", title: "Bravo", type: "note", hidden: false, tagIds: ["t1"], updated: 2, text: "unique-body" },
+        { id: "b", title: "Alpha", type: "todo", hidden: false, tagIds: [], updated: 5, done: false, dueDate: "2000-01-01", text: "" },
+        { id: "c", title: "Charlie", type: "todo", hidden: false, tagIds: ["t1"], updated: 3, done: true, text: "done" },
+        { id: "d", title: "Hidden tag", type: "note", hidden: false, tagIds: ["t2"], updated: 9, text: "" },
+        { id: "e", title: "Secret", type: "note", hidden: true, tagIds: ["t1"], updated: 8, text: "" }
+      ]
+    },
+    itemKindForAgent: function (it) { return it.type === "todo" ? "todo" : "note"; },
+    isTodoNote: function (it) { return it.type === "todo"; },
+    itemDueDate: function (it) { return it.dueDate || ""; },
+    dueDateClass: function (value) { return value === "2000-01-01" ? "overdue" : ""; },
+    tagById: function (id) { return box.state.tags.filter(function (tag) { return tag.id === id; })[0]; },
+    itemText: function (it) { return it.text || ""; },
+    firstTagName: function () { return ""; }
+  };
+  vm.createContext(box);
+  vm.runInContext(
+    [grab("homeNoteVisible", "homeNotes"), grab("homeNotes", "homeContinueItem")].join("\n"),
+    box,
+    { filename: "home-notes-filter" }
+  );
+  const ids = function () { return box.homeNotes().map(function (it) { return it.id; }); };
+  assert.deepEqual(ids(), ["b", "a", "c"]);
+  box.homeTagId = "t1";
+  assert.deepEqual(ids(), ["a", "c"]);
+  box.homeTypeFilter = "todo";
+  assert.deepEqual(ids(), ["c"]);
+  box.homeTagId = null;
+  box.homeTypeFilter = "";
+  box.homeStatusFilter = "overdue";
+  assert.deepEqual(ids(), ["b"]);
+  box.homeStatusFilter = "due";
+  assert.deepEqual(ids(), ["b"]);
+  box.homeStatusFilter = "done";
+  assert.deepEqual(ids(), ["c"]);
+  box.homeStatusFilter = "open";
+  assert.deepEqual(ids(), ["b"]);
+  box.homeStatusFilter = "";
+  box.homeQuery = "unique-body";
+  assert.deepEqual(ids(), ["a"]);
+  box.homeQuery = "";
+  box.state.listSort = "updated";
+  assert.deepEqual(ids(), ["b", "c", "a"]);
+});
+
+test("the home notes list has a horizontal tag rail, filters, and sorting", function () {
+  const toolbar = grab("buildHomeNotesToolbar", "restoreHomeTagRail");
+  const widget = grab("buildHomeNotesWidget", "addHomeCapture");
+  assert.match(toolbar, /id="homeTagRail"/);
+  assert.match(toolbar, /Filter by tag/);
+  assert.match(toolbar, /Filter notes/);
+  assert.match(toolbar, /id="homeNotesSort"/);
+  assert.match(toolbar, /setHomeNotesTag\(tag\.id\)/);
+  assert.match(toolbar, /setHomeNotesType\(row\[0\]\)/);
+  assert.match(toolbar, /setHomeNotesStatus\(row\[0\]\)/);
+  assert.match(toolbar, /setListSort\(select\.value\)/);
+  assert.match(widget, /buildHomeNotesToolbar\(\)/);
+  assert.match(html, /\.home-tag-rail\{[^}]*flex-wrap:\s*nowrap/);
+  assert.match(html, /\.home-tag-rail\{[^}]*overflow-x:\s*auto/);
+  assert.match(grab("renderHome", "renderMain"), /restoreHomeTagRail\(sheet\.querySelector\("#homeTagRail"\)\)/);
+  assert.match(grab("buildHomeTagsWidget", "buildHomeGlanceWidget"), /setHomeNotesTag\(tag\.id\)/);
+  assert.match(grab("buildHomeTypesWidget", "buildHomeScratchWidget"), /setHomeNotesType\(kind\)/);
+});
+
 test("the notes list is rendered under the widget grid", function () {
   const from = html.indexOf("  function renderHome(");
   const to = html.indexOf("  var lastMainId=", from);
