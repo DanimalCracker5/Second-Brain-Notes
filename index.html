@@ -12475,9 +12475,16 @@
           stopAccountUsageTracking(); stopApiSettingsSync(); stopHostedBillingSync(); stopLiveNoteWatch(); stopSharedEditListeners(); resetApiSettings();
           /* Firebase reports the signed-out state once on startup. Keep notes
              already on this device so their owner can choose how to sync them
-             after signing in. A deliberate sign-out still clears this device. */
-          if(signedOutUser){ wipeDeviceNotes(); renderAll(); }
-          setAuthGate(true,""); renderFoot();
+             after signing in. A deliberate sign-out still clears this device.
+             A failed Google return must keep its error — wiping the status
+             here is what made iPhone look like the button had simply reset. */
+          if(signedOutUser){ wipeDeviceNotes(); renderAll(); setAuthGate(true,""); }
+          else {
+            var status=$("authGateStatus");
+            var text=status&&status.textContent||"";
+            if(!text||/Checking your secure session/i.test(text)) setAuthGate(true,"Tap Sign in with Google to continue.");
+          }
+          renderFoot();
         }
       });
     }catch(e){
@@ -12488,7 +12495,12 @@
     }
     renderFoot();
   }
-  function prefersRedirectSignIn(){
+  /* iPhone, iPad, and iPadOS Safari all use WebKit. signInWithRedirect leaves
+     this site, bounces through the Firebase auth domain, and comes back with
+     the session dropped (storage partitioning). The page then shows Sign in
+     with Google again, which is the loop. The Google window has to stay a
+     popup so this page can receive the account directly. */
+  function storagePartitionedSignIn(){
     var ua=navigator.userAgent||"";
     if(/iPhone|iPad|iPod/i.test(ua)) return true;
     return navigator.platform==="MacIntel"&&navigator.maxTouchPoints>1;
@@ -12500,9 +12512,12 @@
     if(code==="auth/unauthorized-domain") return "This address is not in Firebase Authentication → Authorized domains";
     if(code==="auth/operation-not-allowed"||code==="auth/configuration-not-found") return "Google sign-in is disabled. In Firebase Console → Authentication → Sign-in method, enable Google";
     if(code==="auth/operation-not-supported-in-this-environment") return "Google sign-in needs http://localhost — use the included launcher";
-    if(code==="auth/popup-blocked") return "Your browser blocked the Google sign-in window";
+    if(code==="auth/popup-blocked") return storagePartitionedSignIn()
+      ?"iPhone blocked the Google window. Allow pop-ups for this site, then tap Sign in with Google again."
+      :"Your browser blocked the Google sign-in window";
+    if(code==="auth/web-storage-unsupported") return "This browser blocked sign-in storage. Turn off private browsing and try again";
     if(code==="auth/network-request-failed") return "Could not reach Google. Check your connection and try again";
-    if(code==="auth/popup-closed-by-user") return "Sign-in canceled";
+    if(code==="auth/popup-closed-by-user"||code==="auth/cancelled-popup-request") return "Sign-in canceled";
     return "Sign-in failed"+(code?" ("+code.replace(/^auth\//,"")+")":"");
   }
   function signIn(){
@@ -12518,33 +12533,47 @@
       return;
     }
     var provider=googleAuthProvider();
+    function resetButton(){
+      if(button){ button.disabled=false; $("gateSignInLabel").textContent="Sign in with Google"; }
+    }
     function fail(e){
       console.warn(e);
+      if(currentUser) return;
       var message=authErrorMessage(e);
-      if(button){ button.disabled=false; $("gateSignInLabel").textContent="Sign in with Google"; }
-      setAuthGate(true,message,e&&e.code!=="auth/popup-closed-by-user");
-      showToast(message,e&&e.code!=="auth/popup-closed-by-user");
+      var canceled=e&&(e.code==="auth/popup-closed-by-user"||e.code==="auth/cancelled-popup-request");
+      resetButton();
+      setAuthGate(true,message,!canceled);
+      showToast(message,!canceled);
     }
-    if(button){ button.disabled=true; $("gateSignInLabel").textContent="Opening secure sign-in…"; }
-    if(prefersRedirectSignIn()){
+    function useRedirect(){
       setAuthGate(true,"Taking you to Google…");
       auth.signInWithRedirect(provider).catch(fail);
-      return;
     }
-    setAuthGate(true,"Continue in the Google window to unlock your notes.");
+    if(button){ button.disabled=true; $("gateSignInLabel").textContent="Opening secure sign-in…"; }
+    setAuthGate(true,"Continue in the Google window. Choose your account and leave that window open until it closes.");
+    /* Must call signInWithPopup in this tap. Waiting first makes iOS block
+       the window, and the old redirect fallback then dumped the session. */
     auth.signInWithPopup(provider).then(function(result){
-      /* Some browsers accept the Google window but refuse to hand the session
-         back across sites (third-party storage partitioning), so the popup
-         resolves with no user and the gate just re-appears. Fall back to the
-         same-origin redirect flow that the iPhone path already relies on. */
-      if(!result||!result.user){
-        setAuthGate(true,"Taking you to Google…");
-        return auth.signInWithRedirect(provider);
+      if(result&&result.user) return;
+      if(currentUser) return;
+      if(storagePartitionedSignIn()){
+        resetButton();
+        setAuthGate(true,"Google closed before this page received the sign-in. Tap Sign in with Google again and leave the Google window open until it finishes.",true);
+        return;
       }
+      useRedirect();
     }).catch(function(e){
-      if(e&&(e.code==="auth/popup-blocked"||e.code==="auth/operation-not-supported-in-this-environment")){
-        setAuthGate(true,"Taking you to Google…");
-        return auth.signInWithRedirect(provider);
+      var code=e&&e.code||"";
+      if(code==="auth/popup-closed-by-user"||code==="auth/cancelled-popup-request"){
+        /* iPhone often reports the window as closed while the session is
+           still on its way. Wait before treating it as a cancel. */
+        setTimeout(function(){ if(!currentUser) fail(e); },1200);
+        return;
+      }
+      if(code==="auth/popup-blocked"||code==="auth/operation-not-supported-in-this-environment"){
+        if(storagePartitionedSignIn()){ fail(e); return; }
+        useRedirect();
+        return;
       }
       fail(e);
     });

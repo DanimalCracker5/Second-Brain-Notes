@@ -346,7 +346,13 @@
   }
   function signIn(){
     var auth=firebase.auth(), provider=new firebase.auth.GoogleAuthProvider();
-    auth.signInWithPopup(provider).catch(function(){ return auth.signInWithRedirect(provider); });
+    var ua=navigator.userAgent||"";
+    var partitioned=/iPhone|iPad|iPod/i.test(ua)||(navigator.platform==="MacIntel"&&navigator.maxTouchPoints>1);
+    auth.signInWithPopup(provider).catch(function(error){
+      if(partitioned) return;
+      var code=error&&error.code||"";
+      if(code==="auth/popup-blocked"||code==="auth/operation-not-supported-in-this-environment") return auth.signInWithRedirect(provider);
+    });
   }
   if(signInBtn) signInBtn.onclick=signIn;
   try{
