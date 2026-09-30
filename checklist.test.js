@@ -93,7 +93,7 @@ test("insert menu, settings, and saved notes all know about mini lists", functio
   assert.match(html, /NOTE_INSERT_DEFAULTS=\{[^}]*checklist:true/);
   assert.match(html, /AGENT_NOTE_BLOCK_TYPES=\[[^\]]*checklist/);
   assert.match(html, /\["text","attachment","embed","link","heading","comment","prompt","chapter","group","checklist","code"\]/);
-  assert.match(html, /if\(block\.type==="checklist"\) return buildNoteChecklist\(note,block\)/);
+  assert.match(html, /if\(view\.type==="checklist"\) return buildNoteChecklist\(note,view\)/);
   const shared = fs.readFileSync(path.join(__dirname, "shared.html"), "utf8");
   assert.match(shared, /block\.type==="checklist"/);
   assert.match(shared, /\.checklist-row/);
