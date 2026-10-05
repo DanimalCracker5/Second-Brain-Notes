@@ -30,6 +30,8 @@
 <link rel="stylesheet" href="./video/video-editor.css?v=9">
 <!-- Code editor feature. Self-contained in code/ — see code/README.md. -->
 <link rel="stylesheet" href="./code/code-editor.css">
+<!-- Web sessions. Self-contained in web/ — see web/README.md. -->
+<link rel="stylesheet" href="./web/browser.css?v=1">
 <!-- Hosted AI credits client. Provider keys never enter this file. -->
 <script src="./hosted/hosted-ai.js"></script>
 <script src="./hosted/agent-access.js"></script>
@@ -1670,6 +1672,12 @@
 -->
 <script src="./code/code-editor.js"></script>
 
+<!--
+  Web sessions. Attaches to window.SecondBrainWeb and runs nothing until the
+  app below calls SecondBrainWeb.install().
+-->
+<script src="./web/browser.js?v=1"></script>
+
 <script>
 (function(){
   "use strict";
@@ -2323,6 +2331,13 @@
       readFile:readAttachmentFile,
       removeFile:removeAttachmentFile,
       getUser:function(){ return currentUser; },
+      getIdToken:function(){
+        try{
+          var user=auth&&auth.currentUser;
+          if(user&&typeof user.getIdToken==="function") return Promise.resolve(user.getIdToken());
+        }catch(e){}
+        return Promise.resolve("");
+      },
       getStorage:function(){ return storage; },
       getDb:function(){ return db; },
       copyText:function(text,done){ copy(text,done); },
@@ -2337,7 +2352,11 @@
   }
 
   /* A broken or missing feature file must never stop the notes app from
-     loading, so registration is guarded. */
+     loading, so registration is guarded. Web is registered first so New lists
+     it beside Note and Todo. */
+  try{
+    if(window.SecondBrainWeb&&typeof window.SecondBrainWeb.install==="function") registerItemTypes(window.SecondBrainWeb.install(moduleHost()));
+  }catch(e){ console.warn("Web browser could not be loaded:",e); }
   try{
     if(window.SecondBrainVideo&&typeof window.SecondBrainVideo.install==="function") registerItemTypes(window.SecondBrainVideo.install(moduleHost()));
   }catch(e){ console.warn("Video editor could not be loaded:",e); }
@@ -12006,7 +12025,7 @@
     },function(error){ console.warn("API-key sync failed:",error); });
   }
   function liveNotesRef(itemId){ return db.collection("users").doc(currentUser.uid).collection("liveNotes").doc(itemId); }
-  function shouldLivePushItem(item){ return !!(item&&(item.type==="note"||item.type==="script")); }
+  function shouldLivePushItem(item){ return !!(item&&(item.type==="note"||item.type==="script"||item.type==="web")); }
   function patchSyncBaselineItem(item){
     if(!item||!item.id) return;
     if(!state.syncBaseline||!state.syncBaseline.items||typeof state.syncBaseline.items!=="object") recordSyncBaseline({items:state.items},Date.now());
