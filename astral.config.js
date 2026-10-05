@@ -26,5 +26,10 @@ window.ASTRAL_CONFIG = {
      the owner copies into their agent, never with the Firebase sign-in token. */
   agentAccess: {
     baseUrl: "https://us-central1-second-brain-4077e.cloudfunctions.net/agent"
+  },
+  /* Page relay for web sessions. Deploy functions:browse before sites that
+     block embedded frames can open inside the app. */
+  web: {
+    baseUrl: "https://us-central1-second-brain-4077e.cloudfunctions.net/browse"
   }
 };
