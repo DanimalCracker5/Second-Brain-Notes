@@ -53,10 +53,10 @@ sandbox.state = { items: [], tags: [], filterTag: null, filterType: "", filterSt
 vm.createContext(sandbox);
 
 [
-  ["isTodoNote", functionAnchor("cleanStatus")],
+  ["isTodoNote", functionAnchor("visibleBlockText")],
   ["cleanStatus", functionAnchor("todoStatus")],
   ["todoStatus", functionAnchor("statusLabel")],
-  ["statusLabel", functionAnchor("visibleBlockText")],
+  ["statusLabel", "  /* =================== storage"],
   ["ensureItemRevision", functionAnchor("rawStateBackupPayload")],
   ["normalizeItem", functionAnchor("forEachItemContentDocument")],
   ["visibleItems", "  var $="],
@@ -69,7 +69,7 @@ vm.createContext(sandbox);
 ].forEach(function (pair) {
   vm.runInContext(grab(pair[0], pair[1]), sandbox, { filename: pair[0] });
 });
-vm.runInContext("var lastPersistChangedIds=[]; var currentUser=null;", sandbox);
+vm.runInContext("var TODO_STATUSES=[\"queued\",\"in progress\",\"ready to test\",\"failed test\",\"passed test\"]; var lastPersistChangedIds=[]; var currentUser=null;", sandbox);
 vm.runInContext(grab("syncStateSignature", functionAnchor("bumpLocalVersions")), sandbox, { filename: "syncStateSignature" });
 vm.runInContext(grab("bumpLocalVersions", functionAnchor("itemSetChanged")), sandbox, { filename: "bumpLocalVersions" });
 

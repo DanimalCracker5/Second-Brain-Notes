@@ -207,6 +207,18 @@ test("list_todos can filter by status, including todos with no status", function
   assert.throws(function () { run(account, "list_todos", { status: "someday" }); }, /Unknown status/);
 });
 
+test("assistant writes stamp the origin so the app can badge them", function () {
+  const seeded = run({ items: [], tags: [], deletedItems: {}, version: 1 }, "create_todo", { title: "Ship it", detail: "queue work" });
+  const account = seeded.account;
+  assert.equal(seeded.changed, true);
+  const created = account.items.find(function (item) { return item.title === "Ship it"; });
+  assert.equal(created.origin, "assistant");
+  assert.equal(created.originAt, NOW);
+  const updated = run(account, "update_todo", { query: "Ship it", status: "queued" });
+  assert.equal(updated.changed, true);
+  assert.equal(updated.account.items.find(function (item) { return item.title === "Ship it"; }).origin, "assistant");
+});
+
 test("chapter blocks coexist with agent-set status on todos", function () {
   let account = todoAccount([baseTodo("t1", { status: "queued", blocks: [
     { id: "c1", type: "chapter", title: "Testing", text: "Run the app and check the dropdown." },
