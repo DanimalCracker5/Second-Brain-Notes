@@ -143,6 +143,13 @@
   .meta{ font-family:"DM Mono",monospace; font-size:.72rem; color:var(--ink-faint); margin:0 0 26px; }
   .meta b{ color:var(--ink-dim); font-weight:500; }
   .due-prominent{ display:inline-flex; align-items:center; gap:7px; margin:0 0 18px; padding:8px 11px; border:1px solid var(--accent-line); border-radius:10px; color:var(--accent); background:var(--accent-soft); cursor:pointer; font:600 .76rem "DM Mono",monospace; }
+  .status-field{ display:flex; align-items:center; gap:8px; margin:0 0 18px; }
+  .status-field-label{ font:600 .72rem "DM Sans",sans-serif; letter-spacing:.06em; text-transform:uppercase; color:var(--ink-dim); }
+  .status-select{ appearance:none; -webkit-appearance:none; padding:8px 26px 8px 11px; border:1px solid var(--line); border-radius:10px; background:rgba(255,255,255,.045); color:var(--ink); font:600 .76rem "DM Sans",sans-serif; cursor:pointer; transition:border-color .15s, background .15s, color .15s; }
+  .status-select.with-status{ color:var(--accent); border-color:var(--accent-line); background:var(--accent-soft); }
+  .status-select:focus-visible{ outline:none; border-color:var(--accent-line); }
+  .status-select option{ background:#0d0d11; color:#fff; font-weight:600; }
+  .status-chip{ display:inline-flex; align-items:center; padding:2px 7px; border:1px solid var(--accent-line); border-radius:7px; color:var(--accent); background:var(--accent-soft); font:600 .68rem "DM Sans",sans-serif; text-transform:capitalize; white-space:nowrap; }
   .due-prominent.overdue{ color:#fecaca; border-color:rgba(248,113,113,.45); background:rgba(248,113,113,.12); }
   .due-prominent svg{ width:15px; height:15px; }
 
@@ -497,6 +504,7 @@
   .type-filter:hover,.type-filter.active{ color:var(--ink); border-color:var(--line); background:rgba(255,255,255,.05); }
   .type-filter.active{ color:var(--accent); border-color:var(--accent-line); background:var(--accent-soft); }
   .type-filter svg{ width:14px; height:14px; }
+  .type-status-head{ margin:10px 0 4px; font:600 .68rem "DM Sans",sans-serif; letter-spacing:.08em; text-transform:uppercase; color:var(--ink-faint); }
   .tg{ position:relative; display:grid; grid-template-columns:auto auto minmax(0,1fr) auto auto auto; align-items:center; gap:8px; width:100%; min-height:31px; padding:0 3px 0 6px; border-radius:9px; color:var(--ink-dim); background:transparent; border:1px solid transparent; cursor:pointer; isolation:isolate; transition:color .16s ease,border-color .16s ease,transform .16s cubic-bezier(.2,.9,.3,1.2); }
   .tg .tag-grip{ position:relative; color:var(--ink-faint); font:700 .74rem "DM Mono",monospace; letter-spacing:-.18em; cursor:grab; user-select:none; opacity:.45; touch-action:none; }
   .tg .tag-grip::after{ content:""; position:absolute; inset:-8px -6px; }
@@ -1913,7 +1921,7 @@
   function chapterBlock(title,body){ var block={id:uid(),type:"chapter",title:title||"",text:body||""}; block.html=escapeHtml(block.text).replace(/\n/g,"<br>"); return block; }
   function newYoutubeScriptNote(){ var it=newNoteItem(); it.template="youtube-script"; it.blocks=[chapterBlock("Intro",""),chapterBlock("Main",""),chapterBlock("Outro","")]; syncNoteBody(it); return it; }
   function newNoteItem(){ var it=baseItem(); it.type="note"; it.body=""; it.attachments=[]; it.blocks=[{id:uid(),type:"text",text:""}]; return it; }
-  function newTodoItem(){ var it=newNoteItem(); it.todo=true; it.done=false; it.completed=null; it.dueDate=""; return it; }
+  function newTodoItem(){ var it=newNoteItem(); it.todo=true; it.done=false; it.completed=null; it.dueDate=""; it.status=""; return it; }
   function newAudioItem(){ var it=baseItem(); it.type="audio"; it.recordings=[]; return it; }
   function newTask(){ return {id:uid(),text:"",description:"",body:"",attachments:[],blocks:[textBlock("")],subtasks:[],done:false,completed:null,dueDate:"",detailsCollapsed:true}; }
   function newAgentItem(){ var it=baseItem(); it.type="agent"; it.title="New Agent"; it.agent={tab:"chat",animationStyle:"face"}; normalizeAgent(it); return it; }
@@ -2266,7 +2274,11 @@
     if(it.type==="script") migrateScriptToNote(it);
     if(it.type==="todo") migrateTodoToNote(it);
     if(typeof it.dueDate!=="string") it.dueDate="";
-    if(it.type==="note"){ ensureNoteBlocks(it); if(it.todo){ it.done=!!it.done; if(!it.done) it.completed=null; } }
+    if(it.type==="note"){
+      ensureNoteBlocks(it);
+      if(it.todo){ it.done=!!it.done; if(!it.done) it.completed=null; it.status=cleanStatus(it.status); }
+      else if(it.status) delete it.status;
+    }
     if(it.type==="audio") ensureAudioItem(it);
     if(it.type==="agent") normalizeAgent(it);
     if(it.type==="workout") { it.workout=it.workout&&typeof it.workout==="object"?it.workout:{sessions:[],lastCompleted:null}; if(!Array.isArray(it.workout.sessions)) it.workout.sessions=[]; }
@@ -2415,6 +2427,7 @@
   if(typeof state.focusNoteBody!=="boolean") state.focusNoteBody=true;
   if(typeof state.quickAiHandoff!=="boolean") state.quickAiHandoff=true;
   state.filterType=typeof state.filterType==="string"?state.filterType:"";
+  state.filterStatus=typeof state.filterStatus==="string"?state.filterStatus:"";
   state.allNotesName=typeof state.allNotesName==="string"&&state.allNotesName.trim()?state.allNotesName.trim():"All notes";
   if(state.mobileFolderFocus!==undefined) delete state.mobileFolderFocus;
   if(typeof state.readChapterNames!=="boolean") state.readChapterNames=false;
@@ -2448,7 +2461,7 @@
   if(ensureHomeExtras()) persistLocalStateQuietly();
 
   function blankDeviceState(){
-    return {items:[],folders:[],tags:[],tagGroups:[],tagOrder:[],deletedItems:{},deletedTags:{},currentId:null,motion:true,theme:"nebula",darkness:82,enabledTypes:defaultEnabledTypes(),typeDefaults:TYPE_DEFAULTS_VERSION,noteInsertOptions:{file:true,paragraph:true,checklist:true,comment:true,prompt:true,heading:true,chapter:true,group:true,code:true},tagsCollapsed:false,typesCollapsed:false,allNotesCollapsed:false,promptsCollapsed:false,promptStatusCollapsed:{},focusNoteBody:true,quickAiHandoff:true,allNotesName:"All notes",readChapterNames:false,filterTag:null,filterType:"",sidebarView:"all",tagAssignMode:false,noteSearch:"",listSort:"updated",upcomingSort:"due",upcomingFilter:{range:"all",tagId:null,showDone:false},homeLayout:defaultHomeLayout(),homeExtrasVersion:1,homeScratch:"",version:1,agentSettings:defaultAgentSettings(),pendingCloudSync:false,syncBaseline:null};
+    return {items:[],folders:[],tags:[],tagGroups:[],tagOrder:[],deletedItems:{},deletedTags:{},currentId:null,motion:true,theme:"nebula",darkness:82,enabledTypes:defaultEnabledTypes(),typeDefaults:TYPE_DEFAULTS_VERSION,noteInsertOptions:{file:true,paragraph:true,checklist:true,comment:true,prompt:true,heading:true,chapter:true,group:true,code:true},tagsCollapsed:false,typesCollapsed:false,allNotesCollapsed:false,promptsCollapsed:false,promptStatusCollapsed:{},focusNoteBody:true,quickAiHandoff:true,allNotesName:"All notes",readChapterNames:false,filterTag:null,filterType:"",filterStatus:"",sidebarView:"all",tagAssignMode:false,noteSearch:"",listSort:"updated",upcomingSort:"due",upcomingFilter:{range:"all",tagId:null,showDone:false},homeLayout:defaultHomeLayout(),homeExtrasVersion:1,homeScratch:"",version:1,agentSettings:defaultAgentSettings(),pendingCloudSync:false,syncBaseline:null};
   }
   function clearAttachmentStore(){
     if(!window.indexedDB) return;
@@ -2531,6 +2544,10 @@
       if(!hiddenView){
         if(!ignoreTagFilter && state.filterTag && (it.tagIds||[]).indexOf(state.filterTag)<0) return false;
         if(!ignoreTagFilter && state.filterType && itemKindForAgent(it)!==state.filterType) return false;
+        if(!ignoreTagFilter && state.filterStatus){
+          if(state.filterStatus==="none"){ if(todoStatus(it)) return false; }
+          else if(todoStatus(it)!==state.filterStatus) return false;
+        }
         /* Hidden tags act like an archive from the All notes view. Selecting a
            specific tag still lets the user inspect it and make it visible again. */
         if(!ignoreTagFilter && !state.filterTag && (it.tagIds||[]).some(function(id){ var tag=tagById(id); return tag&&tag.hidden; })) return false;
@@ -2603,6 +2620,10 @@
   function formatAudioDuration(seconds){ seconds=Math.max(0,Math.round(Number(seconds)||0)); var minutes=Math.floor(seconds/60), remainder=seconds%60; return minutes+":"+(remainder<10?"0":"")+remainder; }
   function audioMetaText(it){ var count=(it.recordings||[]).length; return count?count+" recording"+(count===1?"":"s")+" · "+formatAudioDuration(audioDuration(it)):"No recordings"; }
   function isTodoNote(it){ return !!(it&&it.type==="note"&&it.todo); }
+  var TODO_STATUSES=["queued","in progress","ready to test","failed test","passed test"];
+  function cleanStatus(value){ var s=String(value==null?"":value).trim().toLowerCase().replace(/[-_]+/g," ").replace(/\s+/g," "); if(!s||s==="clear"||s==="none"||s==="null") return ""; return TODO_STATUSES.indexOf(s)>=0?s:""; }
+  function todoStatus(it){ return isTodoNote(it)||it.type==="todo"?cleanStatus(it&&it.status):""; }
+  function statusLabel(value){ var s=cleanStatus(value); return s?s.charAt(0).toUpperCase()+s.slice(1):""; }
   function visibleBlockText(note,block){ var shown=blockForReading(note,block); return shown?blockPlainText(shown):""; }
   function itemText(it){ var mod=itemModule(it); if(mod&&mod.text) return mod.text(it); if(it.type==="workout") return (it.blocks||[]).map(function(block){ return visibleBlockText(it,block); }).filter(Boolean).join("\n"); if(it.type==="script") return (it.sections||[]).map(function(x){return x.body;}).join(" "); if(it.type==="todo") return (it.todos||[]).map(function(task){ return [task.text,taskDetailsText(task),(task.subtasks||[]).map(function(subtask){ return subtask.text||""; }).join(" ")].filter(Boolean).join(" "); }).join(" "); if(it.type==="audio") return (it.recordings||[]).map(function(recording){ return recording.name||""; }).join(" "); if(it.type==="agent") return [it.title,(it.agent||{}).longTermMemory,(it.agent||{}).shortTermMemory,(it.agent||{}).instructions].join(" "); if(it.type==="note"&&Array.isArray(it.blocks)) return it.blocks.map(function(block){ return visibleBlockText(it,block); }).filter(Boolean).join("\n"); return it.body||""; }
   function itemWords(it){ return words(itemText(it)); }
@@ -3514,6 +3535,17 @@
       button.onclick=function(){ state.filterType=state.filterType===row.kind?"":row.kind; persist(); renderAll(); };
       el.appendChild(button);
     });
+    var todos=state.items.filter(function(item){ return isTodoNote(item)||item.type==="todo"; });
+    if(todos.length||state.filterStatus){
+      var statusHead=document.createElement("div"); statusHead.className="type-status-head"; statusHead.textContent="Status"; el.appendChild(statusHead);
+      var options=[["","Any status"],["none","No status"]].concat(TODO_STATUSES.map(function(status){ return [status,statusLabel(status)]; }));
+      options.forEach(function(option){
+        var button=document.createElement("button"); button.type="button"; button.className="type-filter status-filter"+(state.filterStatus===option[0]?" active":"");
+        button.innerHTML=ICON_TODO+"<span></span>"; button.querySelector("span").textContent=option[1];
+        button.onclick=function(){ state.filterStatus=state.filterStatus===option[0]?"":option[0]; persist(); renderAll(); };
+        el.appendChild(button);
+      });
+    }
   }
   function tagUseCount(tagId){ return state.items.reduce(function(total,item){ return total+((item.tagIds||[]).indexOf(tagId)>=0?1:0); },0); }
   function tagDefaultHex(hue){ var h=((Number(hue)||0)%360+360)%360, c=.65*.62, x=c*(1-Math.abs((h/60)%2-1)), m=.62-c, rgb=h<60?[c,x,0]:h<120?[x,c,0]:h<180?[0,c,x]:h<240?[0,x,c]:h<300?[x,0,c]:[c,0,x]; return "#"+rgb.map(function(v){ return Math.round((v+m)*255).toString(16).padStart(2,"0"); }).join(""); }
@@ -4006,7 +4038,8 @@
       var deleteLabel=todoItem&&it.done?"Delete?":"✕";
       var lockStatus=it.locked?'<span class="item-lock" title="Deletion locked" aria-label="Deletion locked">'+ICON_LOCK+'</span>':"";
       var selectControl=state.selectingNotes?'<input class="note-select" type="checkbox" aria-label="Select note" '+(selected?'checked':'')+'>':'';
-      el.innerHTML=selectControl+leading+'<div class="dt"><div class="dt-title"></div><div class="dt-meta"><span class="m">'+metaText+'</span>'+dots+lockStatus+'</div></div><button class="dx" type="button" title="'+(todoItem&&it.done?"Delete completed todo":"Item actions")+'" aria-label="'+(todoItem&&it.done?"Delete completed todo":"Item actions")+'">'+(todoItem&&it.done?ICON_DELETE:ICON_EDIT)+'</button>';
+      var statusHtml=(todoItem&&todoStatus(it))?'<span class="status-chip">'+statusLabel(it.status)+'</span>':"";
+      el.innerHTML=selectControl+leading+'<div class="dt"><div class="dt-title"></div><div class="dt-meta"><span class="m">'+metaText+'</span>'+statusHtml+dots+lockStatus+'</div></div><button class="dx" type="button" title="'+(todoItem&&it.done?"Delete completed todo":"Item actions")+'" aria-label="'+(todoItem&&it.done?"Delete completed todo":"Item actions")+'">'+(todoItem&&it.done?ICON_DELETE:ICON_EDIT)+'</button>';
       el.querySelector(".dt-title").textContent=it.title||("Untitled "+itemLabel(it).toLowerCase());
       if(todoItem) el.querySelector(".side-todo-check").onclick=function(e){ e.stopPropagation(); setTodoDone(it); };
       if(state.selectingNotes) el.querySelector(".note-select").onclick=function(e){ e.stopPropagation(); toggleNoteSelection(it.id,e.currentTarget.checked); };
@@ -4855,6 +4888,7 @@
     }
 
     sheet.appendChild(buildAssign(it));
+    if(isTodoNote(it)||it.type==="todo") sheet.appendChild(buildTodoStatusField(it));
     if(it.dueDate){
       var prominentDue=document.createElement("button"); prominentDue.type="button"; prominentDue.className="due-prominent"+(dueDateClass(it.dueDate)?" "+dueDateClass(it.dueDate):"");
       prominentDue.innerHTML=ICON_CALENDAR+"<span>Due "+dueDateLabel(it.dueDate)+"</span>";
@@ -6415,6 +6449,26 @@
       editor.appendChild(rendered);
     });
     editor.appendChild(buildNoteDropTarget(note,note.blocks.length)); return editor;
+  }
+  function buildTodoStatusField(it){
+    var row=document.createElement("div"); row.className="status-field";
+    var label=document.createElement("span"); label.className="status-field-label"; label.textContent="Status"; row.appendChild(label);
+    var select=document.createElement("select"); select.className="status-select"; select.setAttribute("aria-label","Todo status");
+    var current=todoStatus(it); if(current) select.classList.add("with-status");
+    [["","No status"]].concat(TODO_STATUSES.map(function(status){ return [status,statusLabel(status)]; })).forEach(function(option){
+      var optionEl=document.createElement("option"); optionEl.value=option[0]; optionEl.textContent=option[1];
+      if(option[0]===current) optionEl.selected=true;
+      select.appendChild(optionEl);
+    });
+    select.onchange=function(){
+      it.status=cleanStatus(select.value);
+      it.updated=Date.now();
+      persist(); renderList();
+      select.classList.toggle("with-status",!!it.status);
+      syncBarTitle();
+    };
+    row.appendChild(select);
+    return row;
   }
   function buildTodo(it){
     var wrap=document.createElement("div"), list=document.createElement("div"); list.className="todo-list";
@@ -11672,6 +11726,7 @@
         clearTimeout(tagCloseTimer);
         state.filterTag=null;
         state.filterType="";
+        state.filterStatus="";
         state.selectingNotes=false;
         state.selectedItemIds=[];
         state.tagAssignMode=false;
@@ -13134,6 +13189,12 @@
       else merged.title=(preferLocal?local:remote).title||"";
       if(typeof (preferLocal?local:remote).todo==="boolean") merged.todo=!!(preferLocal?local:remote).todo;
       if(typeof (preferLocal?local:remote).done==="boolean") merged.done=!!(preferLocal?local:remote).done;
+      var preferred=(preferLocal?local:remote), otherSide=preferLocal?remote:local;
+      if(typeof preferred.status==="string"||typeof otherSide.status==="string"){
+        var statusSide=typeof preferred.status==="string"?preferred:otherSide;
+        if(statusSide.todo){ merged.status=cleanStatus(statusSide.status); }
+        else if(!isTodoNote(merged)) delete merged.status;
+      }
     } else {
       merged.sections=mergeKeyedRecords(local.sections,remote.sections,{protectIds:protectIds,preferLocal:preferLocal});
       if(options.protectTitle) merged.title=local.title||"";
