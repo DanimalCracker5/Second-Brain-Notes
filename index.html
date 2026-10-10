@@ -5378,6 +5378,7 @@
   }
   function removeInlineAttachment(note,block){
     var attachmentId=block.attachmentId;
+    recordDeletedBlock(note,block.id);
     note.blocks=note.blocks.filter(function(item){ return item.id!==block.id; });
     if(!note.blocks.some(function(item){ return item.type==="text"; })) note.blocks.push(textBlock(""));
     releaseNoteAttachment(note,attachmentId);
@@ -5408,6 +5409,7 @@
   function deleteNoteBlock(note,block){
     var index=note.blocks.findIndex(function(item){ return item.id===block.id; });
     if(index<0) return;
+    recordDeletedBlock(note,block.id);
     note.blocks.splice(index,1); activeNoteTextBlock=null;
     if(block.type==="link"&&block.imageAttachmentId) releaseNoteAttachment(note,block.imageAttachmentId);
     refreshNoteBlocks(note); showToast("Block deleted");
@@ -12913,6 +12915,21 @@
     add(left); add(right);
     return out;
   }
+  /* A block the user deleted leaves a tombstone on its note, stamped past the
+     note's own revision. Late-arriving cloud snapshots and live-sync merges
+     still carry the deleted block in their block list; the tombstone makes the
+     delete win over those stale copies, while brand-new blocks (fresh ids)
+     from the other device keep merging normally. */
+  function recordDeletedBlock(note,blockId){
+    if(!note||!note.id||!blockId) return;
+    note.deletedBlocks=note.deletedBlocks&&typeof note.deletedBlocks==="object"?note.deletedBlocks:{};
+    var rev=itemRevision(note), entry={version:rev.version+1,versionChangedAt:Date.now(),deletedAt:Date.now()};
+    if(revisionIsNewer(entry,note.deletedBlocks[blockId])) note.deletedBlocks[blockId]=entry;
+  }
+  function dropTombstonedBlocks(list,tombstones){
+    tombstones=tombstones||{};
+    return (list||[]).filter(function(entry){ return entry&&entry.id&&!tombstones[entry.id]; });
+  }
   function pruneTombstones(map){
     var rows=Object.keys(map||{}).map(function(id){ return {id:id,entry:map[id]}; });
     rows.sort(function(a,b){ return (Number(b.entry&&b.entry.deletedAt)||Number(b.entry&&b.entry.versionChangedAt)||0)-(Number(a.entry&&a.entry.deletedAt)||Number(a.entry&&a.entry.versionChangedAt)||0); });
@@ -13309,8 +13326,10 @@
     if(!canStructurallyMergeItems(local,remote)) return cloneData(preferLocal?local:remote);
     var merged=cloneData(preferLocal?local:remote);
     var protectIds=options.protectBlockIds||{};
+    var deletedBlocks=pruneTombstones(mergeTombstones(local.deletedBlocks,remote.deletedBlocks));
+    if(Object.keys(deletedBlocks).length) merged.deletedBlocks=deletedBlocks; else delete merged.deletedBlocks;
     if(local.type==="note"){
-      merged.blocks=mergeKeyedRecords(local.blocks,remote.blocks,{protectIds:protectIds,preferLocal:preferLocal,authoritativePrimary:remote.blockSync==="authoritative"});
+      merged.blocks=dropTombstonedBlocks(mergeKeyedRecords(local.blocks,remote.blocks,{protectIds:protectIds,preferLocal:preferLocal,authoritativePrimary:remote.blockSync==="authoritative"}),deletedBlocks);
       merged.attachments=mergeAttachmentLists(local.attachments,remote.attachments);
       if(options.protectTitle) merged.title=local.title||"";
       else merged.title=(preferLocal?local:remote).title||"";
@@ -13327,7 +13346,7 @@
       if((preferLocal?local:remote).origin==="assistant") merged.origin="assistant";
       else delete merged.origin;
     } else {
-      merged.sections=mergeKeyedRecords(local.sections,remote.sections,{protectIds:protectIds,preferLocal:preferLocal});
+      merged.sections=dropTombstonedBlocks(mergeKeyedRecords(local.sections,remote.sections,{protectIds:protectIds,preferLocal:preferLocal}),deletedBlocks);
       if(options.protectTitle) merged.title=local.title||"";
       else merged.title=(preferLocal?local:remote).title||"";
     }

@@ -36,6 +36,9 @@ vm.createContext(sandbox);
   ["stableStringify", "itemSyncSignature"],
   ["itemSyncSignature", "buildSyncBaseline"],
   ["itemRevision", "mergeTombstones"],
+  ["mergeTombstones", "recordDeletedBlock"],
+  ["dropTombstonedBlocks", "pruneTombstones"],
+  ["pruneTombstones", "recordDeletedItem"],
   ["canStructurallyMergeItems", "useData"]
 ].forEach(function (pair) {
   vm.runInContext(grab(pair[0], pair[1]), sandbox, { filename: pair[0] });
@@ -246,4 +249,65 @@ test("shared page listens live and can edit when allowEdit is on", function () {
   assert.match(shared, /mergeSharedDocument/);
   assert.match(shared, /data-share-key/);
   assert.match(shared, /\.auth-btn\[hidden\]/);
+});
+
+test("a tombstoned block stays deleted when a stale cloud snapshot re-applies it", function () {
+  const remote = note("n1", [
+    { id: "a", type: "text", text: "hello", html: "hello" },
+    { id: "b", type: "chapter", title: "Chapter", text: "kept" },
+    { id: "d", type: "text", text: "resurrected?", html: "resurrected?" }
+  ], [], { version: 5, versionChangedAt: 50, updated: 50, title: "Trip" });
+  /* The phone deleted block "d": tombstone stamped past the remote revision,
+     and the local block list no longer has it. */
+  const local = note("n1", [
+    { id: "a", type: "text", text: "hello", html: "hello" },
+    { id: "b", type: "chapter", title: "Chapter", text: "kept" }
+  ], [], { version: 5, versionChangedAt: 60, updated: 60, title: "Trip" });
+  local.deletedBlocks = { d: { version: 6, versionChangedAt: 70, deletedAt: 70 } };
+  const merged = sandbox.mergeLiveItems(local, remote, { preferLocal: false });
+  assert.equal(merged.blocks.some(function (block) { return block.id === "d"; }), false);
+  assert.equal(merged.blocks.some(function (block) { return block.id === "b"; }), true);
+  assert.equal(merged.deletedBlocks && merged.deletedBlocks.d && merged.deletedBlocks.d.deletedAt, 70);
+});
+
+test("a live note that still carries the deleted block loses it after merging the tombstone", function () {
+  /* The other device has not seen the delete yet; when the tombstoned note
+     arrives, its stale copy of the block is dropped and the tombstone merges
+     through so it also propagates back to the cloud. */
+  const local = note("n1", [
+    { id: "a", type: "text", text: "hello", html: "hello" },
+    { id: "d", type: "text", text: "stale copy", html: "stale copy" }
+  ], [], { version: 5, versionChangedAt: 50, updated: 50, title: "Trip" });
+  const remote = note("n1", [
+    { id: "a", type: "text", text: "hello", html: "hello" }
+  ], [], { version: 6, versionChangedAt: 70, updated: 70, title: "Trip" });
+  remote.deletedBlocks = { d: { version: 7, versionChangedAt: 70, deletedAt: 70 } };
+  const merged = sandbox.mergeLiveItems(local, remote, { preferLocal: false });
+  assert.equal(merged.blocks.some(function (block) { return block.id === "d"; }), false);
+  assert.ok(merged.deletedBlocks.d);
+});
+
+test("new blocks from the other device still merge alongside a tombstone", function () {
+  const local = note("n1", [
+    { id: "a", type: "text", text: "hello", html: "hello" }
+  ], [], { version: 5, versionChangedAt: 50, updated: 50, title: "Trip" });
+  local.deletedBlocks = { d: { version: 6, versionChangedAt: 55, deletedAt: 55 } };
+  const remote = note("n1", [
+    { id: "a", type: "text", text: "hello", html: "hello" },
+    { id: "d", type: "text", text: "resurrected?", html: "resurrected?" },
+    { id: "p", type: "attachment", attachmentId: "img1" }
+  ], [
+    { id: "img1", name: "lake.jpg", type: "image/jpeg", storagePath: "users/u/notes/n1/attachments/img1" }
+  ], { version: 5, versionChangedAt: 50, updated: 50, title: "Trip" });
+  const merged = sandbox.mergeLiveItems(local, remote, { preferLocal: false });
+  assert.equal(merged.blocks.some(function (block) { return block.id === "d"; }), false);
+  assert.equal(merged.blocks.some(function (block) { return block.id === "p"; }), true);
+});
+
+test("block deletes stamp a tombstone on the note before the block is removed", function () {
+  const src = grab("deleteNoteBlock", "buildNoteBlockActions");
+  assert.match(src, /recordDeletedBlock\(note,block\.id\)/);
+  assert.match(src, /note\.blocks\.splice\(index,1\)/);
+  const inline = grab("removeInlineAttachment", "cleanupContentAttachments");
+  assert.match(inline, /recordDeletedBlock\(note,block\.id\)/);
 });
