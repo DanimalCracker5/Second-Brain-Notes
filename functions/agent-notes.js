@@ -615,6 +615,16 @@ function runTool(account, name, args, ctx) {
   else if (name === "update_todo") out = updateTodo(source, input, context);
   else if (name === "delete_note") out = deleteNote(source, input, context);
   else throw toolError("Unknown tool \"" + name + "\".");
+  /* Stamp the origin of the last edit so the web app can show an
+     "Added by Assistant" badge on notes and todos the agent wrote. */
+  if (out.changed && Array.isArray(out.changedItems)) {
+    out.changedItems.forEach(function (item) {
+      if (item && item.id) {
+        item.origin = "assistant";
+        item.originAt = clock;
+      }
+    });
+  }
   return {
     account: source,
     changed: !!out.changed,

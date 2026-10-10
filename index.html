@@ -1438,7 +1438,7 @@
   .home-widget-actions button:hover{ color:var(--ink); border-color:var(--accent-line); background:var(--accent-soft); }
   .home-muted{ margin:2px 2px 10px; color:var(--ink-faint); font-size:.86rem; line-height:1.5; }
   .home-empty{ grid-column:1 / -1; padding:28px 16px; border:1px dashed rgba(255,255,255,.14); border-radius:16px; color:var(--ink-faint); text-align:center; line-height:1.5; }
-  .home-note{ display:grid; grid-template-columns:18px minmax(0,1fr) auto; gap:10px; align-items:start; width:100%; margin:0 0 2px; padding:10px 8px; border:0; border-radius:12px; color:inherit; background:transparent; cursor:pointer; text-align:left; font:inherit; }
+  .home-note{ position:relative; display:grid; grid-template-columns:18px minmax(0,1fr) auto; gap:10px; align-items:start; width:100%; margin:0 0 2px; padding:10px 8px; border:0; border-radius:12px; color:inherit; background:transparent; cursor:pointer; text-align:left; font:inherit; }
   .home-note:hover{ background:rgba(255,255,255,.05); }
   .home-note.just-added{ background:var(--accent-soft); }
   .home-note .item-icon{ margin-top:2px; color:var(--ink-dim); }
@@ -1919,6 +1919,11 @@
       ensureItemRevision(item); currentIds[item.id]=true;
       var before=beforeById[item.id];
       if(!before||itemSyncSignature(item)!==itemSyncSignature(before)){
+        /* A local edit on this device supersedes an assistant stamp — the
+           badge tracks the origin of the last edit. Remote/live merges are
+           exempt so an incoming assistant write keeps its badge. */
+        var remoteApply=(typeof applyingRemoteCloud!=="undefined"&&applyingRemoteCloud)||(typeof applyingLiveNote!=="undefined"&&applyingLiveNote);
+        if(!remoteApply&&item.origin==="assistant") item.origin="";
         var delta=revisionWeight(before,item), previousVersion=before?Math.max(1,Number(before.version)||Number(before.updated)||1):0;
         item.version=Math.max(1,Number(item.version)||1,previousVersion)+delta;
         item.versionChangedAt=Number(item.updated)||Date.now();
@@ -2314,6 +2319,7 @@
     if(!it||typeof it!=="object") return;
     ensureItemRevision(it);
     if(it.brainstorming!==true) delete it.brainstorming;
+    if(it.origin&&it.origin!=="assistant") delete it.origin;
     if(it.iconColor&&!cleanIconColor(it.iconColor)) delete it.iconColor;
     if(it.type==="script") migrateScriptToNote(it);
     if(it.type==="todo") migrateTodoToNote(it);
@@ -4122,6 +4128,7 @@
       var statusHtml=(todoItem&&todoStatus(it))?'<span class="status-chip">'+statusLabel(it.status)+'</span>':"";
       el.innerHTML=selectControl+leading+'<div class="dt"><div class="dt-title"></div><div class="dt-meta"><span class="m">'+metaText+'</span>'+statusHtml+dots+lockStatus+'</div></div><button class="dx" type="button" title="'+(todoItem&&it.done?"Delete completed todo":"Item actions")+'" aria-label="'+(todoItem&&it.done?"Delete completed todo":"Item actions")+'">'+(todoItem&&it.done?ICON_DELETE:ICON_EDIT)+'</button>';
       el.querySelector(".dt-title").textContent=it.title||("Untitled "+itemLabel(it).toLowerCase());
+      if(it.origin==="assistant"){ var originBadge=document.createElement("span"); originBadge.className="origin-badge"; originBadge.textContent="Added by Assistant"; el.appendChild(originBadge); }
       if(todoItem) el.querySelector(".side-todo-check").onclick=function(e){ e.stopPropagation(); setTodoDone(it); };
       if(state.selectingNotes) el.querySelector(".note-select").onclick=function(e){ e.stopPropagation(); toggleNoteSelection(it.id,e.currentTarget.checked); };
       if(it.type==="todo" && (it.todos||[]).length){
@@ -4454,6 +4461,7 @@
     text.appendChild(title); text.appendChild(snippet); text.appendChild(meta);
     var when=document.createElement("span"); when.className="when"; when.textContent=homeWhen(it.updated);
     button.appendChild(icon); button.appendChild(text); button.appendChild(when);
+    if(it.origin==="assistant"){ var originBadge=document.createElement("span"); originBadge.className="origin-badge"; originBadge.textContent="Added by Assistant"; button.appendChild(originBadge); }
     button.onclick=function(){ openHomeItem(it.id); };
     return button;
   }
@@ -4762,6 +4770,7 @@
       var due=itemDueDate(it), when=document.createElement("em"); when.textContent=due?dueDateLabel(due):"";
       if(dueDateClass(due)==="overdue") when.style.color="#fca5a5";
       row.appendChild(check); row.appendChild(open); row.appendChild(when);
+      if(it.origin==="assistant"){ var originBadge=document.createElement("span"); originBadge.className="origin-badge home-todo-origin"; originBadge.textContent="Added by Assistant"; row.appendChild(originBadge); }
       body.appendChild(row);
     });
     return homeWidgetFrame("todos", body, items.length);
@@ -13313,6 +13322,10 @@
         if(statusSide.todo){ merged.status=cleanStatus(statusSide.status); }
         else if(!isTodoNote(merged)) delete merged.status;
       }
+      /* The origin stamp follows whichever edit won the merge, so the badge
+         always names the author of the last change. */
+      if((preferLocal?local:remote).origin==="assistant") merged.origin="assistant";
+      else delete merged.origin;
     } else {
       merged.sections=mergeKeyedRecords(local.sections,remote.sections,{protectIds:protectIds,preferLocal:preferLocal});
       if(options.protectTitle) merged.title=local.title||"";
