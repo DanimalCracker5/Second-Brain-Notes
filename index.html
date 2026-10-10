@@ -6555,6 +6555,7 @@
     select.onchange=function(){
       it.status=cleanStatus(select.value);
       it.updated=Date.now();
+      if(it.status==="passed test"){ delItem(it.id,"Marked passed test — delete this note? This can't be undone."); return; }
       persist(); renderList();
       select.classList.toggle("with-status",!!it.status);
       syncBarTitle();
