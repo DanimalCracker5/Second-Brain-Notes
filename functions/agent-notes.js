@@ -10,6 +10,7 @@ const MAX_TEXT = 100000;
 const MAX_BLOCKS = 40;
 const CODE_LANGUAGES = ["javascript", "html", "css", "python", "csharp", "json", "sql"];
 const BLOCK_TYPES = ["paragraph", "text", "heading", "chapter", "comment", "prompt", "group", "code"];
+const TODO_STATUSES = ["queued", "in progress", "ready to test", "failed test", "passed test"];
 
 const INSTRUCTIONS = [
   "This is the owner's Second Brain: their notes and todos.",
@@ -19,6 +20,8 @@ const INSTRUCTIONS = [
   "Creating or editing shows up on the devices where they are signed in.",
   "Do not delete anything unless they explicitly asked, and then pass confirm true.",
   "Hidden notes and the in-app assistant are left out unless include_hidden is true.",
+  "Todos can carry a status: queued, in progress, ready to test, failed test, or passed test.",
+  "Status applies only to todos, never to plain notes.",
   "Dates are calendar days. Prefer YYYY-MM-DD. today and tomorrow use UTC."
 ].join(" ");
 
@@ -108,6 +111,12 @@ function isTodo(item) {
   return !!(item && (item.todo || item.type === "todo"));
 }
 
+function cleanStatus(value) {
+  const raw = String(value == null ? "" : value).trim().toLowerCase().replace(/[-_]+/g, " ").replace(/\s+/g, " ");
+  if (!raw || raw === "clear" || raw === "none" || raw === "null") return "";
+  return TODO_STATUSES.indexOf(raw) >= 0 ? raw : "";
+}
+
 function plainBlock(block) {
   if (!block || typeof block !== "object") return "";
   if (block.type === "code") return block.code || "";
@@ -167,6 +176,7 @@ function summary(account, item) {
   if (isTodo(item)) {
     row.done = !!item.done;
     row.due_date = item.dueDate || "";
+    row.status = cleanStatus(item.status);
   } else if (item.dueDate) row.due_date = item.dueDate;
   if (item.hidden) row.hidden = true;
   return row;
@@ -393,6 +403,19 @@ function applyTodoFields(item, args, now) {
       touched = true;
     }
   }
+  if (args.status != null) {
+    const raw = String(args.status).trim().toLowerCase().replace(/[-_]+/g, " ").replace(/\s+/g, " ");
+    if (raw && ["clear", "none", "null"].indexOf(raw) < 0 && TODO_STATUSES.indexOf(raw) < 0) {
+      throw toolError("Unknown status \"" + raw + "\". Use queued, in progress, ready to test, failed test, passed test, or clear.");
+    }
+    if (!isTodo(item)) {
+      throw toolError("Status applies only to todos. \"" + (item.title || "This note") + "\" is a plain note.");
+    }
+    item.todo = true;
+    if (typeof item.done !== "boolean") item.done = false;
+    item.status = cleanStatus(raw);
+    touched = true;
+  }
   return touched;
 }
 
@@ -505,6 +528,12 @@ function listTodos(account, args) {
   else if (filter === "overdue") items = items.filter(function (item) { return !item.done && item.dueDate && item.dueDate < today; });
   else if (filter !== "all" && filter !== "upcoming") throw toolError("filter must be open, done, overdue, upcoming, or all.");
   if (filter === "upcoming") items = items.filter(function (item) { return !item.done && item.dueDate && item.dueDate >= today; });
+  if (args.status != null) {
+    const wanted = String(args.status).trim().toLowerCase().replace(/[-_]+/g, " ").replace(/\s+/g, " ");
+    if (wanted === "none") items = items.filter(function (item) { return !cleanStatus(item.status); });
+    else if (TODO_STATUSES.indexOf(wanted) >= 0) items = items.filter(function (item) { return cleanStatus(item.status) === wanted; });
+    else throw toolError("Unknown status \"" + wanted + "\". Use queued, in progress, ready to test, failed test, passed test, none, or leave it out.");
+  }
   items.sort(function (a, b) { return String(a.dueDate || "9999").localeCompare(String(b.dueDate || "9999")) || ((Number(b.updated) || 0) - (Number(a.updated) || 0)); });
   const limit = clampLimit(args.limit, 50, 100);
   const todos = items.slice(0, limit).map(function (item) { return summary(account, item); });
@@ -634,13 +663,14 @@ function toolDefs() {
         kind: { type: "string", enum: ["note", "todo"], description: "Defaults to note." },
         content: { type: "string", description: "Body text when you are not passing blocks." },
         due_date: due,
+        status: { type: "string", description: "Todo status. Applies only when kind is todo: queued, in progress, ready to test, failed test, or passed test." },
         tags: { type: "array", items: { type: "string" } },
         blocks: { type: "array", description: "Optional structured blocks: paragraph, heading, chapter, comment, prompt, group, or code.", items: { type: "object" } }
       }, required: ["title"] }
     },
     {
       name: "update_note",
-      description: "Add to or rewrite a note or todo. mode append is the default. mode replace rewrites the body. You can also set the title, tags, done, or due date.",
+      description: "Add to or rewrite a note or todo. mode append is the default. mode replace rewrites the body. You can also set the title, tags, done, due date, or the todo status.",
       inputSchema: { type: "object", properties: {
         note_id: { type: "string" },
         query: { type: "string" },
@@ -650,26 +680,29 @@ function toolDefs() {
         blocks: { type: "array", items: { type: "object" } },
         tags: { type: "array", items: { type: "string" } },
         done: { type: "boolean" },
-        due_date: due
+        due_date: due,
+        status: { type: "string", description: "Todo status. Applies only to todos: queued, in progress, ready to test, failed test, passed test, or clear." }
       } }
     },
     {
       name: "list_todos",
-      description: "List todos with done state and due dates.",
+      description: "List todos with done state, due dates, and status.",
       inputSchema: { type: "object", properties: {
         filter: { type: "string", enum: ["open", "done", "overdue", "upcoming", "all"], description: "Defaults to open." },
+        status: { type: "string", description: "Optional status filter: queued, in progress, ready to test, failed test, passed test, or none." },
         limit: { type: "integer" },
         include_hidden: { type: "boolean" }
       } }
     },
     {
       name: "update_todo",
-      description: "Mark a todo done or not done, set or clear its due date, or replace its text.",
+      description: "Mark a todo done or not done, set or clear its due date or status, or replace its text.",
       inputSchema: { type: "object", properties: {
         todo_id: { type: "string" },
         query: { type: "string" },
         done: { type: "boolean" },
         due_date: due,
+        status: { type: "string", description: "queued, in progress, ready to test, failed test, passed test, or clear." },
         detail: { type: "string", description: "Replaces the todo body when set." },
         title: { type: "string" }
       } }
@@ -681,6 +714,7 @@ function toolDefs() {
         title: { type: "string" },
         detail: { type: "string" },
         due_date: due,
+        status: { type: "string", description: "Optional todo status: queued, in progress, ready to test, failed test, or passed test." },
         tags: { type: "array", items: { type: "string" } }
       }, required: ["title"] }
     },
@@ -704,5 +738,7 @@ module.exports = {
   toolDefs: toolDefs,
   toolError: toolError,
   parseDueDate: parseDueDate,
+  cleanStatus: cleanStatus,
+  TODO_STATUSES: TODO_STATUSES,
   dateKey: dateKey
 };
