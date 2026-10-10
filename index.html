@@ -1689,6 +1689,31 @@
 <script>
 (function(){
   "use strict";
+  /* Boot watchdog (login-hang fix). If anything above fails to start the app
+     on a phone — a thrown error before initFirebase, a failed Firebase load,
+     a stalled auth session check — the sign-in card would sit on "Checking
+     your secure session…" forever with nothing to tap. If that message is
+     still on screen well after boot should have finished, replace it with an
+     actionable one and offer a reload. */
+  window.__sbBootDone=false;
+  window.__sbBootWatchdog=setTimeout(function(){
+    if(window.__sbBootDone) return;
+    var status=document.getElementById("authGateStatus");
+    if(status&&/Checking your secure session/i.test(status.textContent||"")){
+      status.textContent="The app couldn't finish starting on this device. Reload the page and try again — if this keeps happening, tap Sign in and leave the Google window open until it closes.";
+      status.classList.add("error");
+      var gateSignIn=document.getElementById("gateSignIn");
+      if(gateSignIn) gateSignIn.disabled=false;
+    }
+  },9000);
+  window.addEventListener("error",function(event){
+    if(window.__sbBootDone||!event) return;
+    var status=document.getElementById("authGateStatus");
+    if(status&&/Checking your secure session/i.test(status.textContent||"")){
+      status.textContent="The app hit an error while starting. Reload the page and try again.";
+      status.classList.add("error");
+    }
+  });
 
   /* =================== themes =================== */
   /* each: glows = 3 x [hue,sat,light], o = 3 opacities, accent = [h,s,l]
@@ -1724,6 +1749,15 @@
      the state normalizers below run before the view code is reached. */
   var UPCOMING_RANGES=[["all","Everything"],["overdue","Overdue only"],["today","Due today"],["week","Through this week"],["nextweek","Through next week"],["month","Through this month"],["quarter","Next 3 months"]];
   var UPCOMING_SORTS=[["due","Due date · soonest"],["dueDesc","Due date · latest"],["title","Title A–Z"],["updated","Recently updated"],["tag","Tag A–Z"]];
+  /* Todo statuses live up here too: the boot normalizer runs before the editor
+     code below, and normalizeItem() calls cleanStatus() on every saved todo.
+     Declaring these any later crashed the whole script at boot on any device
+     that had a todo in localStorage — which is also why phones hung on
+     "Checking your secure session…" and showed no status dropdown. */
+  var TODO_STATUSES=["queued","in progress","ready to test","failed test","passed test"];
+  function cleanStatus(value){ var s=String(value==null?"":value).trim().toLowerCase().replace(/[-_]+/g," ").replace(/\s+/g," "); if(!s||s==="clear"||s==="none"||s==="null") return ""; return TODO_STATUSES.indexOf(s)>=0?s:""; }
+  function todoStatus(it){ return isTodoNote(it)||it.type==="todo"?cleanStatus(it&&it.status):""; }
+  function statusLabel(value){ var s=cleanStatus(value); return s?s.charAt(0).toUpperCase()+s.slice(1):""; }
 
   /* =================== storage =================== */
   var KEY="astral-notes-v5", OLDS=["astral-notes-v4","astral-notes-v3"], CFGKEY="astral-fb-config", BACKUP_KEY="second-brain-auto-backups-v1", DOCUMENT_BACKUP_KEY="second-brain-document-backups-v1", DOCUMENT_BACKUP_ACTIVITY_KEY="second-brain-document-backup-activity-v1", BACKUP_LIMIT=10, DOCUMENT_BACKUP_LIMIT=25, AUTO_BACKUP_COOLDOWN=60*60*1000, DOCUMENT_AUTO_BACKUP_EDIT_LIMIT=20, DOCUMENT_AUTO_BACKUP_CHAR_LIMIT=750, DOCUMENT_AUTO_BACKUP_MAX_WAIT=15*60*1000, mem=null;
@@ -2620,10 +2654,6 @@
   function formatAudioDuration(seconds){ seconds=Math.max(0,Math.round(Number(seconds)||0)); var minutes=Math.floor(seconds/60), remainder=seconds%60; return minutes+":"+(remainder<10?"0":"")+remainder; }
   function audioMetaText(it){ var count=(it.recordings||[]).length; return count?count+" recording"+(count===1?"":"s")+" · "+formatAudioDuration(audioDuration(it)):"No recordings"; }
   function isTodoNote(it){ return !!(it&&it.type==="note"&&it.todo); }
-  var TODO_STATUSES=["queued","in progress","ready to test","failed test","passed test"];
-  function cleanStatus(value){ var s=String(value==null?"":value).trim().toLowerCase().replace(/[-_]+/g," ").replace(/\s+/g," "); if(!s||s==="clear"||s==="none"||s==="null") return ""; return TODO_STATUSES.indexOf(s)>=0?s:""; }
-  function todoStatus(it){ return isTodoNote(it)||it.type==="todo"?cleanStatus(it&&it.status):""; }
-  function statusLabel(value){ var s=cleanStatus(value); return s?s.charAt(0).toUpperCase()+s.slice(1):""; }
   function visibleBlockText(note,block){ var shown=blockForReading(note,block); return shown?blockPlainText(shown):""; }
   function itemText(it){ var mod=itemModule(it); if(mod&&mod.text) return mod.text(it); if(it.type==="workout") return (it.blocks||[]).map(function(block){ return visibleBlockText(it,block); }).filter(Boolean).join("\n"); if(it.type==="script") return (it.sections||[]).map(function(x){return x.body;}).join(" "); if(it.type==="todo") return (it.todos||[]).map(function(task){ return [task.text,taskDetailsText(task),(task.subtasks||[]).map(function(subtask){ return subtask.text||""; }).join(" ")].filter(Boolean).join(" "); }).join(" "); if(it.type==="audio") return (it.recordings||[]).map(function(recording){ return recording.name||""; }).join(" "); if(it.type==="agent") return [it.title,(it.agent||{}).longTermMemory,(it.agent||{}).shortTermMemory,(it.agent||{}).instructions].join(" "); if(it.type==="note"&&Array.isArray(it.blocks)) return it.blocks.map(function(block){ return visibleBlockText(it,block); }).filter(Boolean).join("\n"); return it.body||""; }
   function itemWords(it){ return words(itemText(it)); }
@@ -14877,6 +14907,8 @@
      this device had to log in again. useData() creates it after the account
      loads if the cloud copy does not already have an agent. */
   trackTimeSpent();
+  window.__sbBootDone=true;
+  if(window.__sbBootWatchdog) clearTimeout(window.__sbBootWatchdog);
   captureAutoBackup(false); applyTheme(0); syncMotion(); renderAll(); renderFoot(); initFirebase();
   try{
     var creditsFlag=(location.search||"").match(/[?&]credits=(success|cancel)/);
