@@ -487,6 +487,15 @@
      wraps the edit button onto a second row and doubles the chip's height. */
   .tagcloud{ display:grid; gap:2px; padding:2px 10px 10px; }
   .typecloud{ display:grid; gap:2px; padding:2px 10px 10px; }
+  .queue-nav{ display:flex; align-items:center; gap:9px; margin:2px 10px 10px; padding:9px 12px; border:1px solid var(--line); border-radius:12px; background:rgba(255,255,255,.045); color:var(--ink); font:600 .82rem "DM Sans",sans-serif; cursor:pointer; transition:border-color .15s, background .15s, color .15s; }
+  .queue-nav em{ margin-left:auto; font-style:normal; color:var(--ink-dim); font:600 .74rem "DM Sans",sans-serif; }
+  .queue-nav.on{ border-color:var(--accent-line); background:var(--accent-soft); color:var(--accent); }
+  .queue-nav.on em{ color:var(--accent); }
+  .q-group-empty{ padding:4px 12px 8px; color:var(--ink-dim); font:500 .78rem "DM Sans",sans-serif; }
+  .origin-badge{ position:absolute; right:8px; bottom:6px; font:600 .58rem/1 "DM Sans",sans-serif; letter-spacing:.05em; text-transform:uppercase; color:var(--ink-dim); background:rgba(255,255,255,.07); border:1px solid var(--line); border-radius:999px; padding:3px 7px; pointer-events:none; white-space:nowrap; }
+  .home-note .origin-badge{ right:12px; bottom:8px; }
+  .home-todo{ position:relative; }
+  .home-todo .home-todo-origin{ position:static; margin-left:8px; }
   .typecloud.is-collapsed{ display:none; }
   #promptsSection[hidden],#promptsHub[hidden]{ display:none !important; }
   #promptsHub.is-collapsed{ display:none; }
@@ -1564,6 +1573,7 @@
       <div id="tagGroups"></div>
       <div class="sec-h"><button class="section-toggle" id="typesToggleBtn" type="button" aria-controls="types" aria-expanded="true" title="Collapse types"><span>Types</span><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m6 9 6 6 6-6"/></svg></button></div>
       <div class="typecloud" id="types"></div>
+      <button class="queue-nav" id="queueNavBtn" type="button" title="Todos grouped by status" aria-pressed="false"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="4" y="4" width="16" height="16" rx="3"/><path d="M8 12l2.5 2.5L16 9"/></svg><span>Queue</span><em id="queueNavCount"></em></button>
       <div class="sec-h" id="promptsSection" hidden><button class="section-toggle" id="promptsToggleBtn" type="button" aria-controls="promptsHub" aria-expanded="true" title="Collapse prompts"><span>Prompts</span><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m6 9 6 6 6-6"/></svg></button></div>
       <div id="promptsHub" hidden></div>
       <div class="sec-h"><button class="section-toggle" id="notesToggleBtn" type="button" aria-controls="notesListWrap" aria-expanded="true" title="Collapse notes"><span id="listLabel">All notes</span><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m6 9 6 6 6-6"/></svg></button><div class="list-tools"><button id="selectNotesBtn" title="Select notes" aria-label="Select notes">✓</button><button id="deleteNotesBtn" class="bulk-delete" type="button" hidden title="Delete selected notes" aria-label="Delete selected notes"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 6h18M8 6V4h8v2M19 6l-1 14H6L5 6"/></svg></button><button id="listToolsBtn" title="Filter and sort" aria-label="Filter and sort notes">⇅</button></div></div>
@@ -2466,7 +2476,7 @@
   if(state.mobileFolderFocus!==undefined) delete state.mobileFolderFocus;
   if(typeof state.readChapterNames!=="boolean") state.readChapterNames=false;
   state.filterTag=state.filterTag||null; state.selectedItemIds=Array.isArray(state.selectedItemIds)?state.selectedItemIds:[]; state.selectingNotes=!!state.selectingNotes; state.tagAssignMode=!!state.tagAssignMode;
-  state.sidebarView=(state.sidebarView==="upcoming"||state.sidebarView==="hidden")?state.sidebarView:"all";
+  state.sidebarView=(state.sidebarView==="upcoming"||state.sidebarView==="hidden"||state.sidebarView==="queue")?state.sidebarView:"all";
   state.version=Math.max(1,Number(state.version)||Number(state.updated)||1);
   state.noteSearch=typeof state.noteSearch==="string"?state.noteSearch:"";
   state.listSort=state.listSort||"updated";
@@ -2508,7 +2518,7 @@
   }
   function wipeDeviceNotes(){
     clearTimeout(cloudTimer);
-    stopLiveNoteWatch(); stopSharedEditListeners(); cloudLiveReady=false; pendingRemoteAccount=null; lastAppliedCloudUpdated=0;
+    stopLiveNoteWatch(); stopSharedEditListeners(); stopQueueLiveWatch(); cloudLiveReady=false; pendingRemoteAccount=null; lastAppliedCloudUpdated=0;
     cloudTimer=null; mem=null; deviceBackups=[]; documentBackups={}; documentBackupActivity={}; activeAttachmentUploads={}; activeNoteTextBlock=null; draggedNoteBlock=null;
     cloudHydrated=false; pendingAccountRecovery=0;
     if(activeAudioRecorder){ try{ activeAudioRecorder.recorder.stop(); }catch(e){} activeAudioRecorder=null; }
@@ -2806,8 +2816,34 @@
     return order;
   }
   function hiddenItemCount(){ return (state.items||[]).filter(function(it){ return it.hidden; }).length; }
+  /* Queue: open todos grouped by status. Status flips made by the assistant
+     through the agent API land in state via the live account merge, so the
+     groups below re-render on every renderList() without a reload. */
+  var QUEUE_GROUPS=[["in progress","In progress","Nothing is in progress."],["queued","Queued","Nothing is queued."],["ready to test","Ready to test","Nothing is ready to test."],["failed test","Failed test","Nothing failed a test."]];
+  function queueableItem(it){
+    if(!it||it.hidden) return false;
+    if(it.done) return false;
+    return !!(isTodoNote(it)||it.type==="todo");
+  }
+  function queueItems(){
+    return state.items.filter(function(it){
+      var status=cleanStatus(it.status);
+      return queueableItem(it)&&status&&status!=="passed test";
+    });
+  }
+  function queueItemCount(){ return queueItems().length; }
+  function queueGroups(items){
+    var byStatus={};
+    QUEUE_GROUPS.forEach(function(def){ byStatus[def[0]]=[]; });
+    items.forEach(function(it){
+      var status=cleanStatus(it.status);
+      if(status==="passed test"||!byStatus[status]) return;
+      byStatus[status].push(it);
+    });
+    return QUEUE_GROUPS.map(function(def){ return {key:def[0],label:def[1],empty:def[2],items:byStatus[def[0]]}; });
+  }
   function updateSidebarButtons(){
-    var upcoming=$("upcomingBtn"), hidden=$("hiddenBtn");
+    var upcoming=$("upcomingBtn"), hidden=$("hiddenBtn"), queueNav=$("queueNavBtn");
     if(upcoming) upcoming.classList.toggle("on",state.sidebarView==="upcoming");
     if(hidden){
       var n=hiddenItemCount();
@@ -2815,9 +2851,18 @@
       hidden.title=n?("Hidden notes ("+n+")"):"Hidden notes";
       hidden.setAttribute("aria-label", hidden.title);
     }
+    if(queueNav){
+      var qn=queueItemCount();
+      queueNav.classList.toggle("on",state.sidebarView==="queue");
+      queueNav.setAttribute("aria-pressed",state.sidebarView==="queue"?"true":"false");
+      queueNav.title=qn?("Queue — "+qn+" todo"+(qn===1?"":"s")+" with a status"):"Queue — todos grouped by status";
+      queueNav.querySelector("em").textContent=qn?String(qn):"";
+    }
   }
   function setSidebarView(view){
-    state.sidebarView=view==="upcoming"||view==="hidden"?view:"all";
+    var wanted=view==="upcoming"||view==="hidden"||view==="queue"?view:"all";
+    if(wanted!==state.sidebarView) setQueueLiveWatch(wanted==="queue");
+    state.sidebarView=wanted;
     if(state.sidebarView!=="all"){ state.filterTag=null; state.selectingNotes=false; state.selectedItemIds=[]; state.tagAssignMode=false; }
     persist(); renderTags(); renderList(); updateSidebarButtons();
   }
@@ -4013,7 +4058,7 @@
       loading.textContent="Loading your notes…";
       listEl.appendChild(loading); syncNotesListCollapse(); syncBulkNoteActions(); updateSidebarButtons(); return;
     }
-    var items=state.sidebarView==="upcoming"?upcomingItems():visibleItems(!!state.tagAssignMode);
+    var items=state.sidebarView==="queue"?queueItems():(state.sidebarView==="upcoming"?upcomingItems():visibleItems(!!state.tagAssignMode));
     state.selectedItemIds=state.selectedItemIds.filter(function(id){ return state.items.some(function(item){ return item.id===id; }); });
     if(selectNotesBtn){
       var assignLabel=state.filterTag&&state.tagAssignMode?((state.selectedItemIds.length?"Add "+state.selectedItemIds.length:"Add notes")):"";
@@ -4022,23 +4067,23 @@
     }
     syncNotesListCollapse();
     syncBulkNoteActions();
-    var lbl = state.sidebarView==="upcoming"?"Upcoming":(state.sidebarView==="hidden"?"Hidden":(state.filterTag ? ((tagById(state.filterTag)||{}).name||"Tag") : (state.filterType?(state.filterType.charAt(0).toUpperCase()+state.filterType.slice(1)):allNotesTitle())));
+    var lbl = state.sidebarView==="queue"?"Queue":(state.sidebarView==="upcoming"?"Upcoming":(state.sidebarView==="hidden"?"Hidden":(state.filterTag ? ((tagById(state.filterTag)||{}).name||"Tag") : (state.filterType?(state.filterType.charAt(0).toUpperCase()+state.filterType.slice(1)):allNotesTitle()))));
     if(state.tagAssignMode&&state.filterTag) lbl="Add to "+((tagById(state.filterTag)||{}).name||"tag");
     listLabel.textContent=lbl+"  ·  "+items.length;
-    var upcoming=state.sidebarView==="upcoming", hiddenView=state.sidebarView==="hidden", activeFilters=upcoming?upcomingFilterCount():0;
+    var upcoming=state.sidebarView==="upcoming", hiddenView=state.sidebarView==="hidden", queueView=state.sidebarView==="queue", activeFilters=upcoming?upcomingFilterCount():0;
     if(listToolsBtn) listToolsBtn.classList.toggle("filtered",activeFilters>0);
     listEl.innerHTML="";
     /* Sort and filter changes rearrange the same rows, so they belong in the
        signature — otherwise the list would quietly re-order with no animation. */
-    var signature=(upcoming?state.upcomingSort+":"+JSON.stringify(upcomingFilter())+"|":"")+(hiddenView?"hidden|":"")+items.map(function(it){ return it.id; }).join("|");
+    var signature=(upcoming?state.upcomingSort+":"+JSON.stringify(upcomingFilter())+"|":"")+(queueView?"queue|":(hiddenView?"hidden|":""))+items.map(function(it){ return it.id; }).join("|");
     listEl.classList.toggle("enter",signature!==lastListSignature);
     lastListSignature=signature;
     if(!items.length){
       var e=document.createElement("div"); e.className="tag-empty"; e.style.padding="10px 12px";
-      e.textContent=upcoming?(activeFilters?"Nothing matches these filters.":"Nothing due yet."):(hiddenView?"Nothing is hidden. Use the pencil menu on any note to hide it from All notes — it stays in your account, and this list is the way back.":"Nothing here yet.");
+      e.textContent=queueView?"No todos have a status yet. Open a todo and pick one, or ask the assistant.":(upcoming?(activeFilters?"Nothing matches these filters.":"Nothing due yet."):(hiddenView?"Nothing is hidden. Use the pencil menu on any note to hide it from All notes — it stays in your account, and this list is the way back.":"Nothing here yet."));
       listEl.appendChild(e); syncNotesListCollapse(); syncBulkNoteActions(); updateSidebarButtons(); return;
     }
-    var groups=upcoming?upcomingGroups(items):[{items:items}], row=0;
+    var groups=queueView?queueGroups(items):(upcoming?upcomingGroups(items):[{items:items}]), row=0;
     groups.forEach(function(group){
       if(group.label){
         var head=document.createElement("div"); head.className="d-group"+(group.tone?" "+group.tone:"");
@@ -4046,6 +4091,12 @@
         head.innerHTML='<span class="d-group-label"></span><span class="d-group-count">'+group.items.length+'</span>';
         head.querySelector(".d-group-label").textContent=group.label;
         listEl.appendChild(head);
+      }
+      if(queueView&&!group.items.length){
+        var empty=document.createElement("div"); empty.className="q-group-empty";
+        empty.textContent=group.empty;
+        listEl.appendChild(empty);
+        return;
       }
       group.items.forEach(function(it){ listEl.appendChild(buildListRow(it,row++)); });
     });
@@ -12273,6 +12324,42 @@
     if(liveNoteUnsub){ liveNoteUnsub(); liveNoteUnsub=null; }
     watchedLiveNoteId="";
   }
+  /* Queue view live watch: the assistant flips todo statuses through the agent
+     API, which publishes each changed item into liveNotes. While the Queue view
+     is open we listen to that collection so status changes appear without a
+     reload or an edit on this device. */
+  var queueLiveUnsub=null;
+  function stopQueueLiveWatch(){
+    if(queueLiveUnsub){ queueLiveUnsub(); queueLiveUnsub=null; }
+  }
+  function setQueueLiveWatch(enable){
+    if(!enable){ stopQueueLiveWatch(); return; }
+    if(queueLiveUnsub||!currentUser||!db||!cloudLiveReady){ return; }
+    queueLiveUnsub=db.collection("users").doc(currentUser.uid).collection("liveNotes").onSnapshot(function(snapshot){
+      if(!snapshot||applyingRemoteCloud) return;
+      var touched=false;
+      snapshot.docChanges().forEach(function(change){
+        if(change.type==="removed") return;
+        var data=change.doc.data()||{}, incoming=data.item;
+        if(!incoming||!incoming.id||data.updatedBy===liveClientId) return;
+        var local=(state.items||[]).find(function(entry){ return entry&&entry.id===incoming.id; });
+        if(!local){
+          if(!isSeedDeviceItem(incoming)){
+            var copy=cloneData(incoming); normalizeItem(copy); state.items.push(copy); touched=true;
+          }
+          return;
+        }
+        if(itemSyncSignature(local)===itemSyncSignature(incoming)) return;
+        var guard=localNoteEditGuard(local);
+        applyingLiveNote=true;
+        try{
+          var result=commitIncomingItem(local,incoming,liveIncomingOptions(local,guard));
+          if(result.changed){ normalizeItem(local); touched=true; if(local.id===state.currentId) refreshOpenItemFromLive(local); }
+        } finally { applyingLiveNote=false; }
+      });
+      if(touched){ persistLocalStateQuietly(); renderList(); renderMain(); updateSidebarButtons(); }
+    },function(error){ console.warn("Queue live updates failed:",error); });
+  }
   function watchLiveNote(itemId){
     if(watchedLiveNoteId===itemId&&liveNoteUnsub) return;
     stopLiveNoteWatch();
@@ -12441,6 +12528,7 @@
     lastAppliedCloudUpdated=Math.max(lastAppliedCloudUpdated, Number(state.lastCloudSync)||0);
     watchLiveNote(state.currentId);
     startSharedEditListeners();
+    if(state.sidebarView==="queue") setQueueLiveWatch(true);
     flushPendingRemoteAccount();
     pullLiveCloudNow();
   }
@@ -13757,6 +13845,7 @@
       if(payload&&Array.isArray(payload.items)){
         var have={};
         (state.items||[]).forEach(function(item){ if(item&&item.id) have[item.id]=item; });
+        var adoptedChanges=0;
         payload.items.forEach(function(item){
           if(!item||!item.id||isSeedDeviceItem(item)) return;
           var local=have[item.id];
@@ -13770,6 +13859,7 @@
             normalizeItem(local);
             if(local.type==="note") syncNoteBody(local);
             if(local.id===state.currentId) changedCurrent=true;
+            adoptedChanges++;
           }
         });
         if(payload.deletedItems&&typeof payload.deletedItems==="object") state.deletedItems=cloneData(payload.deletedItems);
@@ -13781,7 +13871,7 @@
       state.lastCloudSync=sentAt;
       if((state.lastLocalChange||0)<=sentAt){ state.pendingCloudSync=false; recordSyncBaseline({items:state.items},sentAt); persistLocalStateQuietly(); }
       setSaveState("Saved to cloud","cloud"); syncPublicShares(); maybeCloudBackup(); scheduleAccountUsageRefresh(0); startSharedEditListeners();
-      if(added) renderList();
+      if(added||adoptedChanges) renderList();
       if(changedCurrent){ refreshOpenItemFromLive(current()); scheduleLiveNotePush([state.currentId],true); }
     }).catch(function(e){ console.warn(e); setSaveState("Cloud sync failed — recovery copy kept","bad"); });
   }
@@ -14893,6 +14983,7 @@
   }
   if($("promptQuestionsModal")) $("promptQuestionsModal").onclick=function(e){ if(e.target===$("promptQuestionsModal")) closePromptQuestions(); };
   $("settingsBtn").onclick=function(){ openSettings(); };
+  $("queueNavBtn").onclick=function(){ setSidebarView(state.sidebarView==="queue"?"all":"queue"); };
   $("settingsModal").onclick=function(e){ if(e.target===$("settingsModal")) $("settingsModal").classList.remove("open"); };
   $("moreBtn").onclick=function(){ if($("moreModal").classList.contains("open")) closeMore(); else openMore(); };
   $("moreClose").onclick=function(){ closeMore(); };
