@@ -1477,6 +1477,46 @@
   .home-add .add-choice small{ color:var(--ink-faint); line-height:1.4; }
   .home-add .add-choice:hover{ border-color:var(--accent-line); background:var(--accent-soft); }
   .home-notes-slot{ margin-top:14px; }
+  /* A tag opened from Home takes the page. The wash is that tag's color. */
+  .home-sheet.tag-stage{ position:relative; }
+  .home-sheet.tag-stage::before{
+    content:"";
+    position:absolute;
+    z-index:0;
+    top:-36px;
+    left:-6%;
+    width:min(640px,108%);
+    height:280px;
+    background:radial-gradient(ellipse at 22% 32%, color-mix(in srgb, var(--tag) 58%, transparent), transparent 68%);
+    pointer-events:none;
+  }
+  .tag-stage-head,.tag-stage-notes{ position:relative; z-index:1; }
+  .tag-stage-head .home-kicker{ color:var(--tag, var(--accent)); }
+  .tag-stage-head h1{ display:flex; align-items:center; gap:12px; }
+  .tag-stage-head h1 span{ min-width:0; }
+  .tag-stage-dot{
+    flex:none;
+    width:13px;
+    height:13px;
+    border-radius:50%;
+    background:var(--tag, var(--accent));
+    box-shadow:0 0 0 5px color-mix(in srgb, var(--tag, var(--accent)) 22%, transparent), 0 0 22px var(--tag, var(--accent));
+  }
+  .tag-stage-notes{ margin-top:2px; }
+  .tag-stage-notes .home-notes{
+    padding:8px 8px 12px;
+    border:1px solid color-mix(in srgb, var(--tag) 34%, var(--line));
+    border-radius:18px;
+    background:linear-gradient(180deg, color-mix(in srgb, var(--tag) 13%, transparent), rgba(255,255,255,.02) 140px);
+    box-shadow:inset 0 1px 0 color-mix(in srgb, var(--tag) 28%, transparent);
+  }
+  .tag-stage .home-tag.on{
+    color:var(--ink);
+    border-color:color-mix(in srgb, var(--tag) 55%, transparent);
+    background:color-mix(in srgb, var(--tag) 16%, transparent);
+  }
+  .tag-stage .home-notes.enter .home-note{ animation:fadeUp .42s cubic-bezier(.2,.9,.3,1) both; animation-delay:calc(var(--i, 0) * 34ms); }
+  .tag-stage .home-notes .home-note.just-added{ animation:justAdded .55s cubic-bezier(.2,.9,.3,1.1) both; animation-delay:0s; }
   .home-search{ display:flex; margin-bottom:8px; }
   .home-search input,.home-scratch{ width:100%; border:1px solid var(--line); border-radius:12px; padding:12px 14px; color:var(--ink); background:rgba(0,0,0,.28); font:inherit; outline:none; }
   .home-search input{ border-radius:12px; }
@@ -1546,6 +1586,8 @@
     .modal-box{ padding:20px; }
     .themes{ grid-template-columns:1fr; }
     .home-head{ flex-direction:column; align-items:stretch; }
+    .tag-stage-head{ flex-direction:row; align-items:flex-start; }
+    .tag-stage-head .home-tools{ margin-top:22px; }
     .home-tools{ justify-content:space-between; }
     .home-grid,.home-add-grid{ grid-template-columns:1fr; }
     .home-notes-controls{ flex-direction:column; align-items:stretch; }
@@ -3355,6 +3397,9 @@
       clearTimeout(tagCloseTimer);
       state.filterTag=state.filterTag===tag.id?null:tag.id;
       if(state.sidebarView==="hidden") state.sidebarView="all";
+      /* Home is already up, so this tap should show the tag's notes, not only
+         narrow the drawer. */
+      syncHomeTagFromSidebar();
       persist(); renderAll();
       var picked=tagsEl.querySelector(".tg.active");
       if(picked) picked.classList.add("tag-pick");
@@ -3704,10 +3749,10 @@
     }
     openMenu(anchor,function(m){
       var ft=document.createElement("div"); ft.className="mtitle"; ft.textContent="Filter by tag"; m.appendChild(ft);
-      m.appendChild(mkItem(ICON_NOTE,"All tags",state.filterTag===null,function(){ state.filterTag=null; closeMenu(); persist(); renderAll(); }));
+      m.appendChild(mkItem(ICON_NOTE,"All tags",state.filterTag===null,function(){ state.filterTag=null; syncHomeTagFromSidebar(); closeMenu(); persist(); renderAll(); }));
       var tagBox=document.createElement("div"); tagBox.className="maxscroll";
       state.tags.slice().sort(function(a,b){return tagUseCount(b.id)-tagUseCount(a.id)||a.name.localeCompare(b.name);}).forEach(function(tag){
-        tagBox.appendChild(mkItem('<span style="width:9px;height:9px;border-radius:50%;background:hsl('+tag.hue+',65%,62%);display:inline-block"></span>',tag.name,state.filterTag===tag.id,function(){ state.filterTag=tag.id; closeMenu(); persist(); renderAll(); }));
+        tagBox.appendChild(mkItem('<span style="width:9px;height:9px;border-radius:50%;background:hsl('+tag.hue+',65%,62%);display:inline-block"></span>',tag.name,state.filterTag===tag.id,function(){ state.filterTag=tag.id; syncHomeTagFromSidebar(); closeMenu(); persist(); renderAll(); }));
       });
       m.appendChild(tagBox); m.appendChild(sep());
       var st=document.createElement("div"); st.className="mtitle"; st.textContent="Sort notes"; m.appendChild(st);
@@ -4209,7 +4254,7 @@
       {type:"glance",label:"At a glance",hint:"Counts for notes, open todos, and what is due."},
       {type:"todos",label:"Open todos",hint:"Unchecked todos, with the due ones first."},
       {type:"search",label:"Search",hint:"Find a note and filter the list below."},
-      {type:"tags",label:"Tags",hint:"Pick a tag to filter the notes list."},
+      {type:"tags",label:"Tags",hint:"Open a tag and see just its notes."},
       {type:"revisit",label:"Revisit",hint:"Notes that have been quiet for a while."},
       {type:"time",label:"Time spent",hint:"Where your time in notes has gone."},
       {type:"today",label:"Today",hint:"Notes touched since this morning."},
@@ -4307,11 +4352,28 @@
   }
   function showHome(){
     if(activeAudioRecorder){ showToast("Finish the current recording before leaving it",true); return; }
+    /* A second Home tap, while a tag is already open, steps back to the widgets. */
+    if(viewingHome&&homeTagId){
+      if(state.filterTag===homeTagId) state.filterTag=null;
+      homeTagId=null;
+      renderList();
+      renderMain();
+      return;
+    }
     viewingHome=true;
     exitSidebarFocus();
     app.classList.remove("open");
     renderList();
     renderMain();
+  }
+  /* The drawer filter and the Home tag page stay on the same tag. On a phone
+     the drawer would cover the page it just opened, so it steps aside. */
+  function syncHomeTagFromSidebar(){
+    if(!viewingHome||app.classList.contains("sidebar-focus")) return;
+    var next=state.filterTag||null;
+    if(next&&!tagById(next)) next=null;
+    homeTagId=next;
+    if(homeTagId&&usesOverlaySidebar()) app.classList.remove("open");
   }
   function revealItem(id){ viewingHome=false; if(id) state.currentId=id; }
   function syncHomeButton(){
@@ -4449,9 +4511,10 @@
     tools.appendChild(toggleWrap); tools.appendChild(custom);
     head.appendChild(copy); head.appendChild(tools); return head;
   }
-  function buildHomeNoteRow(it){
+  function buildHomeNoteRow(it, index){
     var button=document.createElement("button"); button.type="button";
     button.className="home-note"+((isTodoNote(it)||it.type==="todo")&&it.done?" todo-done":"")+(it.id===justAddedId?" just-added":"");
+    if(typeof index==="number") button.style.setProperty("--i", String(Math.min(index, 12)));
     var icon=document.createElement("span"); icon.className="item-icon"; icon.innerHTML=itemIconMarkup(it);
     var color=itemIconColor(it); if(color) icon.style.color=color;
     var text=document.createElement("span"); text.className="home-note-copy";
@@ -4467,8 +4530,12 @@
   }
   function setHomeNotesTag(id){
     homeTagId=homeTagId===id?null:id;
-    if(homeTagId&&!homeWidgetOn("notes")) setHomeWidgetEnabled("notes", true);
-    else renderMain();
+    if(state.filterTag!==homeTagId){
+      state.filterTag=homeTagId;
+      if(homeTagId&&state.sidebarView==="hidden") state.sidebarView="all";
+      renderList();
+    }
+    renderMain();
   }
   function setHomeNotesType(kind){
     homeTypeFilter=homeTypeFilter===kind?"":kind;
@@ -4521,12 +4588,12 @@
       all.type="button";
       all.className="home-tag"+(!homeTagId?" on":"");
       all.dataset.tagId="";
-      all.title="Show every tag";
+      all.title=homeTagId?"Back to home":"Show every tag";
       all.setAttribute("aria-pressed",!homeTagId?"true":"false");
       var allName=document.createElement("span"); allName.textContent="All";
       var allCount=document.createElement("em"); allCount.textContent=String(homeTagCount(null));
       all.appendChild(allName); all.appendChild(allCount);
-      all.onclick=function(){ if(homeTagId){ homeTagId=null; renderMain(); } };
+      all.onclick=function(){ if(homeTagId) setHomeNotesTag(homeTagId); };
       rail.appendChild(all);
       tags.forEach(function(tag){
         var chip=document.createElement("button");
@@ -4864,19 +4931,72 @@
     });
     panel.appendChild(grid); return panel;
   }
+  function homeOpenTag(){
+    if(!homeTagId) return null;
+    var tag=tagById(homeTagId);
+    if(!tag){ homeTagId=null; return null; }
+    return tag;
+  }
+  function buildHomeTagStageHeader(tag, count, filteredEmpty){
+    var head=document.createElement("header"); head.className="home-head tag-stage-head";
+    var copy=document.createElement("div");
+    var group=tagGroupById(tagGroupIdOf(tag.id));
+    var groupName=group&&group.name&&group.name!==(tag.name||"")?group.name:"";
+    var kicker=document.createElement("p"); kicker.className="home-kicker"; kicker.textContent=groupName||"Tag";
+    var title=document.createElement("h1");
+    var dot=document.createElement("i"); dot.className="tag-stage-dot"; dot.setAttribute("aria-hidden","true");
+    var name=document.createElement("span"); name.textContent=tag.name||"Tag";
+    title.appendChild(dot); title.appendChild(name);
+    var sub=document.createElement("p"); sub.className="home-sub";
+    sub.textContent=count?(count+" note"+(count===1?"":"s")+". Open one, or go back home."):(filteredEmpty?"Nothing matches these filters.":"Nothing in this tag yet.");
+    copy.appendChild(kicker); copy.appendChild(title); copy.appendChild(sub);
+    var tools=document.createElement("div"); tools.className="home-tools";
+    var back=document.createElement("button"); back.type="button"; back.id="homeTagBack"; back.className="copy-all";
+    back.textContent="Home"; back.setAttribute("aria-label","Back to home");
+    back.onclick=function(){ showHome(); };
+    tools.appendChild(back);
+    head.appendChild(copy); head.appendChild(tools);
+    return head;
+  }
+  function buildHomeTagStage(tag, entering){
+    var frag=document.createDocumentFragment();
+    var items=homeNotes();
+    var filtered=(homeQuery||"").trim()||homeTypeFilter||homeStatusFilter;
+    frag.appendChild(buildHomeTagStageHeader(tag, items.length, !items.length&&!!filtered));
+    var slot=document.createElement("div"); slot.className="home-notes-slot tag-stage-notes";
+    var body=document.createElement("div"); body.className="home-notes"+(entering?" enter":"");
+    body.appendChild(buildHomeNotesToolbar());
+    if(!items.length&&filtered){
+      var empty=document.createElement("p"); empty.className="home-muted"; empty.textContent="Nothing matches.";
+      body.appendChild(empty);
+    } else items.forEach(function(it, index){ body.appendChild(buildHomeNoteRow(it, entering?index:null)); });
+    slot.appendChild(body);
+    frag.appendChild(slot);
+    return frag;
+  }
   function renderHome(){
     if(renderedModule&&renderedModule.detach) renderedModule.detach();
     else if(window.SecondBrainCode&&typeof window.SecondBrainCode.detach==="function") window.SecondBrainCode.detach();
     renderedModule=null;
     if(collab.hostKind==="stage"){ collab.host=null; collab.hostKind=null; }
-    var entering=lastMainId!=="home";
-    lastMainId="home";
+    var openTag=homeOpenTag();
+    var stageKey=openTag?"home-tag:"+openTag.id:"home";
+    var entering=lastMainId!==stageKey;
+    lastMainId=stageKey;
     canvas.innerHTML="";
     updateShareButton(null); updateTtsButton(null);
     var copyBtn=$("copyAll"); if(copyBtn) copyBtn.style.display="none";
     stopLiveNoteWatch();
     if(entering) canvas.scrollTop=0;
     var sheet=document.createElement("div"); sheet.className="sheet home-sheet"+(entering?" enter":"");
+    if(openTag){
+      sheet.classList.add("tag-stage");
+      sheet.style.setProperty("--tag", tagColor(openTag));
+      sheet.appendChild(buildHomeTagStage(openTag, entering));
+      canvas.appendChild(sheet);
+      restoreHomeTagRail(sheet.querySelector("#homeTagRail"));
+      return;
+    }
     sheet.appendChild(buildHomeHeader());
     var grid=document.createElement("div"); grid.className="home-grid";
     var widgets=homeLayout().widgets.filter(function(widget){ return widget.type!=="notes"&&widget.enabled!==false; });
