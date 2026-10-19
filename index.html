@@ -3618,7 +3618,13 @@
       el.appendChild(button);
     });
     var todos=state.items.filter(function(item){ return isTodoNote(item)||item.type==="todo"; });
-    if(todos.length||state.filterStatus){
+    /* The queue feature used to pin all seven status filters into the drawer's
+       Types section on every load, pushing the notes list out of the 300px
+       drawer on phones — that is what broke the side panel. Keep the drawer
+       calm: show the status filters only while they are being used (a status
+       filter is set, or the Queue view is open where they belong). */
+    var statusFiltersUsed=!!state.filterStatus||state.sidebarView==="queue";
+    if(todos.length&&statusFiltersUsed){
       var statusHead=document.createElement("div"); statusHead.className="type-status-head"; statusHead.textContent="Status"; el.appendChild(statusHead);
       var options=[["","Any status"],["none","No status"]].concat(TODO_STATUSES.map(function(status){ return [status,statusLabel(status)]; }));
       options.forEach(function(option){
