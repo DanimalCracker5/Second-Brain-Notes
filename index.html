@@ -2482,7 +2482,8 @@
   if(state.mobileFolderFocus!==undefined) delete state.mobileFolderFocus;
   if(typeof state.readChapterNames!=="boolean") state.readChapterNames=false;
   state.filterTag=state.filterTag||null; state.selectedItemIds=Array.isArray(state.selectedItemIds)?state.selectedItemIds:[]; state.selectingNotes=!!state.selectingNotes; state.tagAssignMode=!!state.tagAssignMode;
-  state.sidebarView=(state.sidebarView==="upcoming"||state.sidebarView==="hidden"||state.sidebarView==="queue")?state.sidebarView:"all";
+  /* Always cold-boot into the All notes list. A stuck queue/upcoming/hidden view used to survive reloads and look like "all my notes are gone" - views other than All are only reachable by tapping their buttons. */
+  state.sidebarView="all";
   state.version=Math.max(1,Number(state.version)||Number(state.updated)||1);
   state.noteSearch=typeof state.noteSearch==="string"?state.noteSearch:"";
   state.listSort=state.listSort||"updated";
