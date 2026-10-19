@@ -1,0 +1,42 @@
+name: Stamp build-id
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'index.html'
+
+permissions:
+  contents: write
+
+concurrency:
+  group: stamp-build-id
+  cancel-in-progress: true
+
+jobs:
+  stamp:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 2
+
+      - name: Stamp __BUILD_ID__ with commit SHA
+        id: stamp
+        run: |
+          SHA="${{ github.sha }}"
+          sed -i "s/__BUILD_ID__/${SHA}/g" index.html
+          if git diff --quiet -- index.html; then
+            echo "changed=false" >> "$GITHUB_OUTPUT"
+          else
+            echo "changed=true" >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: Commit stamped build id
+        if: steps.stamp.outputs.changed == 'true'
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add index.html
+          git commit -m "chore: stamp build-id for ${{ github.sha }} [skip ci]"
+          git push

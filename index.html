@@ -4,6 +4,7 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
 <meta name="theme-color" content="#000000">
+<meta name="build-id" content="__BUILD_ID__">
 <meta name="description" content="Second Brain Notes — a cloud-synced workspace for notes, tasks, scripts, media, and AI collaboration.">
 <meta name="mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-capable" content="yes">
@@ -15060,6 +15061,54 @@
       });
     });
   }
+</script>
+<script>
+  // Update check: when a new deploy lands on GitHub Pages, offer a tap-to-reload.
+  (function () {
+    if (location.protocol === 'file:') return;
+    function currentBuildId() {
+      var m = document.querySelector('meta[name="build-id"]');
+      return m ? (m.getAttribute('content') || '') : '';
+    }
+    var myBuild = currentBuildId();
+    if (!myBuild || !/^[0-9a-f]{40}$/.test(myBuild)) return; // unstamped dev copy
+    function showUpdateToast(served) {
+      if (document.getElementById('sbUpdateToast')) return;
+      var t = document.createElement('div');
+      t.id = 'sbUpdateToast';
+      t.setAttribute('role', 'button');
+      t.setAttribute('tabindex', '0');
+      t.textContent = 'New version — tap to update';
+      t.style.cssText = 'position:fixed;left:50%;bottom:calc(18px + env(safe-area-inset-bottom,0px));transform:translateX(-50%);z-index:99999;background:#1c1c1e;color:#fff;padding:10px 18px;border-radius:999px;font:600 13px -apple-system,system-ui,sans-serif;box-shadow:0 4px 16px rgba(0,0,0,.4);cursor:pointer;opacity:.94;letter-spacing:.2px;';
+      function go() {
+        try { sessionStorage.setItem('sbUpdateReloaded', served); } catch (e) {}
+        location.reload();
+      }
+      t.addEventListener('click', go);
+      t.addEventListener('keydown', function (e) { if (e.key === 'Enter' || e.key === ' ') go(); });
+      document.body.appendChild(t);
+    }
+    function check() {
+      var url = 'index.html?cb=' + Date.now();
+      fetch(url, { cache: 'no-store', credentials: 'same-origin' })
+        .then(function (r) { return r.ok ? r.text() : null; })
+        .then(function (html) {
+          if (!html) return;
+          var m = html.match(/<meta\s+name=["']build-id["']\s+content=["']([^"']*)["']/i);
+          if (!m) return;
+          var served = m[1];
+          if (served && served !== myBuild && /^[0-9a-f]{40}$/.test(served)) {
+            try {
+              // Only offer the auto-reload once per session per target build.
+              if (sessionStorage.getItem('sbUpdateReloaded') === served) return;
+            } catch (e) {}
+            showUpdateToast(served);
+          }
+        })
+        .catch(function () {});
+    }
+    window.addEventListener('load', function () { setTimeout(check, 3000); });
+  })();
 </script>
 </body>
 </html>
