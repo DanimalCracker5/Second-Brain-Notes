@@ -570,9 +570,41 @@
   body.tag-dragging .tag-new-group.is-visible{ display:block; }
   .tag-new-group.is-armed{ color:#08080b; background:var(--accent); border-style:solid; }
 
-  /* display:block matters — a <label> is inline by default, so the input's
-     width:100% would resolve against the sidebar instead of this box. */
-  .note-search{ display:block; position:relative; margin:10px 14px 2px; }.note-search svg{ position:absolute; top:50%; left:10px; width:15px; height:15px; color:var(--ink-faint); transform:translateY(-50%); pointer-events:none; }.note-search input{ width:100%; height:34px; padding:0 62px 0 32px; border:1px solid var(--line); border-radius:10px; outline:none; color:var(--ink); background:rgba(255,255,255,.035); font:.77rem "DM Sans",sans-serif; }.note-search input::placeholder{ color:var(--ink-faint); }.note-search input{ transition:border-color .16s,background .16s,box-shadow .2s; }.note-search input:focus{ border-color:var(--accent-line); background:rgba(255,255,255,.055); box-shadow:0 0 0 3px var(--accent-soft); }.note-search svg{ transition:color .16s; }.note-search:focus-within svg{ color:var(--accent); }.note-search button{ position:absolute; right:4px; top:4px; width:26px; height:26px; display:none; place-items:center; border:0; border-radius:7px; color:var(--ink-faint); background:transparent; cursor:pointer; font-size:1rem; }.note-search button:hover{ color:var(--ink); background:rgba(255,255,255,.08); }.note-search .quick-add-note{ right:31px; display:grid; color:var(--accent); font-size:1.05rem; font-weight:700; }.note-search .quick-add-note:hover{ color:var(--ink); background:var(--accent-soft); }.note-search.has-value #clearNoteSearch{ display:grid; }
+  /* display:block matters — a <label> is inline by default, so the field's
+     width:100% would resolve against the sidebar instead of this box.
+     A long jot grows the field; tags and the note type show once it no
+     longer fits on one line. */
+  .note-search{ display:block; position:relative; margin:10px 14px 2px; }
+  .note-search svg{ position:absolute; top:17px; left:10px; width:15px; height:15px; color:var(--ink-faint); transform:translateY(-50%); pointer-events:none; z-index:1; transition:color .16s; }
+  .note-search:focus-within svg{ color:var(--accent); }
+  .note-search-probe{ position:absolute; left:0; top:0; height:0; overflow:hidden; visibility:hidden; pointer-events:none; white-space:pre; font:.77rem/1.4 "DM Sans",sans-serif; }
+  .note-search textarea{ display:block; width:100%; height:34px; min-height:34px; max-height:34px; margin:0; padding:7px 62px 7px 32px; border:1px solid var(--line); border-radius:10px; outline:none; resize:none; overflow:hidden; color:var(--ink); background:rgba(255,255,255,.035); font:.77rem/1.4 "DM Sans",sans-serif; transition:border-color .16s,background .16s,box-shadow .2s; }
+  .note-search textarea::placeholder{ color:var(--ink-faint); }
+  .note-search textarea:focus{ border-color:var(--accent-line); background:rgba(255,255,255,.055); box-shadow:0 0 0 3px var(--accent-soft); }
+  .note-search > button{ position:absolute; right:4px; top:4px; width:26px; height:26px; display:none; place-items:center; border:0; border-radius:7px; color:var(--ink-faint); background:transparent; cursor:pointer; font-size:1rem; }
+  .note-search > button:hover{ color:var(--ink); background:rgba(255,255,255,.08); }
+  .note-search > .quick-add-note{ right:31px; display:grid; color:var(--accent); font-size:1.05rem; font-weight:700; }
+  .note-search > .quick-add-note:hover{ color:var(--ink); background:var(--accent-soft); }
+  .note-search.has-value #clearNoteSearch{ display:grid; }
+  .note-search-meta{ display:none; }
+  .note-search.is-expanded{ display:grid; grid-template-columns:minmax(0,1fr) auto auto; grid-template-areas:"field field field" "meta add clear"; align-items:end; gap:2px 4px; padding:2px 4px 4px 2px; border:1px solid var(--accent-line); border-radius:14px; background:rgba(255,255,255,.045); box-shadow:0 0 0 3px var(--accent-soft); }
+  .note-search.is-expanded textarea{ grid-area:field; height:auto; min-height:52px; max-height:min(42vh,240px); padding:8px 10px 8px 32px; border-color:transparent; border-width:0; background:transparent; box-shadow:none; overflow:hidden; }
+  .note-search.is-expanded textarea:focus{ border-color:transparent; background:transparent; box-shadow:none; }
+  .note-search.is-expanded .note-search-meta{ display:flex; grid-area:meta; flex-wrap:wrap; align-items:center; gap:6px; min-width:0; padding:2px 0 2px 8px; }
+  .note-search.is-expanded > .quick-add-note,
+  .note-search.is-expanded > #clearNoteSearch{ position:static; align-self:end; margin:0 0 2px; }
+  .note-search.is-expanded > .quick-add-note{ grid-area:add; }
+  .note-search.is-expanded > #clearNoteSearch{ grid-area:clear; }
+  .qs-type,.qs-add-tag{ display:inline-flex; align-items:center; gap:5px; height:26px; max-width:100%; padding:0 9px; border:1px solid var(--line); border-radius:999px; color:var(--ink-dim); background:rgba(255,255,255,.05); cursor:pointer; font:600 .68rem "DM Sans",sans-serif; }
+  .qs-type{ color:var(--accent); border-color:var(--accent-line); background:var(--accent-soft); }
+  .qs-type:hover,.qs-add-tag:hover{ color:var(--ink); border-color:var(--accent-line); }
+  .qs-caret{ font-size:.7rem; opacity:.75; }
+  .qs-tags{ display:flex; flex-wrap:wrap; gap:6px; min-width:0; }
+  .qs-tag{ display:inline-flex; align-items:center; gap:5px; max-width:150px; height:26px; padding:0 6px 0 8px; border:1px solid color-mix(in srgb, var(--tg, var(--accent)) 46%, transparent); border-radius:999px; color:var(--ink); background:color-mix(in srgb, var(--tg, var(--accent)) 16%, transparent); cursor:pointer; font:600 .68rem "DM Sans",sans-serif; }
+  .qs-tag span:nth-child(2){ min-width:0; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+  .qs-dot{ width:7px; height:7px; border-radius:50%; background:var(--tg, var(--accent)); flex:none; }
+  .qs-x{ color:var(--ink-dim); font-size:.85rem; line-height:1; }
+  .qs-tag:hover .qs-x{ color:var(--ink); }
 
   .d-list{ padding:4px 10px 8px; }
   /* Upcoming headings. They stick to the top of the scroller so the month you
@@ -1568,7 +1600,7 @@
     <div class="d-head"><button class="home-brand" id="homeBrand" type="button" title="Home" aria-label="Home"><h2>Second Brain Notes</h2><small>by Astral Studios LLC</small></button><button class="sidebar-fullscreen" id="sidebarFullscreenBtn" type="button" title="Open sidebar focus" aria-label="Open sidebar focus"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M8 3H3v5M16 3h5v5M21 16v5h-5M3 16v5h5"/></svg></button></div>
     <button class="d-new" id="newBtn"><span class="plus" aria-hidden="true">＋</span><span>New</span></button>
     <div class="d-scroll">
-      <label class="note-search" id="noteSearchWrap"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="11" cy="11" r="6"/><path d="m16 16 4 4"/></svg><input id="noteSearch" type="search" autocomplete="off" placeholder="Search notes…" aria-label="Search notes"><button class="quick-add-note" id="quickAddNoteBtn" type="button" title="Add note from search" aria-label="Add note from search">＋</button><button id="clearNoteSearch" type="button" aria-label="Clear note search">×</button></label>
+      <label class="note-search" id="noteSearchWrap"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="11" cy="11" r="6"/><path d="m16 16 4 4"/></svg><textarea id="noteSearch" rows="1" autocomplete="off" placeholder="Search notes…" aria-label="Search notes or jot a note"></textarea><span class="note-search-probe" id="noteSearchProbe" aria-hidden="true"></span><div class="note-search-meta" id="noteSearchMeta"><button class="qs-type" id="noteSearchTypeBtn" type="button" title="Change note type" aria-haspopup="menu">Todo</button><div class="qs-tags" id="noteSearchTags"></div><button class="qs-add-tag" id="noteSearchTagBtn" type="button" title="Add tags" aria-label="Add tags">＋ Tag</button></div><button class="quick-add-note" id="quickAddNoteBtn" type="button" title="Add note from search" aria-label="Add note from search">＋</button><button id="clearNoteSearch" type="button" aria-label="Clear note search">×</button></label>
       <div class="sec-h"><button class="section-toggle" id="tagsToggleBtn" type="button" aria-controls="tags" aria-expanded="true" title="Collapse tags"><span>Tags</span><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m6 9 6 6 6-6"/></svg></button><button id="addTagBtn" title="New tag">＋</button></div>
       <div id="tags"></div>
       <div id="tagGroups"></div>
@@ -1904,7 +1936,7 @@
   function revisionWeight(before,after){ return Math.max(1,Math.ceil(documentChangeSize(revisionPayload(before),revisionPayload(after))/120)); }
   function syncStateSignature(data){
     var copy=cloneData(data||{});
-    ["version","versionChangedAt","lastLocalChange","lastCloudSync","pendingCloudSync","syncBaseline","selectedItemIds","selectingNotes","tagAssignMode","noteSearch","sidebarView","upcomingFilter","upcomingSort"].forEach(function(key){ delete copy[key]; });
+    ["version","versionChangedAt","lastLocalChange","lastCloudSync","pendingCloudSync","syncBaseline","selectedItemIds","selectingNotes","tagAssignMode","noteSearch","quickCaptureType","quickCaptureTagIds","sidebarView","upcomingFilter","upcomingSort"].forEach(function(key){ delete copy[key]; });
     var itemFingerprints={};
     (copy.items||[]).forEach(function(item){ if(item&&item.id) itemFingerprints[item.id]=itemSyncSignature(item); });
     copy.items=itemFingerprints;
@@ -2486,7 +2518,7 @@
   /* Always cold-boot into the All notes list. A stuck queue/upcoming/hidden view used to survive reloads and look like "all my notes are gone" - views other than All are only reachable by tapping their buttons. */
   state.sidebarView="all";
   state.version=Math.max(1,Number(state.version)||Number(state.updated)||1);
-  state.noteSearch=typeof state.noteSearch==="string"?state.noteSearch:"";
+  state.noteSearch=typeof state.noteSearch==="string"?state.noteSearch:""; state.quickCaptureType=typeof state.quickCaptureType==="string"?state.quickCaptureType:"todo"; state.quickCaptureTagIds=Array.isArray(state.quickCaptureTagIds)?state.quickCaptureTagIds.filter(function(id){ return typeof id==="string"&&id; }):[];
   state.listSort=state.listSort||"updated";
   state.upcomingSort=normalizeUpcomingSort(state.upcomingSort);
   state.upcomingFilter=normalizeUpcomingFilter(state.upcomingFilter);
@@ -2513,7 +2545,7 @@
   if(ensureHomeExtras()) persistLocalStateQuietly();
 
   function blankDeviceState(){
-    return {items:[],folders:[],tags:[],tagGroups:[],tagOrder:[],deletedItems:{},deletedTags:{},currentId:null,motion:true,theme:"nebula",darkness:82,enabledTypes:defaultEnabledTypes(),typeDefaults:TYPE_DEFAULTS_VERSION,noteInsertOptions:{file:true,paragraph:true,checklist:true,comment:true,prompt:true,heading:true,chapter:true,group:true,code:true},tagsCollapsed:false,typesCollapsed:false,allNotesCollapsed:false,promptsCollapsed:false,promptStatusCollapsed:{},focusNoteBody:true,quickAiHandoff:true,allNotesName:"All notes",readChapterNames:false,filterTag:null,filterType:"",filterStatus:"",sidebarView:"all",tagAssignMode:false,noteSearch:"",listSort:"updated",upcomingSort:"due",upcomingFilter:{range:"all",tagId:null,showDone:false},homeLayout:defaultHomeLayout(),homeExtrasVersion:1,homeScratch:"",version:1,agentSettings:defaultAgentSettings(),pendingCloudSync:false,syncBaseline:null};
+    return {items:[],folders:[],tags:[],tagGroups:[],tagOrder:[],deletedItems:{},deletedTags:{},currentId:null,motion:true,theme:"nebula",darkness:82,enabledTypes:defaultEnabledTypes(),typeDefaults:TYPE_DEFAULTS_VERSION,noteInsertOptions:{file:true,paragraph:true,checklist:true,comment:true,prompt:true,heading:true,chapter:true,group:true,code:true},tagsCollapsed:false,typesCollapsed:false,allNotesCollapsed:false,promptsCollapsed:false,promptStatusCollapsed:{},focusNoteBody:true,quickAiHandoff:true,allNotesName:"All notes",readChapterNames:false,filterTag:null,filterType:"",filterStatus:"",sidebarView:"all",tagAssignMode:false,noteSearch:"",quickCaptureType:"todo",quickCaptureTagIds:[],listSort:"updated",upcomingSort:"due",upcomingFilter:{range:"all",tagId:null,showDone:false},homeLayout:defaultHomeLayout(),homeExtrasVersion:1,homeScratch:"",version:1,agentSettings:defaultAgentSettings(),pendingCloudSync:false,syncBaseline:null};
   }
   function clearAttachmentStore(){
     if(!window.indexedDB) return;
@@ -3168,7 +3200,7 @@
     if(!m.hasAttribute("data-noautofocus")){ var inp=m.querySelector("input"); if(inp) inp.focus(); }
     return m;
   }
-  window.addEventListener("resize",function(){ if(openMenuEl) placeOpenMenu(); });
+  window.addEventListener("resize",function(){ if(openMenuEl) placeOpenMenu(); syncNoteSearchChrome(); });
   function mkItem(iconHtml,label,on,onclick){ var b=document.createElement("button"); b.className="mi"+(on?" on":""); b.innerHTML=iconHtml+'<span>'+escapeHtml(label)+'</span><span class="chk">✓</span>'; b.onclick=onclick; return b; }
   function mkMoreItem(iconHtml,label,onclick){
     var b=mkItem(iconHtml,label,false,onclick);
@@ -4155,7 +4187,7 @@
       el.querySelector(".dx").onclick=function(e){ e.stopPropagation(); if(todoItem&&it.done) delItem(it.id,"Delete this completed todo? This can't be undone."); else openItemActions(e.currentTarget,it); };
       return el;
   }
-  function renderAll(){ renderTags(); renderTypes(); renderList(); renderMain(); }
+  function renderAll(){ renderTags(); renderTypes(); renderList(); renderMain(); renderQuickCaptureMeta(); }
   function addSelectedNotesToTag(){
     var tag=tagById(state.filterTag), selected=state.items.filter(function(item){ return state.selectedItemIds.indexOf(item.id)>=0; });
     if(!tag||!selected.length) return;
@@ -8839,18 +8871,267 @@
     value=value.split(/\s+/).slice(0,6).join(" ");
     return value?value.charAt(0).toUpperCase()+value.slice(1):"Quick note";
   }
+  function quickCaptureChoices(){
+    var rows=[];
+    function add(id,label){ if(state.enabledTypes&&state.enabledTypes[id]) rows.push({id:id,label:label}); }
+    add("todo","Todo");
+    add("note","Note");
+    add("script","YouTube Script");
+    add("audio","Audio");
+    add("agent","Agent");
+    add("workout","Workout Routine");
+    typeModuleList().forEach(function(def){
+      if(!def||!def.create||!state.enabledTypes||!state.enabledTypes[def.type]) return;
+      rows.push({id:def.type,label:def.menuLabel||def.label||def.type});
+    });
+    if(!rows.length) rows.push({id:"note",label:"Note"});
+    return rows;
+  }
+  function quickCaptureExpands(text, textWidth, lineWidth){
+    var value=String(text||"");
+    if(!value.trim()) return false;
+    if(/[\r\n]/.test(value)) return true;
+    if(!(lineWidth>8)) return false;
+    return textWidth>lineWidth+1;
+  }
+  function quickCaptureTagIds(){
+    return (state.quickCaptureTagIds||[]).filter(function(id){ return !!tagById(id); });
+  }
+  function defaultQuickCaptureType(){
+    var choices=quickCaptureChoices();
+    if(choices.some(function(row){ return row.id==="todo"; })) return "todo";
+    return choices[0].id;
+  }
+  function sanitizeQuickCapture(){
+    var known={};
+    quickCaptureChoices().forEach(function(row){ known[row.id]=true; });
+    if(!known[state.quickCaptureType]) state.quickCaptureType=defaultQuickCaptureType();
+    state.quickCaptureTagIds=quickCaptureTagIds();
+  }
+  function resetQuickCaptureDraft(){
+    state.quickCaptureType=defaultQuickCaptureType();
+    state.quickCaptureTagIds=[];
+  }
+  function quickCaptureIcon(id){
+    if(id==="todo"||id==="workout") return ICON_TODO;
+    if(id==="script") return ICON_SCRIPT;
+    if(id==="audio") return ICON_AUDIO;
+    if(id==="agent") return ICON_AGENT;
+    var def=typeModule(id);
+    return def&&def.icon?def.icon:ICON_NOTE;
+  }
+  function quickCaptureLineWidth(){
+    if(!noteSearchWrap) return 0;
+    var style=window.getComputedStyle(noteSearchWrap);
+    var border=(parseFloat(style.borderLeftWidth)||0)+(parseFloat(style.borderRightWidth)||0);
+    return Math.max(0, noteSearchWrap.clientWidth+border-96);
+  }
+  var quickCaptureSeenWidth=-1;
+  function syncNoteSearchChrome(fromResize){
+    if(!noteSearch||!noteSearchWrap) return;
+    var width=noteSearchWrap.clientWidth;
+    /* Height changes fire the resize observer too. Only a real width change
+       should measure again, or the field and the observer chase each other. */
+    if(fromResize&&width===quickCaptureSeenWidth) return;
+    quickCaptureSeenWidth=width;
+    var value=noteSearch.value||"";
+    var probe=$("noteSearchProbe");
+    if(probe){
+      var fieldStyle=window.getComputedStyle(noteSearch);
+      probe.style.fontFamily=fieldStyle.fontFamily;
+      probe.style.fontSize=fieldStyle.fontSize;
+      probe.style.fontWeight=fieldStyle.fontWeight;
+      probe.style.letterSpacing=fieldStyle.letterSpacing;
+      probe.textContent=value.split(/\r?\n/).join(" ");
+    }
+    var expanded=quickCaptureExpands(value, probe?probe.scrollWidth:0, quickCaptureLineWidth());
+    noteSearchWrap.classList.toggle("is-expanded", expanded);
+    noteSearchWrap.classList.toggle("has-value", !!value);
+    if(expanded){
+      /* Measure with overflow hidden so a scrollbar cannot shrink the line
+         and force a second wrap. The border is outside scrollHeight under
+         border-box, so add it or the last line sits under a scrollbar. */
+      noteSearch.style.overflowY="hidden";
+      noteSearch.style.height="auto";
+      var border=noteSearch.offsetHeight-noteSearch.clientHeight;
+      var needed=noteSearch.scrollHeight+border;
+      var cap=240;
+      if(needed>cap){
+        noteSearch.style.height=cap+"px";
+        noteSearch.style.overflowY="auto";
+      } else noteSearch.style.height=Math.max(needed, 52)+"px";
+    } else if(noteSearch.style.height||noteSearch.style.overflowY){
+      noteSearch.style.height="";
+      noteSearch.style.overflowY="";
+    }
+    var addBtn=$("quickAddNoteBtn");
+    if(addBtn) addBtn.title=expanded?"Add note (Ctrl+Enter)":"Add note from search";
+  }
+  function renderQuickCaptureMeta(){
+    var typeBtn=$("noteSearchTypeBtn"), tagsBox=$("noteSearchTags");
+    if(!typeBtn||!tagsBox) return;
+    sanitizeQuickCapture();
+    var current=quickCaptureChoices().filter(function(row){ return row.id===state.quickCaptureType; })[0];
+    typeBtn.textContent="";
+    var label=document.createElement("span");
+    label.textContent=current?current.label:"Note";
+    var caret=document.createElement("span");
+    caret.className="qs-caret";
+    caret.setAttribute("aria-hidden","true");
+    caret.textContent="▾";
+    typeBtn.appendChild(label);
+    typeBtn.appendChild(caret);
+    typeBtn.setAttribute("aria-label","Note type, "+label.textContent);
+    tagsBox.innerHTML="";
+    quickCaptureTagIds().forEach(function(id){
+      var tag=tagById(id);
+      var chip=document.createElement("button");
+      chip.type="button";
+      chip.className="qs-tag";
+      chip.style.setProperty("--tg", tagColor(tag));
+      chip.title="Remove "+tag.name;
+      chip.setAttribute("aria-label","Remove tag "+tag.name);
+      var dot=document.createElement("span");
+      dot.className="qs-dot";
+      var name=document.createElement("span");
+      name.textContent=tag.name;
+      var mark=document.createElement("span");
+      mark.className="qs-x";
+      mark.textContent="×";
+      chip.appendChild(dot);
+      chip.appendChild(name);
+      chip.appendChild(mark);
+      chip.onclick=function(event){
+        event.preventDefault();
+        event.stopPropagation();
+        state.quickCaptureTagIds=quickCaptureTagIds().filter(function(tagId){ return tagId!==id; });
+        persist();
+        renderQuickCaptureMeta();
+      };
+      tagsBox.appendChild(chip);
+    });
+  }
+  function openQuickCaptureTypeMenu(anchor){
+    openMenu(anchor,function(menu){
+      menu.appendChild(menuTitle("Note type"));
+      quickCaptureChoices().forEach(function(choice){
+        menu.appendChild(mkItem(quickCaptureIcon(choice.id), choice.label, state.quickCaptureType===choice.id, function(){
+          state.quickCaptureType=choice.id;
+          closeMenu();
+          persist();
+          renderQuickCaptureMeta();
+          if(noteSearch) noteSearch.focus();
+        }));
+      });
+    });
+  }
+  function openQuickCaptureTagMenu(anchor){
+    openMenu(anchor,function(menu){
+      menu.classList.add("tag-pick-menu");
+      menu.setAttribute("data-noautofocus","1");
+      menu.appendChild(menuTitle("Tags"));
+      var box=document.createElement("div");
+      box.className="maxscroll";
+      if(!state.tags.length){
+        var empty=document.createElement("div");
+        empty.className="mtitle";
+        empty.style.textTransform="none";
+        empty.style.letterSpacing="0";
+        empty.textContent="No tags yet — type one below.";
+        box.appendChild(empty);
+      }
+      state.tags.forEach(function(tag){
+        var row=mkItem('<span style="width:9px;height:9px;border-radius:50%;background:'+tagColor(tag)+';display:inline-block"></span>', tag.name, quickCaptureTagIds().indexOf(tag.id)>=0, function(){
+          var ids=quickCaptureTagIds();
+          var index=ids.indexOf(tag.id);
+          if(index>=0) ids.splice(index,1); else ids.push(tag.id);
+          state.quickCaptureTagIds=ids;
+          row.classList.toggle("on", ids.indexOf(tag.id)>=0);
+          persist();
+          renderQuickCaptureMeta();
+        });
+        box.appendChild(row);
+      });
+      menu.appendChild(box);
+      var createRow=document.createElement("div");
+      createRow.className="mrow";
+      var inp=document.createElement("input");
+      inp.placeholder="Create new tag…";
+      inp.setAttribute("aria-label","Create a new tag");
+      inp.onkeydown=function(event){
+        if(event.key!=="Enter") return;
+        event.preventDefault();
+        var name=inp.value.trim().replace(/^#+/,"");
+        if(!name) return;
+        var existing=state.tags.find(function(tag){ return (tag.name||"").toLowerCase()===name.toLowerCase(); });
+        var ids=quickCaptureTagIds();
+        if(existing){
+          if(ids.indexOf(existing.id)<0) ids.push(existing.id);
+        } else {
+          var created=makeTag(name);
+          state.tags.push(created);
+          rememberTagOrder();
+          ids.push(created.id);
+          renderTags();
+        }
+        state.quickCaptureTagIds=ids;
+        persist();
+        renderQuickCaptureMeta();
+        closeMenu();
+        openQuickCaptureTagMenu(anchor);
+      };
+      createRow.appendChild(inp);
+      menu.appendChild(createRow);
+    });
+  }
+  function fillQuickCaptureBody(note, raw){
+    if(!note) return;
+    if(note.template==="youtube-script"&&Array.isArray(note.blocks)&&note.blocks.length){
+      note.blocks[0].text=raw;
+      note.blocks[0].html=escapeHtml(raw).replace(/\n/g,"<br>");
+      syncNoteBody(note);
+      return;
+    }
+    if(Array.isArray(note.blocks)&&(note.type==="note"||note.type==="workout")){
+      note.blocks=[textBlock(raw)];
+      syncNoteBody(note);
+    }
+  }
+  function newQuickCaptureItem(raw, kind){
+    var note;
+    if(kind==="script") note=newYoutubeScriptNote();
+    else if(kind==="audio") note=newAudioItem();
+    else if(kind==="agent") note=newAgentItem();
+    else if(kind==="workout") note=newWorkoutRoutine();
+    else if(kind==="note") note=newNoteItem();
+    else if(kind==="todo") note=newTodoItem();
+    else {
+      var def=typeModule(kind);
+      note=def&&def.create?def.create():newNoteItem();
+    }
+    if(kind==="todo") note.dueDate=parseDueDateText(raw)||"";
+    fillQuickCaptureBody(note, raw);
+    note.title=quickNoteFallbackTitle(raw);
+    var ids=Array.isArray(note.tagIds)?note.tagIds.slice():[];
+    quickCaptureTagIds().forEach(function(id){ if(ids.indexOf(id)<0) ids.push(id); });
+    note.tagIds=ids;
+    note.updated=Date.now();
+    return note;
+  }
   function addQuickNoteFromSearch(){
     var raw=cleanText(noteSearch&&noteSearch.value);
     if(!raw){ showToast("Type something to add first",true); if(noteSearch) noteSearch.focus(); return; }
-    var note=newNoteItem(); note.todo=true; note.done=false; note.completed=null; note.dueDate=parseDueDateText(raw); note.blocks=[textBlock(raw)]; syncNoteBody(note); note.title=quickNoteFallbackTitle(raw); note.updated=Date.now();
+    sanitizeQuickCapture();
+    var note=newQuickCaptureItem(raw, state.quickCaptureType);
     state.items.unshift(note); revealItem(note.id); state.sidebarView="all"; state.filterTag=null; state.selectingNotes=false; state.selectedItemIds=[]; state.tagAssignMode=false;
-    noteSearch.value=""; state.noteSearch=""; noteSearchWrap.classList.remove("has-value");
+    noteSearch.value=""; state.noteSearch=""; resetQuickCaptureDraft(); syncNoteSearchChrome();
     persist(); renderAll(); exitSidebarFocus(); app.classList.remove("open");
     var titleTarget=canvas.querySelector(".title"); if(titleTarget) titleTarget.focus();
-    if(runtimeApiKeys.openai||usingHostedAi()){
+    var canTitle=note.type==="note"||note.type==="workout"||note.template==="youtube-script";
+    if(canTitle&&(runtimeApiKeys.openai||usingHostedAi())){
       showToast(note.dueDate?"Added with due date — generating a title":"Generating a title");
       generateNoteTitle(note).then(function(title){ if(title){ note.title=title; note.updated=Date.now(); persist(); renderMain(); renderList(); showToast("Title generated"); } }).catch(function(error){ console.warn("Quick note title generation failed:",error); showToast("Added note with a quick title",true); });
-    } else showToast(note.dueDate?"Added todo with due date":"Added note");
+    } else showToast(note.dueDate?"Added todo with due date":"Added "+itemLabel(note).toLowerCase());
   }
   function agentModels(){
     var extras=uniqueModelList((AGENT_MODEL_SETS.subconscious||[]).concat(AGENT_MODEL_SETS.conscious||[]).concat(AGENT_FALLBACK_MODELS)).filter(function(id){
@@ -11797,10 +12078,27 @@
   $("notesToggleBtn").onclick=function(){ state.allNotesCollapsed=!state.allNotesCollapsed; persist(); syncNotesListCollapse(); };
   if(noteSearch){
     noteSearch.value=state.noteSearch||"";
-    noteSearchWrap.classList.toggle("has-value",!!noteSearch.value);
-    noteSearch.oninput=function(){ state.noteSearch=noteSearch.value; noteSearchWrap.classList.toggle("has-value",!!noteSearch.value); renderList(); };
-    $("clearNoteSearch").onclick=function(){ noteSearch.value=""; state.noteSearch=""; noteSearchWrap.classList.remove("has-value"); noteSearch.focus(); renderList(); };
+    sanitizeQuickCapture();
+    renderQuickCaptureMeta();
+    syncNoteSearchChrome();
+    noteSearch.oninput=function(){
+      state.noteSearch=noteSearch.value;
+      if(!String(noteSearch.value||"").trim()) resetQuickCaptureDraft();
+      syncNoteSearchChrome();
+      renderQuickCaptureMeta();
+      renderList();
+    };
+    noteSearch.onkeydown=function(event){
+      if((event.metaKey||event.ctrlKey)&&event.key==="Enter"){ event.preventDefault(); addQuickNoteFromSearch(); }
+    };
+    $("clearNoteSearch").onclick=function(){
+      noteSearch.value=""; state.noteSearch=""; resetQuickCaptureDraft(); syncNoteSearchChrome(); renderQuickCaptureMeta(); noteSearch.focus(); renderList();
+    };
     $("quickAddNoteBtn").onclick=addQuickNoteFromSearch;
+    $("noteSearchTypeBtn").onclick=function(event){ event.preventDefault(); event.stopPropagation(); openQuickCaptureTypeMenu(this); };
+    $("noteSearchTagBtn").onclick=function(event){ event.preventDefault(); event.stopPropagation(); openQuickCaptureTagMenu(this); };
+    if(window.ResizeObserver&&noteSearchWrap) new ResizeObserver(function(){ syncNoteSearchChrome(true); }).observe(noteSearchWrap);
+    if(document.fonts&&document.fonts.ready) document.fonts.ready.then(function(){ syncNoteSearchChrome(); });
   }
   /* =================== sidebar focus ===================
      This is intentionally an in-app focus view, not the browser Fullscreen API.
