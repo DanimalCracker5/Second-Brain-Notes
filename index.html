@@ -488,10 +488,6 @@
      wraps the edit button onto a second row and doubles the chip's height. */
   .tagcloud{ display:grid; gap:2px; padding:2px 10px 10px; }
   .typecloud{ display:grid; gap:2px; padding:2px 10px 10px; }
-  .queue-nav{ display:flex; align-items:center; gap:9px; margin:2px 10px 10px; padding:9px 12px; border:1px solid var(--line); border-radius:12px; background:rgba(255,255,255,.045); color:var(--ink); font:600 .82rem "DM Sans",sans-serif; cursor:pointer; transition:border-color .15s, background .15s, color .15s; }
-  .queue-nav em{ margin-left:auto; font-style:normal; color:var(--ink-dim); font:600 .74rem "DM Sans",sans-serif; }
-  .queue-nav.on{ border-color:var(--accent-line); background:var(--accent-soft); color:var(--accent); }
-  .queue-nav.on em{ color:var(--accent); }
   .q-group-empty{ padding:4px 12px 8px; color:var(--ink-dim); font:500 .78rem "DM Sans",sans-serif; }
   .origin-badge{ position:absolute; right:8px; bottom:6px; font:600 .58rem/1 "DM Sans",sans-serif; letter-spacing:.05em; text-transform:uppercase; color:var(--ink-dim); background:rgba(255,255,255,.07); border:1px solid var(--line); border-radius:999px; padding:3px 7px; pointer-events:none; white-space:nowrap; }
   .home-note .origin-badge{ right:12px; bottom:8px; }
@@ -1515,6 +1511,11 @@
   .home-sort select:hover,.home-sort select:focus{ border-color:var(--accent-line); }
   .home-sort select option{ color:#1a1a1a; background:#fff; }
   .home-chip:focus-visible,.home-tag-rail .home-tag:focus-visible,.home-sort select:focus-visible{ outline:2px solid var(--accent-line); outline-offset:2px; }
+  .tag-page-title{ display:flex; align-items:center; gap:12px; }
+  .tag-page-title i{ width:14px; height:14px; border-radius:50%; flex:none; box-shadow:0 0 0 4px var(--accent-soft); }
+  .tag-page-list{ min-width:0; }
+  .home-note.compact{ align-items:center; padding:7px 8px; }
+  .home-note.compact .home-note-copy b{ font-size:.92rem; }
   .tag-empty{ animation:fadeIn .25s ease both; }
 
   body.reduce-fx *,body.reduce-fx *::before,body.reduce-fx *::after{ animation-duration:.001s !important; animation-delay:0s !important; transition-duration:.001s !important; }
@@ -1574,7 +1575,6 @@
       <div id="tagGroups"></div>
       <div class="sec-h"><button class="section-toggle" id="typesToggleBtn" type="button" aria-controls="types" aria-expanded="true" title="Collapse types"><span>Types</span><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m6 9 6 6 6-6"/></svg></button></div>
       <div class="typecloud" id="types"></div>
-      <button class="queue-nav" id="queueNavBtn" type="button" title="Todos grouped by status" aria-pressed="false"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="4" y="4" width="16" height="16" rx="3"/><path d="M8 12l2.5 2.5L16 9"/></svg><span>Queue</span><em id="queueNavCount"></em></button>
       <div class="sec-h" id="promptsSection" hidden><button class="section-toggle" id="promptsToggleBtn" type="button" aria-controls="promptsHub" aria-expanded="true" title="Collapse prompts"><span>Prompts</span><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m6 9 6 6 6-6"/></svg></button></div>
       <div id="promptsHub" hidden></div>
       <div class="sec-h"><button class="section-toggle" id="notesToggleBtn" type="button" aria-controls="notesListWrap" aria-expanded="true" title="Collapse notes"><span id="listLabel">All notes</span><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m6 9 6 6 6-6"/></svg></button><div class="list-tools"><button id="selectNotesBtn" title="Select notes" aria-label="Select notes">✓</button><button id="deleteNotesBtn" class="bulk-delete" type="button" hidden title="Delete selected notes" aria-label="Delete selected notes"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 6h18M8 6V4h8v2M19 6l-1 14H6L5 6"/></svg></button><button id="listToolsBtn" title="Filter and sort" aria-label="Filter and sort notes">⇅</button></div></div>
@@ -2545,7 +2545,8 @@
   }
 
   /* Opening the site lands on Home. A note is shown only after it is chosen. */
-  var viewingHome=true, homeCustomizing=false, homeTagId=null, homeTypeFilter="", homeStatusFilter="", homeQuery="", homeSearchFocus=false, homeScratchTimer=null, homeTagRailScroll=0;
+  var viewingHome=true, viewingTagId=null, tagPageSort="updated", tagPageView="detail", tagPageStatus="", homeCustomizing=false, homeTagId=null, homeTypeFilter="", homeStatusFilter="", homeQuery="", homeSearchFocus=false, homeScratchTimer=null, homeTagRailScroll=0;
+  function browsingLibrary(){ return !!(viewingHome||viewingTagId); }
   function current(){ return state.items.find(function(s){return s.id===state.currentId;})||state.items[0]; }
   /* Time is counted only while this app is the focused, visible tab. It is kept
      separately from `updated` so opening a note does not change its recency. */
@@ -2557,7 +2558,7 @@
       var item=state.items.find(function(entry){ return entry.id===timeTracker.itemId; }), elapsed=Math.max(0,now-timeTracker.lastAt);
       if(item&&elapsed){ item.timeSpentMs=(Number(item.timeSpentMs)||0)+elapsed; changed=true; }
     }
-    timeTracker.itemId=viewingHome?null:state.currentId;
+    timeTracker.itemId=browsingLibrary()?null:state.currentId;
     timeTracker.lastAt=now;
     timeTracker.active=canTrackTime();
     return changed;
@@ -2851,7 +2852,7 @@
     return QUEUE_GROUPS.map(function(def){ return {key:def[0],label:def[1],empty:def[2],items:byStatus[def[0]]}; });
   }
   function updateSidebarButtons(){
-    var upcoming=$("upcomingBtn"), hidden=$("hiddenBtn"), queueNav=$("queueNavBtn");
+    var upcoming=$("upcomingBtn"), hidden=$("hiddenBtn");
     if(upcoming) upcoming.classList.toggle("on",state.sidebarView==="upcoming");
     if(hidden){
       var n=hiddenItemCount();
@@ -2859,20 +2860,18 @@
       hidden.title=n?("Hidden notes ("+n+")"):"Hidden notes";
       hidden.setAttribute("aria-label", hidden.title);
     }
-    if(queueNav){
-      var qn=queueItemCount();
-      queueNav.classList.toggle("on",state.sidebarView==="queue");
-      queueNav.setAttribute("aria-pressed",state.sidebarView==="queue"?"true":"false");
-      queueNav.title=qn?("Queue — "+qn+" todo"+(qn===1?"":"s")+" with a status"):"Queue — todos grouped by status";
-      queueNav.querySelector("em").textContent=qn?String(qn):"";
-    }
   }
   function setSidebarView(view){
     var wanted=view==="upcoming"||view==="hidden"||view==="queue"?view:"all";
     if(wanted!==state.sidebarView) setQueueLiveWatch(wanted==="queue");
     state.sidebarView=wanted;
-    if(state.sidebarView!=="all"){ state.filterTag=null; state.selectingNotes=false; state.selectedItemIds=[]; state.tagAssignMode=false; }
+    var leaveTag=false;
+    if(state.sidebarView!=="all"){
+      state.filterTag=null; state.selectingNotes=false; state.selectedItemIds=[]; state.tagAssignMode=false;
+      if(viewingTagId){ viewingTagId=null; viewingHome=true; leaveTag=true; }
+    }
     persist(); renderTags(); renderList(); updateSidebarButtons();
+    if(leaveTag) renderMain();
   }
   function setTodoDone(it,done){
     it.done=typeof done==="boolean"?done:!it.done;
@@ -2880,7 +2879,7 @@
     it.updated=Date.now();
     persist();
     renderList();
-    if(current().id===it.id) renderMain();
+    if(viewingTagId||current().id===it.id) renderMain();
   }
   function escapeHtml(s){ return (s||"").replace(/[&<>"]/g,function(c){ return {"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]; }); }
   function copy(text,cb){ if(navigator.clipboard&&navigator.clipboard.writeText){ navigator.clipboard.writeText(text).then(cb,function(){ fbcopy(text,cb); }); } else fbcopy(text,cb); }
@@ -3355,8 +3354,22 @@
       if(suppressTagClick){ suppressTagClick=false; return; }
       if(event.target.closest(".tag-action")||event.target.closest(".tag-grip")) return;
       clearTimeout(tagCloseTimer);
-      state.filterTag=state.filterTag===tag.id?null:tag.id;
-      if(state.sidebarView==="hidden") state.sidebarView="all";
+      if(viewingTagId===tag.id){
+        viewingTagId=null;
+        viewingHome=true;
+        state.filterTag=null;
+      } else {
+        viewingTagId=tag.id;
+        viewingHome=false;
+        state.filterTag=tag.id;
+        tagPageStatus="";
+        if(state.sidebarView!=="all") state.sidebarView="all";
+        state.selectingNotes=false;
+        state.selectedItemIds=[];
+        state.tagAssignMode=false;
+        exitSidebarFocus();
+        app.classList.remove("open");
+      }
       persist(); renderAll();
       var picked=tagsEl.querySelector(".tg.active");
       if(picked) picked.classList.add("tag-pick");
@@ -3643,7 +3656,7 @@
     openMenu(anchor,function(menu){
       var title=document.createElement("div"); title.className="mtitle"; title.textContent="Merge “"+tag.name+"” into"; menu.appendChild(title);
       var targets=document.createElement("div"); targets.className="maxscroll";
-      state.tags.filter(function(other){ return other.id!==tag.id; }).forEach(function(other){ targets.appendChild(mkItem("",other.name,false,function(){ if(!confirm('Merge "'+tag.name+'" into "'+other.name+'"?')) return; state.items.forEach(function(item){ if((item.tagIds||[]).indexOf(tag.id)<0) return; item.tagIds=item.tagIds.filter(function(id){ return id!==tag.id; }); if(item.tagIds.indexOf(other.id)<0) item.tagIds.push(other.id); item.updated=Date.now(); }); recordDeletedTag(tag); var forgotten=forgetTag(state.tagGroups, tag.id); state.tagGroups=forgotten.groups; state.tags=state.tags.filter(function(entry){ return entry.id!==tag.id; }); rememberTagOrder(); if(state.filterTag===tag.id) state.filterTag=other.id; closeMenu(); persist(); renderAll(); showToast(forgotten.removedGroupIds.length?"Tags merged — group removed":"Tags merged"); })); });
+      state.tags.filter(function(other){ return other.id!==tag.id; }).forEach(function(other){ targets.appendChild(mkItem("",other.name,false,function(){ if(!confirm('Merge "'+tag.name+'" into "'+other.name+'"?')) return; state.items.forEach(function(item){ if((item.tagIds||[]).indexOf(tag.id)<0) return; item.tagIds=item.tagIds.filter(function(id){ return id!==tag.id; }); if(item.tagIds.indexOf(other.id)<0) item.tagIds.push(other.id); item.updated=Date.now(); }); recordDeletedTag(tag); var forgotten=forgetTag(state.tagGroups, tag.id); state.tagGroups=forgotten.groups; state.tags=state.tags.filter(function(entry){ return entry.id!==tag.id; }); rememberTagOrder(); if(state.filterTag===tag.id) state.filterTag=other.id; if(viewingTagId===tag.id) viewingTagId=other.id; closeMenu(); persist(); renderAll(); showToast(forgotten.removedGroupIds.length?"Tags merged — group removed":"Tags merged"); })); });
       menu.appendChild(targets);
     });
   }
@@ -3657,7 +3670,7 @@
       menu.appendChild(mkItem(tag.hidden?ICON_EYE:ICON_EYE_OFF,tag.hidden?"Show tagged notes in All notes":"Hide tagged notes from All notes",false,function(){ tag.hidden=!tag.hidden; closeMenu(); persist(); renderAll(); }));
       menu.appendChild(sep()); if(nudgeTag(state.tags, state.tagGroups, tag.id, -1)) menu.appendChild(mkItem(ICON_UP,"Move up",false,function(){ closeMenu(); moveTag(tag,-1); })); if(nudgeTag(state.tags, state.tagGroups, tag.id, 1)) menu.appendChild(mkItem(ICON_DOWN,"Move down",false,function(){ closeMenu(); moveTag(tag,1); })); if(tagGroupIdOf(tag.id)) menu.appendChild(mkItem("","Remove from group",false,function(){ var result=relocateTag(state.tags, state.tagGroups, tag.id, {groupId:null}); var removed=result.removedGroupIds.length; closeMenu(); applyTagMove(result, removed?"Group removed":"Removed from group"); }));
       if(state.tags.length>1){ menu.appendChild(sep()); menu.appendChild(mkItem(ICON_DUPLICATE,"Merge into…",false,function(){ openTagMergeMenu(anchor,tag); })); }
-      menu.appendChild(sep()); var remove=mkItem(ICON_DELETE,"Delete tag",false,function(){ if(!confirm('Delete tag "'+tag.name+'"? It will be removed from its notes.')) return; state.items.forEach(function(item){ item.tagIds=(item.tagIds||[]).filter(function(id){ return id!==tag.id; }); }); recordDeletedTag(tag); var forgotten=forgetTag(state.tagGroups, tag.id); state.tagGroups=forgotten.groups; state.tags=state.tags.filter(function(entry){ return entry.id!==tag.id; }); rememberTagOrder(); if(state.filterTag===tag.id) state.filterTag=null; closeMenu(); persist(); renderAll(); showToast(forgotten.removedGroupIds.length?"Tag deleted — group removed":"Tag deleted"); }); remove.className+=" danger"; menu.appendChild(remove);
+      menu.appendChild(sep()); var remove=mkItem(ICON_DELETE,"Delete tag",false,function(){ if(!confirm('Delete tag "'+tag.name+'"? It will be removed from its notes.')) return; state.items.forEach(function(item){ item.tagIds=(item.tagIds||[]).filter(function(id){ return id!==tag.id; }); }); recordDeletedTag(tag); var forgotten=forgetTag(state.tagGroups, tag.id); state.tagGroups=forgotten.groups; state.tags=state.tags.filter(function(entry){ return entry.id!==tag.id; }); rememberTagOrder(); if(state.filterTag===tag.id) state.filterTag=null; if(viewingTagId===tag.id){ viewingTagId=null; viewingHome=true; } closeMenu(); persist(); renderAll(); showToast(forgotten.removedGroupIds.length?"Tag deleted — group removed":"Tag deleted"); }); remove.className+=" danger"; menu.appendChild(remove);
     });
   }
   function openUpcomingTools(anchor){
@@ -3742,7 +3755,7 @@
     persist();
     if(changed&&currentUser&&cloudHydrated&&!cloudSyncPaused&&!cloudSyncLoading) saveCloud(1);
     renderList();
-    if(viewingHome) renderMain();
+    if(browsingLibrary()) renderMain();
   }
   function prepareManualOrder(){
     if(state.listSort==="manual"&&state.items.every(function(item){ return typeof item.manualOrder==="number"; })) return;
@@ -4025,7 +4038,7 @@
         renderPromptHub();
       };
       group.prompts.forEach(function(entry){
-        var row=document.createElement("button"); row.type="button"; row.className="prompt-hub-note"+(!viewingHome&&entry.itemId===state.currentId?" active":"");
+        var row=document.createElement("button"); row.type="button"; row.className="prompt-hub-note"+(!browsingLibrary()&&entry.itemId===state.currentId?" active":"");
         var title=document.createElement("b"); title.textContent=entry.title;
         var preview=document.createElement("small"); preview.textContent=entry.preview;
         row.appendChild(title); row.appendChild(preview);
@@ -4119,7 +4132,7 @@
   function buildListRow(it,index){
       var todoItem=isTodoNote(it)||it.type==="todo";
       var selected=state.selectedItemIds.indexOf(it.id)>=0;
-      var el=document.createElement("div"); el.className="d-item"+(!viewingHome&&it.id===state.currentId?" active":"")+(todoItem&&it.done?" todo-done":"")+(state.selectingNotes?" selecting":"")+(it.id===justAddedId?" just-added":"");
+      var el=document.createElement("div"); el.className="d-item"+(!browsingLibrary()&&it.id===state.currentId?" active":"")+(todoItem&&it.done?" todo-done":"")+(state.selectingNotes?" selecting":"")+(it.id===justAddedId?" just-added":"");
       el.setAttribute("data-item-id",it.id);
       el.style.setProperty("--i",Math.min(index,11));
       var dots=(it.tagIds||[]).map(function(id){ var t=tagById(id); return t&&!t.hidden?'<span class="dot" style="background:'+tagColor(t)+'"></span>':""; }).join("");
@@ -4316,12 +4329,13 @@
   function showHome(){
     if(activeAudioRecorder){ showToast("Finish the current recording before leaving it",true); return; }
     viewingHome=true;
+    viewingTagId=null;
     exitSidebarFocus();
     app.classList.remove("open");
     renderList();
     renderMain();
   }
-  function revealItem(id){ viewingHome=false; if(id) state.currentId=id; }
+  function revealItem(id){ viewingHome=false; viewingTagId=null; if(id) state.currentId=id; }
   function syncHomeButton(){
     var button=$("homeBtn"), brand=$("homeBrand");
     if(button){ button.classList.toggle("on",!!viewingHome); button.setAttribute("aria-pressed",viewingHome?"true":"false"); }
@@ -4457,16 +4471,20 @@
     tools.appendChild(toggleWrap); tools.appendChild(custom);
     head.appendChild(copy); head.appendChild(tools); return head;
   }
-  function buildHomeNoteRow(it){
+  function buildHomeNoteRow(it, options){
+    options=options||{};
     var button=document.createElement("button"); button.type="button";
-    button.className="home-note"+((isTodoNote(it)||it.type==="todo")&&it.done?" todo-done":"")+(it.id===justAddedId?" just-added":"");
+    button.className="home-note"+(options.compact?" compact":"")+((isTodoNote(it)||it.type==="todo")&&it.done?" todo-done":"")+(it.id===justAddedId?" just-added":"");
     var icon=document.createElement("span"); icon.className="item-icon"; icon.innerHTML=itemIconMarkup(it);
     var color=itemIconColor(it); if(color) icon.style.color=color;
     var text=document.createElement("span"); text.className="home-note-copy";
     var title=document.createElement("b"); title.textContent=it.title||("Untitled "+itemLabel(it).toLowerCase());
-    var preview=homeSnippet(it), snippet=document.createElement("span"); snippet.className="home-snippet"; snippet.textContent=preview; if(!preview) snippet.hidden=true;
-    var meta=document.createElement("small"); var due=itemDueDate(it); meta.textContent=itemLabel(it)+(due?" · "+dueDateLabel(due):"");
-    text.appendChild(title); text.appendChild(snippet); text.appendChild(meta);
+    text.appendChild(title);
+    if(!options.compact){
+      var preview=homeSnippet(it), snippet=document.createElement("span"); snippet.className="home-snippet"; snippet.textContent=preview; if(!preview) snippet.hidden=true;
+      var meta=document.createElement("small"); var due=itemDueDate(it); meta.textContent=itemLabel(it)+(due?" · "+dueDateLabel(due):"");
+      text.appendChild(snippet); text.appendChild(meta);
+    }
     var when=document.createElement("span"); when.className="when"; when.textContent=homeWhen(it.updated);
     button.appendChild(icon); button.appendChild(text); button.appendChild(when);
     if(it.origin==="assistant"){ var originBadge=document.createElement("span"); originBadge.className="origin-badge"; originBadge.textContent="Added by Assistant"; button.appendChild(originBadge); }
@@ -4872,6 +4890,111 @@
     });
     panel.appendChild(grid); return panel;
   }
+  function tagPageSortOptions(){
+    return [["updated","Recently updated"],["title","Title A–Z"],["due","Due date · soonest"]];
+  }
+  function tagPageNotes(){
+    var tagId=viewingTagId;
+    if(["updated","title","due"].indexOf(tagPageSort)<0) tagPageSort="updated";
+    if(tagPageStatus!=="open"&&tagPageStatus!=="done") tagPageStatus="";
+    var items=(state.items||[]).filter(function(it){
+      if(!it||it.hidden||!tagId) return false;
+      if((it.tagIds||[]).indexOf(tagId)<0) return false;
+      var todo=isTodoNote(it)||it.type==="todo";
+      if(tagPageStatus==="open"&&!(todo&&!it.done)) return false;
+      if(tagPageStatus==="done"&&!(todo&&it.done)) return false;
+      return true;
+    });
+    var sort=tagPageSort;
+    return items.sort(function(a,b){
+      if(sort==="title") return (a.title||"").localeCompare(b.title||"")||((b.updated||0)-(a.updated||0));
+      if(sort==="due"){
+        var ad=itemDueDate(a), bd=itemDueDate(b);
+        if(ad&&!bd) return -1;
+        if(!ad&&bd) return 1;
+        return (ad||"").localeCompare(bd||"")||((b.updated||0)-(a.updated||0));
+      }
+      return (b.updated||0)-(a.updated||0);
+    });
+  }
+  function tagPageCount(){
+    var saved=tagPageStatus, count=0;
+    tagPageStatus="";
+    try{ count=tagPageNotes().length; }
+    finally{ tagPageStatus=saved; }
+    return count;
+  }
+  function renderTagPage(){
+    var tag=tagById(viewingTagId);
+    if(!tag){ viewingTagId=null; viewingHome=true; renderHome(); return; }
+    if(tagPageView!=="compact") tagPageView="detail";
+    if(renderedModule&&renderedModule.detach) renderedModule.detach();
+    else if(window.SecondBrainCode&&typeof window.SecondBrainCode.detach==="function") window.SecondBrainCode.detach();
+    renderedModule=null;
+    if(collab.hostKind==="stage"){ collab.host=null; collab.hostKind=null; }
+    var pageId="tag:"+tag.id;
+    var entering=lastMainId!==pageId;
+    var keptScroll=entering?0:canvas.scrollTop;
+    lastMainId=pageId;
+    canvas.innerHTML="";
+    updateShareButton(null); updateTtsButton(null);
+    var copyBtn=$("copyAll"); if(copyBtn) copyBtn.style.display="none";
+    stopLiveNoteWatch();
+    var sheet=document.createElement("div"); sheet.className="sheet home-sheet tag-sheet"+(entering?" enter":"");
+    var head=document.createElement("header"); head.className="home-head";
+    var copy=document.createElement("div");
+    var kicker=document.createElement("p"); kicker.className="home-kicker"; kicker.textContent="Tag";
+    var title=document.createElement("h1"); title.className="tag-page-title";
+    var dot=document.createElement("i"); dot.style.background=tagColor(tag); dot.setAttribute("aria-hidden","true");
+    var name=document.createElement("span"); name.textContent=tag.name||"Tag";
+    title.appendChild(dot); title.appendChild(name);
+    var total=tagPageCount(), shown=tagPageNotes();
+    var sub=document.createElement("p"); sub.className="home-sub";
+    var noun=total===1?"note":"notes";
+    sub.textContent=tagPageStatus&&shown.length!==total?(shown.length+" of "+total+" "+noun):(total?(total+" "+noun):"No notes with this tag yet.");
+    copy.appendChild(kicker); copy.appendChild(title); copy.appendChild(sub);
+    head.appendChild(copy);
+    sheet.appendChild(head);
+    var tools=document.createElement("div"); tools.className="home-notes-controls tag-page-tools";
+    var filters=document.createElement("div"); filters.className="home-filter-scroll"; filters.setAttribute("role","group"); filters.setAttribute("aria-label","Tag list view");
+    var viewLabel=document.createElement("span"); viewLabel.className="home-control-label"; viewLabel.textContent="View";
+    filters.appendChild(viewLabel);
+    [["detail","Detail"],["compact","Compact"]].forEach(function(opt){
+      filters.appendChild(homeFilterChip(opt[1], tagPageView===opt[0], function(){ if(tagPageView===opt[0]) return; tagPageView=opt[0]; renderMain(); }));
+    });
+    var gap=document.createElement("span"); gap.className="home-filter-gap"; gap.setAttribute("aria-hidden","true");
+    filters.appendChild(gap);
+    [["","All"],["open","Open"],["done","Done"]].forEach(function(opt){
+      var chip=homeFilterChip(opt[1], tagPageStatus===opt[0], function(){ if(tagPageStatus===opt[0]) return; tagPageStatus=opt[0]; renderMain(); });
+      chip.title=opt[0]==="open"?"Open todos":(opt[0]==="done"?"Finished todos":"Every note with this tag");
+      filters.appendChild(chip);
+    });
+    var sortWrap=document.createElement("label"); sortWrap.className="home-sort";
+    var sortLabel=document.createElement("span"); sortLabel.className="home-control-label"; sortLabel.textContent="Sort";
+    var select=document.createElement("select");
+    select.id="tagPageSort";
+    select.setAttribute("aria-label","Sort notes in this tag");
+    tagPageSortOptions().forEach(function(opt){
+      var option=document.createElement("option"); option.value=opt[0]; option.textContent=opt[1];
+      select.appendChild(option);
+    });
+    select.value=tagPageSort;
+    select.onchange=function(){ tagPageSort=select.value; renderMain(); };
+    sortWrap.appendChild(sortLabel); sortWrap.appendChild(select);
+    tools.appendChild(filters); tools.appendChild(sortWrap);
+    sheet.appendChild(tools);
+    var list=document.createElement("div"); list.className="tag-page-list"; list.id="tagPageList";
+    if(!shown.length){
+      var empty=document.createElement("p"); empty.className="home-muted";
+      empty.textContent=total?"Nothing matches this view.":"Nothing in this tag yet.";
+      list.appendChild(empty);
+    } else shown.forEach(function(it){ list.appendChild(buildHomeNoteRow(it, {compact:tagPageView==="compact"})); });
+    sheet.appendChild(list);
+    canvas.appendChild(sheet);
+    if(entering) canvas.scrollTop=0;
+    else canvas.scrollTop=keptScroll;
+    syncMoreChrome(); syncBarTitle();
+  }
   function renderHome(){
     if(renderedModule&&renderedModule.detach) renderedModule.detach();
     else if(window.SecondBrainCode&&typeof window.SecondBrainCode.detach==="function") window.SecondBrainCode.detach();
@@ -4923,6 +5046,8 @@
       loading.appendChild(hint);       canvas.appendChild(loading);
       updateShareButton(null); stopLiveNoteWatch(); syncMoreChrome(); syncBarTitle(); return;
     }
+    if(viewingTagId&&(state.filterTag!==viewingTagId||!tagById(viewingTagId))){ viewingTagId=null; viewingHome=true; }
+    if(viewingTagId){ renderTagPage(); return; }
     if(viewingHome){ renderHome(); return; }
     var it=current();
     /* Let a registered type tear down timers, media elements, and listeners
@@ -5988,7 +6113,7 @@
     var host=$("moreDocActions"); if(!host) return;
     host.innerHTML="";
     var it=typeof current==="function"?current():null;
-    if(!it||(typeof viewingHome!=="undefined"&&viewingHome)){ host.hidden=true; return; }
+    if(!it||(typeof browsingLibrary==="function"&&browsingLibrary())){ host.hidden=true; return; }
     host.hidden=false;
     var kicker=document.createElement("p"); kicker.className="more-kicker"; kicker.textContent="This note"; host.appendChild(kicker);
     var list=document.createElement("div"); list.className="more-actions";
@@ -10447,7 +10572,7 @@
 
   /* ---------- live dictation into the open note ---------- */
   function dictationNote(){
-    if(typeof viewingHome!=="undefined"&&viewingHome) return null;
+    if(typeof browsingLibrary==="function"&&browsingLibrary()) return null;
     var note=collabWritableItem();
     if(!note||note.locked||note.type!=="note") return null;
     var open=typeof current==="function"?current():null;
@@ -10456,7 +10581,7 @@
   }
   function bindVoiceToOpenNote(){
     var note=typeof current==="function"?current():null;
-    if(typeof viewingHome!=="undefined"&&viewingHome) return;
+    if(typeof browsingLibrary==="function"&&browsingLibrary()) return;
     if(!note||note.type!=="note"||note.locked) return;
     collab.mode="document";
     collab.itemId=note.id;
@@ -11826,6 +11951,7 @@
       } else {
         clearTimeout(tagCloseTimer);
         state.filterTag=null;
+        if(viewingTagId){ viewingTagId=null; viewingHome=true; }
         state.filterType="";
         state.filterStatus="";
         state.selectingNotes=false;
@@ -11894,7 +12020,7 @@
   document.addEventListener("touchcancel",function(){ sidebarSwipeStart=null; },{passive:true});
   document.addEventListener("keydown",function(e){
     if(!currentUser) return;
-    if((e.metaKey||e.ctrlKey)&&e.key==="Enter"){ e.preventDefault(); if(!viewingHome) $("copyAll").click(); }
+    if((e.metaKey||e.ctrlKey)&&e.key==="Enter"){ e.preventDefault(); if(!browsingLibrary()) $("copyAll").click(); }
     if(e.key==="Escape"){ stopVoiceSession(); closeMenu(); $("settingsModal").classList.remove("open"); closeMore(); }
   });
   document.addEventListener("paste", function(event){
@@ -12285,7 +12411,7 @@
     }
   }
   function refreshOpenItemFromLive(item){
-    if(viewingHome){
+    if(viewingHome||viewingTagId){
       renderList();
       var active=document.activeElement;
       if(!(active&&active.classList&&active.classList.contains("home-capture-input"))) renderMain();
@@ -12534,7 +12660,7 @@
       persistLocalStateQuietly();
       if(tagLayoutChanged) renderTags();
       if(added||changedCurrent) refreshOpenItemFromLive(current());
-      else if(viewingHome) renderMain();
+      else if(viewingHome||viewingTagId) renderMain();
       else renderList();
       startSharedEditListeners();
       if(writeBack){ state.pendingCloudSync=true; saveCloud(1); }
@@ -13971,7 +14097,7 @@
     mic.onclick=function(){
       if(collab.voice&&collab.voice.active){ stopVoiceSession(); return; }
       var note=current();
-      if(!(typeof viewingHome!=="undefined"&&viewingHome)&&note&&note.type==="note"&&!note.locked){
+      if(!(typeof browsingLibrary==="function"&&browsingLibrary())&&note&&note.type==="note"&&!note.locked){
         bindVoiceToOpenNote();
         startVoiceSession();
         return;
@@ -15024,7 +15150,6 @@
   }
   if($("promptQuestionsModal")) $("promptQuestionsModal").onclick=function(e){ if(e.target===$("promptQuestionsModal")) closePromptQuestions(); };
   $("settingsBtn").onclick=function(){ openSettings(); };
-  $("queueNavBtn").onclick=function(){ setSidebarView(state.sidebarView==="queue"?"all":"queue"); };
   $("settingsModal").onclick=function(e){ if(e.target===$("settingsModal")) $("settingsModal").classList.remove("open"); };
   $("moreBtn").onclick=function(){ if($("moreModal").classList.contains("open")) closeMore(); else openMore(); };
   $("moreClose").onclick=function(){ closeMore(); };
