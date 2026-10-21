@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="en" class="auth-restoring">
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
@@ -15,15 +15,20 @@
 <link rel="apple-touch-icon" sizes="192x192" href="./icons/icon-192.png">
 <title>Second Brain</title>
 
+<!-- Session probe runs before Firebase so a returning sign-in can paint the edge loader on the first frame. -->
+<script src="./auth-boot.js?v=1"></script>
 <!-- Firebase project settings live beside this file. -->
 <script src="./astral.config.js"></script>
 
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="preconnect" href="https://identitytoolkit.googleapis.com">
+<link rel="preconnect" href="https://securetoken.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=DM+Sans:opsz,wght@9..40,400;9..40,500;9..40,600;9..40,700&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet">
 
   <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-auth-compat.js"></script>
+  <script>if(window.sbAuthBoot) window.sbAuthBoot.bootAuth();</script>
   <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-storage-compat.js"></script>
 
@@ -793,8 +798,25 @@
   .auth-signin:hover{ filter:brightness(1.1); box-shadow:0 16px 38px var(--accent-soft); transform:translateY(-2px); }.auth-signin:active{ transform:translateY(0) scale(.985); }.auth-signin:disabled{ cursor:wait; filter:saturate(.6); }
   .google-mark{ width:19px; height:19px; display:block; flex:none; }.google-mark svg{ display:block; width:100%; height:100%; }
   .auth-gate-status{ position:relative; z-index:1; margin:14px 0 0; color:var(--ink-faint); font-size:.72rem; line-height:1.4; }.auth-gate-status:empty{ display:none; }.auth-gate-status.error{ color:#fca5a5; }
+  /* Returning sessions skip the sign-in card. Lights run the screen edges while Auth restores. */
+  html.auth-restoring body.auth-locked .app{ filter:blur(10px) saturate(.74); }
+  html.auth-restoring .auth-gate{ padding:0; background:rgba(0,0,0,.2); }
+  html.auth-restoring .auth-gate::before{ opacity:0; animation:none; }
+  html.auth-restoring .auth-card,
+  html.auth-restoring .gate-orbit{ visibility:hidden; opacity:0; pointer-events:none; }
+  html.auth-restoring .auth-gate-status{ position:absolute; width:1px; height:1px; margin:-1px; padding:0; overflow:hidden; clip:rect(0 0 0 0); white-space:nowrap; border:0; }
+  .auth-frame{ display:none; position:absolute; z-index:2; inset:max(8px, env(safe-area-inset-top, 0px)) max(8px, env(safe-area-inset-right, 0px)) max(8px, env(safe-area-inset-bottom, 0px)) max(8px, env(safe-area-inset-left, 0px)); border-radius:26px; pointer-events:none; box-shadow:inset 0 0 0 1.5px rgba(196,181,253,.28), 0 0 28px rgba(125,211,252,.16); }
+  html.auth-restoring .auth-frame{ display:block; }
+  .auth-edges{ position:absolute; inset:0; border-radius:inherit; overflow:hidden; }
+  .auth-edge-spin{ display:none; position:absolute; inset:-130%; background:conic-gradient(from 0deg, transparent 0deg 188deg, rgba(173,126,239,.05) 210deg, #c4b5fd 248deg, #fff 292deg, #7dd3fc 322deg, #5eead4 344deg, transparent 360deg); animation:auth-edge-spin 1.45s linear infinite; }
+  .auth-edge-spin.second{ background:conic-gradient(from 180deg, transparent 0deg 230deg, rgba(255,255,255,.15) 268deg, #fff 300deg, #e9d5ff 328deg, transparent 352deg); animation-duration:2.25s; animation-direction:reverse; opacity:.85; }
+  @supports ((-webkit-mask-composite: xor) or (mask-composite: exclude)){
+    .auth-edges{ padding:4px; -webkit-mask:linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0); -webkit-mask-composite:xor; mask:linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0); mask-composite:exclude; }
+    .auth-edge-spin{ display:block; }
+  }
   @keyframes gate-orbit{ to{ transform:scale(1.06); opacity:.22; } } @keyframes gate-wash{ to{ transform:translate3d(4%,3%,0) scale(1.08); } } @keyframes gate-hue{ to{ filter:blur(28px) hue-rotate(360deg); } } @keyframes gate-orbit-hue{ to{ filter:hue-rotate(360deg); } } @keyframes gate-label-spectrum{ 0%,100%{ color:#b57df4; } 25%{ color:#78adff; } 50%{ color:#61d8bd; } 75%{ color:#ff91cb; } } @keyframes gate-button-spectrum{ 0%,100%{ background:#ad7eef; box-shadow:0 10px 26px rgba(173,126,239,.22); } 25%{ background:#78adff; box-shadow:0 10px 26px rgba(120,173,255,.22); } 50%{ background:#61d8bd; box-shadow:0 10px 26px rgba(97,216,189,.2); } 75%{ background:#ff91cb; box-shadow:0 10px 26px rgba(255,145,203,.2); } }
-  @media (prefers-reduced-motion: reduce){ .auth-gate::before,.gate-orbit,.gate-eyebrow,.auth-signin{ animation:none; } }
+  @keyframes auth-edge-spin{ to{ transform:rotate(1turn); } }
+  @media (prefers-reduced-motion: reduce){ .auth-gate::before,.gate-orbit,.gate-eyebrow,.auth-signin,.auth-edge-spin{ animation:none; } .auth-edge-spin{ opacity:.5; } }
 
   /* ---------- modals ---------- */
   .modal{ position:fixed; inset:0; z-index:100; display:none; align-items:center; justify-content:center; background:rgba(0,0,0,.72); padding:18px; }
@@ -1601,14 +1623,29 @@
 
 <div class="auth-gate show" id="authGate" role="dialog" aria-modal="true" aria-labelledby="authGateTitle" aria-describedby="authGateCopy authGateStatus">
   <div class="gate-orbit" aria-hidden="true"></div>
+  <div class="auth-frame" aria-hidden="true"><div class="auth-edges"><span class="auth-edge-spin"></span><span class="auth-edge-spin second"></span></div></div>
   <section class="auth-card">
     <p class="gate-eyebrow">Second Brain Notes</p>
     <h1 id="authGateTitle">Sign in to continue.</h1>
     <p id="authGateCopy">A cloud-based notes platform, synced across your devices.</p>
     <button class="auth-signin" id="gateSignIn" type="button"><span class="google-mark" aria-hidden="true"><svg viewBox="0 0 48 48"><path fill="#FFC107" d="M43.6 20.5H42V20H24v8h11.3C33.7 32.9 29.3 36 24 36c-6.6 0-12-5.4-12-12s5.4-12 12-12c3.1 0 5.9 1.2 8 3.1l5.7-5.7C34.5 6.1 29.5 4 24 4 12.9 4 4 12.9 4 24s8.9 20 20 20 20-8.9 20-20c0-1.3-.1-2.3-.4-3.5z"/><path fill="#FF3D00" d="M6.3 14.7l6.6 4.8C14.7 15.1 19 12 24 12c3.1 0 5.9 1.2 8 3.1l5.7-5.7C34.5 6.1 29.5 4 24 4 16.3 4 9.7 8.3 6.3 14.7z"/><path fill="#4CAF50" d="M24 44c5.2 0 9.9-2 13.4-5.2l-6.2-5.2C29.2 35.1 26.7 36 24 36c-5.3 0-9.7-3.1-11.3-7.9l-6.5 5C9.6 39.6 16.2 44 24 44z"/><path fill="#1976D2" d="M43.6 20.5H42V20H24v8h11.3c-.8 2.2-2.2 4.1-4.1 5.6l6.2 5.2C41.9 35.6 44 30.3 44 24c0-1.3-.1-2.3-.4-3.5z"/></svg></span><span id="gateSignInLabel">Sign in with Google</span></button>
-    <p class="auth-gate-status" id="authGateStatus" role="status" aria-live="polite">Checking your secure session…</p>
+    <p class="auth-gate-status" id="authGateStatus" role="status" aria-live="polite">Signing you in</p>
   </section>
 </div>
+<script>
+  (function(){
+    var restoring=document.documentElement.classList.contains("auth-restoring");
+    var status=document.getElementById("authGateStatus");
+    var gate=document.getElementById("authGate");
+    var text=window.__sbGateStatus!=null?window.__sbGateStatus:(restoring?"Signing you in":"");
+    if(status) status.textContent=text;
+    if(gate&&restoring){
+      gate.setAttribute("aria-labelledby","authGateStatus");
+      gate.setAttribute("aria-busy","true");
+    }
+  })();
+  /* Status is chosen before the main script parses. */
+</script>
 <div class="toast" id="toast"></div>
 <div class="modal" id="settingsModal"><div class="modal-box" id="settingsBox"></div></div>
 <div class="modal more-modal" id="moreModal" role="dialog" aria-modal="true" aria-labelledby="moreTitle">
@@ -1700,30 +1737,45 @@
 <script>
 (function(){
   "use strict";
-  /* Boot watchdog (login-hang fix). If anything above fails to start the app
-     on a phone — a thrown error before initFirebase, a failed Firebase load,
-     a stalled auth session check — the sign-in card would sit on "Checking
-     your secure session…" forever with nothing to tap. If that message is
-     still on screen well after boot should have finished, replace it with an
-     actionable one and offer a reload. */
+  /* Boot watchdog. A throw before the app finishes starting used to leave the
+     gate on "Checking your secure session…" with nothing to tap. Auto-login
+     now says "Signing you in" over the edge loader; either way, surface the
+     sign-in card if boot never completes. */
+  function revealAuthGateFailure(message, force){
+    var status=document.getElementById("authGateStatus");
+    var text=status&&status.textContent||"";
+    var pending=!text||/Signing you in|Checking your secure session/i.test(text);
+    if(!force&&!pending) return;
+    document.documentElement.classList.remove("auth-restoring");
+    var gate=document.getElementById("authGate");
+    var gateSignIn=document.getElementById("gateSignIn");
+    if(gate){
+      gate.setAttribute("aria-labelledby","authGateTitle");
+      gate.removeAttribute("aria-busy");
+    }
+    if(status&&(pending||force)){
+      status.textContent=message;
+      status.classList.add("error");
+    }
+    if(gateSignIn) gateSignIn.disabled=false;
+  }
+  if(document.documentElement.classList.contains("auth-restoring")){
+    var bootStatus=document.getElementById("authGateStatus");
+    var bootGate=document.getElementById("authGate");
+    if(bootStatus) bootStatus.textContent="Signing you in";
+    if(bootGate){
+      bootGate.setAttribute("aria-labelledby","authGateStatus");
+      bootGate.setAttribute("aria-busy","true");
+    }
+  }
   window.__sbBootDone=false;
   window.__sbBootWatchdog=setTimeout(function(){
     if(window.__sbBootDone) return;
-    var status=document.getElementById("authGateStatus");
-    if(status&&/Checking your secure session/i.test(status.textContent||"")){
-      status.textContent="The app couldn't finish starting on this device. Reload the page and try again — if this keeps happening, tap Sign in and leave the Google window open until it closes.";
-      status.classList.add("error");
-      var gateSignIn=document.getElementById("gateSignIn");
-      if(gateSignIn) gateSignIn.disabled=false;
-    }
+    revealAuthGateFailure("The app couldn't finish starting on this device. Reload the page and try again — if this keeps happening, tap Sign in and leave the Google window open until it closes.", true);
   },9000);
   window.addEventListener("error",function(event){
     if(window.__sbBootDone||!event) return;
-    var status=document.getElementById("authGateStatus");
-    if(status&&/Checking your secure session/i.test(status.textContent||"")){
-      status.textContent="The app hit an error while starting. Reload the page and try again.";
-      status.classList.add("error");
-    }
+    revealAuthGateFailure("The app hit an error while starting. Reload the page and try again.");
   });
 
   /* =================== themes =================== */
@@ -12104,9 +12156,29 @@
     if(locked){
       ["settingsModal","syncConflictModal","accountMergeModal"].forEach(function(id){ $(id).classList.remove("open"); });
     }
+    /* Keep the edge loader through the fade-out so the sign-in card does not
+       flash as a returning session unlocks. Any real sign-in message shows the card. */
+    var signingIn=locked&&typeof message==="string"&&/Signing you in/i.test(message)&&!isError;
+    if(!locked){
+      if(document.documentElement.classList.contains("auth-restoring")){
+        clearTimeout(window.__sbRestoreFade);
+        window.__sbRestoreFade=setTimeout(function(){ document.documentElement.classList.remove("auth-restoring"); },380);
+      }
+    } else if(!signingIn){
+      clearTimeout(window.__sbRestoreFade);
+      document.documentElement.classList.remove("auth-restoring");
+    }
+    var restoring=locked&&document.documentElement.classList.contains("auth-restoring");
     if(gate){
       gate.classList.toggle("show",locked);
       gate.setAttribute("aria-hidden",locked?"false":"true");
+      if(restoring){
+        gate.setAttribute("aria-labelledby","authGateStatus");
+        gate.setAttribute("aria-busy","true");
+      } else {
+        gate.setAttribute("aria-labelledby","authGateTitle");
+        gate.removeAttribute("aria-busy");
+      }
     }
     if(status&&typeof message==="string"){
       status.textContent=message;
@@ -12656,56 +12728,70 @@
       renderFoot();
       return;
     }
-    try{
-      if(!firebase.apps || !firebase.apps.length) firebase.initializeApp(cfg);
-      auth=firebase.auth(); db=firebase.firestore(); storage=typeof firebase.storage==="function"?firebase.storage():null; fbReady=true;
-      var authWaitTimer=setTimeout(function(){
-        if(currentUser) return;
-        var status=$("authGateStatus");
-        if(status&&/Checking your secure session/i.test(status.textContent||"")){
-          setAuthGate(true,"Tap Sign in with Google to continue.");
-        }
-      },3500);
-      auth.getRedirectResult().then(function(result){
-        if(result&&result.user) setAuthGate(true,"Signing you in…");
-      }).catch(function(e){
-        console.warn(e);
-        var message=authErrorMessage(e);
-        setAuthGate(true,message,e&&e.code!=="auth/popup-closed-by-user");
-        showToast(message,e&&e.code!=="auth/popup-closed-by-user");
-      });
-      auth.onAuthStateChanged(function(u){
-        clearTimeout(authWaitTimer);
-        var signedOutUser=currentUser;
-        currentUser=u;
-        if(u){
-          cloudSyncPaused=false; cloudHydrated=false; cloudLiveReady=false; pendingAccountRecovery=0; pendingRemoteAccount=null; lastAppliedCloudUpdated=0;
-          setAuthGate(false); startApiSettingsSync(); startHostedBillingSync(); startAccountUsageTracking(); renderFoot();
-          loadCloud().then(openPendingInvite);
-        } else {
-          cloudSyncPaused=true; cloudSyncLoading=false; cloudHydrated=false; cloudLiveReady=false; pendingAccountRecovery=0; pendingRemoteAccount=null; lastAppliedCloudUpdated=0;
-          stopAccountUsageTracking(); stopApiSettingsSync(); stopHostedBillingSync(); stopLiveNoteWatch(); stopSharedEditListeners(); resetApiSettings();
-          /* Firebase reports the signed-out state once on startup. Keep notes
-             already on this device so their owner can choose how to sync them
-             after signing in. A deliberate sign-out still clears this device.
-             A failed Google return must keep its error — wiping the status
-             here is what made iPhone look like the button had simply reset. */
-          if(signedOutUser){ wipeDeviceNotes(); renderAll(); setAuthGate(true,""); }
-          else {
-            var status=$("authGateStatus");
-            var text=status&&status.textContent||"";
-            if(!text||/Checking your secure session/i.test(text)) setAuthGate(true,"Tap Sign in with Google to continue.");
+    function begin(){
+      try{
+        if(!firebase.apps || !firebase.apps.length) firebase.initializeApp(cfg);
+        auth=firebase.auth(); db=firebase.firestore(); storage=typeof firebase.storage==="function"?firebase.storage():null; fbReady=true;
+        /* auth-boot already skipped the iframe for a saved session, in the same
+           turn auth() was created. Repeat it if this call is the first one. */
+        if(window.sbAuthBoot&&document.documentElement.classList.contains("auth-restoring")) window.sbAuthBoot.disarmProactiveAuthIframe(auth);
+        var authWaitTimer=setTimeout(function(){
+          if(currentUser||!document.body.classList.contains("auth-locked")) return;
+          var status=$("authGateStatus");
+          var text=status&&status.textContent||"";
+          if(!text||/Signing you in|Checking your secure session/i.test(text)){
+            setAuthGate(true,"Tap Sign in with Google to continue.");
           }
-          renderFoot();
-        }
-      });
-    }catch(e){
-      console.warn("Firebase init failed:",e);
-      fbReady=false;
-      setAuthGate(true,"Sign-in could not be started. Check the app configuration and try again.",true);
-      showToast("Firebase config could not be loaded",true);
+        },7000);
+        /* Don't put the sign-in card back up when a redirect result arrives.
+           onAuthStateChanged is already restoring that session, and showing the
+           card again is what made a successful return look like a hang. */
+        auth.getRedirectResult().catch(function(e){
+          if(currentUser||!document.body.classList.contains("auth-locked")) return;
+          console.warn(e);
+          var message=authErrorMessage(e);
+          setAuthGate(true,message,e&&e.code!=="auth/popup-closed-by-user");
+          showToast(message,e&&e.code!=="auth/popup-closed-by-user");
+        });
+        auth.onAuthStateChanged(function(u){
+          clearTimeout(authWaitTimer);
+          var signedOutUser=currentUser;
+          currentUser=u;
+          if(u){
+            if(window.sbAuthBoot) window.sbAuthBoot.rememberHint(true);
+            cloudSyncPaused=false; cloudHydrated=false; cloudLiveReady=false; pendingAccountRecovery=0; pendingRemoteAccount=null; lastAppliedCloudUpdated=0;
+            setAuthGate(false); startApiSettingsSync(); startHostedBillingSync(); startAccountUsageTracking(); renderFoot();
+            loadCloud().then(openPendingInvite);
+          } else {
+            if(window.sbAuthBoot) window.sbAuthBoot.rememberHint(false);
+            cloudSyncPaused=true; cloudSyncLoading=false; cloudHydrated=false; cloudLiveReady=false; pendingAccountRecovery=0; pendingRemoteAccount=null; lastAppliedCloudUpdated=0;
+            stopAccountUsageTracking(); stopApiSettingsSync(); stopHostedBillingSync(); stopLiveNoteWatch(); stopSharedEditListeners(); resetApiSettings();
+            /* Firebase reports the signed-out state once on startup. Keep notes
+               already on this device so their owner can choose how to sync them
+               after signing in. A deliberate sign-out still clears this device.
+               A failed Google return must keep its error — wiping the status
+               here is what made iPhone look like the button had simply reset. */
+            if(signedOutUser){ wipeDeviceNotes(); renderAll(); setAuthGate(true,""); }
+            else {
+              var status=$("authGateStatus");
+              var text=status&&status.textContent||"";
+              if(!text||/Signing you in|Checking your secure session/i.test(text)) setAuthGate(true,"");
+            }
+            renderFoot();
+          }
+        });
+      }catch(e){
+        console.warn("Firebase init failed:",e);
+        fbReady=false;
+        setAuthGate(true,"Sign-in could not be started. Check the app configuration and try again.",true);
+        showToast("Firebase config could not be loaded",true);
+      }
+      renderFoot();
     }
-    renderFoot();
+    /* Auth was started from the head, ahead of this script, so a saved session
+       is often already resolved and this callback runs immediately. */
+    if(window.sbAuthBoot) window.sbAuthBoot.whenAuthReady(begin);
+    else begin();
   }
   /* iPhone browsers (Safari and Chrome) are WebKit. signInWithRedirect leaves
      this site, signs in at Google, and comes back without the account because
