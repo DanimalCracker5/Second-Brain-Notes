@@ -26,7 +26,8 @@ vm.createContext(sandbox);
   "placeTagInDefault",
   "relocateTag",
   "nudgeTag",
-  "forgetTag"
+  "forgetTag",
+  "unusedTagIds"
 ].forEach(function (name) {
   vm.runInContext(grab(name), sandbox, { filename: name });
 });
@@ -97,6 +98,25 @@ test("empty groups and unknown tag ids are dropped", function () {
 test("saved tag order is restored and new tags stay on the list", function () {
   const ordered = sandbox.applyTagOrder(tags(), ["prompt", "todo", "extra"]);
   assert.deepEqual(ordered.map(function (tag) { return tag.id; }), ["prompt", "todo", "astral", "youtube"]);
+});
+
+test("tags with no notes are the ones eligible to leave", function () {
+  const list = tags();
+  const items = [{ id: "n1", tagIds: ["astral", "todo"] }, { id: "n2", tagIds: ["todo"] }];
+  assert.deepEqual(sandbox.unusedTagIds(list, items), ["youtube", "prompt"]);
+  assert.deepEqual(sandbox.unusedTagIds(list, items, { youtube: true }), ["prompt"]);
+  assert.deepEqual(sandbox.unusedTagIds(list, []), ["todo", "astral", "youtube", "prompt"]);
+  assert.deepEqual(sandbox.unusedTagIds(list, [{ tagIds: ["missing"] }]), ["todo", "astral", "youtube", "prompt"]);
+});
+
+test("empty tags vanish on their own once the account is loaded", function () {
+  assert.match(html, /@keyframes tagVanish/);
+  assert.match(html, /function unusedTagIds/);
+  assert.match(html, /function commitEmptyTagRemoval/);
+  assert.match(grab("renderTags"), /planEmptyTagVanish\(orderedTags\)/);
+  assert.match(grab("renderTags"), /queueEmptyTagSweep\(\)/);
+  assert.match(grab("emptyTagsMayLeave"), /cloudHydrated/);
+  assert.match(html, /spareEmptyTag\(tag\.id\)/);
 });
 
 test("sidebar renders a drop target and a caret per tag group", function () {

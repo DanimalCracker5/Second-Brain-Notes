@@ -1410,6 +1410,26 @@
   .d-list.enter .d-group{ animation:groupIn .42s cubic-bezier(.2,.9,.3,1.05) both; animation-delay:calc(var(--i,0) * 26ms); }
   .d-list.enter .d-group::before{ animation:groupRule .5s cubic-bezier(.2,.9,.3,1.2) both; animation-delay:calc(var(--i,0) * 26ms + 90ms); }
   .tagcloud.enter .tg{ animation:popIn .34s cubic-bezier(.2,.9,.3,1.1) both; animation-delay:calc(var(--i,0) * 30ms); }
+  /* Empty tags leave on their own. A small pull-back, then they slide off and
+     the row collapses so the ones underneath rise into the gap. */
+  @keyframes tagVanish{
+    0%{ opacity:1; transform:translate3d(0,0,0) scale(1); min-height:31px; max-height:42px; }
+    22%{ opacity:1; transform:translate3d(-6px,0,0) scale(1.035); min-height:31px; max-height:42px; }
+    100%{ opacity:0; transform:translate3d(28px,0,0) scale(.86); min-height:0; max-height:0; padding-top:0; padding-bottom:0; }
+  }
+  @keyframes tagChipVanish{
+    0%{ opacity:1; transform:translate3d(0,0,0) scale(1); }
+    30%{ opacity:1; transform:translate3d(-3px,0,0) scale(1.06); }
+    100%{ opacity:0; transform:translate3d(10px,-6px,0) scale(.8); }
+  }
+  .tagcloud .tg.tag-vanish,.tag-group-h.tag-vanish{
+    overflow:hidden; pointer-events:none;
+    animation:tagVanish .52s cubic-bezier(.45,.05,.25,1) both;
+  }
+  .home-tag.tag-vanish{
+    pointer-events:none;
+    animation:tagChipVanish .52s cubic-bezier(.45,.05,.25,1) both;
+  }
   .tg.tag-pick .visibility{ color:var(--accent); opacity:1; animation:eyeWink .56s cubic-bezier(.2,.9,.3,1.2) both; }
   /* Scoped through .d-list so it outranks the stagger rule above — a brand new
      row should flash, not queue up behind the others. */
@@ -3300,6 +3320,24 @@
     var removedGroupIds=next.filter(function(group){ return !group.tagIds.length; }).map(function(group){ return group.id; });
     return {groups:next.filter(function(group){ return group.tagIds.length; }), removedGroupIds:removedGroupIds};
   }
+  /* Tags with no notes left. `spared` is a map of ids to keep anyway — a tag
+     the user just created and has not filed anything under yet. */
+  function unusedTagIds(tags, items, spared){
+    var used={}, hold=spared||{}, out=[], i, j, item, ids, tag;
+    items=items||[];
+    for(i=0;i<items.length;i++){
+      item=items[i]; ids=item&&item.tagIds;
+      if(!ids) continue;
+      for(j=0;j<ids.length;j++) if(ids[j]) used[ids[j]]=true;
+    }
+    tags=tags||[];
+    for(i=0;i<tags.length;i++){
+      tag=tags[i];
+      if(!tag||!tag.id||used[tag.id]||hold[tag.id]) continue;
+      out.push(tag.id);
+    }
+    return out;
+  }
   function tagLayoutSignature(data){
     data=data||{};
     var tags=data.tags||[];
@@ -3329,6 +3367,10 @@
      replay when this changes, so editing a note title doesn't make the whole
      sidebar flutter on every keystroke. */
   var lastTagSignature=null, tagCloseTimer=null, tagDrag=null, suppressTagClick=false, pendingTagGroupRename=null;
+  /* A tag made from the + button starts empty on purpose, so it is spared until
+     a note actually uses it. After that, dropping back to zero removes it. */
+  var sparedEmptyTagIds={}, emptyTagVanish={}, emptyTagSweepTimer=null, committingEmptyTags=false, lastUnusedTagSignature="";
+  var TAG_VANISH_MS=520, TAG_VANISH_STAGGER=70;
   function tagGroupById(groupId){
     if(!groupId) return null;
     for(var i=0;i<(state.tagGroups||[]).length;i++) if(state.tagGroups[i].id===groupId) return state.tagGroups[i];
@@ -3343,12 +3385,98 @@
     (state.tagGroups||[]).forEach(function(group){ (group.tagIds||[]).forEach(function(id){ grouped[id]=true; }); });
     return state.tags.filter(function(tag){ return tag&&!grouped[tag.id]; });
   }
+  function spareEmptyTag(id){ if(id) sparedEmptyTagIds[id]=true; }
+  function releaseSparedEmptyTag(id){ delete sparedEmptyTagIds[id]; }
+  function emptyTagsMayLeave(){ return !!cloudHydrated; }
+  function tagsLeaveQuietly(){
+    if(document.body.classList.contains("reduce-fx")) return true;
+    try{ return window.matchMedia("(prefers-reduced-motion: reduce)").matches; }catch(e){ return false; }
+  }
+  function paintTagVanish(el, id){
+    var plan=emptyTagVanish[id];
+    if(!plan||!el) return;
+    el.classList.add("tag-vanish");
+    el.setAttribute("aria-hidden","true");
+    var delay=plan.delay-(Date.now()-plan.started);
+    if(delay) el.style.animationDelay=delay+"ms";
+  }
+  function planEmptyTagVanish(ordered){
+    if(committingEmptyTags) return;
+    if(!emptyTagsMayLeave()){ emptyTagVanish={}; return; }
+    var spared=Object.keys(sparedEmptyTagIds), s;
+    for(s=0;s<spared.length;s++) if(tagUseCount(spared[s])>0) delete sparedEmptyTagIds[spared[s]];
+    var leaving=unusedTagIds(state.tags, state.items, sparedEmptyTagIds), leave={}, i;
+    for(i=0;i<leaving.length;i++) leave[leaving[i]]=true;
+    Object.keys(emptyTagVanish).forEach(function(id){ if(!leave[id]) delete emptyTagVanish[id]; });
+    var now=Date.now(), slot=0, seen={};
+    (ordered||[]).forEach(function(tag){
+      if(!tag||!leave[tag.id]||seen[tag.id]) return;
+      seen[tag.id]=true;
+      if(!emptyTagVanish[tag.id]) emptyTagVanish[tag.id]={started:now, delay:Math.min(slot,8)*TAG_VANISH_STAGGER};
+      slot++;
+    });
+    for(i=0;i<leaving.length;i++){
+      if(seen[leaving[i]]) continue;
+      seen[leaving[i]]=true;
+      if(!emptyTagVanish[leaving[i]]) emptyTagVanish[leaving[i]]={started:now, delay:Math.min(slot,8)*TAG_VANISH_STAGGER};
+      slot++;
+    }
+  }
+  function queueEmptyTagSweep(){
+    if(committingEmptyTags) return;
+    if(emptyTagSweepTimer){ clearTimeout(emptyTagSweepTimer); emptyTagSweepTimer=null; }
+    lastUnusedTagSignature=unusedTagIds(state.tags, state.items, sparedEmptyTagIds).join("\n");
+    var ids=Object.keys(emptyTagVanish);
+    if(!ids.length) return;
+    if(!emptyTagsMayLeave()||tagDrag||pendingTagGroupRename){
+      emptyTagSweepTimer=setTimeout(queueEmptyTagSweep, 220);
+      return;
+    }
+    var wait=tagsLeaveQuietly()?40:0, now=Date.now(), n;
+    for(n=0;n<ids.length;n++){
+      var plan=emptyTagVanish[ids[n]];
+      var remain=plan.started+plan.delay+TAG_VANISH_MS-now;
+      if(remain>wait) wait=remain;
+    }
+    emptyTagSweepTimer=setTimeout(commitEmptyTagRemoval, wait+36);
+  }
+  function commitEmptyTagRemoval(){
+    if(committingEmptyTags) return;
+    if(emptyTagSweepTimer){ clearTimeout(emptyTagSweepTimer); emptyTagSweepTimer=null; }
+    if(tagDrag||pendingTagGroupRename||!emptyTagsMayLeave()){ emptyTagSweepTimer=setTimeout(commitEmptyTagRemoval, 220); return; }
+    var ids=unusedTagIds(state.tags, state.items, sparedEmptyTagIds);
+    if(!ids.length){ emptyTagVanish={}; lastUnusedTagSignature=""; return; }
+    var drop={}, i;
+    for(i=0;i<ids.length;i++) drop[ids[i]]=true;
+    committingEmptyTags=true;
+    try{
+      for(i=0;i<ids.length;i++){
+        var tag=tagById(ids[i]);
+        if(tag) recordDeletedTag(tag);
+        var forgotten=forgetTag(state.tagGroups, ids[i]);
+        state.tagGroups=forgotten.groups;
+        delete emptyTagVanish[ids[i]];
+        delete sparedEmptyTagIds[ids[i]];
+      }
+      state.tags=(state.tags||[]).filter(function(entry){ return entry&&!drop[entry.id]; });
+      state.tagGroups=sanitizeTagGroups(state.tagGroups, state.tags);
+      rememberTagOrder();
+      if(state.filterTag&&drop[state.filterTag]){ state.filterTag=null; state.tagAssignMode=false; }
+      if(state.upcomingFilter&&drop[state.upcomingFilter.tagId]) state.upcomingFilter=normalizeUpcomingFilter(Object.assign({}, state.upcomingFilter, {tagId:null}));
+      if(homeTagId&&drop[homeTagId]) homeTagId=null;
+      persist();
+      renderAll();
+    } finally {
+      committingEmptyTags=false;
+    }
+  }
   function renderTagChip(tag, index){
     var chip=document.createElement("div");
     chip.className="tg"+(state.filterTag===tag.id?" active":"")+(tag.hidden?" hidden":"");
     chip.dataset.tagId=tag.id;
     chip.style.setProperty("--i",Math.min(index,9));
     chip.style.setProperty("--tg",tagColor(tag));
+    paintTagVanish(chip, tag.id);
     chip.innerHTML='<span class="tag-grip" title="Drag to reorder" aria-hidden="true">⋮⋮</span><span class="dot" style="background:'+tagColor(tag)+'"></span><span class="tag-name"></span><span class="tag-count">'+tagUseCount(tag.id)+'</span><button class="tag-action visibility" type="button" title="'+(tag.hidden?"Show tag":"Hide tag")+'" aria-label="'+(tag.hidden?"Show tag":"Hide tag")+'">'+(tag.hidden?ICON_EYE_OFF:ICON_EYE)+'</button><button class="tag-action edit" type="button" title="Edit tag" aria-label="Edit tag">'+ICON_EDIT+'</button>';
     chip.querySelector(".tag-name").textContent=tag.name;
     chip.onclick=function(event){
@@ -3383,20 +3511,30 @@
        still has to be built for the section to slide shut over real content. */
     if(!state.tags.length){
       var empty=document.createElement("div"); empty.className="tag-empty"; empty.textContent="No tags yet — tap +"; tagsEl.appendChild(empty);
-      lastTagSignature=null; return;
+      lastTagSignature=null; emptyTagVanish={};
+      if(emptyTagSweepTimer){ clearTimeout(emptyTagSweepTimer); emptyTagSweepTimer=null; }
+      lastUnusedTagSignature=""; return;
     }
     var ungrouped=ungroupedTags();
+    var byId={};
+    state.tags.forEach(function(tag){ if(tag&&tag.id) byId[tag.id]=tag; });
+    var orderedTags=ungrouped.slice();
+    (state.tagGroups||[]).forEach(function(group){
+      (group.tagIds||[]).forEach(function(id){ if(byId[id]) orderedTags.push(byId[id]); });
+    });
+    planEmptyTagVanish(orderedTags);
+    if(state.filterTag&&emptyTagVanish[state.filterTag]){ state.filterTag=null; state.tagAssignMode=false; }
+    if(state.upcomingFilter&&emptyTagVanish[state.upcomingFilter.tagId]) state.upcomingFilter=normalizeUpcomingFilter(Object.assign({}, state.upcomingFilter, {tagId:null}));
+    if(homeTagId&&emptyTagVanish[homeTagId]) homeTagId=null;
     var signature=state.tagGroups.map(function(group){ return group.id+":"+group.tagIds.join(","); }).join("/")+"|"+ungrouped.map(function(tag){ return tag.id+":"+(tag.hidden?1:0); }).join("|")+"@"+(state.filterTag||"");
     var entered=signature!==lastTagSignature&&!state.tagsCollapsed;
     lastTagSignature=signature;
     tagsEl.appendChild(renderTagCloud(ungrouped, "", entered));
-    if(!tagGroupsEl) return;
+    if(!tagGroupsEl){ queueEmptyTagSweep(); return; }
     var zone=document.createElement("div");
     zone.className="tag-new-group";
     zone.textContent="Drop to make a group";
     tagGroupsEl.appendChild(zone);
-    var byId={};
-    state.tags.forEach(function(tag){ if(tag&&tag.id) byId[tag.id]=tag; });
     state.tagGroups.forEach(function(group){
       var renaming=pendingTagGroupRename===group.id;
       var head=document.createElement("div");
@@ -3466,12 +3604,24 @@
       body.id="tag-group-"+group.id;
       body.className="tag-group-body"+(group.collapsed?" is-collapsed":"");
       var members=(group.tagIds||[]).map(function(id){ return byId[id]; }).filter(Boolean);
+      var memberIds=members.map(function(tag){ return tag.id; });
+      var latestId=null, mi, latestDelay=-1;
+      if(!renaming && memberIds.length){
+        latestId=memberIds[0];
+        for(mi=0;mi<memberIds.length;mi++){
+          var memberPlan=emptyTagVanish[memberIds[mi]];
+          if(!memberPlan){ latestId=null; break; }
+          if(memberPlan.delay>=latestDelay){ latestDelay=memberPlan.delay; latestId=memberIds[mi]; }
+        }
+      }
+      if(latestId) paintTagVanish(head, latestId);
       body.appendChild(renderTagCloud(members, group.id, entered&&!group.collapsed));
       tagGroupsEl.appendChild(head);
       tagGroupsEl.appendChild(body);
     });
     var pendingInput=tagGroupsEl.querySelector(".tag-group-name-input");
     if(pendingInput){ pendingInput.focus(); pendingInput.select(); }
+    queueEmptyTagSweep();
   }
   function clearTagDropMarks(){
     document.querySelectorAll(".tg.drop-before,.tg.drop-after,.drop-target,.tag-new-group").forEach(function(node){
@@ -4185,7 +4335,7 @@
     if(ids[state.currentId]){ var vis=visibleItems(); state.currentId=(vis[0]||state.items[0]).id; }
     var count=deletable.length;
     state.selectedItemIds=[]; state.selectingNotes=false; state.tagAssignMode=false;
-    persist(); renderList(); renderMain();
+    persist(); renderTags(); renderList(); renderMain();
     showToast("Deleted "+count+" note"+(count===1?"":"s"));
   }
   function delItem(id,message){
@@ -4201,7 +4351,7 @@
     state.items.splice(i,1);
     if(!state.items.length) state.items.push(newNoteItem());
     if(state.currentId===id){ var vis=visibleItems(); state.currentId=(vis[0]||state.items[0]).id; }
-    persist(); renderList(); renderMain();
+    persist(); renderTags(); renderList(); renderMain();
   }
 
   /* =================== editor =================== */
@@ -4547,6 +4697,7 @@
         var name=document.createElement("span"); name.textContent=tag.name||"Tag";
         var count=document.createElement("em"); count.textContent=String(homeTagCount(tag.id));
         chip.appendChild(dot); chip.appendChild(name); chip.appendChild(count);
+        paintTagVanish(chip, tag.id);
         chip.onclick=function(){ setHomeNotesTag(tag.id); };
         rail.appendChild(chip);
       });
@@ -4691,6 +4842,8 @@
       var dot=document.createElement("i"); dot.style.background=tagColor(tag);
       var name=document.createElement("span"); name.textContent=tag.name||"Tag";
       chip.appendChild(dot); chip.appendChild(name);
+      chip.dataset.tagId=tag.id;
+      paintTagVanish(chip, tag.id);
       chip.onclick=function(){ setHomeNotesTag(tag.id); };
       body.appendChild(chip);
     });
@@ -7004,7 +7157,7 @@
       var t=tagById(id); if(!t) return;
       var chip=document.createElement("span"); chip.className="chip";
       chip.innerHTML='<span class="dot" style="background:'+tagColor(t)+'"></span>'+escapeHtml(t.name)+'<span class="cx">×</span>';
-      chip.querySelector(".cx").onclick=function(){ it.tagIds=it.tagIds.filter(function(x){ return x!==id; }); it.updated=Date.now(); persist(); renderMain(); renderList(); };
+      chip.querySelector(".cx").onclick=function(){ it.tagIds=it.tagIds.filter(function(x){ return x!==id; }); it.updated=Date.now(); persist(); renderMain(); renderTags(); renderList(); };
       wrap.appendChild(chip);
     });
     var addTag=document.createElement("button"); addTag.className="pickbtn"; addTag.textContent="＋ Tag";
@@ -7122,7 +7275,7 @@
      while you pick, and writes once at the end. */
   function openTagPick(anchor,it){
     openMenu(anchor,function(m){
-      var picked=(it.tagIds||[]).slice(), rows={}, dirty=false, saveButton=null;
+      var picked=(it.tagIds||[]).slice(), rows={}, dirty=false, saveButton=null, minted=[];
       m.classList.add("tag-pick-menu"); m.setAttribute("data-noautofocus","1");
       var t=document.createElement("div"); t.className="mtitle"; t.textContent="Tags · tap to pick, then save"; m.appendChild(t);
       var box=document.createElement("div"); box.className="maxscroll";
@@ -7158,7 +7311,7 @@
         var existing=state.tags.find(function(tag){ return (tag.name||"").toLowerCase()===name.toLowerCase(); });
         if(existing){ setPicked(existing.id,true); return; }
         var nt=makeTag(name);
-        state.tags.push(nt); rememberTagOrder();
+        state.tags.push(nt); spareEmptyTag(nt.id); minted.push(nt.id); rememberTagOrder();
         if(empty.parentNode) empty.parentNode.removeChild(empty);
         addRow(nt);
         /* The tag itself is real straight away — only the note's membership waits
@@ -7180,10 +7333,16 @@
       }
       /* Dismissing the menu commits too, so nothing is lost to a stray tap. */
       m.__onClose=function(){
-        if(!dirty) return;
-        it.tagIds=picked.slice(); it.updated=Date.now();
-        persist(); renderAll();
-        showToast(picked.length?"Saved "+picked.length+" tag"+(picked.length===1?"":"s"):"Tags cleared");
+        if(dirty){
+          it.tagIds=picked.slice(); it.updated=Date.now();
+          persist(); renderAll();
+          showToast(picked.length?"Saved "+picked.length+" tag"+(picked.length===1?"":"s"):"Tags cleared");
+        }
+        var sweep=false;
+        minted.forEach(function(id){
+          if(tagUseCount(id)===0){ releaseSparedEmptyTag(id); sweep=true; }
+        });
+        if(sweep) renderTags();
       };
       refresh();
     });
@@ -11787,7 +11946,7 @@
       var t=document.createElement("div"); t.className="mtitle"; t.textContent="New tag"; m.appendChild(t);
       var row=document.createElement("div"); row.className="mrow";
       var inp=document.createElement("input"); inp.placeholder="Tag name…";
-      inp.onkeydown=function(e){ if(e.key==="Enter"&&inp.value.trim()){ state.tags.push(makeTag(inp.value)); rememberTagOrder(); closeMenu(); persist(); renderTags(); if(viewingHome) renderMain(); showToast("Tag created"); } };
+      inp.onkeydown=function(e){ if(e.key==="Enter"&&inp.value.trim()){ var tag=makeTag(inp.value); state.tags.push(tag); spareEmptyTag(tag.id); rememberTagOrder(); closeMenu(); persist(); renderTags(); if(viewingHome) renderMain(); showToast("Tag created"); } };
       row.appendChild(inp); m.appendChild(row);
     });
   };
@@ -12530,9 +12689,10 @@
       state.tagGroups=sanitizeTagGroups(state.tagGroups, state.tags);
       rememberTagOrder();
       var tagLayoutChanged=tagLayoutSignature(state)!==layoutBefore;
+      var unusedNow=unusedTagIds(state.tags, state.items, sparedEmptyTagIds).join("\n");
       if(prefs) applyHomePreferences(prefs);
       persistLocalStateQuietly();
-      if(tagLayoutChanged) renderTags();
+      if(tagLayoutChanged||unusedNow!==lastUnusedTagSignature) renderTags();
       if(added||changedCurrent) refreshOpenItemFromLive(current());
       else if(viewingHome) renderMain();
       else renderList();
@@ -15050,7 +15210,7 @@
       if(history.replaceState) history.replaceState({},document.title,location.pathname+location.hash);
     }
   }catch(e){}
-  window.__astral={ state:state, render:renderAll, api:runtimeApiKeys };
+  window.__astral={ state:state, render:renderAll, api:runtimeApiKeys, setHydrated:function(on){ cloudHydrated=!!on; } };
 })();
 </script>
 <script>

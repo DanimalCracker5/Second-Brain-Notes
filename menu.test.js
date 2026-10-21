@@ -128,6 +128,7 @@ function deleteSandbox() {
     newNoteItem: function () { return { id: "seed", title: "Untitled" }; },
     visibleItems: function () { return box.state.items; },
     persist: function () { box.persisted = true; },
+    renderTags: function () { box.tagsRendered = true; },
     renderList: function () {},
     renderMain: function () { box.rerendered = true; },
     showToast: function (message) { box.toast = message; },
@@ -150,6 +151,7 @@ test("deleteSelectedNotes removes unlocked selected notes and skips locked ones"
   assert.equal(box.state.selectingNotes, false);
   assert.deepEqual(box.state.selectedItemIds, []);
   assert.equal(box.persisted, true);
+  assert.equal(box.tagsRendered, true);
   assert.equal(box.rerendered, true);
   assert.equal(box.toast, "Deleted 2 notes");
 });
