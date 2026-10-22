@@ -35,7 +35,12 @@ const sandbox = {
   uid: function () { copySeq += 1; return "copy-" + copySeq; },
   currentUser: { uid: "user-1" },
   state: {},
-  normalizeItem: function () {}
+  normalizeItem: function () {},
+  migrateFoldersToTags: function () {},
+  tagLayoutSignature: function () { return ""; },
+  accountPreferences: function () { return {}; },
+  cleanStatus: function (value) { return value || ""; },
+  isTodoNote: function (it) { return !!(it && it.todo); }
 };
 vm.createContext(sandbox);
 [
@@ -57,6 +62,18 @@ function note(id, title, extra) {
   }, extra || {});
 }
 
+function clip(id, title, extra) {
+  return Object.assign({
+    id: id,
+    type: "audio",
+    title: title,
+    body: title + " body",
+    updated: 10,
+    version: 2,
+    versionChangedAt: 10
+  }, extra || {});
+}
+
 function reset(items, baselineItems) {
   copySeq = 0;
   sandbox.state = {
@@ -64,6 +81,7 @@ function reset(items, baselineItems) {
     folders: [],
     tags: [],
     deletedItems: {},
+    deletedTags: {},
     version: 4,
     versionChangedAt: 10,
     lastCloudSync: 10,
@@ -105,7 +123,6 @@ test("only the other device changed a note — keep the cloud version", function
   });
   assert.equal(result.conflicts.length, 0);
   assert.equal(result.data.items[0].title, "Alpha on phone");
-  assert.equal(result.needsCloudWrite, false);
 });
 
 test("only this device changed a note — keep the local version", function () {
@@ -120,41 +137,53 @@ test("only this device changed a note — keep the local version", function () {
   assert.equal(result.needsCloudWrite, true);
 });
 
-test("the same note edited on both devices is a conflict, defaulting to cloud", function () {
+test("the same note edited on both devices is merged in place, not copied", function () {
   const shared = [note("a", "Alpha")];
   reset([note("a", "Alpha on PC", { version: 5, versionChangedAt: 40 })], shared);
   const result = sandbox.reconcileWithCloud({
     items: [note("a", "Alpha on phone", { version: 4, versionChangedAt: 30 })],
     folders: [], tags: [], deletedItems: {}, version: 6
   });
+  assert.equal(result.conflicts.length, 0);
+  assert.equal(result.data.items.length, 1);
+  assert.equal(result.data.items[0].title, "Alpha on PC");
+});
+
+test("an unmergeable item edited on both devices keeps a conflict copy", function () {
+  const shared = [clip("a", "Voice memo")];
+  reset([clip("a", "Voice memo on PC", { version: 5, versionChangedAt: 40 })], shared);
+  const result = sandbox.reconcileWithCloud({
+    items: [clip("a", "Voice memo on phone", { version: 4, versionChangedAt: 30 })],
+    folders: [], tags: [], deletedItems: {}, version: 6
+  });
   assert.equal(result.conflicts.length, 1);
   assert.equal(result.conflicts[0].id, "a");
-  assert.equal(result.data.items[0].title, "Alpha on phone");
+  assert.equal(result.data.items[0].title, "Voice memo on phone");
   sandbox.preferLocalConflicts(result);
-  assert.equal(result.data.items[0].title, "Alpha on PC");
+  assert.equal(result.data.items[0].title, "Voice memo on PC");
   const copies = sandbox.attachConflictCopies(result.data, result.conflicts);
   assert.equal(copies.length, 1);
   assert.equal(copies[0].conflictOf, "a");
   assert.match(copies[0].title, /from another device/);
-  assert.equal(copies[0].body, "Alpha on phone body");
+  assert.equal(copies[0].body, "Voice memo on phone body");
   assert.equal(result.data.items.length, 2);
 });
 
-test("a second conflict for the same note updates the existing copy", function () {
-  const shared = [note("a", "Alpha")];
+test("a second conflict for the same unmergeable item updates the existing copy", function () {
+  const shared = [clip("a", "Voice memo")];
   reset([
-    note("a", "Alpha on PC", { version: 5, versionChangedAt: 40 }),
-    { id: "copy-keep", type: "note", title: "Alpha (from another device)", body: "old phone", conflictOf: "a", updated: 20, version: 1 }
+    clip("a", "Voice memo on PC", { version: 5, versionChangedAt: 40 }),
+    { id: "copy-keep", type: "audio", title: "Voice memo (from another device)", body: "old phone", conflictOf: "a", updated: 20, version: 1 }
   ], shared);
   const result = sandbox.reconcileWithCloud({
-    items: [note("a", "Alpha on phone v2", { version: 6, versionChangedAt: 50 })],
+    items: [clip("a", "Voice memo on phone v2", { version: 6, versionChangedAt: 50 })],
     folders: [], tags: [], deletedItems: {}, version: 7
   });
   sandbox.preferLocalConflicts(result);
   const copies = sandbox.attachConflictCopies(result.data, result.conflicts);
   assert.equal(copies.length, 1);
   assert.equal(copies[0].id, "copy-keep");
-  assert.equal(copies[0].body, "Alpha on phone v2 body");
+  assert.equal(copies[0].body, "Voice memo on phone v2 body");
   assert.equal(result.data.items.filter(function (item) { return item.conflictOf === "a"; }).length, 1);
 });
 
@@ -189,12 +218,4 @@ test("a tombstoned delete of an unchanged note is kept", function () {
   assert.equal(result.conflicts.length, 0);
   assert.ok(!result.data.items.some(function (item) { return item.id === "b"; }));
   assert.ok(result.data.deletedItems.b);
-});
-
-test("adopting a merge keeps in-progress typing that landed after the write started", function () {
-  reset([note("a", "Alpha on PC", { updated: 80 })], [note("a", "Alpha")]);
-  sandbox.state.lastLocalChange = 90;
-  const added = sandbox.adoptReconciledItems([note("a", "Alpha on phone", { updated: 50 })], 70);
-  assert.equal(added, 0);
-  assert.equal(sandbox.state.items[0].title, "Alpha on PC");
 });

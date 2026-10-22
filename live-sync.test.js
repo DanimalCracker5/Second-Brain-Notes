@@ -1,0 +1,313 @@
+"use strict";
+
+const fs = require("fs");
+const path = require("path");
+const vm = require("vm");
+const assert = require("assert");
+const { test } = require("node:test");
+
+const html = fs.readFileSync(path.join(__dirname, "index.html"), "utf8");
+const shared = fs.readFileSync(path.join(__dirname, "shared.html"), "utf8");
+const rules = fs.readFileSync(path.join(__dirname, "firestore.rules"), "utf8");
+const storageRules = fs.readFileSync(path.join(__dirname, "storage.rules"), "utf8");
+const start = html.indexOf("<script>\n(function(){");
+const end = html.indexOf("})();\n</script>");
+assert.ok(start >= 0 && end > start, "main app script not found");
+const appJs = html.slice(start + "<script>\n".length, end + "})();".length);
+
+test("main app script parses", function () {
+  try { new vm.Script(appJs, { filename: "index.html" }); }
+  catch (error) { assert.fail(error.stack || error.message); }
+});
+
+function grab(name, next) {
+  const from = html.indexOf("  function " + name + "(");
+  assert.ok(from >= 0, "missing " + name);
+  const to = next ? html.indexOf("  function " + next + "(", from + 1) : html.length;
+  assert.ok(to > from, "missing end of " + name);
+  return html.slice(from, to).trim();
+}
+
+const sandbox = {
+  cloneData: function (value) { return JSON.parse(JSON.stringify(value || {})); }
+};
+vm.createContext(sandbox);
+[
+  ["stableStringify", "itemSyncSignature"],
+  ["itemSyncSignature", "buildSyncBaseline"],
+  ["itemRevision", "mergeTombstones"],
+  ["mergeTombstones", "recordDeletedBlock"],
+  ["dropTombstonedBlocks", "pruneTombstones"],
+  ["pruneTombstones", "recordDeletedItem"],
+  ["canStructurallyMergeItems", "useData"]
+].forEach(function (pair) {
+  vm.runInContext(grab(pair[0], pair[1]), sandbox, { filename: pair[0] });
+});
+
+function note(id, blocks, attachments, extra) {
+  const item = {
+    id: id,
+    type: "note",
+    title: extra && extra.title || "Note",
+    blocks: blocks || [],
+    attachments: attachments || [],
+    version: extra && extra.version || 1,
+    versionChangedAt: extra && extra.versionChangedAt || 1,
+    updated: extra && extra.updated || 1
+  };
+  if (extra && extra.shareId) item.shareId = extra.shareId;
+  if (extra && extra.shareAllowEdit) item.shareAllowEdit = true;
+  return item;
+}
+
+test("mergeKeyedRecords keeps a protected local block and adds a remote photo block", function () {
+  const local = [
+    { id: "a", type: "text", text: "typing on phone" },
+    { id: "b", type: "text", text: "unchanged" }
+  ];
+  const remote = [
+    { id: "a", type: "text", text: "old" },
+    { id: "b", type: "text", text: "unchanged" },
+    { id: "p", type: "attachment", attachmentId: "pic" }
+  ];
+  const merged = sandbox.mergeKeyedRecords(local, remote, { protectIds: { a: true }, preferLocal: false });
+  assert.equal(merged[0].text, "typing on phone");
+  assert.equal(merged.some(function (block) { return block.id === "p"; }), true);
+});
+
+test("dirtyBlockProtectIds only flags blocks this device changed since the last live push", function () {
+  const previous = note("n1", [
+    { id: "a", type: "text", text: "hello" },
+    { id: "b", type: "text", text: "other" }
+  ]);
+  const local = note("n1", [
+    { id: "a", type: "text", text: "hello from phone" },
+    { id: "b", type: "text", text: "other" }
+  ]);
+  const ids = sandbox.dirtyBlockProtectIds(local, previous);
+  assert.equal(ids.a, true);
+  assert.equal(!!ids.b, false);
+});
+
+test("unprotected remote text and a new photo apply while a local paragraph is protected", function () {
+  const local = note("n1", [
+    { id: "a", type: "text", text: "typing on phone", html: "typing on phone" },
+    { id: "b", type: "text", text: "old other", html: "old other" }
+  ], [], { version: 4, versionChangedAt: 40, updated: 40, title: "Trip" });
+  const remote = note("n1", [
+    { id: "a", type: "text", text: "hello", html: "hello" },
+    { id: "b", type: "text", text: "laptop other", html: "laptop other" },
+    { id: "p", type: "attachment", attachmentId: "img1" }
+  ], [
+    { id: "img1", name: "lake.jpg", type: "image/jpeg", storagePath: "users/u/notes/n1/attachments/img1" }
+  ], { version: 5, versionChangedAt: 50, updated: 50, title: "Trip" });
+  const merged = sandbox.mergeLiveItems(local, remote, { preferLocal: false, protectBlockIds: { a: true } });
+  assert.equal(merged.blocks[0].text, "typing on phone");
+  assert.equal(merged.blocks.find(function (block) { return block.id === "b"; }).text, "laptop other");
+  assert.equal(merged.attachments[0].id, "img1");
+  assert.equal(merged.blocks.some(function (block) { return block.id === "p"; }), true);
+});
+
+test("mergeLiveItems unions a laptop photo onto a note the phone is still editing", function () {
+  const local = note("n1", [
+    { id: "a", type: "text", text: "hello from phone", html: "hello from phone" }
+  ], [], { version: 4, versionChangedAt: 40, updated: 40, title: "Trip" });
+  const remote = note("n1", [
+    { id: "a", type: "text", text: "hello", html: "hello" },
+    { id: "p", type: "attachment", attachmentId: "img1" }
+  ], [
+    { id: "img1", name: "lake.jpg", type: "image/jpeg", storagePath: "users/u/notes/n1/attachments/img1" }
+  ], { version: 5, versionChangedAt: 50, updated: 50, title: "Trip" });
+  const merged = sandbox.mergeLiveItems(local, remote, { preferLocal: true, protectBlockIds: { a: true } });
+  assert.equal(merged.blocks[0].text, "hello from phone");
+  assert.equal(merged.attachments.length, 1);
+  assert.equal(merged.attachments[0].id, "img1");
+  assert.equal(merged.blocks.some(function (block) { return block.id === "p"; }), true);
+});
+
+test("applyIncomingItemOnto mutates the local note in place so the open editor keeps its object", function () {
+  const local = note("n1", [{ id: "a", type: "text", text: "one" }], [], { version: 1 });
+  const remote = note("n1", [
+    { id: "a", type: "text", text: "one" },
+    { id: "b", type: "text", text: "two" }
+  ], [], { version: 2, versionChangedAt: 2, updated: 2 });
+  const same = local;
+  const result = sandbox.applyIncomingItemOnto(local, remote, { preferLocal: false });
+  assert.equal(result.changed, true);
+  assert.equal(result.writeBack, false);
+  assert.equal(same, local);
+  assert.equal(local.blocks.length, 2);
+  assert.equal(local.blocks[1].text, "two");
+});
+
+test("an authoritative rewrite drops untouched paragraphs and keeps the block being typed", function () {
+  const local = note("n1", [
+    { id: "a", type: "text", text: "typing" },
+    { id: "b", type: "text", text: "old paragraph" }
+  ], [], { version: 2, versionChangedAt: 2, updated: 2, title: "Note" });
+  const remote = note("n1", [
+    { id: "c", type: "text", text: "rewritten" }
+  ], [], { version: 3, versionChangedAt: 3, updated: 3, title: "Note" });
+  remote.blockSync = "authoritative";
+  const merged = sandbox.mergeLiveItems(local, remote, { preferLocal: false, protectBlockIds: { a: true } });
+  assert.equal(merged.blocks.some(function (block) { return block.id === "b"; }), false);
+  assert.equal(merged.blocks.some(function (block) { return block.id === "a"; }), true);
+  assert.equal(merged.blocks.some(function (block) { return block.id === "c"; }), true);
+  assert.equal(merged.blockSync, undefined);
+});
+
+test("same-content live merge still takes the newer updated time so recency sort matches", function () {
+  const local = note("n1", [{ id: "a", type: "text", text: "hello" }], [], { version: 4, versionChangedAt: 40, updated: 40 });
+  const remote = note("n1", [{ id: "a", type: "text", text: "hello" }], [], { version: 4, versionChangedAt: 40, updated: 90 });
+  const merged = sandbox.mergeLiveItems(local, remote, { preferLocal: false });
+  assert.equal(merged.blocks[0].text, "hello");
+  assert.equal(merged.updated, 90);
+  const result = sandbox.applyIncomingItemOnto(local, remote, { preferLocal: false });
+  assert.equal(result.changed, true);
+  assert.equal(result.writeBack, false);
+  assert.equal(local.updated, 90);
+});
+
+test("a device that already has the newer recency writes it back so the other list can catch up", function () {
+  const local = note("n1", [{ id: "a", type: "text", text: "hello" }], [], { version: 4, versionChangedAt: 40, updated: 90 });
+  const remote = note("n1", [{ id: "a", type: "text", text: "hello" }], [], { version: 4, versionChangedAt: 40, updated: 40 });
+  const result = sandbox.applyIncomingItemOnto(local, remote, { preferLocal: false });
+  assert.equal(result.changed, false);
+  assert.equal(result.writeBack, true);
+  assert.equal(local.updated, 90);
+});
+
+test("account fingerprint changes when only a note's updated time changes", function () {
+  const older = { updated: 10, version: 2, items: [note("n1", [{ id: "a", type: "text", text: "hello" }], [], { updated: 40 })], deletedItems: {} };
+  const newer = { updated: 10, version: 2, items: [note("n1", [{ id: "a", type: "text", text: "hello" }], [], { updated: 90 })], deletedItems: {} };
+  assert.notEqual(sandbox.liveAccountFingerprint(older), sandbox.liveAccountFingerprint(newer));
+});
+
+test("older account snapshots are ignored so a stale get cannot undo a live apply", function () {
+  assert.equal(sandbox.isStaleAccountSnapshot({ updated: 50 }, 80, 0), true);
+  assert.equal(sandbox.isStaleAccountSnapshot({ updated: 90 }, 80, 0), false);
+  assert.equal(sandbox.isStaleAccountSnapshot({ updated: 80 }, 0, 80), true);
+  assert.equal(sandbox.isStaleAccountSnapshot({ updated: 0 }, 0, 0), false);
+});
+
+test("account snapshots are queued until live apply finishes instead of being dropped", function () {
+  const apply = grab("applyRemoteAccountSnapshot", "armCloudLiveSync");
+  assert.match(grab("queueRemoteAccountSnapshot", "applyRemoteAccountSnapshot"), /pendingRemoteAccount=cloud/);
+  assert.match(apply, /pendingRemoteAccount=cloud/);
+  assert.match(apply, /flushPendingRemoteAccount\(\)/);
+  assert.match(apply, /isStaleAccountSnapshot/);
+  assert.match(grab("armCloudLiveSync", "pullLiveCloudNow"), /flushPendingRemoteAccount\(\)/);
+  assert.match(grab("armCloudLiveSync", "pullLiveCloudNow"), /pullLiveCloudNow\(\)/);
+  assert.match(grab("watchLiveNote", "sharedItemFromPayload"), /flushPendingRemoteAccount\(\)/);
+});
+
+test("a blank note created on another device is still added from the account snapshot", function () {
+  const apply = grab("applyRemoteAccountSnapshot", "armCloudLiveSync");
+  assert.match(apply, /remote\.id===AGENT_DEFAULT_ID/);
+  assert.equal(apply.includes("isSeedDeviceItem(remote)"), false);
+});
+
+test("in-progress typing only protects the open note", function () {
+  const src = grab("localNoteEditGuard", "liveIncomingOptions");
+  assert.match(src, /hasEdits:false/);
+  assert.match(src, /currentItem\.id!==state\.currentId\) return guard/);
+});
+
+test("list sort is stored on the account and changing it writes through", function () {
+  assert.match(grab("cloudWritePayload", "saveCloudNow"), /listSort:state\.listSort/);
+  assert.match(grab("applyAccountPreferences", "conflictItemTitle"), /prefs\.listSort/);
+  assert.match(grab("setListSort", "prepareManualOrder"), /saveCloud\(1\)/);
+});
+
+test("share menu offers an iOS-style Allow editing toggle", function () {
+  const src = grab("openPublicShareOptions", "showToast");
+  assert.match(src, /Allow editing/);
+  assert.match(src, /m-toggle/);
+  assert.match(src, /shareAllowEdit/);
+  assert.match(html, /\.menu \.m-toggle/);
+});
+
+test("public shares carry allowEdit and a live updatedBy token", function () {
+  const payload = grab("publicSharePayload", "publishPublicShare");
+  assert.match(payload, /allowEdit:!!item\.shareAllowEdit/);
+  assert.match(payload, /updatedBy:liveClientId/);
+});
+
+test("same-account live notes and shared editing are allowed in Firebase rules", function () {
+  assert.match(rules, /match \/liveNotes\/\{noteId\}/);
+  assert.match(rules, /resource\.data\.allowEdit == true/);
+  assert.match(storageRules, /match \/shares\/\{shareId\}/);
+});
+
+test("shared page listens live and can edit when allowEdit is on", function () {
+  assert.match(shared, /onSnapshot/);
+  assert.match(shared, /allowEdit/);
+  assert.match(shared, /Sign in to edit/);
+  assert.match(shared, /Add photo/);
+  assert.match(shared, /firebase-auth-compat/);
+  assert.match(shared, /firebase-storage-compat/);
+  assert.match(shared, /mergeSharedDocument/);
+  assert.match(shared, /data-share-key/);
+  assert.match(shared, /\.auth-btn\[hidden\]/);
+});
+
+test("a tombstoned block stays deleted when a stale cloud snapshot re-applies it", function () {
+  const remote = note("n1", [
+    { id: "a", type: "text", text: "hello", html: "hello" },
+    { id: "b", type: "chapter", title: "Chapter", text: "kept" },
+    { id: "d", type: "text", text: "resurrected?", html: "resurrected?" }
+  ], [], { version: 5, versionChangedAt: 50, updated: 50, title: "Trip" });
+  /* The phone deleted block "d": tombstone stamped past the remote revision,
+     and the local block list no longer has it. */
+  const local = note("n1", [
+    { id: "a", type: "text", text: "hello", html: "hello" },
+    { id: "b", type: "chapter", title: "Chapter", text: "kept" }
+  ], [], { version: 5, versionChangedAt: 60, updated: 60, title: "Trip" });
+  local.deletedBlocks = { d: { version: 6, versionChangedAt: 70, deletedAt: 70 } };
+  const merged = sandbox.mergeLiveItems(local, remote, { preferLocal: false });
+  assert.equal(merged.blocks.some(function (block) { return block.id === "d"; }), false);
+  assert.equal(merged.blocks.some(function (block) { return block.id === "b"; }), true);
+  assert.equal(merged.deletedBlocks && merged.deletedBlocks.d && merged.deletedBlocks.d.deletedAt, 70);
+});
+
+test("a live note that still carries the deleted block loses it after merging the tombstone", function () {
+  /* The other device has not seen the delete yet; when the tombstoned note
+     arrives, its stale copy of the block is dropped and the tombstone merges
+     through so it also propagates back to the cloud. */
+  const local = note("n1", [
+    { id: "a", type: "text", text: "hello", html: "hello" },
+    { id: "d", type: "text", text: "stale copy", html: "stale copy" }
+  ], [], { version: 5, versionChangedAt: 50, updated: 50, title: "Trip" });
+  const remote = note("n1", [
+    { id: "a", type: "text", text: "hello", html: "hello" }
+  ], [], { version: 6, versionChangedAt: 70, updated: 70, title: "Trip" });
+  remote.deletedBlocks = { d: { version: 7, versionChangedAt: 70, deletedAt: 70 } };
+  const merged = sandbox.mergeLiveItems(local, remote, { preferLocal: false });
+  assert.equal(merged.blocks.some(function (block) { return block.id === "d"; }), false);
+  assert.ok(merged.deletedBlocks.d);
+});
+
+test("new blocks from the other device still merge alongside a tombstone", function () {
+  const local = note("n1", [
+    { id: "a", type: "text", text: "hello", html: "hello" }
+  ], [], { version: 5, versionChangedAt: 50, updated: 50, title: "Trip" });
+  local.deletedBlocks = { d: { version: 6, versionChangedAt: 55, deletedAt: 55 } };
+  const remote = note("n1", [
+    { id: "a", type: "text", text: "hello", html: "hello" },
+    { id: "d", type: "text", text: "resurrected?", html: "resurrected?" },
+    { id: "p", type: "attachment", attachmentId: "img1" }
+  ], [
+    { id: "img1", name: "lake.jpg", type: "image/jpeg", storagePath: "users/u/notes/n1/attachments/img1" }
+  ], { version: 5, versionChangedAt: 50, updated: 50, title: "Trip" });
+  const merged = sandbox.mergeLiveItems(local, remote, { preferLocal: false });
+  assert.equal(merged.blocks.some(function (block) { return block.id === "d"; }), false);
+  assert.equal(merged.blocks.some(function (block) { return block.id === "p"; }), true);
+});
+
+test("block deletes stamp a tombstone on the note before the block is removed", function () {
+  const src = grab("deleteNoteBlock", "buildNoteBlockActions");
+  assert.match(src, /recordDeletedBlock\(note,block\.id\)/);
+  assert.match(src, /note\.blocks\.splice\(index,1\)/);
+  const inline = grab("removeInlineAttachment", "cleanupContentAttachments");
+  assert.match(inline, /recordDeletedBlock\(note,block\.id\)/);
+});

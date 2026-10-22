@@ -217,3 +217,19 @@ test("looksLikeCasualChat leaves real note content alone", function () {
   assert.equal(sandbox.looksLikeCasualChat("What's the weather?"), true);
   assert.equal(sandbox.looksLikeCasualChat("Note that the shared tasks list is excessive"), false);
 });
+
+test("live dictation joins phrases and keeps edit commands out of the note", function () {
+  assert.equal(sandbox.joinDictationText("", "Buy oat milk"), "Buy oat milk");
+  assert.equal(sandbox.joinDictationText("Buy oat milk", "and eggs"), "Buy oat milk and eggs");
+  assert.equal(sandbox.joinDictationText("Buy oat milk", "Then walk the dog", true), "Buy oat milk\n\nThen walk the dog");
+  assert.equal(sandbox.stripLastDictationUtterance("Buy oat milk\n\nThen walk the dog", "Then walk the dog"), "Buy oat milk");
+  assert.equal(sandbox.dictationHtmlFromParts("<b>Hello</b>", "there", "now"), '<b>Hello</b> there <span class="dictation-interim">now</span>');
+  assert.equal(sandbox.dictationHtmlFromParts("", "a < b", ""), "a &lt; b");
+  assert.equal(sandbox.shouldLiftDictatedUtterance("Buy oat milk tomorrow morning"), false);
+  assert.equal(sandbox.shouldLiftDictatedUtterance("Note that the shared tasks list is excessive"), false);
+  assert.equal(sandbox.shouldLiftDictatedUtterance("make this a list"), true);
+  assert.equal(sandbox.shouldLiftDictatedUtterance("turn that into bullets"), true);
+  assert.equal(sandbox.shouldLiftDictatedUtterance("What bro can you edit it or not"), true);
+  assert.equal(sandbox.shouldLiftDictatedUtterance("hey"), true);
+  assert.equal(sandbox.shouldLiftDictatedUtterance("um"), true);
+});
