@@ -155,7 +155,8 @@
   .status-select.with-status{ color:var(--accent); border-color:var(--accent-line); background:var(--accent-soft); }
   .status-select:focus-visible{ outline:none; border-color:var(--accent-line); }
   .status-select option{ background:#0d0d11; color:#fff; font-weight:600; }
-  .status-chip{ display:inline-flex; align-items:center; padding:2px 7px; border:1px solid var(--accent-line); border-radius:7px; color:var(--accent); background:var(--accent-soft); font:600 .68rem "DM Sans",sans-serif; text-transform:capitalize; white-space:nowrap; }
+  .status-chip{ display:inline-flex; align-items:center; padding:2px 7px; border:1px solid var(--accent-line); border-radius:7px; color:var(--accent); background:var(--accent-soft); font:600 .68rem "DM Sans",sans-serif; text-transform:capitalize; white-space:nowrap; cursor:pointer; }
+  .status-chip:hover{ border-color:var(--accent); }
   .due-prominent.overdue{ color:#fecaca; border-color:rgba(248,113,113,.45); background:rgba(248,113,113,.12); }
   .due-prominent svg{ width:15px; height:15px; }
 
@@ -2638,7 +2639,9 @@
   if(state.mobileFolderFocus!==undefined) delete state.mobileFolderFocus;
   if(typeof state.readChapterNames!=="boolean") state.readChapterNames=false;
   state.filterTag=state.filterTag||null; state.selectedItemIds=Array.isArray(state.selectedItemIds)?state.selectedItemIds:[]; state.selectingNotes=!!state.selectingNotes; state.tagAssignMode=!!state.tagAssignMode;
-  /* Always cold-boot into the All notes list. A stuck queue/upcoming/hidden view used to survive reloads and look like "all my notes are gone" - views other than All are only reachable by tapping their buttons. */
+  /* Always cold-boot into the All notes list. A stuck queue/upcoming/hidden
+     view used to survive reloads and look like "all my notes are gone" —
+     views other than All are only reachable by tapping their buttons. */
   state.sidebarView="all";
   state.version=Math.max(1,Number(state.version)||Number(state.updated)||1);
   state.noteSearch=typeof state.noteSearch==="string"?state.noteSearch:""; state.quickCaptureType=typeof state.quickCaptureType==="string"?state.quickCaptureType:"todo"; state.quickCaptureTagIds=Array.isArray(state.quickCaptureTagIds)?state.quickCaptureTagIds.filter(function(id){ return typeof id==="string"&&id; }):[]; state.quickCaptureStatus=cleanStatus(state.quickCaptureStatus);
@@ -4272,6 +4275,25 @@
       downloadJson(payload,(cleanText(item.title)||"note").replace(/[^a-z0-9_-]+/gi,"-").replace(/^-|-$/g,"").toLowerCase()+"-ai-context.json","AI context package downloaded");
     });
   }
+  /* Tap the status chip on a todo card to change status without opening the note. */
+  function openStatusPick(anchor,it){
+    openMenu(anchor,function(m){
+      m.appendChild(menuTitle("Status"));
+      TODO_STATUSES.forEach(function(status){
+        var row=mkItem("",statusLabel(status),cleanStatus(it.status)===status,function(){
+          it.status=status; it.updated=Date.now();
+          persist(); renderList();
+          if(current().id===it.id) renderMain();
+        });
+        m.appendChild(row);
+      });
+      if(cleanStatus(it.status)){
+        var clear=document.createElement("button"); clear.type="button"; clear.className="mi"; clear.innerHTML='<span>Clear status</span>';
+        clear.onclick=function(){ it.status=""; it.updated=Date.now(); persist(); renderList(); if(current().id===it.id) renderMain(); };
+        m.appendChild(sep()); m.appendChild(clear);
+      }
+    });
+  }
   function openItemActions(anchor,it){
     showItemActions(anchor,it,"root");
   }
@@ -4571,11 +4593,15 @@
       var leading=todoItem?'<button class="side-todo-check'+(it.done?" done":"")+'"'+todoStyle+' aria-label="'+(it.done?"Mark incomplete":"Mark complete")+'">'+(it.done?"✓":"")+'</button>':'<span class="item-icon"'+iconStyle+'>'+icon+'</span>';
       var lockStatus=it.locked?'<span class="item-lock" title="Deletion locked" aria-label="Deletion locked">'+ICON_LOCK+'</span>':"";
       var selectControl=state.selectingNotes?'<input class="note-select" type="checkbox" aria-label="Select note" '+(selected?'checked':'')+'>':'';
-      var statusHtml=(todoItem&&todoStatus(it))?'<span class="status-chip">'+statusLabel(it.status)+'</span>':"";
+      var statusHtml=(todoItem&&todoStatus(it))?'<button class="status-chip" type="button" title="Change status">'+statusLabel(it.status)+'</button>':"";
       el.innerHTML=selectControl+leading+'<div class="dt"><div class="dt-title"></div><div class="dt-meta"><span class="m">'+metaText+'</span>'+statusHtml+dots+lockStatus+'</div></div><button class="dx" type="button" title="'+(todoItem&&it.done?"Move completed todo to Trash":"Item actions")+'" aria-label="'+(todoItem&&it.done?"Move completed todo to Trash":"Item actions")+'">'+(todoItem&&it.done?ICON_DELETE:ICON_EDIT)+'</button>';
       el.querySelector(".dt-title").textContent=it.title||("Untitled "+itemLabel(it).toLowerCase());
       if(it.origin==="assistant"){ var originBadge=document.createElement("span"); originBadge.className="origin-badge"; originBadge.textContent="Added by Assistant"; el.appendChild(originBadge); }
       if(todoItem) el.querySelector(".side-todo-check").onclick=function(e){ e.stopPropagation(); setTodoDone(it); };
+      if(todoItem&&todoStatus(it)){
+        var chip=el.querySelector(".status-chip");
+        if(chip) chip.onclick=function(e){ e.stopPropagation(); openStatusPick(chip,it); };
+      }
       if(state.selectingNotes) el.querySelector(".note-select").onclick=function(e){ e.stopPropagation(); toggleNoteSelection(it.id,e.currentTarget.checked); };
       if(it.type==="todo" && (it.todos||[]).length){
         var taskBox=document.createElement("div"); taskBox.className="d-tasks";
