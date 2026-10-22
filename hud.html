@@ -354,7 +354,12 @@
   });
 
   function isFullscreen(){ return !!(document.fullscreenElement||document.webkitFullscreenElement); }
-  function syncFsButtons(){ $("fsBtn").hidden=isFullscreen(); $("exitBtn").hidden=!isFullscreen(); }
+  function hasFullscreenApi(){ var el=document.documentElement; return !!(el.requestFullscreen||el.webkitRequestFullscreen); }
+  function syncFsButtons(){
+    var supported=hasFullscreenApi();
+    $("fsBtn").hidden=!supported||isFullscreen();
+    $("exitBtn").hidden=!supported||!isFullscreen();
+  }
   function toggleFullscreen(){
     if(isFullscreen()){ (document.exitFullscreen||document.webkitExitFullscreen||function(){}).call(document); }
     else{ var el=document.documentElement; (el.requestFullscreen||el.webkitRequestFullscreen||function(){}).call(el).catch(function(){}); }
@@ -373,7 +378,7 @@
         '<button class="switch'+(layout.hidden[status]?"":" on")+'" data-status="'+status+'" role="switch" aria-checked="'+(!layout.hidden[status])+'" aria-label="Show '+statusLabel(status)+'"></button>';
       rows.appendChild(row);
     });
-    rows.addEventListener("click",onSheetClick);
+    rows.onclick=onSheetClick;
   }
   function onSheetClick(event){
     var target=event.target.closest("button"); if(!target) return;
