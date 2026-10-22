@@ -213,3 +213,121 @@ test("the notes list is rendered under the widget grid", function () {
   assert.ok(render.indexOf("sheet.appendChild(grid)") < render.indexOf("sheet.appendChild(slot)"));
   assert.match(grab("moveHomeWidget", "removeHomeWidget"), /type==="notes"/);
 });
+
+test("picking a tag on home opens that tag's notes without the widgets", function () {
+  const open = grab("setHomeNotesTag", "setHomeNotesType");
+  assert.match(open, /homeTagId=homeTagId===id\?null:id/);
+  assert.match(open, /state\.filterTag=homeTagId/);
+  assert.match(open, /renderMain\(\)/);
+  const box = {
+    homeTagId: null,
+    state: { filterTag: null, sidebarView: "hidden" },
+    renderList: function () { box.listed = (box.listed || 0) + 1; },
+    renderMain: function () { box.mains = (box.mains || 0) + 1; }
+  };
+  vm.createContext(box);
+  vm.runInContext(open, box, { filename: "set-home-notes-tag" });
+  box.setHomeNotesTag("astral");
+  assert.equal(box.homeTagId, "astral");
+  assert.equal(box.state.filterTag, "astral");
+  assert.equal(box.state.sidebarView, "all");
+  assert.equal(box.mains, 1);
+  box.setHomeNotesTag("astral");
+  assert.equal(box.homeTagId, null);
+  assert.equal(box.state.filterTag, null);
+  const stage = grab("buildHomeTagStage", "renderHome");
+  assert.match(stage, /buildHomeNotesToolbar\(\)/);
+  assert.match(stage, /buildHomeNoteRow\(it, entering\?index:null\)/);
+  assert.match(stage, /Nothing matches\./);
+  assert.match(grab("buildHomeNoteRow", "setHomeNotesTag"), /openHomeItem\(it\.id\)/);
+  const header = grab("buildHomeTagStageHeader", "buildHomeTagStage");
+  assert.match(header, /id="homeTagBack"/);
+  assert.match(header, /showHome\(\)/);
+  assert.match(header, /Open one, or go back home/);
+  assert.match(header, /Nothing in this tag yet/);
+  const render = grab("renderHome", "renderMain");
+  const stageAt = render.indexOf("buildHomeTagStage(openTag, entering)");
+  const gridAt = render.indexOf('grid.className="home-grid"');
+  assert.ok(stageAt >= 0 && gridAt > stageAt, "the tag page is chosen before the widget grid");
+  assert.match(render, /sheet\.classList\.add\("tag-stage"\)/);
+  assert.match(render, /if\(openTag\)\{[\s\S]*return;/);
+  assert.match(html, /\.home-sheet\.tag-stage::before/);
+  assert.match(html, /\.tag-stage \.home-notes\.enter \.home-note\{[^}]*animation:fadeUp/);
+});
+
+test("homeOpenTag drops a tag that no longer exists", function () {
+  const box = {
+    homeTagId: "t1",
+    tagById: function (id) { return id === "t1" ? { id: "t1", name: "Astral" } : null; }
+  };
+  vm.createContext(box);
+  vm.runInContext(grab("homeOpenTag", "buildHomeTagStageHeader"), box, { filename: "home-open-tag" });
+  assert.equal(box.homeOpenTag().name, "Astral");
+  box.homeTagId = "gone";
+  assert.equal(box.homeOpenTag(), null);
+  assert.equal(box.homeTagId, null);
+});
+
+test("Home steps out of a tag back to the widgets, and out of a note back to that tag", function () {
+  const box = {
+    viewingHome: true,
+    homeTagId: "astral",
+    state: { filterTag: "astral" },
+    activeAudioRecorder: null,
+    renderList: function () { box.listed = (box.listed || 0) + 1; },
+    renderMain: function () { box.mains = (box.mains || 0) + 1; },
+    exitSidebarFocus: function () { box.exited = true; },
+    app: { classList: { remove: function () { box.closed = true; } } }
+  };
+  vm.createContext(box);
+  vm.runInContext(grab("showHome", "syncHomeTagFromSidebar"), box, { filename: "show-home" });
+  box.showHome();
+  assert.equal(box.homeTagId, null);
+  assert.equal(box.state.filterTag, null);
+  assert.equal(box.viewingHome, true);
+  assert.equal(box.exited, undefined);
+  assert.equal(box.mains, 1);
+  box.viewingHome = false;
+  box.homeTagId = "astral";
+  box.state.filterTag = "other";
+  box.showHome();
+  assert.equal(box.homeTagId, "astral");
+  assert.equal(box.state.filterTag, "other");
+  assert.equal(box.viewingHome, true);
+  assert.equal(box.exited, true);
+});
+
+test("a sidebar tag opened from home shows that tag on the page", function () {
+  const box = {
+    viewingHome: true,
+    homeTagId: null,
+    state: { filterTag: "astral" },
+    app: {
+      classList: {
+        contains: function () { return box.focus; },
+        remove: function (name) { box.removed = name; }
+      }
+    },
+    focus: false,
+    tagById: function (id) { return { id: id }; },
+    usesOverlaySidebar: function () { return box.overlay; },
+    overlay: true
+  };
+  vm.createContext(box);
+  vm.runInContext(grab("syncHomeTagFromSidebar", "revealItem"), box, { filename: "sync-home-tag" });
+  box.syncHomeTagFromSidebar();
+  assert.equal(box.homeTagId, "astral");
+  assert.equal(box.removed, "open");
+  box.viewingHome = false;
+  box.homeTagId = null;
+  box.removed = null;
+  box.syncHomeTagFromSidebar();
+  assert.equal(box.homeTagId, null);
+  assert.equal(box.removed, null);
+  box.viewingHome = true;
+  box.focus = true;
+  box.syncHomeTagFromSidebar();
+  assert.equal(box.homeTagId, null);
+  assert.match(grab("renderTagChip", "renderTagCloud"), /syncHomeTagFromSidebar\(\)/);
+  assert.match(grab("openListTools", "addSelectedNotesToTag"), /syncHomeTagFromSidebar\(\)/);
+});
