@@ -573,32 +573,39 @@
 
   /* display:block matters — a <label> is inline by default, so the field's
      width:100% would resolve against the sidebar instead of this box.
-     A long jot grows the field; tags and the note type show once it no
-     longer fits on one line. */
+     A long jot grows the field; tags, the note type, and status show once it
+     no longer fits on one line. */
   .note-search{ display:block; position:relative; margin:10px 14px 2px; }
   .note-search svg{ position:absolute; top:17px; left:10px; width:15px; height:15px; color:var(--ink-faint); transform:translateY(-50%); pointer-events:none; z-index:1; transition:color .16s; }
   .note-search:focus-within svg{ color:var(--accent); }
   .note-search-probe{ position:absolute; left:0; top:0; height:0; overflow:hidden; visibility:hidden; pointer-events:none; white-space:pre; font:.77rem/1.4 "DM Sans",sans-serif; }
-  .note-search textarea{ display:block; width:100%; height:34px; min-height:34px; max-height:34px; margin:0; padding:7px 62px 7px 32px; border:1px solid var(--line); border-radius:10px; outline:none; resize:none; overflow:hidden; color:var(--ink); background:rgba(255,255,255,.035); font:.77rem/1.4 "DM Sans",sans-serif; transition:border-color .16s,background .16s,box-shadow .2s; }
+  .note-search textarea{ display:block; width:100%; height:34px; min-height:34px; max-height:34px; margin:0; padding:7px 36px 7px 32px; border:1px solid var(--line); border-radius:10px; outline:none; resize:none; overflow:hidden; color:var(--ink); background:rgba(255,255,255,.035); font:.77rem/1.4 "DM Sans",sans-serif; transition:border-color .16s,background .16s,box-shadow .2s,padding-right .2s cubic-bezier(.2,.8,.2,1); }
   .note-search textarea::placeholder{ color:var(--ink-faint); }
   .note-search textarea:focus{ border-color:var(--accent-line); background:rgba(255,255,255,.055); box-shadow:0 0 0 3px var(--accent-soft); }
+  .note-search.has-value textarea{ padding-right:62px; }
   .note-search > button{ position:absolute; right:4px; top:4px; width:26px; height:26px; display:none; place-items:center; border:0; border-radius:7px; color:var(--ink-faint); background:transparent; cursor:pointer; font-size:1rem; }
   .note-search > button:hover{ color:var(--ink); background:rgba(255,255,255,.08); }
-  .note-search > .quick-add-note{ right:31px; display:grid; color:var(--accent); font-size:1.05rem; font-weight:700; }
+  /* The add button sits on the right edge until the clear button appears, then
+     slides left to make room. The clear button stays in the DOM so that slide
+     can run; visibility hides it from clicks and the tab order until then. */
+  .note-search > .quick-add-note{ right:4px; display:grid; color:var(--accent); font-size:1.05rem; font-weight:700; transition:right .2s cubic-bezier(.2,.8,.2,1),color .16s,background .16s; }
   .note-search > .quick-add-note:hover{ color:var(--ink); background:var(--accent-soft); }
-  .note-search.has-value #clearNoteSearch{ display:grid; }
+  .note-search.has-value > .quick-add-note{ right:31px; }
+  .note-search > #clearNoteSearch{ display:grid; opacity:0; visibility:hidden; pointer-events:none; transition:opacity .1s ease,visibility 0s linear .1s; }
+  .note-search.has-value > #clearNoteSearch{ opacity:1; visibility:visible; pointer-events:auto; transition:opacity .08s ease .12s,visibility 0s; }
   .note-search-meta{ display:none; }
   .note-search.is-expanded{ display:grid; grid-template-columns:minmax(0,1fr) auto auto; grid-template-areas:"field field field" "meta add clear"; align-items:end; gap:2px 4px; padding:2px 4px 4px 2px; border:1px solid var(--accent-line); border-radius:14px; background:rgba(255,255,255,.045); box-shadow:0 0 0 3px var(--accent-soft); }
-  .note-search.is-expanded textarea{ grid-area:field; height:auto; min-height:52px; max-height:min(42vh,240px); padding:8px 10px 8px 32px; border-color:transparent; border-width:0; background:transparent; box-shadow:none; overflow:hidden; }
+  .note-search.is-expanded textarea{ grid-area:field; height:auto; min-height:52px; max-height:min(42vh,240px); padding:8px 10px 8px 32px; border-color:transparent; border-width:0; background:transparent; box-shadow:none; overflow:hidden; transition:border-color .16s,background .16s,box-shadow .2s; }
   .note-search.is-expanded textarea:focus{ border-color:transparent; background:transparent; box-shadow:none; }
   .note-search.is-expanded .note-search-meta{ display:flex; grid-area:meta; flex-wrap:wrap; align-items:center; gap:6px; min-width:0; padding:2px 0 2px 8px; }
   .note-search.is-expanded > .quick-add-note,
   .note-search.is-expanded > #clearNoteSearch{ position:static; align-self:end; margin:0 0 2px; }
-  .note-search.is-expanded > .quick-add-note{ grid-area:add; }
-  .note-search.is-expanded > #clearNoteSearch{ grid-area:clear; }
-  .qs-type,.qs-add-tag{ display:inline-flex; align-items:center; gap:5px; height:26px; max-width:100%; padding:0 9px; border:1px solid var(--line); border-radius:999px; color:var(--ink-dim); background:rgba(255,255,255,.05); cursor:pointer; font:600 .68rem "DM Sans",sans-serif; }
-  .qs-type{ color:var(--accent); border-color:var(--accent-line); background:var(--accent-soft); }
-  .qs-type:hover,.qs-add-tag:hover{ color:var(--ink); border-color:var(--accent-line); }
+  .note-search.is-expanded > .quick-add-note{ grid-area:add; right:auto; transition:color .16s,background .16s; }
+  .note-search.is-expanded > #clearNoteSearch{ grid-area:clear; opacity:1; visibility:visible; pointer-events:auto; transition:none; }
+  .qs-type,.qs-add-tag,.qs-status{ display:inline-flex; align-items:center; gap:5px; height:26px; max-width:100%; padding:0 9px; border:1px solid var(--line); border-radius:999px; color:var(--ink-dim); background:rgba(255,255,255,.05); cursor:pointer; font:600 .68rem "DM Sans",sans-serif; }
+  .qs-type,.qs-status{ color:var(--accent); border-color:var(--accent-line); background:var(--accent-soft); }
+  .qs-status[hidden]{ display:none; }
+  .qs-type:hover,.qs-add-tag:hover,.qs-status:hover{ color:var(--ink); border-color:var(--accent-line); }
   .qs-caret{ font-size:.7rem; opacity:.75; }
   .qs-tags{ display:flex; flex-wrap:wrap; gap:6px; min-width:0; }
   .qs-tag{ display:inline-flex; align-items:center; gap:5px; max-width:150px; height:26px; padding:0 6px 0 8px; border:1px solid color-mix(in srgb, var(--tg, var(--accent)) 46%, transparent); border-radius:999px; color:var(--ink); background:color-mix(in srgb, var(--tg, var(--accent)) 16%, transparent); cursor:pointer; font:600 .68rem "DM Sans",sans-serif; }
@@ -1686,7 +1693,7 @@
     <div class="d-head"><button class="home-brand" id="homeBrand" type="button" title="Home" aria-label="Home"><h2>Second Brain Notes</h2><small>by Astral Studios LLC</small></button><button class="sidebar-fullscreen" id="sidebarFullscreenBtn" type="button" title="Open sidebar focus" aria-label="Open sidebar focus"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M8 3H3v5M16 3h5v5M21 16v5h-5M3 16v5h5"/></svg></button></div>
     <button class="d-new" id="newBtn"><span class="plus" aria-hidden="true">＋</span><span>New</span></button>
     <div class="d-scroll">
-      <label class="note-search" id="noteSearchWrap"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="11" cy="11" r="6"/><path d="m16 16 4 4"/></svg><textarea id="noteSearch" rows="1" autocomplete="off" placeholder="Search notes…" aria-label="Search notes or jot a note"></textarea><span class="note-search-probe" id="noteSearchProbe" aria-hidden="true"></span><div class="note-search-meta" id="noteSearchMeta"><button class="qs-type" id="noteSearchTypeBtn" type="button" title="Change note type" aria-haspopup="menu">Todo</button><div class="qs-tags" id="noteSearchTags"></div><button class="qs-add-tag" id="noteSearchTagBtn" type="button" title="Add tags" aria-label="Add tags">＋ Tag</button></div><button class="quick-add-note" id="quickAddNoteBtn" type="button" title="Add note from search" aria-label="Add note from search">＋</button><button id="clearNoteSearch" type="button" aria-label="Clear note search">×</button></label>
+      <label class="note-search" id="noteSearchWrap"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="11" cy="11" r="6"/><path d="m16 16 4 4"/></svg><textarea id="noteSearch" rows="1" autocomplete="off" placeholder="Search notes…" aria-label="Search notes or jot a note"></textarea><span class="note-search-probe" id="noteSearchProbe" aria-hidden="true"></span><div class="note-search-meta" id="noteSearchMeta"><button class="qs-type" id="noteSearchTypeBtn" type="button" title="Change note type" aria-haspopup="menu">Todo</button><button class="qs-status" id="noteSearchStatusBtn" type="button" title="Change status" aria-haspopup="menu" hidden>Status</button><div class="qs-tags" id="noteSearchTags"></div><button class="qs-add-tag" id="noteSearchTagBtn" type="button" title="Add tags" aria-label="Add tags">＋ Tag</button></div><button class="quick-add-note" id="quickAddNoteBtn" type="button" title="Add note from search" aria-label="Add note from search">＋</button><button id="clearNoteSearch" type="button" aria-label="Clear note search">×</button></label>
       <div class="sec-h"><button class="section-toggle" id="tagsToggleBtn" type="button" aria-controls="tags" aria-expanded="true" title="Collapse tags"><span>Tags</span><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m6 9 6 6 6-6"/></svg></button><button id="addTagBtn" title="New tag">＋</button></div>
       <div id="tags"></div>
       <div id="tagGroups"></div>
@@ -1912,7 +1919,7 @@
      Declaring these any later crashed the whole script at boot on any device
      that had a todo in localStorage — which is also why phones hung on
      "Checking your secure session…" and showed no status dropdown. */
-  var TODO_STATUSES=["queued","in progress","ready to test","failed test","passed test"];
+  var TODO_STATUSES=["brainstorming","queued","in progress","ready to test","failed test","passed test"];
   function cleanStatus(value){ var s=String(value==null?"":value).trim().toLowerCase().replace(/[-_]+/g," ").replace(/\s+/g," "); if(!s||s==="clear"||s==="none"||s==="null") return ""; return TODO_STATUSES.indexOf(s)>=0?s:""; }
   function todoStatus(it){ return isTodoNote(it)||it.type==="todo"?cleanStatus(it&&it.status):""; }
   function statusLabel(value){ var s=cleanStatus(value); return s?s.charAt(0).toUpperCase()+s.slice(1):""; }
@@ -2051,7 +2058,7 @@
   function revisionWeight(before,after){ return Math.max(1,Math.ceil(documentChangeSize(revisionPayload(before),revisionPayload(after))/120)); }
   function syncStateSignature(data){
     var copy=cloneData(data||{});
-    ["version","versionChangedAt","lastLocalChange","lastCloudSync","pendingCloudSync","syncBaseline","selectedItemIds","selectingNotes","tagAssignMode","noteSearch","quickCaptureType","quickCaptureTagIds","sidebarView","upcomingFilter","upcomingSort"].forEach(function(key){ delete copy[key]; });
+    ["version","versionChangedAt","lastLocalChange","lastCloudSync","pendingCloudSync","syncBaseline","selectedItemIds","selectingNotes","tagAssignMode","noteSearch","quickCaptureType","quickCaptureTagIds","quickCaptureStatus","sidebarView","upcomingFilter","upcomingSort"].forEach(function(key){ delete copy[key]; });
     var itemFingerprints={};
     (copy.items||[]).forEach(function(item){ if(item&&item.id) itemFingerprints[item.id]=itemSyncSignature(item); });
     copy.items=itemFingerprints;
@@ -2634,7 +2641,7 @@
   /* Always cold-boot into the All notes list. A stuck queue/upcoming/hidden view used to survive reloads and look like "all my notes are gone" - views other than All are only reachable by tapping their buttons. */
   state.sidebarView="all";
   state.version=Math.max(1,Number(state.version)||Number(state.updated)||1);
-  state.noteSearch=typeof state.noteSearch==="string"?state.noteSearch:""; state.quickCaptureType=typeof state.quickCaptureType==="string"?state.quickCaptureType:"todo"; state.quickCaptureTagIds=Array.isArray(state.quickCaptureTagIds)?state.quickCaptureTagIds.filter(function(id){ return typeof id==="string"&&id; }):[];
+  state.noteSearch=typeof state.noteSearch==="string"?state.noteSearch:""; state.quickCaptureType=typeof state.quickCaptureType==="string"?state.quickCaptureType:"todo"; state.quickCaptureTagIds=Array.isArray(state.quickCaptureTagIds)?state.quickCaptureTagIds.filter(function(id){ return typeof id==="string"&&id; }):[]; state.quickCaptureStatus=cleanStatus(state.quickCaptureStatus);
   state.listSort=state.listSort||"updated";
   state.upcomingSort=normalizeUpcomingSort(state.upcomingSort);
   state.upcomingFilter=normalizeUpcomingFilter(state.upcomingFilter);
@@ -2661,7 +2668,7 @@
   if(ensureHomeExtras()) persistLocalStateQuietly();
 
   function blankDeviceState(){
-    return {items:[],folders:[],tags:[],tagGroups:[],tagOrder:[],deletedItems:{},deletedTags:{},currentId:null,motion:true,theme:"nebula",darkness:82,enabledTypes:defaultEnabledTypes(),typeDefaults:TYPE_DEFAULTS_VERSION,noteInsertOptions:{file:true,paragraph:true,checklist:true,comment:true,prompt:true,heading:true,chapter:true,group:true,code:true},tagsCollapsed:false,typesCollapsed:false,allNotesCollapsed:false,promptsCollapsed:false,promptStatusCollapsed:{},focusNoteBody:true,quickAiHandoff:true,allNotesName:"All notes",readChapterNames:false,filterTag:null,filterType:"",filterStatus:"",sidebarView:"all",tagAssignMode:false,noteSearch:"",quickCaptureType:"todo",quickCaptureTagIds:[],listSort:"updated",upcomingSort:"due",upcomingFilter:{range:"all",tagId:null,showDone:false},homeLayout:defaultHomeLayout(),homeExtrasVersion:1,homeScratch:"",version:1,agentSettings:defaultAgentSettings(),pendingCloudSync:false,syncBaseline:null};
+    return {items:[],folders:[],tags:[],tagGroups:[],tagOrder:[],deletedItems:{},deletedTags:{},currentId:null,motion:true,theme:"nebula",darkness:82,enabledTypes:defaultEnabledTypes(),typeDefaults:TYPE_DEFAULTS_VERSION,noteInsertOptions:{file:true,paragraph:true,checklist:true,comment:true,prompt:true,heading:true,chapter:true,group:true,code:true},tagsCollapsed:false,typesCollapsed:false,allNotesCollapsed:false,promptsCollapsed:false,promptStatusCollapsed:{},focusNoteBody:true,quickAiHandoff:true,allNotesName:"All notes",readChapterNames:false,filterTag:null,filterType:"",filterStatus:"",sidebarView:"all",tagAssignMode:false,noteSearch:"",quickCaptureType:"todo",quickCaptureTagIds:[],quickCaptureStatus:"",listSort:"updated",upcomingSort:"due",upcomingFilter:{range:"all",tagId:null,showDone:false},homeLayout:defaultHomeLayout(),homeExtrasVersion:1,homeScratch:"",version:1,agentSettings:defaultAgentSettings(),pendingCloudSync:false,syncBaseline:null};
   }
   function clearAttachmentStore(){
     if(!window.indexedDB) return;
@@ -3029,7 +3036,7 @@
   /* Queue: open todos grouped by status. Status flips made by the assistant
      through the agent API land in state via the live account merge, so the
      groups below re-render on every renderList() without a reload. */
-  var QUEUE_GROUPS=[["in progress","In progress","Nothing is in progress."],["queued","Queued","Nothing is queued."],["ready to test","Ready to test","Nothing is ready to test."],["failed test","Failed test","Nothing failed a test."]];
+  var QUEUE_GROUPS=[["in progress","In progress","Nothing is in progress."],["brainstorming","Brainstorming","Nothing is brainstorming."],["queued","Queued","Nothing is queued."],["ready to test","Ready to test","Nothing is ready to test."],["failed test","Failed test","Nothing failed a test."]];
   function queueableItem(it){
     if(!it||it.hidden||isInTrash(it)) return false;
     if(it.done) return false;
@@ -9414,10 +9421,12 @@
     quickCaptureChoices().forEach(function(row){ known[row.id]=true; });
     if(!known[state.quickCaptureType]) state.quickCaptureType=defaultQuickCaptureType();
     state.quickCaptureTagIds=quickCaptureTagIds();
+    state.quickCaptureStatus=cleanStatus(state.quickCaptureStatus);
   }
   function resetQuickCaptureDraft(){
     state.quickCaptureType=defaultQuickCaptureType();
     state.quickCaptureTagIds=[];
+    state.quickCaptureStatus="";
   }
   function quickCaptureIcon(id){
     if(id==="todo"||id==="workout") return ICON_TODO;
@@ -9475,7 +9484,7 @@
     if(addBtn) addBtn.title=expanded?"Add note (Ctrl+Enter)":"Add note from search";
   }
   function renderQuickCaptureMeta(){
-    var typeBtn=$("noteSearchTypeBtn"), tagsBox=$("noteSearchTags");
+    var typeBtn=$("noteSearchTypeBtn"), tagsBox=$("noteSearchTags"), statusBtn=$("noteSearchStatusBtn");
     if(!typeBtn||!tagsBox) return;
     sanitizeQuickCapture();
     var current=quickCaptureChoices().filter(function(row){ return row.id===state.quickCaptureType; })[0];
@@ -9489,6 +9498,21 @@
     typeBtn.appendChild(label);
     typeBtn.appendChild(caret);
     typeBtn.setAttribute("aria-label","Note type, "+label.textContent);
+    if(statusBtn){
+      var todo=state.quickCaptureType==="todo";
+      var picked=todo?cleanStatus(state.quickCaptureStatus):"";
+      statusBtn.hidden=!todo;
+      statusBtn.textContent="";
+      var statusName=document.createElement("span");
+      statusName.textContent=picked?statusLabel(picked):"Status";
+      var statusCaret=document.createElement("span");
+      statusCaret.className="qs-caret";
+      statusCaret.setAttribute("aria-hidden","true");
+      statusCaret.textContent="▾";
+      statusBtn.appendChild(statusName);
+      statusBtn.appendChild(statusCaret);
+      statusBtn.setAttribute("aria-label", picked?"Status, "+statusLabel(picked):"Status, none");
+    }
     tagsBox.innerHTML="";
     quickCaptureTagIds().forEach(function(id){
       var tag=tagById(id);
@@ -9524,6 +9548,20 @@
       quickCaptureChoices().forEach(function(choice){
         menu.appendChild(mkItem(quickCaptureIcon(choice.id), choice.label, state.quickCaptureType===choice.id, function(){
           state.quickCaptureType=choice.id;
+          closeMenu();
+          persist();
+          renderQuickCaptureMeta();
+          if(noteSearch) noteSearch.focus();
+        }));
+      });
+    });
+  }
+  function openQuickCaptureStatusMenu(anchor){
+    openMenu(anchor,function(menu){
+      menu.appendChild(menuTitle("Status"));
+      [["","No status"]].concat(TODO_STATUSES.map(function(status){ return [status,statusLabel(status)]; })).forEach(function(option){
+        menu.appendChild(mkItem('<span style="width:8px;height:8px;border-radius:50%;border:1.5px solid currentColor;display:inline-block"></span>', option[1], cleanStatus(state.quickCaptureStatus)===option[0], function(){
+          state.quickCaptureStatus=option[0];
           closeMenu();
           persist();
           renderQuickCaptureMeta();
@@ -9616,7 +9654,7 @@
       var def=typeModule(kind);
       note=def&&def.create?def.create():newNoteItem();
     }
-    if(kind==="todo") note.dueDate=parseDueDateText(raw)||"";
+    if(kind==="todo"){ note.dueDate=parseDueDateText(raw)||""; note.status=cleanStatus(state.quickCaptureStatus); }
     fillQuickCaptureBody(note, raw);
     note.title=quickNoteFallbackTitle(raw);
     var ids=Array.isArray(note.tagIds)?note.tagIds.slice():[];
@@ -12604,6 +12642,7 @@
     };
     $("quickAddNoteBtn").onclick=addQuickNoteFromSearch;
     $("noteSearchTypeBtn").onclick=function(event){ event.preventDefault(); event.stopPropagation(); openQuickCaptureTypeMenu(this); };
+    $("noteSearchStatusBtn").onclick=function(event){ event.preventDefault(); event.stopPropagation(); openQuickCaptureStatusMenu(this); };
     $("noteSearchTagBtn").onclick=function(event){ event.preventDefault(); event.stopPropagation(); openQuickCaptureTagMenu(this); };
     if(window.ResizeObserver&&noteSearchWrap) new ResizeObserver(function(){ syncNoteSearchChrome(true); }).observe(noteSearchWrap);
     if(document.fonts&&document.fonts.ready) document.fonts.ready.then(function(){ syncNoteSearchChrome(); });

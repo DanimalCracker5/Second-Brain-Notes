@@ -73,7 +73,7 @@ vm.createContext(sandbox);
 ].forEach(function (pair) {
   vm.runInContext(grab(pair[0], pair[1]), sandbox, { filename: pair[0] });
 });
-vm.runInContext("var TODO_STATUSES=[\"queued\",\"in progress\",\"ready to test\",\"failed test\",\"passed test\"]; var lastPersistChangedIds=[]; var currentUser=null;", sandbox);
+vm.runInContext("var TODO_STATUSES=[\"brainstorming\",\"queued\",\"in progress\",\"ready to test\",\"failed test\",\"passed test\"]; var lastPersistChangedIds=[]; var currentUser=null;", sandbox);
 vm.runInContext(grab("syncStateSignature", functionAnchor("bumpLocalVersions")), sandbox, { filename: "syncStateSignature" });
 vm.runInContext(grab("bumpLocalVersions", functionAnchor("itemSetChanged")), sandbox, { filename: "bumpLocalVersions" });
 
@@ -83,7 +83,10 @@ function todoOf(status, extra) {
   return item;
 }
 
-test("status values are the five Daniel named; aliases normalize; junk becomes empty", function () {
+test("status values keep brainstorming above queued; aliases normalize; junk becomes empty", function () {
+  assert.match(html, /var TODO_STATUSES=\["brainstorming","queued","in progress","ready to test","failed test","passed test"\]/);
+  assert.deepEqual(sandbox.cleanStatus("brainstorming"), "brainstorming");
+  assert.deepEqual(sandbox.cleanStatus("Brainstorming"), "brainstorming");
   assert.deepEqual(sandbox.cleanStatus("queued"), "queued");
   assert.deepEqual(sandbox.cleanStatus("In Progress"), "in progress");
   assert.deepEqual(sandbox.cleanStatus("ready-to-test"), "ready to test");

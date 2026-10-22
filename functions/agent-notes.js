@@ -10,7 +10,7 @@ const MAX_TEXT = 100000;
 const MAX_BLOCKS = 40;
 const CODE_LANGUAGES = ["javascript", "html", "css", "python", "csharp", "json", "sql"];
 const BLOCK_TYPES = ["paragraph", "text", "heading", "chapter", "comment", "prompt", "group", "code"];
-const TODO_STATUSES = ["queued", "in progress", "ready to test", "failed test", "passed test"];
+const TODO_STATUSES = ["brainstorming", "queued", "in progress", "ready to test", "failed test", "passed test"];
 
 const INSTRUCTIONS = [
   "This is the owner's Second Brain: their notes and todos.",
@@ -20,7 +20,7 @@ const INSTRUCTIONS = [
   "Creating or editing shows up on the devices where they are signed in.",
   "Do not delete anything unless they explicitly asked, and then pass confirm true.",
   "Hidden notes and the in-app assistant are left out unless include_hidden is true.",
-  "Todos can carry a status: queued, in progress, ready to test, failed test, or passed test.",
+  "Todos can carry a status: brainstorming, queued, in progress, ready to test, failed test, or passed test.",
   "Status applies only to todos, never to plain notes.",
   "Dates are calendar days. Prefer YYYY-MM-DD. today and tomorrow use UTC."
 ].join(" ");
@@ -406,7 +406,7 @@ function applyTodoFields(item, args, now) {
   if (args.status != null) {
     const raw = String(args.status).trim().toLowerCase().replace(/[-_]+/g, " ").replace(/\s+/g, " ");
     if (raw && ["clear", "none", "null"].indexOf(raw) < 0 && TODO_STATUSES.indexOf(raw) < 0) {
-      throw toolError("Unknown status \"" + raw + "\". Use queued, in progress, ready to test, failed test, passed test, or clear.");
+      throw toolError("Unknown status \"" + raw + "\". Use brainstorming, queued, in progress, ready to test, failed test, passed test, or clear.");
     }
     if (!isTodo(item)) {
       throw toolError("Status applies only to todos. \"" + (item.title || "This note") + "\" is a plain note.");
@@ -532,7 +532,7 @@ function listTodos(account, args) {
     const wanted = String(args.status).trim().toLowerCase().replace(/[-_]+/g, " ").replace(/\s+/g, " ");
     if (wanted === "none") items = items.filter(function (item) { return !cleanStatus(item.status); });
     else if (TODO_STATUSES.indexOf(wanted) >= 0) items = items.filter(function (item) { return cleanStatus(item.status) === wanted; });
-    else throw toolError("Unknown status \"" + wanted + "\". Use queued, in progress, ready to test, failed test, passed test, none, or leave it out.");
+    else throw toolError("Unknown status \"" + wanted + "\". Use brainstorming, queued, in progress, ready to test, failed test, passed test, none, or leave it out.");
   }
   items.sort(function (a, b) { return String(a.dueDate || "9999").localeCompare(String(b.dueDate || "9999")) || ((Number(b.updated) || 0) - (Number(a.updated) || 0)); });
   const limit = clampLimit(args.limit, 50, 100);
@@ -673,7 +673,7 @@ function toolDefs() {
         kind: { type: "string", enum: ["note", "todo"], description: "Defaults to note." },
         content: { type: "string", description: "Body text when you are not passing blocks." },
         due_date: due,
-        status: { type: "string", description: "Todo status. Applies only when kind is todo: queued, in progress, ready to test, failed test, or passed test." },
+        status: { type: "string", description: "Todo status. Applies only when kind is todo: brainstorming, queued, in progress, ready to test, failed test, or passed test." },
         tags: { type: "array", items: { type: "string" } },
         blocks: { type: "array", description: "Optional structured blocks: paragraph, heading, chapter, comment, prompt, group, or code.", items: { type: "object" } }
       }, required: ["title"] }
@@ -691,7 +691,7 @@ function toolDefs() {
         tags: { type: "array", items: { type: "string" } },
         done: { type: "boolean" },
         due_date: due,
-        status: { type: "string", description: "Todo status. Applies only to todos: queued, in progress, ready to test, failed test, passed test, or clear." }
+        status: { type: "string", description: "Todo status. Applies only to todos: brainstorming, queued, in progress, ready to test, failed test, passed test, or clear." }
       } }
     },
     {
@@ -699,7 +699,7 @@ function toolDefs() {
       description: "List todos with done state, due dates, and status.",
       inputSchema: { type: "object", properties: {
         filter: { type: "string", enum: ["open", "done", "overdue", "upcoming", "all"], description: "Defaults to open." },
-        status: { type: "string", description: "Optional status filter: queued, in progress, ready to test, failed test, passed test, or none." },
+        status: { type: "string", description: "Optional status filter: brainstorming, queued, in progress, ready to test, failed test, passed test, or none." },
         limit: { type: "integer" },
         include_hidden: { type: "boolean" }
       } }
@@ -712,7 +712,7 @@ function toolDefs() {
         query: { type: "string" },
         done: { type: "boolean" },
         due_date: due,
-        status: { type: "string", description: "queued, in progress, ready to test, failed test, passed test, or clear." },
+        status: { type: "string", description: "brainstorming, queued, in progress, ready to test, failed test, passed test, or clear." },
         detail: { type: "string", description: "Replaces the todo body when set." },
         title: { type: "string" }
       } }
@@ -724,7 +724,7 @@ function toolDefs() {
         title: { type: "string" },
         detail: { type: "string" },
         due_date: due,
-        status: { type: "string", description: "Optional todo status: queued, in progress, ready to test, failed test, or passed test." },
+        status: { type: "string", description: "Optional todo status: brainstorming, queued, in progress, ready to test, failed test, or passed test." },
         tags: { type: "array", items: { type: "string" } }
       }, required: ["title"] }
     },

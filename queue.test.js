@@ -25,7 +25,7 @@ const sandbox = {
   cleanStatus: function (value) {
     var s = String(value == null ? "" : value).trim().toLowerCase().replace(/[-_]+/g, " ").replace(/\s+/g, " ");
     if (!s || s === "clear" || s === "none" || s === "null") return "";
-    return ["queued", "in progress", "ready to test", "failed test", "passed test"].indexOf(s) >= 0 ? s : "";
+    return ["brainstorming", "queued", "in progress", "ready to test", "failed test", "passed test"].indexOf(s) >= 0 ? s : "";
   },
   $: function () { return null; }
 };
@@ -42,9 +42,9 @@ function todoOf(status, extra) {
   return item;
 }
 
-test("queue groups cover all four statuses with empty-state copy", function () {
+test("queue groups cover the open statuses, with brainstorming above queued", function () {
   const groups = vm.runInContext("queueGroups([])", sandbox);
-  assert.deepEqual(groups.map(function (g) { return g.label; }), ["In progress", "Queued", "Ready to test", "Failed test"]);
+  assert.deepEqual(groups.map(function (g) { return g.label; }), ["In progress", "Brainstorming", "Queued", "Ready to test", "Failed test"]);
   groups.forEach(function (group) {
     assert.ok(group.empty && group.empty.length > 4, "empty state text for " + group.label);
     assert.deepEqual(group.items, []);
@@ -59,7 +59,7 @@ test("queueItems keeps open todos with a status and drops the rest", function ()
 
 test("queueGroups slots each status into its group", function () {
   const labels = vm.runInContext("queueGroups(queueItems()).map(function(g){ return g.label+':'+g.items.length; })", sandbox);
-  assert.deepEqual(labels, ["In progress:1", "Queued:1", "Ready to test:0", "Failed test:0"]);
+  assert.deepEqual(labels, ["In progress:1", "Brainstorming:0", "Queued:1", "Ready to test:0", "Failed test:0"]);
 });
 
 test("the sidebar no longer has a separate Queue button, and rows render the assistant badge", function () {

@@ -134,7 +134,7 @@ function baseTodo(id, extra) {
   return Object.assign({ id: id, type: "note", todo: true, done: false, title: "Test todo", body: "", blocks: [{ id: id + "b", type: "text", text: "" }], dueDate: "", updated: 1, version: 1, versionChangedAt: 1 }, extra || {});
 }
 
-test("cleanStatus accepts the five statuses, normalizes aliases, and clears junk", function () {
+test("cleanStatus accepts every status, including brainstorming, and clears junk", function () {
   notes.TODO_STATUSES.forEach(function (status) {
     assert.equal(notes.cleanStatus(status), status);
   });

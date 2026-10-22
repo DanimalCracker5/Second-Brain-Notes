@@ -29,6 +29,7 @@ test("sidebar search is a growing note field with type and tag controls", functi
   const drawer = html.slice(html.indexOf('<aside class="drawer">'), html.indexOf('<div class="main">'));
   assert.match(drawer, /<textarea id="noteSearch"/);
   assert.match(drawer, /id="noteSearchTypeBtn"/);
+  assert.match(drawer, /id="noteSearchStatusBtn"/);
   assert.match(drawer, /id="noteSearchTagBtn"/);
   assert.match(drawer, /id="noteSearchMeta"/);
   assert.ok(drawer.indexOf('id="noteSearchWrap"') < drawer.indexOf('id="tagsToggleBtn"'));
@@ -57,6 +58,11 @@ const sandbox = {
   syncNoteBody: function (note) { note.body = (note.blocks || []).map(function (block) { return block.text || ""; }).join("\n"); },
   escapeHtml: function (value) { return String(value).replace(/</g, "&lt;"); },
   parseDueDateText: function (text) { return /tomorrow/i.test(text) ? "2099-01-02" : ""; },
+  cleanStatus: function (value) {
+    var s = String(value == null ? "" : value).trim().toLowerCase().replace(/[-_]+/g, " ").replace(/\s+/g, " ");
+    if (!s || s === "clear" || s === "none" || s === "null") return "";
+    return ["brainstorming", "queued", "in progress", "ready to test", "failed test", "passed test"].indexOf(s) >= 0 ? s : "";
+  },
   quickNoteFallbackTitle: function (text) { return String(text || "").trim().split(/\s+/).slice(0, 6).join(" "); },
   Date: Date
 };
@@ -109,4 +115,15 @@ test("quick capture keeps the active filter tag and any tags picked in the draft
 test("quick capture type list follows the types that are turned on", function () {
   const labels = sandbox.quickCaptureChoices().map(function (row) { return row.label; });
   assert.deepEqual(labels, ["Todo", "Note", "YouTube Script", "File"]);
+});
+
+test("quick capture stamps a todo status and leaves other kinds alone", function () {
+  sandbox.state.quickCaptureStatus = "brainstorming";
+  const todo = sandbox.newQuickCaptureItem("Sketch the opening", "todo");
+  assert.equal(todo.status, "brainstorming");
+  const note = sandbox.newQuickCaptureItem("Sketch the opening", "note");
+  assert.equal(note.status, undefined);
+  sandbox.state.quickCaptureStatus = "someday";
+  assert.equal(sandbox.newQuickCaptureItem("Sketch", "todo").status, "");
+  sandbox.state.quickCaptureStatus = "";
 });
