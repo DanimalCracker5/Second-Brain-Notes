@@ -4594,7 +4594,7 @@
       var leading=todoItem?'<button class="side-todo-check'+(it.done?" done":"")+'"'+todoStyle+' aria-label="'+(it.done?"Mark incomplete":"Mark complete")+'">'+(it.done?"✓":"")+'</button>':'<span class="item-icon"'+iconStyle+'>'+icon+'</span>';
       var lockStatus=it.locked?'<span class="item-lock" title="Deletion locked" aria-label="Deletion locked">'+ICON_LOCK+'</span>':"";
       var selectControl=state.selectingNotes?'<input class="note-select" type="checkbox" aria-label="Select note" '+(selected?'checked':'')+'>':'';
-      var statusHtml=(todoItem&&todoStatus(it))?'<button class="status-chip" type="button" title="Change status">'+statusLabel(it.status)+'</button>':"";
+      var statusHtml=(todoItem&&todoStatus(it))?'<button class="status-chip" type="button" title="Change status">'+statusLabel(it.status)+'<span class="status-caret" aria-hidden="true"> ▾</span></button>':"";
       el.innerHTML=selectControl+leading+'<div class="dt"><div class="dt-title"></div><div class="dt-meta"><span class="m">'+metaText+'</span>'+statusHtml+dots+lockStatus+'</div></div><button class="dx" type="button" title="'+(todoItem&&it.done?"Move completed todo to Trash":"Item actions")+'" aria-label="'+(todoItem&&it.done?"Move completed todo to Trash":"Item actions")+'">'+(todoItem&&it.done?ICON_DELETE:ICON_EDIT)+'</button>';
       el.querySelector(".dt-title").textContent=it.title||("Untitled "+itemLabel(it).toLowerCase());
       if(it.origin==="assistant"){ var originBadge=document.createElement("span"); originBadge.className="origin-badge"; originBadge.textContent="Added by Assistant"; el.appendChild(originBadge); }
