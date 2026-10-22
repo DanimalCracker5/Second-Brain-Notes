@@ -20,6 +20,7 @@ function grab(name, next) {
 }
 
 const sandbox = {
+  isInTrash: function () { return false; },
   isTodoNote: function (it) { return !!(it && (it.todo || it.type === "todo")); },
   cleanStatus: function (value) {
     var s = String(value == null ? "" : value).trim().toLowerCase().replace(/[-_]+/g, " ").replace(/\s+/g, " ");

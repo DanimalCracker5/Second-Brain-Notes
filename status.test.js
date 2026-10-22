@@ -28,6 +28,7 @@ const sandbox = {
   /* Stubs for neighbours the grabbed functions call. */
   blockForReading: function (note, block) { return block; },
   blockPlainText: function (block) { return block && block.text || ""; },
+  isInTrash: function () { return false; },
   itemKindForAgent: function (it) { return it && (it.todo || it.type === "todo") ? "todo" : (it.type || "note"); },
   itemText: function (it) { return (it.title || "") + " " + (it.body || ""); },
   firstTagName: function () { return ""; },
