@@ -676,3 +676,17 @@ exports.agent = onRequest({
   store: createStore(db),
   verifyUser: verifyUser
 }));
+
+const { createBrowseHandler } = require("./web-proxy");
+
+exports.browse = onRequest({
+  region: "us-central1",
+  timeoutSeconds: 30,
+  memory: "512MiB",
+  maxInstances: 10,
+  cors: false,
+  invoker: "public"
+}, createBrowseHandler({
+  verifyUser: verifyUser,
+  originAllowed: originAllowed
+}));

@@ -62,14 +62,66 @@ test("floating menus scroll inside an inner pane", function () {
 
 test("note pencil menu nests AI handoff and backups behind submenus", function () {
   const src = grab("showItemActions", "convertNoteTodo");
+  const shared = grab("sharedItemActions", "menuActionButton");
   assert.match(src, /view==="ai"/);
   assert.match(src, /view==="backup"/);
-  assert.match(src, /Bring into AI/);
-  assert.match(src, /Document backup/);
-  assert.match(src, /Hide from notes list/);
+  assert.match(src, /appendSharedMenuActions/);
+  assert.match(shared, /Bring into AI/);
+  assert.match(shared, /Document backup/);
+  assert.match(shared, /Hide from notes list/);
+  assert.match(shared, /Enter Brainstorming Mode/);
+  assert.match(shared, /Copy all/);
+  assert.match(shared, /Download as audio/);
   const chatgpt = src.indexOf('mkItem(ICON_SPARK,"ChatGPT"');
   const aiView = src.indexOf('view==="ai"');
   assert.ok(chatgpt > aiView, "ChatGPT belongs in the AI submenu, not the root list");
+  assert.equal(shared.indexOf('mkItem(ICON_SPARK,"ChatGPT"'), -1);
+});
+
+test("More and the pencil menu share one action list", function () {
+  const more = grab("renderMoreDocActions", "openMore");
+  const pencil = grab("appendSharedMenuActions", "runItemAction");
+  assert.match(more, /sharedItemActions\(it\)/);
+  assert.match(more, /action\.group!=="primary"/);
+  assert.match(pencil, /sharedItemActions\(it\)/);
+  const box = {
+    runtimeApiKeys: { ttsControl: null },
+    state: { quickAiHandoff: true },
+    ICON_LISTEN: "l", ICON_SHARE: "s", ICON_COPY: "c", ICON_BRAIN: "b",
+    ICON_NOTE: "n", ICON_CALENDAR: "cal", ICON_SPARK: "sp", ICON_DUPLICATE: "d",
+    ICON_DOWNLOAD: "dl", ICON_TODO: "t", ICON_AUDIO: "a", ICON_UP: "u", ICON_DOWN: "dn",
+    ICON_EYE: "e", ICON_EYE_OFF: "eo", ICON_LOCK: "lk", ICON_UNLOCK: "ul", ICON_DELETE: "x",
+    isTodoNote: function (it) { return !!(it && it.type === "note" && it.todo); },
+    itemShowsListen: function (it) { return !!(it && it.type !== "agent" && it.hasVoice); },
+    itemShowsShare: function (it) { return !!(it && it.type !== "agent" && it.shareable); },
+    itemShowsCopy: function (it) { return !!(it && it.type !== "agent" && it.type !== "audio"); },
+    shareActionLabel: function () { return "Share"; },
+    canBrainstormItem: function (it) { return !!(it && (it.type === "note" || it.type === "todo")); }
+  };
+  vm.createContext(box);
+  vm.runInContext(grab("sharedItemActions", "menuActionButton"), box, { filename: "sharedItemActions" });
+  const labels = box.sharedItemActions({ id: "n1", type: "note", todo: true, hasVoice: true, shareable: true }).map(function (action) { return action.label; });
+  assert.deepEqual(labels, [
+    "Listen",
+    "Share",
+    "Copy all",
+    "Enter Brainstorming Mode",
+    "Add or edit tags",
+    "Add due date",
+    "Bring into AI",
+    "Duplicate",
+    "Document backup",
+    "Convert to note",
+    "Download as audio",
+    "Move up",
+    "Move down",
+    "Hide from notes list",
+    "Lock from deletion",
+    "Delete"
+  ]);
+  box.state.quickAiHandoff = false;
+  const quiet = box.sharedItemActions({ id: "a1", type: "agent", locked: true }).map(function (action) { return action.id; });
+  assert.deepEqual(quiet, ["duplicate", "backup", "up", "down", "hide", "lock"]);
 });
 
 function drawerHtml() {
@@ -128,6 +180,7 @@ function deleteSandbox() {
     newNoteItem: function () { return { id: "seed", title: "Untitled" }; },
     visibleItems: function () { return box.state.items; },
     persist: function () { box.persisted = true; },
+    renderTags: function () { box.tagsRendered = true; },
     renderList: function () {},
     renderMain: function () { box.rerendered = true; },
     showToast: function (message) { box.toast = message; },
@@ -150,6 +203,7 @@ test("deleteSelectedNotes removes unlocked selected notes and skips locked ones"
   assert.equal(box.state.selectingNotes, false);
   assert.deepEqual(box.state.selectedItemIds, []);
   assert.equal(box.persisted, true);
+  assert.equal(box.tagsRendered, true);
   assert.equal(box.rerendered, true);
   assert.equal(box.toast, "Deleted 2 notes");
 });

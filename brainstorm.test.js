@@ -128,7 +128,8 @@ test("more actions live in the modal and the title can fade into the bar", funct
   assert.match(modal, /id="moreDocActions"/);
   assert.match(html, /Convert to todo/);
   assert.match(html, /more-doc-action/);
-  assert.match(html, /row\(ICON_DELETE, "Delete"/);
+  assert.match(html, /sharedItemActions\(it\)/);
+  assert.match(html, /add\("delete","safety",ICON_DELETE,"Delete"/);
   assert.match(html, /\.is-brainstorm\{/);
   assert.match(html, /\.bar-title\{/);
   assert.match(html, /function syncBarTitle\(/);
