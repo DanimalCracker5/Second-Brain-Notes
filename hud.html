@@ -88,6 +88,8 @@
 
   .done-row{ display:flex; justify-content:space-between; align-items:baseline; width:100%;
     font:400 clamp(16px,2vh,23px) var(--font-mono); letter-spacing:.08em; color:var(--ink-dim); }
+  .done-row[hidden]{ display:none; }
+  .empty[hidden]{ display:none; }
   .done-row b{ color:#9fe8c0; font-weight:500; }
   .quote{ font:italic 400 clamp(20px,2.6vh,30px)/1.4 var(--font-quote,Georgia,serif); color:var(--ink-dim); text-align:center; max-width:34ch; }
 
@@ -399,6 +401,8 @@
   document.addEventListener("webkitfullscreenchange",syncFsButtons);
 
   tickDate(); setInterval(tickDate,60000); syncFsButtons(); showToolbar();
+  /* Test/verification hook: feed items through the exact real-data path. */
+  window.__hudSetItems=function(items){ var grouped=groupTodos(items); latest.sections=grouped.sections; latest.doneCount=grouped.doneCount; render(); };
   initFirebase();
 })();
 </script>
