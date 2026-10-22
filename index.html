@@ -155,8 +155,10 @@
   .status-select.with-status{ color:var(--accent); border-color:var(--accent-line); background:var(--accent-soft); }
   .status-select:focus-visible{ outline:none; border-color:var(--accent-line); }
   .status-select option{ background:#0d0d11; color:#fff; font-weight:600; }
-  .status-chip{ display:inline-flex; align-items:center; padding:2px 7px; border:1px solid var(--accent-line); border-radius:7px; color:var(--accent); background:var(--accent-soft); font:600 .68rem "DM Sans",sans-serif; text-transform:capitalize; white-space:nowrap; cursor:pointer; }
-  .status-chip:hover{ border-color:var(--accent); }
+  .status-chip{ display:inline-flex; align-items:center; padding:2px 7px; border:1px solid var(--accent-line); border-radius:7px; color:var(--accent); background:var(--accent-soft); font:600 .68rem "DM Sans",sans-serif; text-transform:capitalize; white-space:nowrap; }
+  .status-caret-btn{ flex:none; display:inline-flex; align-items:center; justify-content:center; width:20px; height:20px; padding:0; margin-left:-3px; border:1px solid var(--accent-line); border-left:none; border-radius:0 7px 7px 0; color:var(--accent); background:var(--accent-soft); cursor:pointer; transition:border-color .15s; }
+  .status-caret-btn:hover{ border-color:var(--accent); color:var(--accent); }
+  .status-caret-btn .status-caret{ font-size:.6rem; line-height:1; }
   .due-prominent.overdue{ color:#fecaca; border-color:rgba(248,113,113,.45); background:rgba(248,113,113,.12); }
   .due-prominent svg{ width:15px; height:15px; }
 
@@ -4594,14 +4596,14 @@
       var leading=todoItem?'<button class="side-todo-check'+(it.done?" done":"")+'"'+todoStyle+' aria-label="'+(it.done?"Mark incomplete":"Mark complete")+'">'+(it.done?"✓":"")+'</button>':'<span class="item-icon"'+iconStyle+'>'+icon+'</span>';
       var lockStatus=it.locked?'<span class="item-lock" title="Deletion locked" aria-label="Deletion locked">'+ICON_LOCK+'</span>':"";
       var selectControl=state.selectingNotes?'<input class="note-select" type="checkbox" aria-label="Select note" '+(selected?'checked':'')+'>':'';
-      var statusHtml=(todoItem&&todoStatus(it))?'<button class="status-chip" type="button" title="Change status">'+statusLabel(it.status)+'<span class="status-caret" aria-hidden="true"> ▾</span></button>':"";
+      var statusHtml=(todoItem&&todoStatus(it))?'<span class="status-chip">'+statusLabel(it.status)+'</span><button class="status-caret-btn" type="button" title="Change status" aria-label="Change status"><span class="status-caret" aria-hidden="true">▾</span></button>':"";
       el.innerHTML=selectControl+leading+'<div class="dt"><div class="dt-title"></div><div class="dt-meta"><span class="m">'+metaText+'</span>'+statusHtml+dots+lockStatus+'</div></div><button class="dx" type="button" title="'+(todoItem&&it.done?"Move completed todo to Trash":"Item actions")+'" aria-label="'+(todoItem&&it.done?"Move completed todo to Trash":"Item actions")+'">'+(todoItem&&it.done?ICON_DELETE:ICON_EDIT)+'</button>';
       el.querySelector(".dt-title").textContent=it.title||("Untitled "+itemLabel(it).toLowerCase());
       if(it.origin==="assistant"){ var originBadge=document.createElement("span"); originBadge.className="origin-badge"; originBadge.textContent="Added by Assistant"; el.appendChild(originBadge); }
       if(todoItem) el.querySelector(".side-todo-check").onclick=function(e){ e.stopPropagation(); setTodoDone(it); };
       if(todoItem&&todoStatus(it)){
-        var chip=el.querySelector(".status-chip");
-        if(chip) chip.onclick=function(e){ e.stopPropagation(); openStatusPick(chip,it); };
+        var caretBtn=el.querySelector(".status-caret-btn");
+        if(caretBtn) caretBtn.onclick=function(e){ e.stopPropagation(); openStatusPick(caretBtn,it); };
       }
       if(state.selectingNotes) el.querySelector(".note-select").onclick=function(e){ e.stopPropagation(); toggleNoteSelection(it.id,e.currentTarget.checked); };
       if(it.type==="todo" && (it.todos||[]).length){
