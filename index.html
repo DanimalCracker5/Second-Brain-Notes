@@ -2480,6 +2480,7 @@
     if(it.type==="audio") ensureAudioItem(it);
     if(it.type==="agent") normalizeAgent(it);
     if(it.type==="workout") { it.workout=it.workout&&typeof it.workout==="object"?it.workout:{sessions:[],lastCompleted:null}; if(!Array.isArray(it.workout.sessions)) it.workout.sessions=[]; }
+    if(!(Number(it.trashedAt)>0)) delete it.trashedAt; else it.trashedAt=Number(it.trashedAt);
     if(it.collabChat!==undefined) it.collabChat=trimChatLog(it.collabChat);
     var def=itemModule(it);
     if(def&&def.normalize) def.normalize(it);
@@ -2734,10 +2735,63 @@
   }
   function allNotesTitle(){ return state.allNotesName||"All notes"; }
   function firstTagName(it){ var names=(it.tagIds||[]).map(function(id){ var t=tagById(id); return t?t.name.toLowerCase():""; }).filter(Boolean).sort(); return names[0]||"\uffff"; }
+  var TRASH_RETENTION_MS=3*24*60*60*1000, DELETE_CONFIRM_COOLDOWN_MS=3*60*1000, DELETE_CONFIRM_KEY="second-brain-delete-confirm-at";
+  function isInTrash(it){ return !!(it&&Number(it.trashedAt)>0); }
+  function trashItems(){ return (state.items||[]).filter(isInTrash).sort(function(a,b){ return (b.trashedAt||0)-(a.trashedAt||0); }); }
+  function recentDeleteConfirm(){
+    var at=0; try{ at=Number(localStorage.getItem(DELETE_CONFIRM_KEY))||0; }catch(e){}
+    return Date.now()-at<DELETE_CONFIRM_COOLDOWN_MS;
+  }
+  function rememberDeleteConfirm(){ try{ localStorage.setItem(DELETE_CONFIRM_KEY,String(Date.now())); }catch(e){} }
+  function leaveIfCurrentTrashed(){
+    var cur=(state.items||[]).find(function(item){ return item.id===state.currentId; });
+    if(cur&&!isInTrash(cur)) return;
+    var vis=visibleItems(), live=(state.items||[]).filter(function(item){ return !isInTrash(item); })[0];
+    if(!state.items.length) state.items.push(newNoteItem());
+    state.currentId=(vis[0]||live||state.items[0]).id;
+  }
+  function permanentlyRemoveItems(items){
+    var ids={};
+    (items||[]).forEach(function(item){
+      if(!item||!item.id||ids[item.id]) return;
+      ids[item.id]=true;
+      forEachItemContentDocument(item,cleanupContentAttachments);
+      recordDeletedItem(item);
+    });
+    if(!Object.keys(ids).length) return 0;
+    state.items=state.items.filter(function(item){ return !ids[item.id]; });
+    if(!state.items.length) state.items.push(newNoteItem());
+    leaveIfCurrentTrashed();
+    return Object.keys(ids).length;
+  }
+  function purgeExpiredTrash(){
+    var cutoff=Date.now()-TRASH_RETENTION_MS;
+    var expired=trashItems().filter(function(item){ return item.trashedAt<=cutoff; });
+    if(!expired.length) return 0;
+    var count=permanentlyRemoveItems(expired);
+    if(count) persist();
+    return count;
+  }
+  function trashCompletedTodo(id){
+    var item=state.items.find(function(entry){ return entry.id===id; });
+    if(activeAudioRecorder&&activeAudioRecorder.itemId===id){ showToast("Stop the recording before deleting this audio entry",true); return; }
+    if(!item||!(isTodoNote(item)||item.type==="todo")||!item.done) return;
+    if(item.locked){ showToast("Unlock this item before deleting it",true); return; }
+    if(isInTrash(item)) return;
+    if(!recentDeleteConfirm()){
+      if(!confirm("Move this completed todo to Trash? It stays for 3 days, then it is deleted. You will not be asked again for 3 minutes.")) return;
+      rememberDeleteConfirm();
+    }
+    item.trashedAt=Date.now(); item.updated=Date.now();
+    leaveIfCurrentTrashed();
+    persist(); renderList(); renderMain();
+    showToast("Moved to Trash");
+  }
   function visibleItems(ignoreTagFilter){
     var query=(state.noteSearch||"").trim().toLowerCase();
     var hiddenView=state.sidebarView==="hidden";
     var items=state.items.filter(function(it){
+      if(isInTrash(it)) return false;
       if(hiddenView){ if(!it.hidden) return false; }
       else if(it.hidden) return false;
       if(!hiddenView){
@@ -2935,7 +2989,7 @@
     var filter=upcomingFilter(), today=startOfDay(new Date()), bounds=upcomingRangeBounds(filter.range,today);
     var query=(state.noteSearch||"").trim().toLowerCase();
     var matches=state.items.filter(function(it){
-      if(it.hidden) return false;
+      if(isInTrash(it)||it.hidden) return false;
       var due=upcomingDueDate(it,filter.showDone), date=due&&dateFromKey(due);
       if(!date) return false;
       if(bounds.from&&date<bounds.from) return false;
@@ -2970,13 +3024,13 @@
     if(normalizeUpcomingSort(state.upcomingSort)==="dueDesc") order.reverse();
     return order;
   }
-  function hiddenItemCount(){ return (state.items||[]).filter(function(it){ return it.hidden; }).length; }
+  function hiddenItemCount(){ return (state.items||[]).filter(function(it){ return it.hidden&&!isInTrash(it); }).length; }
   /* Queue: open todos grouped by status. Status flips made by the assistant
      through the agent API land in state via the live account merge, so the
      groups below re-render on every renderList() without a reload. */
   var QUEUE_GROUPS=[["in progress","In progress","Nothing is in progress."],["queued","Queued","Nothing is queued."],["ready to test","Ready to test","Nothing is ready to test."],["failed test","Failed test","Nothing failed a test."]];
   function queueableItem(it){
-    if(!it||it.hidden) return false;
+    if(!it||it.hidden||isInTrash(it)) return false;
     if(it.done) return false;
     return !!(isTodoNote(it)||it.type==="todo");
   }
@@ -3906,6 +3960,7 @@
     if(toggle){ toggle.setAttribute("aria-expanded",state.typesCollapsed?"false":"true"); toggle.title=state.typesCollapsed?"Expand types":"Collapse types"; }
     var seen={}, rows=[];
     state.items.forEach(function(item){
+      if(isInTrash(item)) return;
       var kind=itemKindForAgent(item);
       if(seen[kind]) return;
       seen[kind]=true; rows.push({kind:kind,label:itemLabel(item),icon:item.type==="agent"?ICON_AGENT:(isTodoNote(item)||item.type==="todo"?ICON_TODO:ICON_NOTE)});
@@ -3917,7 +3972,7 @@
       button.onclick=function(){ state.filterType=state.filterType===row.kind?"":row.kind; persist(); renderAll(); };
       el.appendChild(button);
     });
-    var todos=state.items.filter(function(item){ return isTodoNote(item)||item.type==="todo"; });
+    var todos=state.items.filter(function(item){ return !isInTrash(item)&&(isTodoNote(item)||item.type==="todo"); });
     /* The queue feature used to pin all seven status filters into the drawer's
        Types section on every load, pushing the notes list out of the 300px
        drawer on phones — that is what broke the side panel. Keep the drawer
@@ -3935,7 +3990,7 @@
       });
     }
   }
-  function tagUseCount(tagId){ return state.items.reduce(function(total,item){ return total+((item.tagIds||[]).indexOf(tagId)>=0?1:0); },0); }
+  function tagUseCount(tagId){ return state.items.reduce(function(total,item){ return total+(isInTrash(item)?0:((item.tagIds||[]).indexOf(tagId)>=0?1:0)); },0); }
   function tagDefaultHex(hue){ var h=((Number(hue)||0)%360+360)%360, c=.65*.62, x=c*(1-Math.abs((h/60)%2-1)), m=.62-c, rgb=h<60?[c,x,0]:h<120?[x,c,0]:h<180?[0,c,x]:h<240?[0,x,c]:h<300?[x,0,c]:[c,0,x]; return "#"+rgb.map(function(v){ return Math.round((v+m)*255).toString(16).padStart(2,"0"); }).join(""); }
   function moveTag(tag,offset){ var result=nudgeTag(state.tags, state.tagGroups, tag.id, offset); if(!result) return; applyTagMove(result, "Tag moved "+(offset<0?"up":"down")); }
   function openTagMergeMenu(anchor,tag){
@@ -4500,11 +4555,10 @@
       if(it.dueDate&&!todoItem) metaText="Due "+dueDateLabel(it.dueDate)+" · "+metaText;
       var iconColor=itemIconColor(it), iconStyle=iconColor?' style="color:'+iconColor+'"':"", todoStyle=iconColor?' style="border-color:'+iconColor+';'+(it.done?'background:'+iconColor+';color:#08080b;':'color:'+iconColor+';')+'"':"";
       var leading=todoItem?'<button class="side-todo-check'+(it.done?" done":"")+'"'+todoStyle+' aria-label="'+(it.done?"Mark incomplete":"Mark complete")+'">'+(it.done?"✓":"")+'</button>':'<span class="item-icon"'+iconStyle+'>'+icon+'</span>';
-      var deleteLabel=todoItem&&it.done?"Delete?":"✕";
       var lockStatus=it.locked?'<span class="item-lock" title="Deletion locked" aria-label="Deletion locked">'+ICON_LOCK+'</span>':"";
       var selectControl=state.selectingNotes?'<input class="note-select" type="checkbox" aria-label="Select note" '+(selected?'checked':'')+'>':'';
       var statusHtml=(todoItem&&todoStatus(it))?'<span class="status-chip">'+statusLabel(it.status)+'</span>':"";
-      el.innerHTML=selectControl+leading+'<div class="dt"><div class="dt-title"></div><div class="dt-meta"><span class="m">'+metaText+'</span>'+statusHtml+dots+lockStatus+'</div></div><button class="dx" type="button" title="'+(todoItem&&it.done?"Delete completed todo":"Item actions")+'" aria-label="'+(todoItem&&it.done?"Delete completed todo":"Item actions")+'">'+(todoItem&&it.done?ICON_DELETE:ICON_EDIT)+'</button>';
+      el.innerHTML=selectControl+leading+'<div class="dt"><div class="dt-title"></div><div class="dt-meta"><span class="m">'+metaText+'</span>'+statusHtml+dots+lockStatus+'</div></div><button class="dx" type="button" title="'+(todoItem&&it.done?"Move completed todo to Trash":"Item actions")+'" aria-label="'+(todoItem&&it.done?"Move completed todo to Trash":"Item actions")+'">'+(todoItem&&it.done?ICON_DELETE:ICON_EDIT)+'</button>';
       el.querySelector(".dt-title").textContent=it.title||("Untitled "+itemLabel(it).toLowerCase());
       if(it.origin==="assistant"){ var originBadge=document.createElement("span"); originBadge.className="origin-badge"; originBadge.textContent="Added by Assistant"; el.appendChild(originBadge); }
       if(todoItem) el.querySelector(".side-todo-check").onclick=function(e){ e.stopPropagation(); setTodoDone(it); };
@@ -4522,7 +4576,7 @@
         el.appendChild(taskBox);
       }
       el.onclick=function(e){ if(e.target.closest(".dx")||e.target.closest(".side-task")||e.target.closest(".side-todo-check")||e.target.closest(".note-select")) return; if(state.selectingNotes){ toggleNoteSelection(it.id,!selected); return; } if(activeAudioRecorder&&activeAudioRecorder.itemId!==it.id){ showToast("Finish the current recording before leaving it",true); return; } revealItem(it.id); exitSidebarFocus(); app.classList.remove("open"); renderList(); renderMain(); };
-      el.querySelector(".dx").onclick=function(e){ e.stopPropagation(); if(todoItem&&it.done) delItem(it.id,"Delete this completed todo? This can't be undone."); else openItemActions(e.currentTarget,it); };
+      el.querySelector(".dx").onclick=function(e){ e.stopPropagation(); if(todoItem&&it.done) trashCompletedTodo(it.id); else openItemActions(e.currentTarget,it); };
       return el;
   }
   function renderAll(){ renderTags(); renderTypes(); renderList(); renderMain(); renderQuickCaptureMeta(); }
@@ -4756,7 +4810,7 @@
     return [["open","Open"],["done","Done"],["due","Due"],["overdue","Overdue"]];
   }
   function homeNoteVisible(it){
-    if(!it||it.hidden) return false;
+    if(!it||it.hidden||isInTrash(it)) return false;
     if(homeTypeFilter&&itemKindForAgent(it)!==homeTypeFilter) return false;
     if(homeTagId){ if((it.tagIds||[]).indexOf(homeTagId)<0) return false; }
     else if((it.tagIds||[]).some(function(id){ var tag=tagById(id); return tag&&tag.hidden; })) return false;
@@ -5093,10 +5147,10 @@
   }
   function buildHomeGlanceWidget(){
     var body=document.createElement("div"); body.className="home-stats";
-    var items=(state.items||[]).filter(function(it){ return it&&!it.hidden&&it.type!=="agent"; });
-    var openTodos=(state.items||[]).filter(function(it){ return it&&!it.hidden&&(isTodoNote(it)||it.type==="todo")&&!it.done; });
-    var dueToday=(state.items||[]).filter(function(it){ return it&&!it.hidden&&dueDateClass(itemDueDate(it))==="today"; });
-    var overdue=(state.items||[]).filter(function(it){ return it&&!it.hidden&&dueDateClass(itemDueDate(it))==="overdue"; });
+    var items=(state.items||[]).filter(function(it){ return it&&!it.hidden&&!isInTrash(it)&&it.type!=="agent"; });
+    var openTodos=(state.items||[]).filter(function(it){ return it&&!it.hidden&&!isInTrash(it)&&(isTodoNote(it)||it.type==="todo")&&!it.done; });
+    var dueToday=(state.items||[]).filter(function(it){ return it&&!it.hidden&&!isInTrash(it)&&dueDateClass(itemDueDate(it))==="today"; });
+    var overdue=(state.items||[]).filter(function(it){ return it&&!it.hidden&&!isInTrash(it)&&dueDateClass(itemDueDate(it))==="overdue"; });
     [[items.length,"Notes"],[openTodos.length,"Open todos"],[dueToday.length,"Due today"],[overdue.length,"Overdue"]].forEach(function(pair){
       var cell=document.createElement("div"); cell.className="home-stat"+(pair[1]==="Overdue"&&pair[0]?" overdue":"");
       var value=document.createElement("b"); value.textContent=String(pair[0]);
@@ -5123,14 +5177,14 @@
     return homeWidgetFrame(type, body, items.length);
   }
   function homeOpenTodos(){
-    return (state.items||[]).filter(function(it){ return it&&!it.hidden&&(isTodoNote(it)||it.type==="todo")&&!it.done; }).sort(function(a,b){
+    return (state.items||[]).filter(function(it){ return it&&!it.hidden&&!isInTrash(it)&&(isTodoNote(it)||it.type==="todo")&&!it.done; }).sort(function(a,b){
       return (itemDueDate(a)||"9999").localeCompare(itemDueDate(b)||"9999")||((b.updated||0)-(a.updated||0));
     }).slice(0,8);
   }
   function homeQuietNotes(){
     var cutoff=Date.now()-14*86400000;
     return (state.items||[]).filter(function(it){
-      return it&&!it.hidden&&it.type!=="agent"&&(it.updated||0)<cutoff&&(it.title||itemText(it));
+      return it&&!it.hidden&&!isInTrash(it)&&it.type!=="agent"&&(it.updated||0)<cutoff&&(it.title||itemText(it));
     }).sort(function(a,b){ return (a.updated||0)-(b.updated||0); }).slice(0,5);
   }
   function homeSpentLabel(ms){
@@ -5142,18 +5196,18 @@
     return hours+"h"+(rest?" "+rest+"m":"");
   }
   function homeTimeNotes(){
-    return (state.items||[]).filter(function(it){ return it&&!it.hidden&&(Number(it.timeSpentMs)||0)>0; }).sort(function(a,b){
+    return (state.items||[]).filter(function(it){ return it&&!it.hidden&&!isInTrash(it)&&(Number(it.timeSpentMs)||0)>0; }).sort(function(a,b){
       return (Number(b.timeSpentMs)||0)-(Number(a.timeSpentMs)||0);
     }).slice(0,5);
   }
   function homeTodayNotes(){
     var start=new Date(); start.setHours(0,0,0,0); var from=start.getTime();
-    return (state.items||[]).filter(function(it){ return it&&!it.hidden&&it.type!=="agent"&&(it.updated||0)>=from; }).sort(function(a,b){
+    return (state.items||[]).filter(function(it){ return it&&!it.hidden&&!isInTrash(it)&&it.type!=="agent"&&(it.updated||0)>=from; }).sort(function(a,b){
       return (b.updated||0)-(a.updated||0);
     }).slice(0,6);
   }
   function homeFinishedTodos(){
-    return (state.items||[]).filter(function(it){ return it&&!it.hidden&&(isTodoNote(it)||it.type==="todo")&&it.done; }).sort(function(a,b){
+    return (state.items||[]).filter(function(it){ return it&&!it.hidden&&!isInTrash(it)&&(isTodoNote(it)||it.type==="todo")&&it.done; }).sort(function(a,b){
       return (b.completed||b.updated||0)-(a.completed||a.updated||0);
     }).slice(0,6);
   }
@@ -5414,8 +5468,8 @@
       itemCheck.onclick=function(){ setTodoDone(it); };
       titleRow.appendChild(itemCheck);
       if(it.done&&!it.locked){
-        var itemDelete=document.createElement("button"); itemDelete.className="todo-item-delete"; itemDelete.textContent="Delete?";
-        itemDelete.onclick=function(){ delItem(it.id,"Delete this completed todo? This can't be undone."); };
+        var itemDelete=document.createElement("button"); itemDelete.className="todo-item-delete"; itemDelete.textContent="Trash";
+        itemDelete.onclick=function(){ trashCompletedTodo(it.id); };
         titleRow.appendChild(itemDelete);
       }
       sheet.appendChild(titleRow);
@@ -14777,6 +14831,7 @@
         '<button data-settings="voices"><span><b>Voice</b><small>Choose from your saved ElevenLabs voices</small></span><span class="arrow">›</span></button>'+
         '<button data-settings="collab"><span><b>AI collaborator</b><small>Agents, voice intelligence, and hidden notes (also in the sidebar footer)</small></span><span class="arrow">›</span></button>'+
         '<button data-settings="agent"><span><b>Connect an agent</b><small>Full steps to let Hermes use your notes, the same way as TickTick</small></span><span class="arrow">›</span></button>'+
+        '<button data-settings="trash"><span><b>Trash</b><small>Completed todos, kept for 3 days</small></span><span class="arrow">›</span></button>'+
         '<button data-settings="manage"><span><b>Manage</b><small>Choose which things New can create</small></span><span class="arrow">›</span></button></div><div class="grp"><h4>Editor behaviour</h4><div class="srow"><div class="sl">Open notes in the body<small>Focus the first editable block instead of the title. Turn off to start at the title.</small></div><button class="toggle" id="focusNoteBodyToggle"><b></b></button></div><div class="srow"><div class="sl">AI handoff in note menus<small>Copy or package a note, including attachment data, for Cursor, ChatGPT, or Claude.</small></div><button class="toggle" id="quickAiHandoffToggle"><b></b></button></div></div><div class="grp"><h4>AI text changes</h4><div class="srow"><div class="sl">Ask before changing my text<small>Keep AI edits as suggestions until you choose Apply.</small></div><button class="toggle" id="settingsRequireApprovalToggle"><b></b></button></div></div>';
     } else if(settingsPage==="appearance"){
       content=settingsHeading("Appearance",true)+'<div class="grp"><div class="srow"><div class="sl">Background movement<small>Slow drifting color that works on desktop and mobile</small></div><button class="toggle" id="motionToggle"><b></b></button></div></div><div class="grp"><div class="range-row"><label for="darknessRange"><span>Background darkness</span><output id="darknessOutput"></output></label><input id="darknessRange" type="range" min="0" max="100" step="1"><p class="hint">At 100%, the background is pure AMOLED black. Lower it to reveal more of the moving theme color while keeping the surface black.</p></div></div>';
@@ -14798,6 +14853,8 @@
       content=settingsHeading("AI collaborator",true)+'<p class="hint">Each agent has two minds: a subconscious that decides whether to keep listening or hand off, and a conscious that writes the note and talks with you. Open a note first if you want it transcribed into a collapsible Transcribed audio group.</p><div class="agent-edit" id="collabSettings"></div>';
     } else if(settingsPage==="usage"){
       content=settingsHeading("Usage",true)+'<p class="hint">Hosted credits show dollars we charged (5× provider cost) plus tokens. Your own keys still log tokens locally; provider invoices stay on OpenAI, Gemini, and ElevenLabs.</p><div id="usageSettings"></div>';
+    } else if(settingsPage==="trash"){
+      content=settingsHeading("Trash",true)+'<p class="hint">Completed todos you trash stay here for 3 days, then they are deleted. The delete confirmation stays quiet for 3 minutes after you accept it once.</p><div class="btnrow"><button class="b2" id="emptyTrashBtn">Empty trash</button></div><div class="grp" id="trashList"></div>';
     } else if(settingsPage==="manage"){
       content=settingsHeading("Manage",true)+'<p class="hint">Choose what appears under New and in a note’s Insert menu. Existing content is never removed when an option is turned off.</p><div class="grp"><div class="srow"><div class="sl">Notes<small>Flexible rich-text notes</small></div><button class="toggle" id="typeNote"><b></b></button></div><div class="srow"><div class="sl">YouTube Script<small>Chaptered note template</small></div><button class="toggle" id="typeScript"><b></b></button></div><div class="srow"><div class="sl">Audio<small>Record or upload audio clips</small></div><button class="toggle" id="typeAudio"><b></b></button></div><div class="srow"><div class="sl">Todos<small>A note with a completion checkbox</small></div><button class="toggle" id="typeTodo"><b></b></button></div><div class="srow"><div class="sl">Agent<small>AI collaborators you can talk to inside a note</small></div><button class="toggle" id="typeAgent"><b></b></button></div></div><div class="grp" id="moduleTypes"></div><div class="grp"><h4>Note insert menu</h4><div class="srow"><div class="sl">Photo, video, or file<small>Inline images and videos, plus any attachment</small></div><button class="toggle" id="insertFile"><b></b></button></div><div class="srow"><div class="sl">YouTube video<small>Paste a link and play it inside the note</small></div><button class="toggle" id="insertEmbed"><b></b></button></div><div class="srow"><div class="sl">Link with photo<small>A link card with your own picture, title, and summary</small></div><button class="toggle" id="insertLink"><b></b></button></div><div class="srow"><div class="sl">Paragraph<small>Rich text with bold, italic, and underline</small></div><button class="toggle" id="insertParagraph"><b></b></button></div><div class="srow"><div class="sl">Mini todo list<small>A checklist you can tick off inside the note</small></div><button class="toggle" id="insertChecklist"><b></b></button></div><div class="srow"><div class="sl">Comment<small>A cue-style note to yourself</small></div><button class="toggle" id="insertComment"><b></b></button></div><div class="srow"><div class="sl">Prompt<small>A copy-ready prompt drafting box</small></div><button class="toggle" id="insertPrompt"><b></b></button></div><div class="srow"><div class="sl">Heading<small>Simple size picker when selected</small></div><button class="toggle" id="insertHeading"><b></b></button></div><div class="srow"><div class="sl">Chapter<small>Named section with its own Listen button</small></div><button class="toggle" id="insertChapter"><b></b></button></div><div class="srow"><div class="sl">Collapsible group<small>Hide supporting details until needed</small></div><button class="toggle" id="insertGroup"><b></b></button></div><div class="srow"><div class="sl">Code<small>Syntax-highlighted editor, preview, and run tools</small></div><button class="toggle" id="insertCode"><b></b></button></div></div>';
     } else { settingsPage="home"; renderSettingsPage(); return; }
@@ -14821,7 +14878,54 @@
     if(settingsPage==="agent") setupAgentAccessSettings();
     if(settingsPage==="collab") setupCollabSettings();
     if(settingsPage==="usage") setupUsageSettings();
+    if(settingsPage==="trash") setupTrashSettings();
     if(settingsPage==="manage") setupManageSettings();
+  }
+  function trashDeletesLabel(item){
+    var left=(Number(item.trashedAt)||0)+TRASH_RETENTION_MS-Date.now();
+    if(left<=0) return "Deletes the next time trash is cleaned";
+    if(left<60*60*1000) return "Deletes in under an hour";
+    if(left<24*60*60*1000) return "Deletes in "+Math.ceil(left/(60*60*1000))+" hour"+(Math.ceil(left/(60*60*1000))===1?"":"s");
+    var days=Math.ceil(left/(24*60*60*1000));
+    return "Deletes in "+days+" day"+(days===1?"":"s");
+  }
+  function setupTrashSettings(){
+    purgeExpiredTrash();
+    var list=$("trashList"), emptyBtn=$("emptyTrashBtn"); if(!list) return;
+    list.innerHTML="";
+    var items=trashItems();
+    if(!items.length){
+      var empty=document.createElement("p"); empty.className="hint"; empty.textContent="Trash is empty.";
+      list.appendChild(empty);
+    }
+    items.forEach(function(item){
+      var row=document.createElement("div"); row.className="srow";
+      var copy=document.createElement("div"); copy.className="sl";
+      copy.appendChild(document.createTextNode(item.title||"Untitled todo"));
+      var small=document.createElement("small"); small.textContent=trashDeletesLabel(item); copy.appendChild(small);
+      var actions=document.createElement("div"); actions.className="btnrow"; actions.style.margin="0";
+      var restore=document.createElement("button"); restore.type="button"; restore.className="b2 primary"; restore.textContent="Restore";
+      restore.onclick=function(){
+        delete item.trashedAt; item.updated=Date.now();
+        persist(); renderAll(); setupTrashSettings(); showToast("Restored from Trash");
+      };
+      var remove=document.createElement("button"); remove.type="button"; remove.className="b2"; remove.textContent="Delete";
+      remove.onclick=function(){
+        if(!confirm("Delete this from Trash? This can’t be undone.")) return;
+        permanentlyRemoveItems([item]); persist(); renderAll(); setupTrashSettings(); showToast("Deleted from Trash");
+      };
+      actions.appendChild(restore); actions.appendChild(remove);
+      row.appendChild(copy); row.appendChild(actions); list.appendChild(row);
+    });
+    if(emptyBtn){
+      emptyBtn.disabled=!items.length;
+      emptyBtn.onclick=function(){
+        if(!items.length) return;
+        if(!confirm("Delete everything in Trash? This can’t be undone.")) return;
+        var count=permanentlyRemoveItems(trashItems());
+        persist(); renderAll(); setupTrashSettings(); showToast("Deleted "+count+" from Trash");
+      };
+    }
   }
   function setupHomeSettings(){
     var approval=$("settingsRequireApprovalToggle"), focusBody=$("focusNoteBodyToggle"), handoff=$("quickAiHandoffToggle"); if(!approval) return;
@@ -15804,6 +15908,8 @@
      so it counted as 1 unlinked note and the merge prompt appeared every time
      this device had to log in again. useData() creates it after the account
      loads if the cloud copy does not already have an agent. */
+  purgeExpiredTrash();
+  setInterval(function(){ if(purgeExpiredTrash()){ renderAll(); if(settingsPage==="trash"&&$("settingsModal").classList.contains("open")) setupTrashSettings(); } },60*60*1000);
   trackTimeSpent();
   window.__sbBootDone=true;
   if(window.__sbBootWatchdog) clearTimeout(window.__sbBootWatchdog);
