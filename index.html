@@ -874,6 +874,7 @@
   .more-doc-action:active{ transform:scale(.985); }
   .more-doc-action.danger{ color:#fca5a5; border-color:rgba(248,113,113,.28); background:rgba(248,113,113,.08); }
   .more-doc-action.danger:hover{ background:rgba(248,113,113,.16); border-color:rgba(248,113,113,.45); }
+  .more-doc-action.sub svg:last-child{ margin-left:auto; width:14px; height:14px; opacity:.65; }
   .more-modal.open .more-doc-action{ animation:moreRow .46s cubic-bezier(.2,.9,.3,1) both; }
   .more-actions .copy-all,.more-actions .brainstorm-mode{ width:100%; justify-content:flex-start; gap:12px; min-height:58px; padding:12px 14px; border-radius:16px; font-size:.94rem; background:rgba(255,255,255,.035); }
   .more-actions .copy-all svg,.brainstorm-mode > svg{ width:18px; height:18px; flex:none; }
@@ -3114,40 +3115,56 @@
      That is how the video editor puts live collaboration behind it instead of
      the read-only note link. */
   function shareModule(item){ var mod=itemModule(item); return mod&&typeof mod.share==="function"?mod:null; }
-  function updateShareButton(item){
-    var button=$("shareBtn"), label=$("shareLabel"), mod=shareModule(item), shareable=isPublicShareable(item);
-    if(!button||!label) return;
-    if(mod){
-      button.style.display="inline-flex";
-      button.disabled=false;
-      var moduleLabel=mod.shareLabel?mod.shareLabel(item):"Share";
-      button.classList.toggle("done",moduleLabel!=="Share");
-      label.textContent=moduleLabel;
-      button.title="Share this "+(mod.label||"item").toLowerCase();
-      return;
-    }
-    button.style.display=shareable?"inline-flex":"none";
-    button.classList.toggle("done",!!(shareable&&item.shareId));
-    label.textContent=shareable&&item.shareId?(item.shareAllowEdit?"Can edit":"Public link"):"Share";
-    button.title=shareable&&item.shareId?(item.shareAllowEdit?"Manage shared editing":"Manage public view link"):"Share a view-only link";
+  /* The More window and the pencil menu ask the same questions, so the answers
+     live in one place. A note that can be listened to, shared, or copied in
+     one menu can be listened to, shared, or copied in the other. */
+  function itemShowsListen(it){ return !!(hasVoiceAccess()&&it&&it.type!=="agent"&&ttsTextForItem(it).trim()); }
+  function itemShowsShare(it){ return !!(it&&(shareModule(it)||isPublicShareable(it))); }
+  function itemShowsCopy(it){ var mod=it&&itemModule(it); return !!(it&&!(mod&&mod.hideCopy)&&it.type!=="agent"&&it.type!=="audio"); }
+  function shareActionLabel(it){
+    var mod=shareModule(it);
+    if(mod) return mod.shareLabel?mod.shareLabel(it):"Share";
+    if(isPublicShareable(it)&&it.shareId) return it.shareAllowEdit?"Can edit":"Public link";
+    return "Share";
   }
-  function shareCurrentItem(){
-    var item=current(), button=$("shareBtn"), label=$("shareLabel"), created=false;
+  function updateShareButton(item){
+    var button=$("shareBtn"), label=$("shareLabel"), mod=shareModule(item);
+    if(!button||!label) return;
+    var show=itemShowsShare(item);
+    button.style.display=show?"inline-flex":"none";
+    if(!show) return;
+    button.disabled=false;
+    var text=shareActionLabel(item);
+    button.classList.toggle("done",text!=="Share");
+    label.textContent=text;
+    button.title=mod?("Share this "+(mod.label||"item").toLowerCase()):(item.shareId?(item.shareAllowEdit?"Manage shared editing":"Manage public view link"):"Share a view-only link");
+  }
+  function shareItem(item, anchor){
+    var button=$("shareBtn"), label=$("shareLabel"), created=false;
     if(!isPublicShareable(item)) return;
     if(!currentUser||!db){ showToast("Sign in to create a public link",true); return; }
     if(!item.shareId){ item.shareId=db.collection("shared").doc().id; item.shareCreatedAt=Date.now(); created=true; persist(); }
     if(button) button.disabled=true;
-    if(label) label.textContent="Sharing…";
+    if(label&&current()&&current().id===item.id) label.textContent="Sharing…";
     publishPublicShare(item).then(function(url){
       copy(url,function(){ showToast(item.shareAllowEdit?"Editable share link copied":"Public view link copied"); });
-      updateShareButton(item);
-      if($("shareBtn")) openPublicShareOptions($("shareBtn"),item);
+      if(current()&&current().id===item.id) updateShareButton(item);
+      openPublicShareOptions(anchor||button,item);
     }).catch(function(error){
       console.warn("Public share failed:",error);
       if(created){ delete item.shareId; delete item.shareCreatedAt; delete item.shareAllowEdit; persist(); }
-      updateShareButton(item);
+      if(current()&&current().id===item.id) updateShareButton(item);
       showToast("Couldn’t create the public link. Check your Firestore rules.",true);
     }).then(function(){ if(button) button.disabled=false; });
+  }
+  function shareCurrentItem(){ shareItem(current(),$("shareBtn")); }
+  function shareItemFrom(anchor, item){
+    if(!item) return;
+    var mod=shareModule(item);
+    if(mod) return mod.share(item, anchor);
+    if(!isPublicShareable(item)) return;
+    if(item.shareId) openPublicShareOptions(anchor, item);
+    else shareItem(item, anchor);
   }
   function stopPublicSharing(item){
     if(!item||!item.shareId||!currentUser||!db) return;
@@ -3155,7 +3172,7 @@
     var shareId=item.shareId;
     stopSharedEditListener(shareId);
     db.collection("shared").doc(shareId).delete().then(function(){
-      delete publicShareSignatures[shareId]; delete item.shareId; delete item.shareCreatedAt; delete item.shareAllowEdit; persist(); updateShareButton(item); closeMenu(); showToast("Public sharing stopped");
+      delete publicShareSignatures[shareId]; delete item.shareId; delete item.shareCreatedAt; delete item.shareAllowEdit; persist(); if(current()&&current().id===item.id) updateShareButton(item); closeMenu(); showToast("Public sharing stopped");
     }).catch(function(error){ console.warn("Could not stop public sharing:",error); showToast("Couldn’t stop public sharing. Check your Firestore rules.",true); });
   }
   function setShareAllowEdit(item,allow){
@@ -3163,13 +3180,13 @@
     item.shareAllowEdit=!!allow;
     persist();
     return publishPublicShare(item).then(function(){
-      updateShareButton(item);
+      if(current()&&current().id===item.id) updateShareButton(item);
       startSharedEditListeners();
       showToast(item.shareAllowEdit?"Anyone signed in with the link can edit":"Link is view-only again");
     }).catch(function(error){
       item.shareAllowEdit=!allow;
       persist();
-      updateShareButton(item);
+      if(current()&&current().id===item.id) updateShareButton(item);
       console.warn("Could not update shared editing:",error);
       showToast("Couldn’t update editing access. Check your Firestore rules.",true);
       throw error;
@@ -3179,7 +3196,7 @@
     openMenu(anchor,function(menu){
       menu.classList.add("share-menu");
       var title=document.createElement("div"); title.className="mtitle"; title.textContent="Sharing"; menu.appendChild(title);
-      menu.appendChild(mkItem("","Copy link",false,function(){ closeMenu(); shareCurrentItem(); }));
+      menu.appendChild(mkItem("","Copy link",false,function(){ closeMenu(); shareItem(item, anchor); }));
       var row=document.createElement("button"); row.type="button"; row.className="m-toggle";
       var sl=document.createElement("div"); sl.className="sl";
       var name=document.createElement("b"); name.textContent="Allow editing";
@@ -3242,6 +3259,9 @@
   var ICON_SPARK='<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 3l1.6 5.4L19 10l-5.4 1.6L12 17l-1.6-5.4L5 10l5.4-1.6Z"/><path d="M19 15l.7 2.3L22 18l-2.3.7L19 21l-.7-2.3L16 18l2.3-.7Z"/></svg>';
   var ICON_EYE='<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M2.5 12s3.5-6 9.5-6 9.5 6 9.5 6-3.5 6-9.5 6S2.5 12 2.5 12Z"/><circle cx="12" cy="12" r="2.5"/></svg>';
   var ICON_EYE_OFF='<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="m3 3 18 18"/><path d="M10.6 5.1A10.7 10.7 0 0 1 12 5c6 0 9.5 7 9.5 7a17.8 17.8 0 0 1-3.1 3.9M6.2 6.2C3.9 8 2.5 12 2.5 12S6 19 12 19c1.5 0 2.8-.4 3.9-.9"/><path d="M9.9 9.9a3 3 0 0 0 4.2 4.2"/></svg>';
+  var ICON_LISTEN='<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M11 5 6 9H3v6h3l5 4z"/><path d="M15.5 8.5a5 5 0 0 1 0 7M18.5 5.5a9 9 0 0 1 0 13"/></svg>';
+  var ICON_SHARE='<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="18" cy="5" r="3"/><circle cx="6" cy="12" r="3"/><circle cx="18" cy="19" r="3"/><path d="m8.6 10.5 6.8-4M8.6 13.5l6.8 4"/></svg>';
+  var ICON_BRAIN='<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 3v2.2M12 18.8V21M4.8 4.8l1.6 1.6M17.6 17.6l1.6 1.6M3 12h2.2M18.8 12H21M4.8 19.2l1.6-1.6M17.6 6.4l1.6-1.6"/><circle cx="12" cy="12" r="3.2"/></svg>';
 
   /* =================== floating menu =================== */
   var openMenuEl=null, openMenuAnchor=null;
@@ -4186,6 +4206,94 @@
   function openItemActions(anchor,it){
     showItemActions(anchor,it,"root");
   }
+  /* One ordered set of note actions. The More window and the pencil menu both
+     render this list, so a todo opened from the sidebar offers the same
+     choices as More on the note itself. */
+  function sharedItemActions(it){
+    if(!it) return [];
+    var actions=[], asTodo=isTodoNote(it)||it.type==="todo";
+    var playing=!!(it&&runtimeApiKeys.ttsControl&&runtimeApiKeys.ttsControl.itemId===it.id);
+    function add(id, group, icon, label, when, extra){
+      if(!it||!when) return;
+      var entry={id:id, group:group, icon:icon, label:label};
+      if(extra) Object.keys(extra).forEach(function(key){ entry[key]=extra[key]; });
+      actions.push(entry);
+    }
+    add("listen","primary",ICON_LISTEN,playing?"Stop":"Listen", itemShowsListen(it));
+    add("share","primary",ICON_SHARE, shareActionLabel(it), itemShowsShare(it));
+    add("copy","primary",ICON_COPY,"Copy all", itemShowsCopy(it));
+    add("brainstorm","primary",ICON_BRAIN, it&&it.brainstorming?"Exit Brainstorming Mode":"Enter Brainstorming Mode", canBrainstormItem(it));
+    add("tags","organize",ICON_NOTE,"Add or edit tags", it&&it.type!=="agent");
+    add("due","organize",ICON_CALENDAR, it&&it.dueDate?"Change due date":"Add due date", it&&it.type!=="agent");
+    add("ai","organize",ICON_SPARK,"Bring into AI", !!(it&&state.quickAiHandoff&&it.type!=="agent"), {sub:true});
+    add("duplicate","edit",ICON_DUPLICATE,"Duplicate", true);
+    add("backup","edit",ICON_DOWNLOAD,"Document backup", true, {sub:true});
+    add("convert","edit", asTodo?ICON_NOTE:ICON_TODO, asTodo?"Convert to note":"Convert to todo", !!(it&&(it.type==="note"||it.type==="todo")));
+    add("audio","edit",ICON_AUDIO,"Download as audio", itemShowsListen(it));
+    add("up","move",ICON_UP,"Move up", true);
+    add("down","move",ICON_DOWN,"Move down", true);
+    add("hide","safety", it&&it.hidden?ICON_EYE:ICON_EYE_OFF, it&&it.hidden?"Show in notes list":"Hide from notes list", true);
+    add("lock","safety", it&&it.locked?ICON_UNLOCK:ICON_LOCK, it&&it.locked?"Unlock deletion":"Lock from deletion", true);
+    add("delete","safety",ICON_DELETE,"Delete", !!(it&&!it.locked), {danger:true});
+    return actions;
+  }
+  function menuActionButton(action, it, anchor){
+    var button;
+    button=action.sub?mkMoreItem(action.icon, action.label, function(){ runItemAction(action.id, it, anchor, button, "menu"); }):mkItem(action.icon, action.label, false, function(){ runItemAction(action.id, it, anchor, button, "menu"); });
+    if(action.danger) button.className+=" danger";
+    return button;
+  }
+  function appendSharedMenuActions(m, it, anchor){
+    var actions=sharedItemActions(it), lastGroup="", i;
+    for(i=0;i<actions.length;i++){
+      var action=actions[i];
+      if(lastGroup&&action.group!==lastGroup) m.appendChild(sep());
+      lastGroup=action.group;
+      if(action.id==="up"&&actions[i+1]&&actions[i+1].id==="down"){
+        var split=document.createElement("div"); split.className="mi-split";
+        split.appendChild(menuActionButton(actions[i], it, anchor));
+        split.appendChild(menuActionButton(actions[i+1], it, anchor));
+        m.appendChild(split);
+        i++;
+        continue;
+      }
+      m.appendChild(menuActionButton(action, it, anchor));
+    }
+  }
+  function runItemAction(id, it, anchor, button, surface){
+    if(id==="listen"){
+      var label=button&&button.querySelector("span");
+      playTts(ttsTextForItem(it).trim(), button||$("ttsBtn"), label||$("ttsLabel"), it);
+      return;
+    }
+    if(id==="share"){ closeMenu(); shareItemFrom(anchor, it); return; }
+    if(id==="copy"){ closeMenu(); copyItemAll(it); return; }
+    if(id==="brainstorm"){ closeMenu(); toggleBrainstorming(it); return; }
+    if(id==="tags"){ if(surface==="more") closeMore(); else closeMenu(); setTimeout(function(){ openTagPick(anchor, it); },0); return; }
+    if(id==="due"){ if(surface==="more") closeMore(); else closeMenu(); setTimeout(function(){ openTodoDueDatePicker(anchor, it); },0); return; }
+    if(id==="ai"){
+      if(surface==="more"){ closeMore(); setTimeout(function(){ showItemActions(anchor, it, "ai"); },0); }
+      else showItemActions(anchor, it, "ai");
+      return;
+    }
+    if(id==="backup"){
+      if(surface==="more"){ closeMore(); setTimeout(function(){ showItemActions(anchor, it, "backup"); },0); }
+      else showItemActions(anchor, it, "backup");
+      return;
+    }
+    if(id==="duplicate"){ if(surface==="more") closeMore(); else closeMenu(); duplicateItem(it); return; }
+    if(id==="convert"){ if(surface==="more") closeMore(); else closeMenu(); convertNoteTodo(it); return; }
+    if(id==="audio"){ if(surface==="more") closeMore(); else closeMenu(); downloadTts(it); return; }
+    if(id==="up"||id==="down"){ if(surface!=="more") closeMenu(); moveItem(it, id==="up"?-1:1); return; }
+    if(id==="hide"){
+      it.hidden=!it.hidden; it.updated=Date.now(); persist(); renderList(); renderMain();
+      showToast(it.hidden?"Hidden — open Hidden in the sidebar footer to find it":"Shown in the notes list");
+      if(surface==="more") closeMore(); else closeMenu();
+      return;
+    }
+    if(id==="lock"){ toggleItemLock(it); if(surface==="more") renderMoreDocActions(); return; }
+    if(id==="delete"){ if(surface==="more") closeMore(); else closeMenu(); delItem(it.id); }
+  }
   /* The pencil menu used to dump every action into one column — AI handoff
      alone is five rows — so on a phone the list ran past the viewport and
      could not scroll. Nested views keep every action, just not all at once. */
@@ -4209,24 +4317,7 @@
         return;
       }
       m.appendChild(menuTitle(itemLabel(it)+" actions"));
-      if(it.type!=="agent"){
-        m.appendChild(mkItem(ICON_NOTE,"Add or edit tags",false,function(){ closeMenu(); setTimeout(function(){ openTagPick(anchor,it); },0); }));
-        m.appendChild(mkItem(ICON_CALENDAR,it.dueDate?"Change due date":"Add due date",false,function(){ closeMenu(); setTimeout(function(){ openTodoDueDatePicker(anchor,it); },0); }));
-        if(state.quickAiHandoff) m.appendChild(mkMoreItem(ICON_SPARK,"Bring into AI",function(){ showItemActions(anchor,it,"ai"); }));
-      }
-      m.appendChild(sep());
-      m.appendChild(mkItem(ICON_DUPLICATE,"Duplicate",false,function(){ closeMenu(); duplicateItem(it); }));
-      m.appendChild(mkMoreItem(ICON_DOWNLOAD,"Document backup",function(){ showItemActions(anchor,it,"backup"); }));
-      if(it.type==="note"||it.type==="todo") m.appendChild(mkItem(isTodoNote(it)||it.type==="todo"?ICON_NOTE:ICON_TODO,isTodoNote(it)||it.type==="todo"?"Convert to note":"Convert to todo",false,function(){ closeMenu(); convertNoteTodo(it); }));
-      if(hasVoiceAccess()&&it.type!=="agent"&&ttsTextForItem(it).trim()) m.appendChild(mkItem(ICON_AUDIO,"Download as audio",false,function(){ closeMenu(); downloadTts(it); }));
-      var split=document.createElement("div"); split.className="mi-split";
-      split.appendChild(mkItem(ICON_UP,"Move up",false,function(){ closeMenu(); moveItem(it,-1); }));
-      split.appendChild(mkItem(ICON_DOWN,"Move down",false,function(){ closeMenu(); moveItem(it,1); }));
-      m.appendChild(split);
-      m.appendChild(sep());
-      m.appendChild(mkItem(it.hidden?ICON_EYE:ICON_EYE_OFF,it.hidden?"Show in notes list":"Hide from notes list",false,function(){ closeMenu(); it.hidden=!it.hidden; it.updated=Date.now(); persist(); renderList(); renderMain(); showToast(it.hidden?"Hidden — open Hidden in the sidebar footer to find it":"Shown in the notes list"); }));
-      m.appendChild(mkItem(it.locked?ICON_UNLOCK:ICON_LOCK,it.locked?"Unlock deletion":"Lock from deletion",false,function(){ toggleItemLock(it); }));
-      if(!it.locked){ var remove=mkItem(ICON_DELETE,"Delete",false,function(){ closeMenu(); delItem(it.id); }); remove.className+=" danger"; m.appendChild(remove); }
+      appendSharedMenuActions(m, it, anchor);
     }
     if(openMenuEl&&openMenuAnchor===anchor){
       var body=menuScrollBody(openMenuEl);
@@ -5299,7 +5390,7 @@
        in-place edits, and animating those would fight the caret. */
     var isEntering=it.id!==lastMainId, entering=isEntering?" enter":""; lastMainId=it.id;
     var sheet=document.createElement("div"); sheet.className="sheet"+entering;
-    $("copyAll").style.display=(mod&&mod.hideCopy)||it.type==="agent"||it.type==="audio"?"none":"";
+    $("copyAll").style.display=itemShowsCopy(it)?"":"none";
 
     if(it.type==="agent"){
       sheet.className="sheet agent-view"+entering;
@@ -6331,12 +6422,24 @@
   function syncMoreChrome(){
     var button=$("moreBtn"), dot=$("moreDot"), brainstorm=$("brainstormBtn"), label=$("brainstormLabel"), hint=$("brainstormHint");
     var it=typeof current==="function"?current():null;
+    var home=typeof viewingHome!=="undefined"&&viewingHome;
+    var loadingAccount=!!(typeof currentUser!=="undefined"&&currentUser&&cloudSyncLoading&&countRealAccountItems(state.items)===0);
     var on=!!(it&&it.brainstorming);
     var pending=pendingBrainstormCount(it);
     var modal=$("moreModal"), open=!!(modal&&modal.classList.contains("open"));
+    var subject=(home||loadingAccount)?null:it;
+    updateTtsButton(subject);
+    updateShareButton(subject);
+    var copyBtn=$("copyAll");
+    if(copyBtn) copyBtn.style.display=itemShowsCopy(subject)?"":"none";
     if(button){ button.classList.toggle("live",on||pending>0); button.classList.toggle("open",open); button.setAttribute("aria-expanded",open?"true":"false"); button.title=on?"Brainstorming mode is on":(pending?pending+" brainstorming "+(pending===1?"block":"blocks")+" waiting":"More"); }
     if(dot) dot.hidden=!(on||pending>0);
-    if(brainstorm){ brainstorm.classList.toggle("on",on); brainstorm.setAttribute("aria-pressed",on?"true":"false"); }
+    if(brainstorm){
+      var showBrain=!!(subject&&canBrainstormItem(subject));
+      brainstorm.style.display=showBrain?"flex":"none";
+      brainstorm.classList.toggle("on",on);
+      brainstorm.setAttribute("aria-pressed",on?"true":"false");
+    }
     if(label) label.textContent=on?"Exit Brainstorming Mode":"Enter Brainstorming Mode";
     if(hint) hint.textContent=on?"New edits stay highlighted until you approve or delete them":"Edits stay private until you approve them";
     renderMoreDocActions();
@@ -6346,33 +6449,18 @@
     host.innerHTML="";
     var it=typeof current==="function"?current():null;
     if(!it||(typeof viewingHome!=="undefined"&&viewingHome)){ host.hidden=true; return; }
+    var actions=sharedItemActions(it).filter(function(action){ return action.group!=="primary"; });
+    if(!actions.length){ host.hidden=true; return; }
     host.hidden=false;
     var kicker=document.createElement("p"); kicker.className="more-kicker"; kicker.textContent="This note"; host.appendChild(kicker);
     var list=document.createElement("div"); list.className="more-actions";
-    function row(icon,text,kind,handler){
-      var button=document.createElement("button"); button.type="button"; button.className="more-doc-action"+(kind?" "+kind:"");
-      button.innerHTML=icon+"<span>"+escapeHtml(text)+"</span>";
-      button.onclick=handler;
+    var anchor=$("moreBtn");
+    actions.forEach(function(action){
+      var button=document.createElement("button"); button.type="button"; button.className="more-doc-action"+(action.danger?" danger":"")+(action.sub?" sub":"");
+      button.innerHTML=action.icon+"<span>"+escapeHtml(action.label)+"</span>"+(action.sub?ICON_CHEV_RIGHT:"");
+      button.onclick=function(){ runItemAction(action.id, it, anchor, button, "more"); };
       list.appendChild(button);
-    }
-    if(it.type==="note"||it.type==="todo"){
-      var asTodo=isTodoNote(it)||it.type==="todo";
-      row(asTodo?ICON_NOTE:ICON_TODO, asTodo?"Convert to note":"Convert to todo", "", function(){ closeMore(); convertNoteTodo(it); });
-    }
-    row(ICON_DUPLICATE, "Duplicate", "", function(){ closeMore(); duplicateItem(it); });
-    if(it.type!=="agent"){
-      row(ICON_NOTE, "Add or edit tags", "", function(){ closeMore(); setTimeout(function(){ openTagPick($("moreBtn"), it); },0); });
-      row(ICON_CALENDAR, it.dueDate?"Change due date":"Add due date", "", function(){ closeMore(); setTimeout(function(){ openTodoDueDatePicker($("moreBtn"), it); },0); });
-    }
-    row(it.hidden?ICON_EYE:ICON_EYE_OFF, it.hidden?"Show in notes list":"Hide from notes list", "", function(){
-      it.hidden=!it.hidden; it.updated=Date.now(); persist(); renderList(); renderMain();
-      showToast(it.hidden?"Hidden — open Hidden in the sidebar footer to find it":"Shown in the notes list");
-      closeMore();
     });
-    row(it.locked?ICON_UNLOCK:ICON_LOCK, it.locked?"Unlock deletion":"Lock from deletion", "", function(){ toggleItemLock(it); });
-    row(ICON_UP, "Move up", "", function(){ moveItem(it,-1); });
-    row(ICON_DOWN, "Move down", "", function(){ moveItem(it,1); });
-    if(!it.locked) row(ICON_DELETE, "Delete", "danger", function(){ closeMore(); delItem(it.id); });
     host.appendChild(list);
   }
   function openMore(){
@@ -6391,11 +6479,14 @@
     syncMoreChrome();
     var button=$("moreBtn"); if(button) button.focus();
   }
-  function toggleBrainstorming(){
-    var it=current();
+  function toggleBrainstorming(it){
+    it=it||current();
     if(!canBrainstormItem(it)){ showToast("Brainstorming mode is for notes",true); return; }
     if(it.brainstorming) delete it.brainstorming; else it.brainstorming=true;
-    persist(); closeMore(); refreshBrainstormView(it);
+    persist(); closeMore();
+    var open=current();
+    if(open&&open.id===it.id) refreshBrainstormView(it);
+    else { renderList(); syncMoreChrome(); }
     showToast(it.brainstorming?"Brainstorming mode on":"Brainstorming mode off");
   }
   function saveNoteBlockChange(note,block,immediate){
@@ -7646,8 +7737,7 @@
   function ttsTextForChapter(block){ return [(state.readChapterNames?block.title:""),block.text].filter(Boolean).join(". "); }
   function updateTtsButton(it){
     var button=$("ttsBtn"); if(!button) return;
-    var visible=!!(hasVoiceAccess()&&it&&it.type!=="agent"&&ttsTextForItem(it).trim());
-    button.style.display=visible?"inline-flex":"none";
+    button.style.display=itemShowsListen(it)?"inline-flex":"none";
   }
   function updateChapterTtsButton(button,section){
     if(!button) return;
@@ -7658,6 +7748,7 @@
     control.label.textContent="Listen";
     control.button.disabled=false;
     control.button.classList.remove("done");
+    if(control.itemId) setDocumentListenLabel("Listen", {id:control.itemId});
   }
   function stopTts(){
     runtimeApiKeys.ttsRequestId++;
@@ -7745,24 +7836,34 @@
     var text=ttsTextForItem(it).trim();
     downloadTtsText(text,audioFilenameForItem(it));
   }
-  function playTts(text,button,label){
-    if(runtimeApiKeys.ttsControl&&runtimeApiKeys.ttsControl.button===button){ stopTts(); return; }
+  function setDocumentListenLabel(text, item){
+    var globalLabel=$("ttsLabel"), open=typeof current==="function"?current():null;
+    if(!globalLabel||!item||!open||open.id!==item.id) return;
+    if(globalLabel.textContent===text) return;
+    globalLabel.textContent=text;
+  }
+  function playTts(text,button,label,item){
+    var sameItem=!!(item&&runtimeApiKeys.ttsControl&&runtimeApiKeys.ttsControl.itemId===item.id);
+    if(runtimeApiKeys.ttsControl&&(runtimeApiKeys.ttsControl.button===button||sameItem)){ stopTts(); return; }
     stopTts(); stopCollabSpeech();
     if(!hasVoiceAccess()||!text){ showToast("Buy AI credits or add an ElevenLabs key in Settings first",true); return; }
-    var requestId=runtimeApiKeys.ttsRequestId, control={button:button,label:label};
+    var requestId=runtimeApiKeys.ttsRequestId, control={button:button,label:label,itemId:item&&item.id};
     runtimeApiKeys.ttsControl=control;
     button.disabled=true; label.textContent="Preparing…";
+    if(item) setDocumentListenLabel("Preparing…", item);
     requestTtsAudio(text).then(function(blob){
       if(requestId!==runtimeApiKeys.ttsRequestId) return;
       runtimeApiKeys.audioUrl=URL.createObjectURL(blob); runtimeApiKeys.audio=new Audio(runtimeApiKeys.audioUrl);
       runtimeApiKeys.audio.onended=function(){ if(requestId===runtimeApiKeys.ttsRequestId) stopTts(); };
       runtimeApiKeys.audio.onerror=function(){ if(requestId===runtimeApiKeys.ttsRequestId){ showToast("Audio playback failed",true); stopTts(); } };
-      label.textContent="Stop"; button.disabled=false; button.classList.add("done"); return runtimeApiKeys.audio.play();
+      label.textContent="Stop"; button.disabled=false; button.classList.add("done");
+      if(item) setDocumentListenLabel("Stop", item);
+      return runtimeApiKeys.audio.play();
     }).catch(function(error){ if(requestId!==runtimeApiKeys.ttsRequestId) return; console.warn("ElevenLabs playback failed:",error); showToast("ElevenLabs could not create audio",true); stopTts(); });
   }
   $("ttsBtn").onclick=function(){
     var item=current();
-    playTts(ttsTextForItem(item).trim(),this,$("ttsLabel"));
+    playTts(ttsTextForItem(item).trim(),this,$("ttsLabel"),item);
   };
 
   /* =================== AI collaborator ===================
@@ -12343,20 +12444,21 @@
   if($("voiceOverlayName")) $("voiceOverlayName").onclick=function(){ openAgentEditor(collabAgent()); };
 
   /* =================== actions =================== */
-  $("shareBtn").onclick=function(){
-    var item=current(), mod=shareModule(item);
-    if(mod) return mod.share(item,this);
-    if(!isPublicShareable(item)) return;
-    if(item.shareId) openPublicShareOptions(this,item);
-    else shareCurrentItem();
-  };
-  $("copyAll").onclick=function(){
-    var it=current(); if(!it) return;
-    if(it.type==="audio") return;
+  $("shareBtn").onclick=function(){ shareItemFrom(this, current()); };
+  function itemCopyText(it){
+    if(!it||it.type==="audio") return "";
     var text = it.type==="script" ? (it.sections||[]).map(function(x){ return (x.body||"").trim(); }).filter(Boolean).join("\n\n") : (it.type==="todo"?(it.todos||[]).map(function(task){ return (task.done?"[x] ":"[ ] ")+(task.text||"")+([taskDetailsText(task),(task.subtasks||[]).map(function(subtask){ return subtask.text?"  ["+(subtask.done?"x":" ")+"] "+subtask.text:""; }).filter(Boolean).join("\n")].filter(Boolean).length?"\n"+[taskDetailsText(task),(task.subtasks||[]).map(function(subtask){ return subtask.text?"  ["+(subtask.done?"x":" ")+"] "+subtask.text:""; }).filter(Boolean).join("\n")].filter(Boolean).join("\n"):""); }).join("\n"):itemText(it));
     if(it.type==="todo") text=(it.todos||[]).map(taskCopyText).join("\n");
+    return text;
+  }
+  function copyItemAll(it){
+    if(!it||it.type==="audio") return;
+    copy(itemCopyText(it),function(){ showToast(it.type==="script"?"Full script copied":"Note copied"); });
+  }
+  $("copyAll").onclick=function(){
+    var it=current(); if(!it) return;
     var b=this, lbl=$("copyAllLabel"), old=lbl.textContent;
-    copy(text,function(){ b.classList.add("done"); lbl.textContent="Copied"; showToast(it.type==="script"?"Full script copied":"Note copied"); setTimeout(function(){ b.classList.remove("done"); lbl.textContent=old; },1300); });
+    copy(itemCopyText(it),function(){ b.classList.add("done"); lbl.textContent="Copied"; showToast(it.type==="script"?"Full script copied":"Note copied"); setTimeout(function(){ b.classList.remove("done"); lbl.textContent=old; },1300); });
   };
   $("newBtn").onclick=function(){
     var self=this;
