@@ -143,6 +143,7 @@ test("home notes honor tag, type, status, and search filters, then the chosen so
         { id: "e", title: "Secret", type: "note", hidden: true, tagIds: ["t1"], updated: 8, text: "" }
       ]
     },
+    isInTrash: function () { return false; },
     itemKindForAgent: function (it) { return it.type === "todo" ? "todo" : "note"; },
     isTodoNote: function (it) { return it.type === "todo"; },
     itemDueDate: function (it) { return it.dueDate || ""; },
@@ -321,10 +322,26 @@ test("a sidebar tag opened from home shows that tag on the page", function () {
   box.viewingHome = false;
   box.homeTagId = null;
   box.removed = null;
+  box.viewingTagId = "stale";
+  box.exitSidebarFocus = function () { box.exited = true; };
   box.syncHomeTagFromSidebar();
-  assert.equal(box.homeTagId, null);
-  assert.equal(box.removed, null);
+  assert.equal(box.viewingHome, true);
+  assert.equal(box.homeTagId, "astral");
+  assert.equal(box.viewingTagId, null);
+  assert.equal(box.exited, true);
+  assert.equal(box.removed, "open");
+  box.viewingHome = false;
+  box.state.filterTag = null;
+  box.homeTagId = "keep";
+  box.exited = false;
+  box.removed = null;
+  box.syncHomeTagFromSidebar();
+  assert.equal(box.viewingHome, false);
+  assert.equal(box.homeTagId, "keep");
+  assert.equal(box.exited, false);
   box.viewingHome = true;
+  box.homeTagId = null;
+  box.state.filterTag = "astral";
   box.focus = true;
   box.syncHomeTagFromSidebar();
   assert.equal(box.homeTagId, null);

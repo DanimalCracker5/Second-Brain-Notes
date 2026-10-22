@@ -20,6 +20,7 @@ function grab(name, next) {
 }
 
 const sandbox = {
+  isInTrash: function () { return false; },
   isTodoNote: function (it) { return !!(it && (it.todo || it.type === "todo")); },
   cleanStatus: function (value) {
     var s = String(value == null ? "" : value).trim().toLowerCase().replace(/[-_]+/g, " ").replace(/\s+/g, " ");
@@ -61,8 +62,9 @@ test("queueGroups slots each status into its group", function () {
   assert.deepEqual(labels, ["In progress:1", "Queued:1", "Ready to test:0", "Failed test:0"]);
 });
 
-test("the sidebar ships a Queue entry and rows render the assistant badge", function () {
-  assert.ok(html.includes('id="queueNavBtn"'), "Queue nav button in the sidebar");
+test("the sidebar no longer has a separate Queue button, and rows render the assistant badge", function () {
+  assert.ok(!html.includes('id="queueNavBtn"'), "Queue button is removed; the notes caret already covers that list");
+  assert.ok(!html.includes("queue-nav"), "Queue button styles are removed with the button");
   assert.ok(html.includes('state.sidebarView==="queue"'), "queue sidebar view wired");
   assert.ok(html.includes('originBadge.textContent="Added by Assistant"'), "badge rendered on rows");
   const homeRowFrom = html.indexOf("function buildHomeNoteRow");
