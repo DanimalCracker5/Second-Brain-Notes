@@ -1,0 +1,406 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Shared Brain HUD</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Sora:wght@400;500;600;700&family=DM+Mono:wght@400;500&family=Newsreader:ital,opsz,wght@1,6..72,400;1,6..72,500&display=swap" rel="stylesheet">
+<script src="./astral.config.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-auth-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore-compat.js"></script>
+<style>
+  /* AMOLED pure black, slow ambient motion (burn-in safe), portrait-first. */
+  :root{
+    --accent:#8b7bff; --accent-soft:rgba(139,123,255,.14);
+    --ink:#eceaf6; --ink-dim:#8d8aa4; --ink-faint:#5b5870;
+    --line:rgba(255,255,255,.07);
+    --card:#0a0a0c;
+    --font-display:"Sora",system-ui,sans-serif;
+    --font-mono:"DM Mono",ui-monospace,monospace;
+  }
+  *{ box-sizing:border-box; margin:0; padding:0; }
+  html,body{ height:100%; }
+  body{ background:#000; color:var(--ink); font-family:var(--font-display); -webkit-font-smoothing:antialiased; overflow-y:auto; }
+
+  .aurora{ position:fixed; inset:-20%; pointer-events:none; z-index:0; filter:blur(90px); }
+  .aurora span{ position:absolute; border-radius:50%; opacity:.055; }
+  .aurora .a1{ width:70vmax; height:70vmax; left:-15%; top:-10%;
+    background:radial-gradient(circle at 40% 40%, #8b7bff, transparent 65%);
+    animation:drift1 34s ease-in-out infinite alternate; }
+  .aurora .a2{ width:60vmax; height:60vmax; right:-20%; bottom:-15%;
+    background:radial-gradient(circle at 60% 60%, #4f7bff, transparent 65%);
+    animation:drift2 41s ease-in-out infinite alternate; }
+  @keyframes drift1{ from{ transform:translate(0,0) scale(1); } to{ transform:translate(9%,12%) scale(1.12); } }
+  @keyframes drift2{ from{ transform:translate(0,0) scale(1.08); } to{ transform:translate(-11%,-8%) scale(.96); } }
+  .halo{ position:fixed; inset:0; pointer-events:none; z-index:0;
+    background:radial-gradient(55% 30% at 50% 40%, var(--accent-soft), transparent 70%);
+    animation:breathe 9s ease-in-out infinite; }
+  @keyframes breathe{ 0%,100%{ opacity:.45; transform:scale(1); } 50%{ opacity:.8; transform:scale(1.05); } }
+  @media (prefers-reduced-motion: reduce){
+    .aurora span, .halo{ animation:none; } .halo{ opacity:.55; }
+    .section, .item{ animation:none !important; opacity:1 !important; transform:none !important; }
+  }
+
+  main{ position:relative; z-index:1; min-height:100dvh;
+    display:flex; flex-direction:column; justify-content:center; align-items:center;
+    padding:max(40px, env(safe-area-inset-top)) 6vw max(56px, env(safe-area-inset-bottom));
+    gap:clamp(28px, 4vh, 50px); max-width:900px; margin:0 auto; }
+
+  @keyframes rise{ from{ opacity:0; transform:translateY(22px); } to{ opacity:1; transform:none; } }
+  .datebar{ animation:rise .8s cubic-bezier(.22,.8,.28,1) both; animation-delay:.05s; }
+  .section{ animation:rise .8s cubic-bezier(.22,.8,.28,1) both; animation-delay:calc(.15s + var(--i,0) * .1s); }
+
+  .datebar{ display:flex; align-items:baseline; justify-content:space-between; width:100%; }
+  .eyebrow{ font:500 clamp(15px,2vh,22px) var(--font-mono); letter-spacing:.34em; text-transform:uppercase; color:var(--ink-faint); }
+  #date{ font:400 clamp(16px,2.1vh,24px) var(--font-mono); letter-spacing:.06em; color:var(--ink-dim); }
+
+  .board{ display:flex; flex-direction:column; gap:clamp(26px,3.6vh,44px); width:100%; }
+  .section{ width:100%; }
+  .sec-head{ display:flex; align-items:center; gap:16px; margin-bottom:clamp(10px,1.4vh,18px); }
+  .sec-title{ font:500 clamp(15px,1.9vh,21px) var(--font-mono); letter-spacing:.3em; text-transform:uppercase; color:var(--ink-dim); white-space:nowrap; }
+  .sec-head::after{ content:""; flex:1; height:1px; background:var(--line); }
+  .sec-count{ font:400 clamp(14px,1.8vh,19px) var(--font-mono); color:var(--ink-faint); }
+
+  .items{ display:flex; flex-direction:column; gap:clamp(14px,2.2vh,26px); }
+  .item{
+    position:relative; overflow:hidden;
+    padding:clamp(22px,3.2vh,40px) clamp(24px,3.6vw,46px) clamp(20px,3vh,36px);
+    border:1px solid var(--line); border-radius:26px; background:var(--card);
+    box-shadow:0 1px 0 rgba(255,255,255,.03) inset, 0 18px 50px -30px rgba(0,0,0,.9);
+    line-height:1.26; font-size:clamp(30px,4.4vh,52px); font-weight:600; letter-spacing:-.01em;
+  }
+  .item .bar{ position:absolute; left:0; top:0; height:3px; width:52%;
+    background:linear-gradient(90deg, var(--accent), rgba(139,123,255,0)); opacity:.85; }
+  .item .bar.quiet{ opacity:.28; }
+  .item small{ display:flex; align-items:center; gap:14px; margin-top:clamp(10px,1.6vh,18px); }
+  .chip{ display:inline-block; padding:.28em .8em; border-radius:999px;
+    font:500 clamp(14px,1.9vh,20px) var(--font-mono);
+    letter-spacing:.14em; text-transform:uppercase; white-space:nowrap; border:1px solid transparent; }
+  .chip.in-progress{ color:#cfc6ff; background:var(--accent-soft); border-color:rgba(139,123,255,.35); }
+  .chip.ready-to-test{ color:#ffe1a6; background:rgba(255,190,90,.1); border-color:rgba(255,190,90,.3); }
+  .chip.failed-test{ color:#ffb1b8; background:rgba(255,90,110,.1); border-color:rgba(255,90,110,.3); }
+  .chip.queued{ color:var(--ink-dim); background:rgba(255,255,255,.04); border-color:var(--line); }
+  .chip.brainstorming{ color:#e6b8ff; background:rgba(220,120,255,.1); border-color:rgba(220,120,255,.3); }
+  .chip.passed-test{ color:#9fe8c0; background:rgba(120,230,170,.08); border-color:rgba(120,230,170,.25); }
+
+  .done-row{ display:flex; justify-content:space-between; align-items:baseline; width:100%;
+    font:400 clamp(16px,2vh,23px) var(--font-mono); letter-spacing:.08em; color:var(--ink-dim); }
+  .done-row b{ color:#9fe8c0; font-weight:500; }
+  .quote{ font:italic 400 clamp(20px,2.6vh,30px)/1.4 var(--font-quote,Georgia,serif); color:var(--ink-dim); text-align:center; max-width:34ch; }
+
+  .empty{ text-align:center; padding:clamp(30px,6vh,70px) 0; color:var(--ink-dim);
+    font-size:clamp(30px,4.2vh,48px); font-weight:500; line-height:1.35; }
+  .empty .mark{ display:block; margin-bottom:clamp(16px,3vh,30px); font-size:clamp(44px,6vh,64px); color:var(--accent); opacity:.8; }
+
+  /* Sign-in gate */
+  .gate{ position:fixed; inset:0; z-index:5; display:flex; flex-direction:column; justify-content:center; align-items:center;
+    gap:26px; background:#000; padding:8vw; text-align:center; }
+  .gate[hidden]{ display:none; }
+  .gate h1{ font-size:clamp(30px,5vh,44px); font-weight:600; }
+  .gate p{ color:var(--ink-dim); font-size:clamp(17px,2.2vh,22px); max-width:32ch; line-height:1.5; }
+  .gate button{ font:500 clamp(17px,2.2vh,22px) var(--font-display); color:var(--ink);
+    background:var(--accent-soft); border:1px solid rgba(139,123,255,.4); border-radius:999px;
+    padding:.9em 1.8em; cursor:pointer; }
+  .gate .gate-status{ font:400 clamp(14px,1.8vh,18px) var(--font-mono); color:var(--ink-faint); min-height:1.4em; }
+
+  /* Auto-hiding toolbar */
+  .toolbar{ position:fixed; z-index:6; top:max(12px, env(safe-area-inset-top)); right:14px; left:14px;
+    display:flex; justify-content:flex-end; gap:10px; opacity:0; pointer-events:none; transition:opacity .4s; }
+  .toolbar.show{ opacity:1; pointer-events:auto; }
+  .toolbar button{ font:500 15px var(--font-mono); letter-spacing:.06em; color:var(--ink-dim);
+    background:rgba(20,20,26,.86); border:1px solid var(--line); border-radius:999px;
+    padding:10px 18px; cursor:pointer; backdrop-filter:blur(8px); }
+  .toolbar button.primary{ color:var(--ink); border-color:rgba(139,123,255,.4); }
+
+  /* Settings sheet */
+  .sheet{ position:fixed; inset:0; z-index:7; background:rgba(0,0,0,.72); display:none;
+    align-items:flex-end; justify-content:center; }
+  .sheet.open{ display:flex; }
+  .sheet-box{ width:min(560px,100%); background:#0c0c10; border:1px solid var(--line);
+    border-radius:28px 28px 0 0; padding:26px 22px calc(26px + env(safe-area-inset-bottom));
+    max-height:82dvh; overflow-y:auto; }
+  .sheet-head{ display:flex; justify-content:space-between; align-items:center; margin-bottom:18px; }
+  .sheet-head h2{ font-size:22px; font-weight:600; }
+  .sheet-head button{ background:none; border:0; color:var(--ink-dim); font-size:26px; cursor:pointer; padding:6px 10px; }
+  .row{ display:flex; align-items:center; gap:14px; padding:14px 6px; border-bottom:1px solid var(--line); }
+  .row .name{ flex:1; font-size:19px; font-weight:500; }
+  .row .n{ font:400 14px var(--font-mono); color:var(--ink-faint); }
+  .switch{ width:56px; height:32px; border-radius:999px; border:1px solid var(--line);
+    background:rgba(255,255,255,.05); position:relative; cursor:pointer; flex-shrink:0; }
+  .switch::after{ content:""; position:absolute; top:3px; left:3px; width:24px; height:24px;
+    border-radius:50%; background:var(--ink-dim); transition:all .18s; }
+  .switch.on{ background:var(--accent-soft); border-color:rgba(139,123,255,.4); }
+  .switch.on::after{ left:27px; background:var(--accent); }
+  .mv{ background:none; border:1px solid var(--line); color:var(--ink-dim); border-radius:10px;
+    width:40px; height:40px; font-size:18px; cursor:pointer; flex-shrink:0; }
+  .mv:disabled{ opacity:.3; cursor:default; }
+  .sheet-hint{ margin-top:14px; font:400 14px var(--font-mono); color:var(--ink-faint); line-height:1.5; }
+
+  @media (min-width:760px) and (min-height:900px){
+    .item{ font-size:clamp(40px,4.6vh,56px); }
+  }
+</style>
+</head>
+<body>
+<div class="aurora" aria-hidden="true"><span class="a1"></span><span class="a2"></span></div>
+<div class="halo" aria-hidden="true"></div>
+
+<main id="board" hidden>
+  <div class="datebar"><span class="eyebrow">Today</span><span id="date"></span></div>
+  <div class="board" id="sections"></div>
+  <div class="done-row" id="doneRow" hidden><span><b id="doneCount">0</b> done</span><span id="syncState"></span></div>
+  <div class="empty" id="emptyState" hidden><span class="mark">✓</span>All clear.<br>Nothing waiting.</div>
+</main>
+
+<div class="gate" id="gate">
+  <h1>Shared Brain HUD</h1>
+  <p>Sign in to show your live board on this screen.</p>
+  <button id="gateSignIn" type="button">Sign in with Google</button>
+  <div class="gate-status" id="gateStatus" role="status"></div>
+</div>
+
+<div class="toolbar" id="toolbar">
+  <button id="settingsBtn" type="button">Edit</button>
+  <button id="fsBtn" type="button" class="primary">Fullscreen</button>
+  <button id="exitBtn" type="button" hidden>Exit</button>
+</div>
+
+<div class="sheet" id="sheet" role="dialog" aria-modal="true" aria-label="HUD sections">
+  <div class="sheet-box">
+    <div class="sheet-head"><h2>HUD sections</h2><button id="sheetClose" type="button" aria-label="Close">✕</button></div>
+    <div id="sheetRows"></div>
+    <p class="sheet-hint">Toggle sections on or off and reorder them. Saved on this device only.</p>
+  </div>
+</div>
+
+<script>
+(function(){
+  "use strict";
+  /* Same status vocabulary as the app (TODO_STATUSES in index.html). */
+  var TODO_STATUSES=["brainstorming","queued","in progress","ready to test","failed test","passed test"];
+  function cleanStatus(value){ var s=String(value==null?"":value).trim().toLowerCase().replace(/[-_]+/g," ").replace(/\s+/g," "); if(!s||s==="clear"||s==="none"||s==="null") return ""; return TODO_STATUSES.indexOf(s)>=0?s:""; }
+  function statusLabel(value){ var s=cleanStatus(value); return s?s.charAt(0).toUpperCase()+s.slice(1):""; }
+
+  var SECTION_ORDER=["in progress","ready to test","failed test","queued","brainstorming"];
+  var SECTION_LABELS={ "in progress":"In progress", "ready to test":"Ready to test", "failed test":"Failed test", "queued":"Queued", "brainstorming":"Brainstorming" };
+  var MAX_PER_SECTION=3;
+  var LAYOUT_KEY="sbHudLayout";
+  var REFRESH_MS=60000;
+
+  function defaultLayout(){ var on={}; SECTION_ORDER.forEach(function(s){ on[s]=true; }); return { order:SECTION_ORDER.slice(), hidden:{} }; }
+  function loadLayout(){
+    try{
+      var raw=JSON.parse(localStorage.getItem(LAYOUT_KEY)||"null");
+      if(!raw||!Array.isArray(raw.order)) return defaultLayout();
+      var layout={ order:[], hidden:{} };
+      /* Known statuses first, in the saved order. */
+      raw.order.forEach(function(s){ if(SECTION_ORDER.indexOf(s)>=0&&layout.order.indexOf(s)<0) layout.order.push(s); });
+      SECTION_ORDER.forEach(function(s){ if(layout.order.indexOf(s)<0) layout.order.push(s); });
+      Object.keys(raw.hidden||{}).forEach(function(s){ if(SECTION_ORDER.indexOf(s)>=0) layout.hidden[s]=!!raw.hidden[s]; });
+      return layout;
+    }catch(e){ return defaultLayout(); }
+  }
+  function saveLayout(layout){ try{ localStorage.setItem(LAYOUT_KEY,JSON.stringify(layout)); }catch(e){} }
+
+  var layout=loadLayout();
+  var latest={ sections:{}, doneCount:0 };
+
+  var $=function(id){ return document.getElementById(id); };
+
+  function isPrivateTodo(it){
+    /* Hard privacy filter: the task titled exactly "-" never renders. Not a setting. */
+    return String((it&&it.title)||"").trim()==="-";
+  }
+  function isTodo(it){ return it&&((it.type==="todo")||it.todo===true); }
+
+  function isSameDay(a,b){ return a.getFullYear()===b.getFullYear()&&a.getMonth()===b.getMonth()&&a.getDate()===b.getDate(); }
+  function groupTodos(items){
+    var sections={}, doneCount=0, k, now=new Date();
+    SECTION_ORDER.concat(["passed test"]).forEach(function(s){ sections[s]=[]; });
+    (items||[]).forEach(function(it){
+      if(!isTodo(it)||isPrivateTodo(it)) return;
+      var status=cleanStatus(it.status);
+      if(status==="passed test"){
+        /* Only completions from today feed the done counter. */
+        var when=Number(it.completed)||0;
+        if(when&&isSameDay(new Date(when),now)) doneCount++;
+        return;
+      }
+      if(!status&&it.done){
+        var done2=Number(it.completed)||0;
+        if(done2&&isSameDay(new Date(done2),now)) doneCount++;
+        return;
+      }
+      if(!status) return;
+      if(sections[status]) sections[status].push({ id:it.id, title:String(it.title||"Untitled"), status:status });
+    });
+    delete sections["passed test"];
+    return { sections:sections, doneCount:doneCount };
+  }
+
+  function render(){
+    var board=$("sections"); board.innerHTML="";
+    var anyVisible=false, index=0;
+    layout.order.forEach(function(status){
+      if(layout.hidden[status]) return;
+      var list=latest.sections[status]||[];
+      if(!list.length) return; /* empty sections never render */
+      anyVisible=true;
+      var section=document.createElement("section");
+      section.className="section"; section.style.setProperty("--i",String(index++));
+      var shown=list.slice(0,MAX_PER_SECTION);
+      var head=document.createElement("div"); head.className="sec-head";
+      head.innerHTML='<span class="sec-title">'+statusLabel(status)+'</span><span class="sec-count">'+list.length+'</span>';
+      section.appendChild(head);
+      var wrap=document.createElement("div"); wrap.className="items";
+      shown.forEach(function(entry){
+        var card=document.createElement("div"); card.className="item";
+        var active=status==="in progress";
+        card.innerHTML='<span class="bar'+(active?"":" quiet")+'"></span>'+escapeHtml(entry.title)+
+          '<small><span class="chip '+status.replace(/\s+/g,"-")+'">'+statusLabel(status)+'</span></small>';
+        wrap.appendChild(card);
+      });
+      section.appendChild(wrap);
+      board.appendChild(section);
+    });
+    $("emptyState").hidden=anyVisible||latest.doneCount>0;
+    $("doneRow").hidden=!(latest.doneCount>0);
+    $("doneCount").textContent=String(latest.doneCount);
+    document.title="Shared Brain HUD";
+  }
+
+  function escapeHtml(text){
+    return String(text).replace(/[&<>"']/g,function(c){
+      return {"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c];
+    });
+  }
+
+  function tickDate(){
+    var now=new Date();
+    $("date").textContent=now.toLocaleDateString("en-US",{ weekday:"long", month:"short", day:"numeric" });
+  }
+
+  /* ---------- Firebase (same project + sign-in as the app) ---------- */
+  var db=null, auth=null, currentUser=null, refreshTimer=null;
+
+  function gateMessage(text){ $("gateStatus").textContent=text||""; }
+
+  function initFirebase(){
+    var cfg=(window.ASTRAL_CONFIG&&window.ASTRAL_CONFIG.firebase)||null;
+    if(!cfg||typeof firebase==="undefined"){
+      gateMessage("HUD is not configured yet — add Firebase settings to astral.config.js");
+      return;
+    }
+    firebase.initializeApp(cfg);
+    auth=firebase.auth(); db=firebase.firestore();
+    auth.onAuthStateChanged(function(user){
+      currentUser=user||null;
+      if(user){
+        $("gate").hidden=true; $("board").hidden=false;
+        loadBoard();
+        if(refreshTimer) clearInterval(refreshTimer);
+        refreshTimer=setInterval(loadBoard,REFRESH_MS);
+      } else {
+        $("gate").hidden=false; $("board").hidden=true;
+        gateMessage("");
+        if(refreshTimer){ clearInterval(refreshTimer); refreshTimer=null; }
+      }
+    });
+  }
+
+  function loadBoard(){
+    if(!currentUser||!db) return;
+    $("syncState").textContent="updating…";
+    db.collection("users").doc(currentUser.uid).get().then(function(doc){
+      var data=doc.exists?doc.data():{};
+      var grouped=groupTodos(data.items);
+      latest.sections=grouped.sections; latest.doneCount=grouped.doneCount;
+      $("syncState").textContent="live";
+      render();
+    }).catch(function(error){
+      console.warn(error);
+      $("syncState").textContent="";
+      gateMessage("");
+    });
+  }
+
+  function signIn(){
+    var button=$("gateSignIn");
+    button.disabled=true; gateMessage("Signing you in…");
+    /* Watchdog: never leave the button dead if the popup fails silently. */
+    var watchdog=setTimeout(function(){
+      if(button.disabled){ button.disabled=false; gateMessage("Sign-in did not finish — tap to try again"); }
+    },20000);
+    auth.signInWithPopup(new firebase.auth.GoogleAuthProvider()).catch(function(error){
+      console.warn(error);
+      gateMessage(error&&error.code==="auth/popup-blocked"?"Allow pop-ups for this site, then try again":"Sign-in canceled");
+    }).then(function(){ clearTimeout(watchdog); button.disabled=false; });
+  }
+
+  /* ---------- Toolbar: auto-hide, fullscreen, settings ---------- */
+  var toolbarTimer=null;
+  function showToolbar(){
+    $("toolbar").classList.add("show");
+    clearTimeout(toolbarTimer);
+    toolbarTimer=setTimeout(function(){ $("toolbar").classList.remove("show"); },3000);
+  }
+  ["mousemove","touchstart","keydown","click"].forEach(function(evt){
+    document.addEventListener(evt,function(){ showToolbar(); },{ passive:true });
+  });
+
+  function isFullscreen(){ return !!(document.fullscreenElement||document.webkitFullscreenElement); }
+  function syncFsButtons(){ $("fsBtn").hidden=isFullscreen(); $("exitBtn").hidden=!isFullscreen(); }
+  function toggleFullscreen(){
+    if(isFullscreen()){ (document.exitFullscreen||document.webkitExitFullscreen||function(){}).call(document); }
+    else{ var el=document.documentElement; (el.requestFullscreen||el.webkitRequestFullscreen||function(){}).call(el).catch(function(){}); }
+    setTimeout(syncFsButtons,300);
+  }
+
+  /* ---------- Settings sheet ---------- */
+  function renderSheet(){
+    var rows=$("sheetRows"); rows.innerHTML="";
+    layout.order.forEach(function(status,i){
+      var row=document.createElement("div"); row.className="row";
+      var count=(latest.sections[status]||[]).length;
+      row.innerHTML='<button class="mv" data-dir="up" data-i="'+i+'" '+(i===0?"disabled":"")+'>↑</button>'+
+        '<button class="mv" data-dir="down" data-i="'+i+'" '+(i===layout.order.length-1?"disabled":"")+'>↓</button>'+
+        '<span class="name">'+statusLabel(status)+'</span><span class="n">'+count+'</span>'+
+        '<button class="switch'+(layout.hidden[status]?"":" on")+'" data-status="'+status+'" role="switch" aria-checked="'+(!layout.hidden[status])+'" aria-label="Show '+statusLabel(status)+'"></button>';
+      rows.appendChild(row);
+    });
+    rows.addEventListener("click",onSheetClick);
+  }
+  function onSheetClick(event){
+    var target=event.target.closest("button"); if(!target) return;
+    if(target.classList.contains("switch")){
+      var status=target.getAttribute("data-status");
+      layout.hidden[status]=!layout.hidden[status];
+      saveLayout(layout); renderSheet(); render(); return;
+    }
+    var i=Number(target.getAttribute("data-i")), dir=target.getAttribute("data-dir");
+    var swap=dir==="up"?i-1:i+1;
+    if(swap<0||swap>=layout.order.length) return;
+    var temp=layout.order[i]; layout.order[i]=layout.order[swap]; layout.order[swap]=temp;
+    saveLayout(layout); renderSheet(); render();
+  }
+  function openSheet(){ renderSheet(); $("sheet").classList.add("open"); }
+  function closeSheet(){ $("sheet").classList.remove("open"); }
+
+  $("gateSignIn").onclick=signIn;
+  $("settingsBtn").onclick=openSheet;
+  $("sheetClose").onclick=closeSheet;
+  $("sheet").addEventListener("click",function(event){ if(event.target===$("sheet")) closeSheet(); });
+  $("fsBtn").onclick=toggleFullscreen;
+  $("exitBtn").onclick=toggleFullscreen;
+  document.addEventListener("fullscreenchange",syncFsButtons);
+  document.addEventListener("webkitfullscreenchange",syncFsButtons);
+
+  tickDate(); setInterval(tickDate,60000); syncFsButtons(); showToolbar();
+  initFirebase();
+})();
+</script>
+</body>
+</html>
