@@ -1702,6 +1702,7 @@
       <div id="tagGroups"></div>
       <div class="sec-h"><button class="section-toggle" id="typesToggleBtn" type="button" aria-controls="types" aria-expanded="true" title="Collapse types"><span>Types</span><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m6 9 6 6 6-6"/></svg></button></div>
       <div class="typecloud" id="types"></div>
+      <div id="statusSectionWrap"></div>
       <div class="sec-h" id="promptsSection" hidden><button class="section-toggle" id="promptsToggleBtn" type="button" aria-controls="promptsHub" aria-expanded="true" title="Collapse prompts"><span>Prompts</span><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m6 9 6 6 6-6"/></svg></button></div>
       <div id="promptsHub" hidden></div>
       <div class="sec-h"><button class="section-toggle" id="notesToggleBtn" type="button" aria-controls="notesListWrap" aria-expanded="true" title="Collapse notes"><span id="listLabel">All notes</span><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m6 9 6 6 6-6"/></svg></button><div class="list-tools"><button id="selectNotesBtn" title="Select notes" aria-label="Select notes">✓</button><button id="deleteNotesBtn" class="bulk-delete" type="button" hidden title="Delete selected notes" aria-label="Delete selected notes"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 6h18M8 6V4h8v2M19 6l-1 14H6L5 6"/></svg></button><button id="listToolsBtn" title="Filter and sort" aria-label="Filter and sort notes">⇅</button></div></div>
@@ -4006,21 +4007,25 @@
     var statusRows=TODO_STATUSES.map(function(status){
       return { status:status, count:todos.filter(function(item){ return todoStatus(item)===status; }).length };
     }).filter(function(row){ return row.count>0; });
-    if(statusRows.length){
-      var statusSecHead=document.createElement("div"); statusSecHead.className="sec-h";
-      var statusSecBtn=document.createElement("button"); statusSecBtn.type="button"; statusSecBtn.className="section-toggle"; statusSecBtn.id="statusToggleBtn";
-      statusSecBtn.setAttribute("aria-controls","statusFilters"); statusSecBtn.setAttribute("aria-expanded",state.statusSectionCollapsed?"false":"true");
-      statusSecBtn.title="Collapse status"; statusSecBtn.innerHTML="<span>Status</span>"+'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m6 9 6 6 6-6"/></svg>';
-      statusSecBtn.onclick=function(){ state.statusSectionCollapsed=!state.statusSectionCollapsed; persist(); renderAll(); };
-      statusSecHead.appendChild(statusSecBtn); el.appendChild(statusSecHead);
-      var statusBox=document.createElement("div"); statusBox.id="statusFilters"; if(state.statusSectionCollapsed) statusBox.hidden=true;
-      statusRows.forEach(function(row){
-        var button=document.createElement("button"); button.type="button"; button.className="type-filter status-filter"+(state.filterStatus===row.status?" active":"");
-        button.innerHTML=ICON_TODO+"<span></span>"; button.querySelector("span").textContent=statusLabel(row.status)+" · "+row.count;
-        button.onclick=function(){ state.filterStatus=state.filterStatus===row.status?"":row.status; persist(); renderAll(); };
-        statusBox.appendChild(button);
-      });
-      el.appendChild(statusBox);
+    var wrap=$("statusSectionWrap");
+    if(wrap){
+      wrap.innerHTML="";
+      if(statusRows.length){
+        var statusSecHead=document.createElement("div"); statusSecHead.className="sec-h";
+        var statusSecBtn=document.createElement("button"); statusSecBtn.type="button"; statusSecBtn.className="section-toggle"; statusSecBtn.id="statusToggleBtn";
+        statusSecBtn.setAttribute("aria-controls","statusFilters"); statusSecBtn.setAttribute("aria-expanded",state.statusSectionCollapsed?"false":"true");
+        statusSecBtn.title="Collapse status"; statusSecBtn.innerHTML="<span>Status</span>"+'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m6 9 6 6 6-6"/></svg>';
+        statusSecBtn.onclick=function(){ state.statusSectionCollapsed=!state.statusSectionCollapsed; persist(); renderAll(); };
+        statusSecHead.appendChild(statusSecBtn); wrap.appendChild(statusSecHead);
+        var statusBox=document.createElement("div"); statusBox.id="statusFilters"; if(state.statusSectionCollapsed) statusBox.hidden=true;
+        statusRows.forEach(function(row){
+          var button=document.createElement("button"); button.type="button"; button.className="type-filter status-filter"+(state.filterStatus===row.status?" active":"");
+          button.innerHTML=ICON_TODO+"<span></span>"; button.querySelector("span").textContent=statusLabel(row.status)+" · "+row.count;
+          button.onclick=function(){ state.filterStatus=state.filterStatus===row.status?"":row.status; persist(); renderAll(); };
+          statusBox.appendChild(button);
+        });
+        wrap.appendChild(statusBox);
+      }
     }
     if(todos.length&&statusFiltersUsed){
       var statusHead=document.createElement("div"); statusHead.className="type-status-head"; statusHead.textContent="Status"; el.appendChild(statusHead);
