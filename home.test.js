@@ -128,6 +128,7 @@ test("home notes honor tag, type, status, and search filters, then the chosen so
     homeQuery: "",
     homeTypeFilter: "",
     homeTagId: null,
+    homeStatusStage: null,
     homeStatusFilter: "",
     state: {
       listSort: "title",
@@ -237,7 +238,7 @@ test("picking a tag on home opens that tag's notes without the widgets", functio
   assert.equal(box.homeTagId, null);
   assert.equal(box.state.filterTag, null);
   const stage = grab("buildHomeTagStage", "renderHome");
-  assert.match(stage, /buildHomeNotesToolbar\(\)/);
+  assert.match(stage, /buildHomeNotesToolbar\(true\)/);
   assert.match(stage, /buildHomeNoteRow\(it, entering\?index:null\)/);
   assert.match(stage, /Nothing matches\./);
   assert.match(grab("buildHomeNoteRow", "setHomeNotesTag"), /openHomeItem\(it\.id\)/);

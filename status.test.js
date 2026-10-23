@@ -199,3 +199,33 @@ test("merge strips status that leaked onto a plain note", function () {
   const merged = sandbox.mergeLiveItems(note, other, {});
   assert.equal("status" in merged, false);
 });
+
+test("statusFilterPicked opens a status stage on home and toggles off", function () {
+  sandbox.persist = function () {};
+  sandbox.renderAll = function () {};
+  sandbox.viewingHome = true;
+  sandbox.homeStatusStage = null;
+  sandbox.homeTagId = "tg1";
+  vm.runInContext(grab("statusFilterPicked", functionAnchor("showHome")), sandbox, { filename: "statusFilterPicked" });
+  sandbox.statusFilterPicked("queued");
+  assert.equal(sandbox.state.filterStatus, "queued");
+  assert.equal(sandbox.homeStatusStage, "queued");
+  assert.equal(sandbox.homeTagId, null);
+  sandbox.statusFilterPicked("queued");
+  assert.equal(sandbox.state.filterStatus, "");
+  assert.equal(sandbox.homeStatusStage, null);
+});
+
+test("homeNoteVisible honors the status stage filter", function () {
+  sandbox.homeStatusStage = "queued";
+  sandbox.state.items = [
+    { id: "q", type: "note", todo: true, title: "Queued todo", status: "queued", updated: 1, blocks: [] },
+    { id: "f", type: "note", todo: true, title: "Failed todo", status: "failed test", updated: 2, blocks: [] },
+    { id: "n", type: "note", title: "Plain note", blocks: [{ id: "b", type: "text", text: "" }], updated: 3 }
+  ];
+  sandbox.homeQuery = ""; sandbox.homeTypeFilter = ""; sandbox.homeTagId = null; sandbox.homeStatusFilter = "";
+  vm.runInContext(grab("homeNoteVisible", functionAnchor("homeNotes")), sandbox, { filename: "homeNoteVisible" });
+  vm.runInContext(grab("homeNotes", functionAnchor("restoreHomeTagRail")), sandbox, { filename: "homeNotes" });
+  assert.deepEqual(sandbox.homeNotes().map(function (it) { return it.id; }), ["q"]);
+  sandbox.homeStatusStage = null;
+});

@@ -2706,7 +2706,7 @@
   }
 
   /* Opening the site lands on Home. A note is shown only after it is chosen. */
-  var viewingHome=true, viewingTagId=null, homeCustomizing=false, homeTagId=null, homeTypeFilter="", homeStatusFilter="", homeQuery="", homeSearchFocus=false, homeScratchTimer=null, homeTagRailScroll=0;
+  var viewingHome=true, viewingTagId=null, homeCustomizing=false, homeTagId=null, homeStatusStage=null, homeTypeFilter="", homeStatusFilter="", homeQuery="", homeSearchFocus=false, homeScratchTimer=null, homeTagRailScroll=0;
   function browsingLibrary(){ return !!(viewingHome||viewingTagId); }
   function current(){ return state.items.find(function(s){return s.id===state.currentId;})||state.items[0]; }
   /* Time is counted only while this app is the focused, visible tab. It is kept
@@ -4021,7 +4021,7 @@
         statusRows.forEach(function(row){
           var button=document.createElement("button"); button.type="button"; button.className="type-filter status-filter"+(state.filterStatus===row.status?" active":"");
           button.innerHTML=ICON_TODO+"<span></span>"; button.querySelector("span").textContent=statusLabel(row.status)+" · "+row.count;
-          button.onclick=function(){ state.filterStatus=state.filterStatus===row.status?"":row.status; persist(); renderAll(); };
+          button.onclick=function(){ statusFilterPicked(row.status); };
           statusBox.appendChild(button);
         });
         wrap.appendChild(statusBox);
@@ -4033,7 +4033,7 @@
       options.forEach(function(option){
         var button=document.createElement("button"); button.type="button"; button.className="type-filter status-filter"+(state.filterStatus===option[0]?" active":"");
         button.innerHTML=ICON_TODO+"<span></span>"; button.querySelector("span").textContent=option[1];
-        button.onclick=function(){ state.filterStatus=state.filterStatus===option[0]?"":option[0]; persist(); renderAll(); };
+        button.onclick=function(){ statusFilterPicked(option[0]); };
         el.appendChild(button);
       });
     }
@@ -4804,12 +4804,32 @@
     else layout.widgets.push({type:type, enabled:true});
     persistHomeLayout();
   }
+  /* The drawer's Status caret and the Queue view's status rows share one
+     behavior: pick a status and the note side shows that list. On Home that
+     means opening a status page (like a tag page); the library list filters
+     as before. Picking the active status again clears everything. */
+  function statusFilterPicked(value){
+    state.filterStatus=state.filterStatus===value?"":value;
+    if(viewingHome){
+      homeStatusStage=state.filterStatus||null;
+      if(homeStatusStage) homeTagId=null;
+    }
+    persist();
+    renderAll();
+  }
   function showHome(){
     if(activeAudioRecorder){ showToast("Finish the current recording before leaving it",true); return; }
     /* A second Home tap, while a tag is already open, steps back to the widgets. */
     if(viewingHome&&homeTagId){
       if(state.filterTag===homeTagId) state.filterTag=null;
       homeTagId=null;
+      renderList();
+      renderMain();
+      return;
+    }
+    /* Same for a status page opened from the drawer's Status caret. */
+    if(viewingHome&&homeStatusStage){
+      homeStatusStage=null;
       renderList();
       renderMain();
       return;
@@ -4827,6 +4847,8 @@
     if(app.classList.contains("sidebar-focus")) return;
     var next=state.filterTag||null;
     if(next&&!tagById(next)) next=null;
+    /* Picking a tag leaves any status page behind — one stage at a time. */
+    if(next) homeStatusStage=null;
     /* The tag page used to stay behind an open note. Leave the note so the list shows. */
     if(!viewingHome){
       if(!next) return;
@@ -4894,6 +4916,13 @@
     if(homeStatusFilter==="done"&&!(todo&&it.done)) return false;
     if(homeStatusFilter==="due"&&!itemDueDate(it)) return false;
     if(homeStatusFilter==="overdue"&&dueDateClass(itemDueDate(it))!=="overdue") return false;
+    /* A status page opened from the drawer's Status caret: lifecycle statuses
+       (queued, in progress, …) apply to todos; notes have none and drop out. */
+    if(homeStatusStage){
+      var stageStatus=cleanStatus(homeStatusStage);
+      if(stageStatus==="none"){ if(todoStatus(it)) return false; }
+      else if(todoStatus(it)!==stageStatus) return false;
+    }
     var query=(homeQuery||"").trim().toLowerCase();
     if(query){
       var tagNames=(it.tagIds||[]).map(function(id){ var tag=tagById(id); return tag?tag.name:""; }).join(" ");
@@ -5042,11 +5071,15 @@
     chip.onclick=onClick;
     return chip;
   }
-  function buildHomeNotesToolbar(){
+  function buildHomeNotesToolbar(inStage){
     var tools=document.createElement("div");
     if(["","open","done","due","overdue"].indexOf(homeStatusFilter)<0) homeStatusFilter="";
     var tags=(state.tags||[]).filter(function(tag){ return tag&&(!tag.hidden||tag.id===homeTagId); });
-    if(tags.length){
+    /* On a tag or status page the sidebar already shows every tag, so the
+       rail's "All / work" chips and the type filter chips just repeat it —
+       that is what made the tag view feel crowded. Stages keep search,
+       status chips and sort only. */
+    if(tags.length&&!inStage){
       var rail=document.createElement("div");
       rail.id="homeTagRail";
       rail.className="home-tag-rail";
@@ -5087,10 +5120,12 @@
     if((homeQuery||"").trim()){
       filters.appendChild(homeFilterChip("Search: "+homeQuery.trim()+"  ×", true, function(){ homeQuery=""; renderMain(); }, "search"));
     }
-    filters.appendChild(homeFilterChip("All types", !homeTypeFilter, function(){ if(homeTypeFilter){ homeTypeFilter=""; renderMain(); } }));
-    homeTypeFilters().forEach(function(row){
-      filters.appendChild(homeFilterChip(row[1], homeTypeFilter===row[0], function(){ setHomeNotesType(row[0]); }));
-    });
+    if(!inStage){
+      filters.appendChild(homeFilterChip("All types", !homeTypeFilter, function(){ if(homeTypeFilter){ homeTypeFilter=""; renderMain(); } }));
+      homeTypeFilters().forEach(function(row){
+        filters.appendChild(homeFilterChip(row[1], homeTypeFilter===row[0], function(){ setHomeNotesType(row[0]); }));
+      });
+    }
     var gap=document.createElement("span"); gap.className="home-filter-gap"; gap.setAttribute("aria-hidden","true");
     filters.appendChild(gap);
     homeStatusFilters().forEach(function(row){
@@ -5429,6 +5464,37 @@
     head.appendChild(copy); head.appendChild(tools);
     return head;
   }
+  /* A status page: same shape as a tag page, but filtered by lifecycle
+     status instead of tag. Opened by picking a status in the drawer. */
+  function buildHomeStatusStage(status, entering){
+    var frag=document.createDocumentFragment();
+    var items=homeNotes();
+    var head=document.createElement("header"); head.className="home-head tag-stage-head";
+    var copy=document.createElement("div");
+    var kicker=document.createElement("p"); kicker.className="home-kicker"; kicker.textContent="Status";
+    var title=document.createElement("h1");
+    var dot=document.createElement("i"); dot.className="tag-stage-dot"; dot.setAttribute("aria-hidden","true");
+    var name=document.createElement("span"); name.textContent=statusLabel(status)||"No status";
+    title.appendChild(dot); title.appendChild(name);
+    var sub=document.createElement("p"); sub.className="home-sub";
+    sub.textContent=items.length?(items.length+" note"+(items.length===1?"":"s")+" with this status. Open one, or go back home."):"Nothing has this status.";
+    copy.appendChild(kicker); copy.appendChild(title); copy.appendChild(sub);
+    var tools=document.createElement("div"); tools.className="home-tools";
+    var back=document.createElement("button"); back.type="button"; back.id="homeTagBack"; back.className="copy-all";
+    back.textContent="Home"; back.setAttribute("aria-label","Back to home");
+    back.onclick=function(){ homeStatusStage=null; persist(); showHome(); };
+    tools.appendChild(back);
+    head.appendChild(copy); head.appendChild(tools);
+    frag.appendChild(head);
+    var slot=document.createElement("div"); slot.className="home-notes-slot tag-stage-notes";
+    var body=document.createElement("div"); body.className="home-notes"+(entering?" enter":"");
+    body.appendChild(buildHomeNotesToolbar(true));
+    if(!items.length) body.appendChild(Object.assign(document.createElement("p"),{className:"home-muted",textContent:"Nothing matches."}));
+    else items.forEach(function(it, index){ body.appendChild(buildHomeNoteRow(it, entering?index:null)); });
+    slot.appendChild(body);
+    frag.appendChild(slot);
+    return frag;
+  }
   function buildHomeTagStage(tag, entering){
     var frag=document.createDocumentFragment();
     var items=homeNotes();
@@ -5436,7 +5502,7 @@
     frag.appendChild(buildHomeTagStageHeader(tag, items.length, !items.length&&!!filtered));
     var slot=document.createElement("div"); slot.className="home-notes-slot tag-stage-notes";
     var body=document.createElement("div"); body.className="home-notes"+(entering?" enter":"");
-    body.appendChild(buildHomeNotesToolbar());
+    body.appendChild(buildHomeNotesToolbar(true));
     if(!items.length&&filtered){
       var empty=document.createElement("p"); empty.className="home-muted"; empty.textContent="Nothing matches.";
       body.appendChild(empty);
@@ -5464,6 +5530,13 @@
       sheet.classList.add("tag-stage");
       sheet.style.setProperty("--tag", tagColor(openTag));
       sheet.appendChild(buildHomeTagStage(openTag, entering));
+      canvas.appendChild(sheet);
+      restoreHomeTagRail(sheet.querySelector("#homeTagRail"));
+      return;
+    }
+    if(homeStatusStage){
+      sheet.classList.add("tag-stage");
+      sheet.appendChild(buildHomeStatusStage(homeStatusStage, entering));
       canvas.appendChild(sheet);
       restoreHomeTagRail(sheet.querySelector("#homeTagRail"));
       return;
