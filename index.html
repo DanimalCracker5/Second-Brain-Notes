@@ -172,7 +172,7 @@
   .note-paragraph b,.note-paragraph strong{ font-weight:700; } .note-paragraph i,.note-paragraph em{ font-style:italic; } .note-paragraph u{ text-decoration-color:var(--accent); text-underline-offset:3px; }
   .note-format-trigger{ position:absolute; z-index:5; right:0; bottom:5px; width:29px; height:29px; display:grid; place-items:center; border:1px solid var(--line); border-radius:9px; color:var(--ink-dim); background:rgba(13,13,17,.92); box-shadow:0 8px 22px rgba(0,0,0,.2); cursor:pointer; opacity:0; visibility:hidden; pointer-events:none; transform:translateY(4px); transition:opacity .15s,transform .15s,color .15s,border-color .15s,background .15s,visibility .15s; }
   .note-format-trigger svg{ width:14px; height:14px; }
-  .note-paragraph-wrap:hover .note-format-trigger,.note-paragraph-wrap:focus-within .note-format-trigger,.note-paragraph-wrap.format-open .note-format-trigger{ opacity:1; visibility:visible; pointer-events:auto; transform:translateY(0); }
+  .note-paragraph-wrap:hover .note-format-trigger,.note-paragraph-wrap:focus-within .note-format-trigger,.note-paragraph-wrap.menu-lock .note-format-trigger,.note-paragraph-wrap.format-open .note-format-trigger{ opacity:1; visibility:visible; pointer-events:auto; transform:translateY(0); }
   .note-format-trigger:hover,.note-paragraph-wrap.format-open .note-format-trigger{ color:var(--accent); border-color:var(--accent-line); background:var(--accent-soft); }
   .note-format{ position:absolute; z-index:4; right:34px; bottom:5px; display:flex; gap:3px; padding:4px; border:1px solid var(--line); border-radius:10px; background:rgba(13,13,17,.92); box-shadow:0 12px 30px rgba(0,0,0,.28); opacity:0; visibility:hidden; pointer-events:none; transform:translateY(4px); transition:opacity .15s,transform .15s,visibility .15s; }
   .note-paragraph-wrap.format-open .note-format{ opacity:1; visibility:visible; pointer-events:auto; transform:translateY(0); }
@@ -182,8 +182,8 @@
   .note-block-actions button{ width:24px; height:24px; display:grid; place-items:center; border:0; border-radius:6px; color:var(--ink-dim); background:transparent; cursor:pointer; }
   .note-block-actions button svg{ width:14px; height:14px; } .note-block-actions button:hover{ color:var(--ink); background:var(--accent-soft); } .note-block-actions button.delete:hover{ color:#fca5a5; background:rgba(248,113,113,.12); } .note-block-actions button:disabled{ cursor:default; opacity:.3; }
   .note-paragraph-actions{ right:34px; bottom:5px; } .note-heading-actions{ right:34px; bottom:5px; }
-  .note-paragraph-wrap:hover .note-paragraph-actions,.note-paragraph-wrap:focus-within .note-paragraph-actions,.note-heading:hover .note-heading-actions,.note-heading:focus-within .note-heading-actions{ opacity:1; visibility:visible; pointer-events:auto; transform:translateY(0); }
-  .note-paragraph-wrap:hover,.note-paragraph-wrap:focus-within,.note-heading:hover,.note-heading:focus-within{ padding-bottom:39px; }
+  .note-paragraph-wrap:hover .note-paragraph-actions,.note-paragraph-wrap:focus-within .note-paragraph-actions,.note-paragraph-wrap.menu-lock .note-paragraph-actions,.note-heading:hover .note-heading-actions,.note-heading:focus-within .note-heading-actions{ opacity:1; visibility:visible; pointer-events:auto; transform:translateY(0); }
+  .note-paragraph-wrap:hover,.note-paragraph-wrap:focus-within,.note-paragraph-wrap.menu-lock,.note-heading:hover,.note-heading:focus-within{ padding-bottom:39px; }
   /* Chapter controls sit in the document flow. A hover-only overlay grew the
      chapter and slid a bordered bar under the pointer, so the divider jumped
      and move/delete could not be clicked. */
@@ -5752,7 +5752,26 @@
   }
   function refreshNoteEditor(note){
     var old=canvas.querySelector('.note-editor[data-note-id="'+note.id+'"]');
-    if(old) old.parentNode.replaceChild(buildNoteEditor(note),old);
+    if(!old) return;
+    /* Rebuilding the editor while the user is typing rips the focused block
+       out of the DOM for a frame: the caret jumps and the little block menu
+       (format trigger + block actions) blinks off and back on every time a
+       background sync lands. Defer the rebuild until the editor loses focus. */
+    var active=document.activeElement;
+    if(active&&active!==document.body&&old.contains(active)){
+      old.dataset.refreshPending="1";
+      return;
+    }
+    old.parentNode.replaceChild(buildNoteEditor(note),old);
+  }
+  function flushPendingNoteEditorRefresh(editor){
+    if(!editor||editor.dataset.refreshPending!=="1") return;
+    delete editor.dataset.refreshPending;
+    var id=editor.getAttribute("data-note-id");
+    var note=(state.items||[]).find(function(entry){ return entry&&entry.id===id; });
+    if(!note) return;
+    var fresh=canvas.querySelector('.note-editor[data-note-id="'+id+'"]');
+    if(fresh===editor) fresh.parentNode.replaceChild(buildNoteEditor(note),fresh);
   }
   function refreshContentEditor(doc){
     var mod=doc?typeModule(doc.type):null;
@@ -6815,7 +6834,7 @@
     var wrap=document.createElement("div"); wrap.className="note-paragraph-wrap";
     var field=document.createElement("div"); field.className="note-paragraph"; field.contentEditable="true"; field.setAttribute("role","textbox"); field.setAttribute("aria-multiline","true"); field.setAttribute("data-note-block",block.id); field.setAttribute("data-placeholder","Start writing…"); field.innerHTML=block.html||"";
     function changed(){ armBrainstorm(note,block); block.html=sanitizeRichHtml(field.innerHTML); block.text=richTextToPlain(block.html); saveNoteBlockChange(note,block,false); rememberNoteTextSelection(note,block,field); }
-    field.oninput=changed; field.onpaste=pastePlainText; field.onfocus=function(){ rememberNoteTextSelection(note,block,field); }; field.onkeyup=function(){ rememberNoteTextSelection(note,block,field); }; field.onmouseup=function(){ rememberNoteTextSelection(note,block,field); };
+    field.oninput=changed; field.onpaste=pastePlainText; field.onfocus=function(){ wrap.classList.add("menu-lock"); rememberNoteTextSelection(note,block,field); }; field.onkeyup=function(){ rememberNoteTextSelection(note,block,field); }; field.onmouseup=function(){ rememberNoteTextSelection(note,block,field); };
     var formatTrigger=document.createElement("button"); formatTrigger.type="button"; formatTrigger.className="note-format-trigger"; formatTrigger.title="Show text formatting"; formatTrigger.setAttribute("aria-label","Show text formatting"); formatTrigger.setAttribute("aria-expanded","false"); formatTrigger.innerHTML=ICON_EDIT;
     function setFormatOpen(open){ wrap.classList.toggle("format-open",open); formatTrigger.title=open?"Hide text formatting":"Show text formatting"; formatTrigger.setAttribute("aria-label",formatTrigger.title); formatTrigger.setAttribute("aria-expanded",open?"true":"false"); }
     formatTrigger.onmousedown=function(event){ event.preventDefault(); };
@@ -6836,7 +6855,17 @@
       button.onmousedown=function(event){ event.preventDefault(); }; button.onclick=function(){ field.focus(); if(!hasParagraphSelection()) selectWholeParagraph(); document.execCommand(action[0],false,null); changed(); };
       toolbar.appendChild(button);
     });
-    wrap.addEventListener("focusout",function(){ setTimeout(function(){ if(!wrap.contains(document.activeElement)) setFormatOpen(false); },0); });
+    wrap.addEventListener("focusout",function(){
+      /* Grace period: a momentary focus hiccup (sync-driven rebuild, IME,
+         soft-keyboard relayout) must not blink the block menu off and back
+         on while the user is typing. */
+      setTimeout(function(){
+        var active=document.activeElement;
+        if(active&&active!==document.body&&wrap.contains(active)) return;
+        wrap.classList.remove("menu-lock");
+        if(!wrap.contains(document.activeElement)) setFormatOpen(false);
+      },350);
+    });
     wrap.appendChild(formatTrigger); wrap.appendChild(toolbar); wrap.appendChild(buildNoteBlockActions(note,block,"note-paragraph-actions")); wrap.appendChild(field); return wrap;
   }
   function buildNoteHeading(note,block){
@@ -7204,7 +7233,16 @@
       if(block.brainstorm&&noteBrainstorming(note)){ rendered.classList.add("is-brainstorm"); rendered.appendChild(buildBrainstormResolve(note,block)); }
       editor.appendChild(rendered);
     });
-    editor.appendChild(buildNoteDropTarget(note,note.blocks.length)); return editor;
+    editor.appendChild(buildNoteDropTarget(note,note.blocks.length));
+    /* Flush a refresh that was deferred because this editor was focused. */
+    editor.addEventListener("focusout",function(){
+      setTimeout(function(){
+        var active=document.activeElement;
+        if(active&&active!==document.body&&editor.contains(active)) return;
+        flushPendingNoteEditorRefresh(editor);
+      },60);
+    });
+    return editor;
   }
   function buildTodoStatusField(it){
     var row=document.createElement("div"); row.className="status-field";
