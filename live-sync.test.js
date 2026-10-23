@@ -311,3 +311,73 @@ test("block deletes stamp a tombstone on the note before the block is removed", 
   const inline = grab("removeInlineAttachment", "cleanupContentAttachments");
   assert.match(inline, /recordDeletedBlock\(note,block\.id\)/);
 });
+
+test("the account doc is watched with onSnapshot and feeds the existing snapshot-apply path", function () {
+  const watcher = grab("watchAccountDoc", "getPrivateSettings");
+  assert.match(watcher, /onSnapshot/);
+  assert.match(watcher, /users"\)\.doc\(currentUser\.uid\)/);
+  assert.match(watcher, /queueRemoteAccountSnapshot\(/);
+  const arm = grab("armCloudLiveSync", "pullLiveCloudNow");
+  assert.match(arm, /watchAccountDoc\(\)/);
+  assert.match(grab("stopAccountDocWatch", "watchAccountDoc"), /accountDocUnsub\(\)/);
+});
+
+test("a status change pushed by an agent arrives on a second client in real time", function () {
+  /* Client B is sitting on Home with the note closed. An agent flips its
+     status to "ready to test" and pushes a new account snapshot; client B's
+     account-doc onSnapshot queues it and applyRemoteAccountSnapshot merges
+     each remote item through commitIncomingItem -> applyIncomingItemOnto,
+     which is exactly the path exercised here. */
+  const local = {
+    id: "n1", type: "todo", title: "Sync bug", done: false,
+    status: "queued", updated: 100, version: 2, versionChangedAt: 100
+  };
+  const remote = {
+    id: "n1", type: "todo", title: "Sync bug", done: false,
+    status: "ready to test", updated: 200, version: 3, versionChangedAt: 200
+  };
+  const result = sandbox.applyIncomingItemOnto(local, remote, { preferLocal: false });
+  assert.equal(result.changed, true);
+  assert.equal(local.status, "ready to test");
+  assert.equal(local.updated, 200);
+  /* Items the second client has never seen are cloned straight out of the
+     snapshot, so a note created on the other device still arrives: */
+  const apply = grab("applyRemoteAccountSnapshot", "armCloudLiveSync");
+  assert.match(apply, /var copy=cloneData\(remote\)/);
+  assert.match(apply, /state\.items\.push\(copy\)/);
+});
+
+test("a status change still applies when the other client deleted it meanwhile (tombstone wins)", function () {
+  const local = note("n1", [{ id: "a", type: "text", text: "hello" }], [], { updated: 100 });
+  const remote = note("n1", [{ id: "a", type: "text", text: "hello" }], [], { updated: 200 });
+  remote.deletedBlocks = { a: { version: 3, versionChangedAt: 250, deletedAt: 250 } };
+  const merged = sandbox.mergeLiveItems(local, remote, { preferLocal: false });
+  assert.equal(merged.blocks.some(function (block) { return block.id === "a"; }), false);
+  assert.ok(merged.deletedBlocks.a);
+});
+
+test("stale-account comparison tolerates a device clock ahead of the server clock", function () {
+  /* Client clock runs 30 units ahead of the server. A server update stamped
+     90 is FRESH (nothing applied in server time yet) but the old raw
+     comparison rejected it because 90 < 120. */
+  assert.equal(sandbox.isStaleAccountSnapshot({ updated: 90 }, 120, 0), true, "documents the skew bug");
+  assert.equal(sandbox.isStaleAccountSnapshot({ updated: 90 }, 120, 0, 30), false);
+  /* A genuinely older snapshot is still rejected even with skew headroom: */
+  assert.equal(sandbox.isStaleAccountSnapshot({ updated: 30 }, 120, 0, 30), true);
+  /* The own-write echo guard is unaffected: */
+  assert.equal(sandbox.isStaleAccountSnapshot({ updated: 90 }, 120, 90, 30), true);
+  assert.equal(sandbox.isStaleAccountSnapshot({ updated: 0 }, 0, 0, 30), false);
+});
+
+test("the live apply path passes the measured server-clock skew to the stale guard", function () {
+  const apply = grab("applyRemoteAccountSnapshot", "armCloudLiveSync");
+  assert.match(apply, /isStaleAccountSnapshot\(cloud,lastAppliedCloudUpdated,lastCloudWriteSentAt,serverClockSkewMs\)/);
+  const watcher = grab("watchAccountDoc", "getPrivateSettings");
+  assert.match(watcher, /noteServerClockSkew\(/);
+});
+
+test("deferred editor refreshes flush when the tab is hidden or the page hides", function () {
+  assert.match(grab("flushPendingNoteEditorRefreshes", "flushPendingNoteEditorRefresh"), /note-editor\[data-refresh-pending="1"\]/);
+  assert.match(html, /else flushPendingNoteEditorRefreshes\(\)/);
+  assert.match(html, /window\.addEventListener\("pagehide",function\(\)\{ flushPendingNoteEditorRefreshes\(\); \}\)/);
+});
