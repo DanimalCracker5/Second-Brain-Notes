@@ -39,6 +39,7 @@ vm.createContext(sandbox);
   ["mergeTombstones", "recordDeletedBlock"],
   ["dropTombstonedBlocks", "pruneTombstones"],
   ["pruneTombstones", "recordDeletedItem"],
+  ["uniqueIds", "localChangeIsNewer"],
   ["canStructurallyMergeItems", "useData"]
 ].forEach(function (pair) {
   vm.runInContext(grab(pair[0], pair[1]), sandbox, { filename: pair[0] });

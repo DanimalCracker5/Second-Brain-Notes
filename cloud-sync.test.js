@@ -38,7 +38,12 @@ const sandbox = {
   normalizeItem: function () {},
   migrateFoldersToTags: function () {},
   tagLayoutSignature: function () { return ""; },
-  accountPreferences: function () { return {}; },
+  accountPreferences: function (data) {
+    if (!data) return null;
+    if (data.preferences && typeof data.preferences === "object") return data.preferences;
+    if (data.theme || typeof data.motion === "boolean") return { theme: data.theme, motion: data.motion };
+    return null;
+  },
   cleanStatus: function (value) { return value || ""; },
   isTodoNote: function (it) { return !!(it && it.todo); }
 };
@@ -49,6 +54,7 @@ vm.createContext(sandbox);
 ].forEach(function (pair) {
   vm.runInContext(grab(pair[0], pair[1]), sandbox, { filename: pair[0] });
 });
+vm.runInContext(grab("tagLayoutSignature", "rememberTagOrder"), sandbox, { filename: "tagLayoutSignature" });
 
 function note(id, title, extra) {
   return Object.assign({
@@ -218,4 +224,81 @@ test("a tombstoned delete of an unchanged note is kept", function () {
   assert.equal(result.conflicts.length, 0);
   assert.ok(!result.data.items.some(function (item) { return item.id === "b"; }));
   assert.ok(result.data.deletedItems.b);
+});
+
+function groupedCloud() {
+  return {
+    items: [note("a", "Alpha", { tagIds: ["astral"] })],
+    folders: [],
+    tags: [
+      { id: "youtube", name: "Youtube" },
+      { id: "astral", name: "Astral" },
+      { id: "songs", name: "Songs" }
+    ],
+    deletedItems: {},
+    version: 8,
+    preferences: {
+      tagGroups: [{ id: "g1", name: "Astral Projection Game", collapsed: false, tagIds: ["astral"] }],
+      tagOrder: ["youtube", "astral", "songs"]
+    }
+  };
+}
+
+test("a phone with no tag groups does not wipe the account's groups", function () {
+  const cloud = groupedCloud();
+  reset([note("a", "Alpha", { tagIds: ["astral"] })], [note("a", "Alpha", { tagIds: ["astral"] })]);
+  sandbox.state.tags = [];
+  sandbox.state.tagGroups = [];
+  sandbox.state.tagOrder = [];
+  const result = sandbox.reconcileWithCloud(cloud);
+  assert.equal(result.needsCloudWrite, false);
+  assert.equal(result.data.preferences.tagGroups[0].name, "Astral Projection Game");
+  assert.deepEqual(result.data.preferences.tagGroups[0].tagIds, ["astral"]);
+  assert.deepEqual(result.data.preferences.tagOrder, ["youtube", "astral", "songs"]);
+});
+
+test("a group created on this device is kept and the cloud groups stay", function () {
+  const cloud = groupedCloud();
+  reset([note("a", "Alpha", { tagIds: ["astral"] })], [note("a", "Alpha", { tagIds: ["astral"] })]);
+  sandbox.state.tags = cloud.tags.concat([{ id: "journal", name: "Journal" }]);
+  sandbox.state.tagGroups = cloud.preferences.tagGroups.concat([{ id: "g2", name: "Writing", collapsed: false, tagIds: ["journal"] }]);
+  sandbox.state.tagOrder = ["youtube", "astral", "songs", "journal"];
+  sandbox.state.syncBaseline.tagLayout = sandbox.tagLayoutSignature({
+    tags: cloud.tags,
+    tagOrder: cloud.preferences.tagOrder,
+    tagGroups: cloud.preferences.tagGroups
+  });
+  const result = sandbox.reconcileWithCloud(cloud);
+  assert.equal(result.needsCloudWrite, true);
+  assert.deepEqual(result.data.preferences.tagGroups.map(function (group) { return group.id; }), ["g1", "g2"]);
+});
+
+test("a tag added on one device survives a body edit on the other", function () {
+  const shared = [note("a", "Alpha", { tagIds: ["inbox"] })];
+  reset([note("a", "Alpha on PC", { version: 5, versionChangedAt: 40, tagIds: ["inbox", "astral"] })], shared);
+  const result = sandbox.reconcileWithCloud({
+    items: [note("a", "Alpha on phone", { version: 4, versionChangedAt: 30, tagIds: ["inbox"] })],
+    folders: [], tags: [], deletedItems: {}, version: 6
+  });
+  assert.deepEqual(result.data.items[0].tagIds, ["inbox", "astral"]);
+});
+
+test("removing a tag stays removed when the other device still has the old tag list", function () {
+  const shared = [note("a", "Alpha", { tagIds: ["inbox", "astral"] })];
+  reset([note("a", "Alpha", { version: 5, versionChangedAt: 40, tagIds: ["inbox"] })], shared);
+  const result = sandbox.reconcileWithCloud({
+    items: [note("a", "Alpha on phone", { version: 4, versionChangedAt: 30, tagIds: ["inbox", "astral"] })],
+    folders: [], tags: [], deletedItems: {}, version: 6
+  });
+  assert.deepEqual(result.data.items[0].tagIds, ["inbox"]);
+});
+
+test("a large account paints before backup recovery and a failed read is not an empty library", function () {
+  const load = grab("loadCloud", "cloudSaveDelay");
+  assert.match(load, /showAccount\(original, \{cloud:original, recovered:0\}\)/);
+  assert.match(load, /cloudAccountUnreadable=true/);
+  assert.match(load, /pendingRemoteAccount&&countRealAccountItems/);
+  assert.match(grab("renderList", "buildListRow"), /accountLibraryBlocked\(\)/);
+  assert.match(grab("refreshAccountUsage", "noteAccountUsage"), /limit\(BACKUP_LIMIT\)/);
+  assert.doesNotMatch(grab("startAccountUsageTracking", "setAuthGate"), /userRef\.onSnapshot/);
 });
