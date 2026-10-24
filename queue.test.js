@@ -68,7 +68,8 @@ test("the sidebar no longer has a separate Queue button, and rows render the ass
   assert.ok(html.includes('state.sidebarView==="queue"'), "queue sidebar view wired");
   assert.ok(html.includes('originBadge.textContent="Added by Assistant"'), "badge rendered on rows");
   const homeRowFrom = html.indexOf("function buildHomeNoteRow");
-  assert.ok(homeRowFrom >= 0 && html.indexOf("origin-badge", homeRowFrom) < homeRowFrom + 1600, "badge present in the home notes widget");
+  const homeRowTo = html.indexOf("\n  function setHomeNotesTag(", homeRowFrom);
+  assert.ok(homeRowFrom >= 0 && homeRowTo > homeRowFrom && html.indexOf("origin-badge", homeRowFrom) < homeRowTo, "badge present in the home notes widget");
   assert.ok(/\.origin-badge\{/.test(html), "badge CSS exists");
   assert.ok(html.includes("setQueueLiveWatch"), "queue live watch exists");
   assert.ok(html.includes("__sbBootDone"), "boot watchdog for the login hang exists");

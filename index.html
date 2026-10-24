@@ -1584,13 +1584,18 @@
     background:var(--tag, var(--accent));
     box-shadow:0 0 0 5px color-mix(in srgb, var(--tag, var(--accent)) 22%, transparent), 0 0 22px var(--tag, var(--accent));
   }
-  .tag-stage-notes{ margin-top:2px; }
+  .tag-stage-head{ align-items:center; margin:0 0 12px; }
+  .tag-stage-head h1{ font-size:clamp(1.55rem, 4vw, 2.15rem); }
+  .tag-stage-head .home-kicker{ margin-bottom:2px; }
+  .tag-stage-head .home-sub{ margin-top:3px; color:var(--ink-dim); font-size:.82rem; }
+  .tag-stage-notes{ margin-top:0; }
   .tag-stage-notes .home-notes{
-    padding:8px 8px 12px;
-    border:1px solid color-mix(in srgb, var(--tag) 34%, var(--line));
-    border-radius:18px;
-    background:linear-gradient(180deg, color-mix(in srgb, var(--tag) 13%, transparent), rgba(255,255,255,.02) 140px);
-    box-shadow:inset 0 1px 0 color-mix(in srgb, var(--tag) 28%, transparent);
+    padding:4px 0 8px;
+    border:0;
+    border-top:1px solid color-mix(in srgb, var(--tag, var(--line)) 32%, transparent);
+    border-radius:0;
+    background:transparent;
+    box-shadow:none;
   }
   .tag-stage .home-tag.on{
     color:var(--ink);
@@ -1641,7 +1646,36 @@
   .tag-page-list{ min-width:0; }
   .home-note.compact{ align-items:center; padding:7px 8px; }
   .home-note.compact .home-note-copy b{ font-size:.92rem; }
+  .home-note.selecting{ grid-template-columns:18px 16px minmax(0,1fr) auto; align-items:center; user-select:none; cursor:pointer; }
+  .home-note.selecting:focus-visible{ outline:2px solid var(--accent-line); outline-offset:2px; }
+  .home-note.is-selected{ background:color-mix(in srgb, var(--accent) 14%, transparent); }
+  .home-note.is-selected:hover{ background:color-mix(in srgb, var(--accent) 20%, transparent); }
+  .home-note .note-select{ margin:0; }
+  .tag-stage .home-note.compact{ padding:8px 4px; }
+  .tag-stage .home-note.compact .home-note-copy{ display:flex; align-items:baseline; gap:10px; }
+  .tag-stage .home-note.compact .home-note-copy b{ flex:1 1 auto; min-width:0; }
+  .tag-stage .home-note.compact .home-note-copy small{ flex:0 1 auto; max-width:42%; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+  .tag-stage-bar{ display:flex; align-items:center; gap:8px; min-width:0; margin:0 0 8px; }
+  .tag-stage-filters{ display:flex; align-items:center; gap:6px; min-width:0; flex:1; overflow-x:auto; scrollbar-width:none; -webkit-overflow-scrolling:touch; }
+  .tag-stage-filters::-webkit-scrollbar{ display:none; }
+  .tag-stage-filters .home-chip{ flex:none; }
+  .tag-stage-end{ display:flex; align-items:center; gap:6px; flex:none; margin-left:auto; }
+  .tag-stage .home-sort{ width:auto; }
+  .tag-stage .home-sort select{ flex:none; max-width:min(220px, 42vw); }
+  .tag-bulk{ display:flex; align-items:center; gap:8px; width:100%; min-width:0; }
+  .tag-bulk-all{ display:inline-flex; align-items:center; gap:6px; flex:none; color:var(--ink-dim); cursor:pointer; font:600 .75rem "DM Sans",sans-serif; white-space:nowrap; }
+  .tag-bulk-count{ min-width:0; color:var(--ink-faint); font:500 .72rem "DM Mono",monospace; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+  .tag-bulk .home-chip{ flex:none; }
+  .home-chip.danger{ color:#fca5a5; border-color:rgba(248,113,113,.34); }
+  .home-chip.danger:hover{ color:#fecaca; border-color:rgba(248,113,113,.5); background:rgba(248,113,113,.12); }
+  .home-chip:disabled{ opacity:.38; cursor:default; }
+  .home-chip:disabled:hover{ color:var(--ink-dim); border-color:var(--line); background:rgba(255,255,255,.03); }
   .tag-empty{ animation:fadeIn .25s ease both; }
+  @media (pointer:coarse){
+    .tag-stage .home-note{ padding-top:11px; padding-bottom:11px; }
+    .tag-stage .note-select{ width:20px; height:20px; }
+    .tag-bulk .home-chip,.tag-stage-end .home-chip{ padding:8px 12px; }
+  }
 
   body.reduce-fx *,body.reduce-fx *::before,body.reduce-fx *::after{ animation-duration:.001s !important; animation-delay:0s !important; transition-duration:.001s !important; }
   @media (prefers-reduced-motion: reduce){
@@ -1673,8 +1707,11 @@
     .modal-box{ padding:20px; }
     .themes{ grid-template-columns:1fr; }
     .home-head{ flex-direction:column; align-items:stretch; }
-    .tag-stage-head{ flex-direction:row; align-items:flex-start; }
-    .tag-stage-head .home-tools{ margin-top:22px; }
+    .tag-stage-head{ flex-direction:row; align-items:center; }
+    .tag-stage-head .home-tools{ margin-top:0; }
+    .tag-stage .home-note.compact .home-note-copy small{ display:none; }
+    .tag-bulk{ flex-wrap:wrap; }
+    .tag-bulk-count{ flex:1; }
     .home-tools{ justify-content:space-between; }
     .home-grid,.home-add-grid{ grid-template-columns:1fr; }
     .home-notes-controls{ flex-direction:column; align-items:stretch; }
@@ -2706,7 +2743,7 @@
   }
 
   /* Opening the site lands on Home. A note is shown only after it is chosen. */
-  var viewingHome=true, viewingTagId=null, homeCustomizing=false, homeTagId=null, homeStatusStage=null, homeTypeFilter="", homeStatusFilter="", homeQuery="", homeSearchFocus=false, homeScratchTimer=null, homeTagRailScroll=0;
+  var viewingHome=true, viewingTagId=null, homeCustomizing=false, homeTagId=null, homeStatusStage=null, homeTypeFilter="", homeStatusFilter="", homeQuery="", homeSearchFocus=false, homeScratchTimer=null, homeTagRailScroll=0, homeSelecting=false, homeSelectedIds=[];
   function browsingLibrary(){ return !!(viewingHome||viewingTagId); }
   function current(){ return state.items.find(function(s){return s.id===state.currentId;})||state.items[0]; }
   /* Time is counted only while this app is the focused, visible tab. It is kept
@@ -2790,20 +2827,35 @@
     if(count) persist();
     return count;
   }
-  function trashCompletedTodo(id){
-    var item=state.items.find(function(entry){ return entry.id===id; });
-    if(activeAudioRecorder&&activeAudioRecorder.itemId===id){ showToast("Stop the recording before deleting this audio entry",true); return; }
-    if(!item||!(isTodoNote(item)||item.type==="todo")||!item.done) return;
-    if(item.locked){ showToast("Unlock this item before deleting it",true); return; }
-    if(isInTrash(item)) return;
+  /* Delete and Trash are the same action. The note leaves every list now and
+     stays recoverable in Trash for 3 days. After that, purgeExpiredTrash
+     removes it for good. */
+  function moveItemsToTrash(items, message, clearSelection){
+    var list=(items||[]).filter(function(item){ return item&&!isInTrash(item); });
+    if(!list.length){ showToast("Already in Trash"); return 0; }
+    if(activeAudioRecorder&&list.some(function(item){ return item.id===activeAudioRecorder.itemId; })){ showToast("Stop the recording before deleting this audio entry",true); return 0; }
+    var locked=list.filter(function(item){ return item.locked; });
+    var deletable=list.filter(function(item){ return !item.locked; });
+    if(!deletable.length){ showToast("Unlock these items before deleting them",true); return 0; }
+    var extra=locked.length?" "+locked.length+" locked item"+(locked.length===1?"":"s")+" will be skipped.":"";
+    var ask=message||(deletable.length===1?"Delete this? It stays in Trash for 3 days, then it is removed. You will not be asked again for 3 minutes.":"Delete "+deletable.length+" notes? They stay in Trash for 3 days, then they are removed. You will not be asked again for 3 minutes.");
+    if(!message&&extra) ask+=extra;
     if(!recentDeleteConfirm()){
-      if(!confirm("Move this completed todo to Trash? It stays for 3 days, then it is deleted. You will not be asked again for 3 minutes.")) return;
+      if(!confirm(ask)) return 0;
       rememberDeleteConfirm();
     }
-    item.trashedAt=Date.now(); item.updated=Date.now();
+    var now=Date.now();
+    deletable.forEach(function(item){ item.trashedAt=now; item.updated=now; });
     leaveIfCurrentTrashed();
-    persist(); renderList(); renderMain();
-    showToast("Moved to Trash");
+    if(clearSelection){ state.selectedItemIds=[]; state.selectingNotes=false; state.tagAssignMode=false; }
+    persist(); renderTags(); renderList(); renderMain();
+    showToast(deletable.length===1?"Deleted. Kept in Trash for 3 days.":"Deleted "+deletable.length+" notes. Kept in Trash for 3 days.");
+    return deletable.length;
+  }
+  function trashCompletedTodo(id){
+    var item=state.items.find(function(entry){ return entry.id===id; });
+    if(!item||!(isTodoNote(item)||item.type==="todo")||!item.done||isInTrash(item)) return;
+    moveItemsToTrash([item]);
   }
   function visibleItems(ignoreTagFilter){
     var query=(state.noteSearch||"").trim().toLowerCase();
@@ -4629,7 +4681,7 @@
       var lockStatus=it.locked?'<span class="item-lock" title="Deletion locked" aria-label="Deletion locked">'+ICON_LOCK+'</span>':"";
       var selectControl=state.selectingNotes?'<input class="note-select" type="checkbox" aria-label="Select note" '+(selected?'checked':'')+'>':'';
       var statusHtml="";
-      el.innerHTML=selectControl+leading+'<div class="dt"><div class="dt-title"></div><div class="dt-meta"><span class="m">'+metaText+'</span>'+statusHtml+dots+lockStatus+'</div></div><button class="dx" type="button" title="'+(todoItem&&it.done?"Move completed todo to Trash":"Item actions")+'" aria-label="'+(todoItem&&it.done?"Move completed todo to Trash":"Item actions")+'">'+(todoItem&&it.done?ICON_DELETE:ICON_EDIT)+'</button>';
+      el.innerHTML=selectControl+leading+'<div class="dt"><div class="dt-title"></div><div class="dt-meta"><span class="m">'+metaText+'</span>'+statusHtml+dots+lockStatus+'</div></div><button class="dx" type="button" title="'+(todoItem&&it.done?"Delete":"Item actions")+'" aria-label="'+(todoItem&&it.done?"Delete":"Item actions")+'">'+(todoItem&&it.done?ICON_DELETE:ICON_EDIT)+'</button>';
       el.querySelector(".dt-title").textContent=it.title||("Untitled "+itemLabel(it).toLowerCase());
       if(it.origin==="assistant"){ var originBadge=document.createElement("span"); originBadge.className="origin-badge"; originBadge.textContent="Added by Assistant"; el.appendChild(originBadge); }
       if(todoItem) el.querySelector(".side-todo-check").onclick=function(e){ e.stopPropagation(); setTodoDone(it); };
@@ -4659,44 +4711,68 @@
     state.selectedItemIds=[]; state.selectingNotes=false; state.tagAssignMode=false;
     persist(); renderAll(); showToast("Added "+count+" note"+(count===1?"":"s")+" to "+tag.name);
   }
+  function setHomeSelecting(on){
+    homeSelecting=!!on;
+    if(!homeSelecting) homeSelectedIds=[];
+    if(viewingHome) renderMain();
+  }
+  function toggleHomeSelection(id, selected){
+    var index=homeSelectedIds.indexOf(id);
+    if(selected&&index<0) homeSelectedIds.push(id);
+    if(!selected&&index>=0) homeSelectedIds.splice(index,1);
+    if(viewingHome) renderMain();
+  }
+  function toggleAllHomeNotes(items){
+    var ids=(items||[]).map(function(it){ return it.id; });
+    var all=ids.length&&ids.every(function(id){ return homeSelectedIds.indexOf(id)>=0; });
+    if(all){
+      var drop={};
+      ids.forEach(function(id){ drop[id]=true; });
+      homeSelectedIds=homeSelectedIds.filter(function(id){ return !drop[id]; });
+    } else {
+      var have={};
+      homeSelectedIds.forEach(function(id){ have[id]=true; });
+      ids.forEach(function(id){ have[id]=true; });
+      homeSelectedIds=Object.keys(have);
+    }
+    if(viewingHome) renderMain();
+  }
+  function tagHomeSelectedNotes(anchor){
+    if(!homeSelectedIds.length){ showToast("Select one or more notes first",true); return; }
+    var prev=state.selectedItemIds.slice();
+    state.selectedItemIds=homeSelectedIds.slice();
+    openBulkTagPick(anchor);
+    state.selectedItemIds=prev;
+  }
+  function deleteHomeSelectedNotes(){
+    if(!homeSelectedIds.length){ showToast("Select one or more notes first",true); return; }
+    var snapshot=homeSelectedIds.slice();
+    var prevIds=state.selectedItemIds.slice();
+    var prevSelecting=!!state.selectingNotes;
+    var prevAssign=!!state.tagAssignMode;
+    state.selectedItemIds=snapshot.slice();
+    state.selectingNotes=true;
+    state.tagAssignMode=false;
+    homeSelecting=false;
+    homeSelectedIds=[];
+    deleteSelectedNotes();
+    if(state.selectingNotes){
+      homeSelecting=true;
+      homeSelectedIds=snapshot;
+      state.selectedItemIds=prevIds;
+      state.selectingNotes=prevSelecting;
+      state.tagAssignMode=prevAssign;
+    }
+  }
   function deleteSelectedNotes(){
     var selected=state.items.filter(function(item){ return state.selectedItemIds.indexOf(item.id)>=0; });
     if(!selected.length){ showToast("Select one or more notes first",true); return; }
-    if(activeAudioRecorder&&selected.some(function(item){ return item.id===activeAudioRecorder.itemId; })){ showToast("Stop the recording before deleting this audio entry",true); return; }
-    var locked=selected.filter(function(item){ return item.locked; });
-    var deletable=selected.filter(function(item){ return !item.locked; });
-    if(!deletable.length){ showToast("Unlock these items before deleting them",true); return; }
-    var extra=locked.length?" "+locked.length+" locked item"+(locked.length===1?"":"s")+" will be skipped.":"";
-    if(!confirm("Delete "+deletable.length+" note"+(deletable.length===1?"":"s")+"? This can't be undone."+extra)) return;
-    captureAutoBackup(true,"recovery");
-    var ids={};
-    deletable.forEach(function(item){
-      ids[item.id]=true;
-      forEachItemContentDocument(item,cleanupContentAttachments);
-      recordDeletedItem(item);
-    });
-    state.items=state.items.filter(function(item){ return !ids[item.id]; });
-    if(!state.items.length) state.items.push(newNoteItem());
-    if(ids[state.currentId]){ var vis=visibleItems(); state.currentId=(vis[0]||state.items[0]).id; }
-    var count=deletable.length;
-    state.selectedItemIds=[]; state.selectingNotes=false; state.tagAssignMode=false;
-    persist(); renderTags(); renderList(); renderMain();
-    showToast("Deleted "+count+" note"+(count===1?"":"s"));
+    moveItemsToTrash(selected,"",true);
   }
   function delItem(id,message){
     var item=state.items.find(function(s){ return s.id===id; });
-    if(activeAudioRecorder&&activeAudioRecorder.itemId===id){ showToast("Stop the recording before deleting this audio entry",true); return; }
-    if(item&&item.locked){ showToast("Unlock this item before deleting it",true); return; }
-    if(!confirm(message||"Delete this? This can't be undone.")) return;
-    captureAutoBackup(true,"recovery");
-    var i=state.items.findIndex(function(s){ return s.id===id; });
-    if(i<0) return;
-    forEachItemContentDocument(item,cleanupContentAttachments);
-    recordDeletedItem(item);
-    state.items.splice(i,1);
-    if(!state.items.length) state.items.push(newNoteItem());
-    if(state.currentId===id){ var vis=visibleItems(); state.currentId=(vis[0]||state.items[0]).id; }
-    persist(); renderTags(); renderList(); renderMain();
+    if(!item) return;
+    moveItemsToTrash([item],message||"");
   }
 
   /* =================== editor =================== */
@@ -4815,6 +4891,7 @@
   function statusFilterPicked(value){
     state.filterStatus=state.filterStatus===value?"":value;
     if(viewingHome){
+      homeSelecting=false; homeSelectedIds=[];
       homeStatusStage=state.filterStatus||null;
       if(homeStatusStage) homeTagId=null;
     }
@@ -4825,6 +4902,7 @@
     if(activeAudioRecorder){ showToast("Finish the current recording before leaving it",true); return; }
     /* A second Home tap, while a tag is already open, steps back to the widgets. */
     if(viewingHome&&homeTagId){
+      homeSelecting=false; homeSelectedIds=[];
       if(state.filterTag===homeTagId) state.filterTag=null;
       homeTagId=null;
       renderList();
@@ -4833,6 +4911,7 @@
     }
     /* Same for a status page opened from the drawer's Status caret. */
     if(viewingHome&&homeStatusStage){
+      homeSelecting=false; homeSelectedIds=[];
       homeStatusStage=null;
       renderList();
       renderMain();
@@ -4853,6 +4932,7 @@
     if(next&&!tagById(next)) next=null;
     /* Picking a tag leaves any status page behind — one stage at a time. */
     if(next) homeStatusStage=null;
+    if(next!==homeTagId){ homeSelecting=false; homeSelectedIds=[]; }
     /* The tag page used to stay behind an open note. Leave the note so the list shows. */
     if(!viewingHome){
       if(!next) return;
@@ -5010,26 +5090,36 @@
     var index=null;
     if(typeof options==="number"){ index=options; options={}; }
     else options=options||{};
-    var button=document.createElement("button"); button.type="button";
-    button.className="home-note"+(options.compact?" compact":"")+((isTodoNote(it)||it.type==="todo")&&it.done?" todo-done":"")+(it.id===justAddedId?" just-added":"");
+    if(typeof options.index==="number") index=options.index;
+    var stage=!!options.stage, selecting=stage&&homeSelecting, selected=selecting&&homeSelectedIds.indexOf(it.id)>=0;
+    var button=document.createElement(selecting?"div":"button");
+    if(!selecting) button.type="button";
+    button.className="home-note"+((options.compact||stage)?" compact":"")+((isTodoNote(it)||it.type==="todo")&&it.done?" todo-done":"")+(it.id===justAddedId?" just-added":"")+(selecting?" selecting":"")+(selected?" is-selected":"");
     if(typeof index==="number") button.style.setProperty("--i", String(Math.min(index, 12)));
     var icon=document.createElement("span"); icon.className="item-icon"; icon.innerHTML=itemIconMarkup(it);
     var color=itemIconColor(it); if(color) icon.style.color=color;
     var text=document.createElement("span"); text.className="home-note-copy";
     var title=document.createElement("b"); title.textContent=it.title||("Untitled "+itemLabel(it).toLowerCase());
     text.appendChild(title);
-    if(!options.compact){
-      var preview=homeSnippet(it), snippet=document.createElement("span"); snippet.className="home-snippet"; snippet.textContent=preview; if(!preview) snippet.hidden=true;
+    if(stage||!options.compact){
+      if(!stage){ var preview=homeSnippet(it), snippet=document.createElement("span"); snippet.className="home-snippet"; snippet.textContent=preview; if(!preview) snippet.hidden=true; text.appendChild(snippet); }
       var meta=document.createElement("small"); var due=itemDueDate(it); meta.textContent=itemLabel(it)+(due?" · "+dueDateLabel(due):"");
-      text.appendChild(snippet); text.appendChild(meta);
+      text.appendChild(meta);
     }
     var when=document.createElement("span"); when.className="when"; when.textContent=homeWhen(it.updated);
     button.appendChild(icon); button.appendChild(text); button.appendChild(when);
     if(it.origin==="assistant"){ var originBadge=document.createElement("span"); originBadge.className="origin-badge"; originBadge.textContent="Added by Assistant"; button.appendChild(originBadge); }
-    button.onclick=function(){ openHomeItem(it.id); };
+    if(selecting){
+      var box=document.createElement("input"); box.type="checkbox"; box.className="note-select"; box.checked=selected;
+      box.setAttribute("aria-label","Select note");
+      box.onclick=function(event){ event.stopPropagation(); toggleHomeSelection(it.id, event.currentTarget.checked); };
+      button.insertBefore(box, button.firstChild);
+    }
+    button.onclick=function(){ if(selecting){ toggleHomeSelection(it.id, homeSelectedIds.indexOf(it.id)<0); return; } openHomeItem(it.id); };
     return button;
   }
   function setHomeNotesTag(id){
+    homeSelecting=false; homeSelectedIds=[];
     homeTagId=homeTagId===id?null:id;
     if(state.filterTag!==homeTagId){
       state.filterTag=homeTagId;
@@ -5075,6 +5165,79 @@
     chip.onclick=onClick;
     return chip;
   }
+  /* The tag and status pages share one quiet bar: filters and sort, or a
+     selection row that can tag and delete the notes on screen. */
+  function buildTagStageToolbar(){
+    if(["","open","done","due","overdue"].indexOf(homeStatusFilter)<0) homeStatusFilter="";
+    var items=homeNotes();
+    var visible={};
+    items.forEach(function(it){ visible[it.id]=true; });
+    homeSelectedIds=homeSelectedIds.filter(function(id){ return visible[id]; });
+    if(homeSelecting&&!items.length){ homeSelecting=false; homeSelectedIds=[]; }
+    var bar=document.createElement("div"); bar.className="tag-stage-bar"+(homeSelecting?" selecting":"");
+    if(homeSelecting){
+      var n=homeSelectedIds.length;
+      var allOn=!!items.length&&items.every(function(it){ return homeSelectedIds.indexOf(it.id)>=0; });
+      var some=items.some(function(it){ return homeSelectedIds.indexOf(it.id)>=0; });
+      var bulk=document.createElement("div"); bulk.className="tag-bulk"; bulk.setAttribute("role","toolbar"); bulk.setAttribute("aria-label","Actions for selected notes");
+      var allLabel=document.createElement("label"); allLabel.className="tag-bulk-all";
+      var allBox=document.createElement("input"); allBox.type="checkbox"; allBox.className="note-select";
+      allBox.checked=allOn; allBox.indeterminate=!allOn&&some;
+      allBox.setAttribute("aria-label",allOn?"Clear selection":"Select all notes");
+      allBox.onclick=function(){ toggleAllHomeNotes(items); };
+      var allText=document.createElement("span"); allText.textContent="All";
+      allLabel.appendChild(allBox); allLabel.appendChild(allText);
+      var count=document.createElement("span"); count.className="tag-bulk-count";
+      count.textContent=n?(n+" selected"):"None selected";
+      var tagsBtn=document.createElement("button"); tagsBtn.type="button"; tagsBtn.className="home-chip"; tagsBtn.textContent="Add tags";
+      tagsBtn.disabled=!n; tagsBtn.title="Add or remove tags"; tagsBtn.setAttribute("aria-label","Add or remove tags");
+      tagsBtn.onclick=function(){ tagHomeSelectedNotes(tagsBtn); };
+      var delBtn=document.createElement("button"); delBtn.type="button"; delBtn.className="home-chip danger"; delBtn.textContent="Delete";
+      delBtn.disabled=!n; delBtn.title=n?"Delete "+n+" selected note"+(n===1?"":"s"):"Delete selected notes";
+      delBtn.setAttribute("aria-label",delBtn.title);
+      delBtn.onclick=function(){ deleteHomeSelectedNotes(); };
+      var doneBtn=document.createElement("button"); doneBtn.type="button"; doneBtn.className="home-chip"; doneBtn.textContent="Done";
+      doneBtn.setAttribute("aria-label","Done selecting");
+      doneBtn.onclick=function(){ setHomeSelecting(false); };
+      bulk.appendChild(allLabel); bulk.appendChild(count); bulk.appendChild(tagsBtn); bulk.appendChild(delBtn); bulk.appendChild(doneBtn);
+      bar.appendChild(bulk);
+      return bar;
+    }
+    var filters=document.createElement("div"); filters.className="tag-stage-filters"; filters.setAttribute("role","group"); filters.setAttribute("aria-label","Filter notes");
+    if((homeQuery||"").trim()){
+      var q=homeQuery.trim();
+      filters.appendChild(homeFilterChip(q.length>18?q.slice(0,18)+"… ×":q+" ×", true, function(){ homeQuery=""; renderMain(); }, "search"));
+    }
+    homeStatusFilters().forEach(function(row){
+      var extra=row[0]==="overdue"?"warn":"";
+      var chip=homeFilterChip(row[1], homeStatusFilter===row[0], function(){ setHomeNotesStatus(row[0]); }, extra);
+      chip.title=row[0]==="open"?"Open todos":(row[0]==="done"?"Finished todos":(row[0]==="due"?"Has a due date":"Past due"));
+      filters.appendChild(chip);
+    });
+    var end=document.createElement("div"); end.className="tag-stage-end";
+    var sortWrap=document.createElement("label"); sortWrap.className="home-sort";
+    var select=document.createElement("select");
+    select.id="homeNotesSort";
+    select.setAttribute("aria-label","Sort notes");
+    var sorts=homeListSortOptions(), known=false;
+    sorts.forEach(function(opt){
+      var option=document.createElement("option"); option.value=opt[0]; option.textContent=opt[1];
+      if(opt[0]===state.listSort) known=true;
+      select.appendChild(option);
+    });
+    select.value=known?state.listSort:"updated";
+    select.onchange=function(){ setListSort(select.value); };
+    sortWrap.appendChild(select);
+    var selectBtn=document.createElement("button"); selectBtn.type="button"; selectBtn.className="home-chip"; selectBtn.textContent="Select";
+    selectBtn.disabled=!items.length;
+    selectBtn.title=items.length?"Select notes":"Nothing to select";
+    selectBtn.setAttribute("aria-pressed","false");
+    selectBtn.setAttribute("aria-label","Select notes");
+    selectBtn.onclick=function(){ setHomeSelecting(true); };
+    end.appendChild(sortWrap); end.appendChild(selectBtn);
+    bar.appendChild(filters); bar.appendChild(end);
+    return bar;
+  }
   function buildHomeNotesToolbar(inStage){
     var tools=document.createElement("div");
     if(["","open","done","due","overdue"].indexOf(homeStatusFilter)<0) homeStatusFilter="";
@@ -5116,6 +5279,10 @@
         rail.appendChild(chip);
       });
       tools.appendChild(rail);
+    }
+    if(inStage){
+      tools.appendChild(buildTagStageToolbar());
+      return tools;
     }
     var controls=document.createElement("div"); controls.className="home-notes-controls";
     var filters=document.createElement("div"); filters.className="home-filter-scroll"; filters.setAttribute("role","group"); filters.setAttribute("aria-label","Filter notes");
@@ -5458,7 +5625,7 @@
     var name=document.createElement("span"); name.textContent=tag.name||"Tag";
     title.appendChild(dot); title.appendChild(name);
     var sub=document.createElement("p"); sub.className="home-sub";
-    sub.textContent=count?(count+" note"+(count===1?"":"s")+". Open one, or go back home."):(filteredEmpty?"Nothing matches these filters.":"Nothing in this tag yet.");
+    sub.textContent=count?(count+" note"+(count===1?"":"s")):(filteredEmpty?"Nothing matches these filters.":"Nothing in this tag yet.");
     copy.appendChild(kicker); copy.appendChild(title); copy.appendChild(sub);
     var tools=document.createElement("div"); tools.className="home-tools";
     var back=document.createElement("button"); back.type="button"; back.id="homeTagBack"; back.className="copy-all";
@@ -5481,7 +5648,7 @@
     var name=document.createElement("span"); name.textContent=statusLabel(status)||"No status";
     title.appendChild(dot); title.appendChild(name);
     var sub=document.createElement("p"); sub.className="home-sub";
-    sub.textContent=items.length?(items.length+" note"+(items.length===1?"":"s")+" with this status. Open one, or go back home."):"Nothing has this status.";
+    sub.textContent=items.length?(items.length+" note"+(items.length===1?"":"s")):"Nothing has this status.";
     copy.appendChild(kicker); copy.appendChild(title); copy.appendChild(sub);
     var tools=document.createElement("div"); tools.className="home-tools";
     var back=document.createElement("button"); back.type="button"; back.id="homeTagBack"; back.className="copy-all";
@@ -5494,7 +5661,7 @@
     var body=document.createElement("div"); body.className="home-notes"+(entering?" enter":"");
     body.appendChild(buildHomeNotesToolbar(true));
     if(!items.length) body.appendChild(Object.assign(document.createElement("p"),{className:"home-muted",textContent:"Nothing matches."}));
-    else items.forEach(function(it, index){ body.appendChild(buildHomeNoteRow(it, entering?index:null)); });
+    else items.forEach(function(it, index){ body.appendChild(buildHomeNoteRow(it, {stage:true, index:entering?index:null})); });
     slot.appendChild(body);
     frag.appendChild(slot);
     return frag;
@@ -5510,7 +5677,7 @@
     if(!items.length&&filtered){
       var empty=document.createElement("p"); empty.className="home-muted"; empty.textContent="Nothing matches.";
       body.appendChild(empty);
-    } else items.forEach(function(it, index){ body.appendChild(buildHomeNoteRow(it, entering?index:null)); });
+    } else items.forEach(function(it, index){ body.appendChild(buildHomeNoteRow(it, {stage:true, index:entering?index:null})); });
     slot.appendChild(body);
     frag.appendChild(slot);
     return frag;
@@ -5626,7 +5793,7 @@
       itemCheck.onclick=function(){ setTodoDone(it); };
       titleRow.appendChild(itemCheck);
       if(it.done&&!it.locked){
-        var itemDelete=document.createElement("button"); itemDelete.className="todo-item-delete"; itemDelete.textContent="Trash";
+        var itemDelete=document.createElement("button"); itemDelete.className="todo-item-delete"; itemDelete.textContent="Delete";
         itemDelete.onclick=function(){ trashCompletedTodo(it.id); };
         titleRow.appendChild(itemDelete);
       }
@@ -7268,7 +7435,7 @@
     select.onchange=function(){
       it.status=cleanStatus(select.value);
       it.updated=Date.now();
-      if(it.status==="passed test"){ delItem(it.id,"Marked passed test — delete this note? This can't be undone."); return; }
+      if(it.status==="passed test"){ delItem(it.id,"Marked passed test — delete this note? It stays in Trash for 3 days, then it is removed."); return; }
       persist(); renderList();
       select.classList.toggle("with-status",!!it.status);
       syncBarTitle();
@@ -12916,7 +13083,13 @@
   document.addEventListener("keydown",function(e){
     if(!currentUser) return;
     if((e.metaKey||e.ctrlKey)&&e.key==="Enter"){ e.preventDefault(); if(!browsingLibrary()) $("copyAll").click(); }
-    if(e.key==="Escape"){ stopVoiceSession(); closeMenu(); $("settingsModal").classList.remove("open"); closeMore(); }
+    if(e.key==="Escape"){
+      var menuOpen=!!openMenuEl;
+      var settingsOpen=$("settingsModal").classList.contains("open");
+      var moreOpen=$("moreModal").classList.contains("open");
+      stopVoiceSession(); closeMenu(); $("settingsModal").classList.remove("open"); closeMore();
+      if(!menuOpen&&!settingsOpen&&!moreOpen&&homeSelecting){ homeSelecting=false; homeSelectedIds=[]; if(viewingHome) renderMain(); }
+    }
   });
   document.addEventListener("paste", function(event){
     pasteNoteFilesFromClipboard(event);
@@ -15207,7 +15380,7 @@
         '<button data-settings="voices"><span><b>Voice</b><small>Choose from your saved ElevenLabs voices</small></span><span class="arrow">›</span></button>'+
         '<button data-settings="collab"><span><b>AI collaborator</b><small>Agents, voice intelligence, and hidden notes (also in the sidebar footer)</small></span><span class="arrow">›</span></button>'+
         '<button data-settings="agent"><span><b>Connect an agent</b><small>Full steps to let Hermes use your notes, the same way as TickTick</small></span><span class="arrow">›</span></button>'+
-        '<button data-settings="trash"><span><b>Trash</b><small>Completed todos, kept for 3 days</small></span><span class="arrow">›</span></button>'+
+        '<button data-settings="trash"><span><b>Trash</b><small>Deleted notes, kept for 3 days</small></span><span class="arrow">›</span></button>'+
         '<button data-settings="manage"><span><b>Manage</b><small>Choose which things New can create</small></span><span class="arrow">›</span></button></div><div class="grp"><h4>Editor behaviour</h4><div class="srow"><div class="sl">Open notes in the body<small>Focus the first editable block instead of the title. Turn off to start at the title.</small></div><button class="toggle" id="focusNoteBodyToggle"><b></b></button></div><div class="srow"><div class="sl">AI handoff in note menus<small>Copy or package a note, including attachment data, for Cursor, ChatGPT, or Claude.</small></div><button class="toggle" id="quickAiHandoffToggle"><b></b></button></div></div><div class="grp"><h4>AI text changes</h4><div class="srow"><div class="sl">Ask before changing my text<small>Keep AI edits as suggestions until you choose Apply.</small></div><button class="toggle" id="settingsRequireApprovalToggle"><b></b></button></div></div>';
     } else if(settingsPage==="appearance"){
       content=settingsHeading("Appearance",true)+'<div class="grp"><div class="srow"><div class="sl">Background movement<small>Slow drifting color that works on desktop and mobile</small></div><button class="toggle" id="motionToggle"><b></b></button></div></div><div class="grp"><div class="range-row"><label for="darknessRange"><span>Background darkness</span><output id="darknessOutput"></output></label><input id="darknessRange" type="range" min="0" max="100" step="1"><p class="hint">At 100%, the background is pure AMOLED black. Lower it to reveal more of the moving theme color while keeping the surface black.</p></div></div>';
@@ -15230,7 +15403,7 @@
     } else if(settingsPage==="usage"){
       content=settingsHeading("Usage",true)+'<p class="hint">Hosted credits show dollars we charged (5× provider cost) plus tokens. Your own keys still log tokens locally; provider invoices stay on OpenAI, Gemini, and ElevenLabs.</p><div id="usageSettings"></div>';
     } else if(settingsPage==="trash"){
-      content=settingsHeading("Trash",true)+'<p class="hint">Completed todos you trash stay here for 3 days, then they are deleted. The delete confirmation stays quiet for 3 minutes after you accept it once.</p><div class="btnrow"><button class="b2" id="emptyTrashBtn">Empty trash</button></div><div class="grp" id="trashList"></div>';
+      content=settingsHeading("Trash",true)+'<p class="hint">Deleting a note puts it here for 3 days. Restore sends it back. After 3 days it is removed for good. The delete confirmation stays quiet for 3 minutes after you accept it once.</p><div class="btnrow"><button class="b2" id="emptyTrashBtn">Empty trash</button></div><div class="grp" id="trashList"></div>';
     } else if(settingsPage==="manage"){
       content=settingsHeading("Manage",true)+'<p class="hint">Choose what appears under New and in a note’s Insert menu. Existing content is never removed when an option is turned off.</p><div class="grp"><div class="srow"><div class="sl">Notes<small>Flexible rich-text notes</small></div><button class="toggle" id="typeNote"><b></b></button></div><div class="srow"><div class="sl">YouTube Script<small>Chaptered note template</small></div><button class="toggle" id="typeScript"><b></b></button></div><div class="srow"><div class="sl">Audio<small>Record or upload audio clips</small></div><button class="toggle" id="typeAudio"><b></b></button></div><div class="srow"><div class="sl">Todos<small>A note with a completion checkbox</small></div><button class="toggle" id="typeTodo"><b></b></button></div><div class="srow"><div class="sl">Agent<small>AI collaborators you can talk to inside a note</small></div><button class="toggle" id="typeAgent"><b></b></button></div></div><div class="grp" id="moduleTypes"></div><div class="grp"><h4>Note insert menu</h4><div class="srow"><div class="sl">Photo, video, or file<small>Inline images and videos, plus any attachment</small></div><button class="toggle" id="insertFile"><b></b></button></div><div class="srow"><div class="sl">YouTube video<small>Paste a link and play it inside the note</small></div><button class="toggle" id="insertEmbed"><b></b></button></div><div class="srow"><div class="sl">Link with photo<small>A link card with your own picture, title, and summary</small></div><button class="toggle" id="insertLink"><b></b></button></div><div class="srow"><div class="sl">Paragraph<small>Rich text with bold, italic, and underline</small></div><button class="toggle" id="insertParagraph"><b></b></button></div><div class="srow"><div class="sl">Mini todo list<small>A checklist you can tick off inside the note</small></div><button class="toggle" id="insertChecklist"><b></b></button></div><div class="srow"><div class="sl">Comment<small>A cue-style note to yourself</small></div><button class="toggle" id="insertComment"><b></b></button></div><div class="srow"><div class="sl">Prompt<small>A copy-ready prompt drafting box</small></div><button class="toggle" id="insertPrompt"><b></b></button></div><div class="srow"><div class="sl">Heading<small>Simple size picker when selected</small></div><button class="toggle" id="insertHeading"><b></b></button></div><div class="srow"><div class="sl">Chapter<small>Named section with its own Listen button</small></div><button class="toggle" id="insertChapter"><b></b></button></div><div class="srow"><div class="sl">Collapsible group<small>Hide supporting details until needed</small></div><button class="toggle" id="insertGroup"><b></b></button></div><div class="srow"><div class="sl">Code<small>Syntax-highlighted editor, preview, and run tools</small></div><button class="toggle" id="insertCode"><b></b></button></div></div>';
     } else { settingsPage="home"; renderSettingsPage(); return; }
@@ -15277,7 +15450,7 @@
     items.forEach(function(item){
       var row=document.createElement("div"); row.className="srow";
       var copy=document.createElement("div"); copy.className="sl";
-      copy.appendChild(document.createTextNode(item.title||"Untitled todo"));
+        copy.appendChild(document.createTextNode(item.title||("Untitled "+(typeof itemLabel==="function"?itemLabel(item).toLowerCase():"note"))));
       var small=document.createElement("small"); small.textContent=trashDeletesLabel(item); copy.appendChild(small);
       var actions=document.createElement("div"); actions.className="btnrow"; actions.style.margin="0";
       var restore=document.createElement("button"); restore.type="button"; restore.className="b2 primary"; restore.textContent="Restore";

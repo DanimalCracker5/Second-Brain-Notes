@@ -153,7 +153,8 @@ test("sidebar exposes a bulk delete control for selected notes", function () {
   const drawer = drawerHtml();
   assert.match(drawer, /id="selectNotesBtn"/);
   assert.match(drawer, /id="deleteNotesBtn"/);
-  assert.match(grab("deleteSelectedNotes", "delItem"), /Unlock these items before deleting them/);
+  assert.match(grab("moveItemsToTrash", "trashCompletedTodo"), /Unlock these items before deleting them/);
+  assert.match(grab("deleteSelectedNotes", "delItem"), /moveItemsToTrash\(selected,"",true\)/);
   assert.match(grab("openListTools", "prepareManualOrder"), /Select all in this list/);
 });
 
@@ -172,6 +173,9 @@ function deleteSandbox() {
       currentId: "b"
     },
     activeAudioRecorder: null,
+    DELETE_CONFIRM_COOLDOWN_MS: 3 * 60 * 1000,
+    DELETE_CONFIRM_KEY: "second-brain-delete-confirm-at",
+    localStorage: { getItem: function () { return null; }, setItem: function () {} },
     confirm: function () { return true; },
     captureAutoBackup: function () {},
     forEachItemContentDocument: function () {},
@@ -190,22 +194,34 @@ function deleteSandbox() {
     toast: ""
   };
   vm.createContext(box);
-  vm.runInContext(grab("deleteSelectedNotes", "delItem"), box, { filename: "deleteSelectedNotes" });
+  vm.runInContext(
+    [grab("isInTrash", "trashItems"),
+     grab("recentDeleteConfirm", "rememberDeleteConfirm"),
+     grab("rememberDeleteConfirm", "leaveIfCurrentTrashed"),
+     grab("leaveIfCurrentTrashed", "permanentlyRemoveItems"),
+     grab("moveItemsToTrash", "trashCompletedTodo"),
+     grab("deleteSelectedNotes", "delItem")].join("\n"),
+    box,
+    { filename: "deleteSelectedNotes" }
+  );
   return box;
 }
 
 test("deleteSelectedNotes removes unlocked selected notes and skips locked ones", function () {
   const box = deleteSandbox();
   box.deleteSelectedNotes();
-  assert.deepEqual(box.state.items.map(function (item) { return item.id; }), ["a", "c"]);
-  assert.deepEqual(box.deleted, ["b", "d"]);
+  assert.deepEqual(box.state.items.map(function (item) { return item.id; }), ["a", "b", "c", "d"]);
+  assert.ok(box.state.items.find(function (item) { return item.id === "b"; }).trashedAt > 0);
+  assert.ok(box.state.items.find(function (item) { return item.id === "d"; }).trashedAt > 0);
+  assert.equal(box.state.items.find(function (item) { return item.id === "c"; }).trashedAt, undefined);
+  assert.deepEqual(box.deleted, []);
   assert.equal(box.state.currentId, "a");
   assert.equal(box.state.selectingNotes, false);
   assert.deepEqual(box.state.selectedItemIds, []);
   assert.equal(box.persisted, true);
   assert.equal(box.tagsRendered, true);
   assert.equal(box.rerendered, true);
-  assert.equal(box.toast, "Deleted 2 notes");
+  assert.equal(box.toast, "Deleted 2 notes. Kept in Trash for 3 days.");
 });
 
 test("deleteSelectedNotes leaves notes alone when confirm is cancelled", function () {
