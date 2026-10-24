@@ -2827,20 +2827,35 @@
     if(count) persist();
     return count;
   }
-  function trashCompletedTodo(id){
-    var item=state.items.find(function(entry){ return entry.id===id; });
-    if(activeAudioRecorder&&activeAudioRecorder.itemId===id){ showToast("Stop the recording before deleting this audio entry",true); return; }
-    if(!item||!(isTodoNote(item)||item.type==="todo")||!item.done) return;
-    if(item.locked){ showToast("Unlock this item before deleting it",true); return; }
-    if(isInTrash(item)) return;
+  /* Delete and Trash are the same action. The note leaves every list now and
+     stays recoverable in Trash for 3 days. After that, purgeExpiredTrash
+     removes it for good. */
+  function moveItemsToTrash(items, message, clearSelection){
+    var list=(items||[]).filter(function(item){ return item&&!isInTrash(item); });
+    if(!list.length){ showToast("Already in Trash"); return 0; }
+    if(activeAudioRecorder&&list.some(function(item){ return item.id===activeAudioRecorder.itemId; })){ showToast("Stop the recording before deleting this audio entry",true); return 0; }
+    var locked=list.filter(function(item){ return item.locked; });
+    var deletable=list.filter(function(item){ return !item.locked; });
+    if(!deletable.length){ showToast("Unlock these items before deleting them",true); return 0; }
+    var extra=locked.length?" "+locked.length+" locked item"+(locked.length===1?"":"s")+" will be skipped.":"";
+    var ask=message||(deletable.length===1?"Delete this? It stays in Trash for 3 days, then it is removed. You will not be asked again for 3 minutes.":"Delete "+deletable.length+" notes? They stay in Trash for 3 days, then they are removed. You will not be asked again for 3 minutes.");
+    if(!message&&extra) ask+=extra;
     if(!recentDeleteConfirm()){
-      if(!confirm("Move this completed todo to Trash? It stays for 3 days, then it is deleted. You will not be asked again for 3 minutes.")) return;
+      if(!confirm(ask)) return 0;
       rememberDeleteConfirm();
     }
-    item.trashedAt=Date.now(); item.updated=Date.now();
+    var now=Date.now();
+    deletable.forEach(function(item){ item.trashedAt=now; item.updated=now; });
     leaveIfCurrentTrashed();
-    persist(); renderList(); renderMain();
-    showToast("Moved to Trash");
+    if(clearSelection){ state.selectedItemIds=[]; state.selectingNotes=false; state.tagAssignMode=false; }
+    persist(); renderTags(); renderList(); renderMain();
+    showToast(deletable.length===1?"Deleted. Kept in Trash for 3 days.":"Deleted "+deletable.length+" notes. Kept in Trash for 3 days.");
+    return deletable.length;
+  }
+  function trashCompletedTodo(id){
+    var item=state.items.find(function(entry){ return entry.id===id; });
+    if(!item||!(isTodoNote(item)||item.type==="todo")||!item.done||isInTrash(item)) return;
+    moveItemsToTrash([item]);
   }
   function visibleItems(ignoreTagFilter){
     var query=(state.noteSearch||"").trim().toLowerCase();
@@ -4666,7 +4681,7 @@
       var lockStatus=it.locked?'<span class="item-lock" title="Deletion locked" aria-label="Deletion locked">'+ICON_LOCK+'</span>':"";
       var selectControl=state.selectingNotes?'<input class="note-select" type="checkbox" aria-label="Select note" '+(selected?'checked':'')+'>':'';
       var statusHtml="";
-      el.innerHTML=selectControl+leading+'<div class="dt"><div class="dt-title"></div><div class="dt-meta"><span class="m">'+metaText+'</span>'+statusHtml+dots+lockStatus+'</div></div><button class="dx" type="button" title="'+(todoItem&&it.done?"Move completed todo to Trash":"Item actions")+'" aria-label="'+(todoItem&&it.done?"Move completed todo to Trash":"Item actions")+'">'+(todoItem&&it.done?ICON_DELETE:ICON_EDIT)+'</button>';
+      el.innerHTML=selectControl+leading+'<div class="dt"><div class="dt-title"></div><div class="dt-meta"><span class="m">'+metaText+'</span>'+statusHtml+dots+lockStatus+'</div></div><button class="dx" type="button" title="'+(todoItem&&it.done?"Delete":"Item actions")+'" aria-label="'+(todoItem&&it.done?"Delete":"Item actions")+'">'+(todoItem&&it.done?ICON_DELETE:ICON_EDIT)+'</button>';
       el.querySelector(".dt-title").textContent=it.title||("Untitled "+itemLabel(it).toLowerCase());
       if(it.origin==="assistant"){ var originBadge=document.createElement("span"); originBadge.className="origin-badge"; originBadge.textContent="Added by Assistant"; el.appendChild(originBadge); }
       if(todoItem) el.querySelector(".side-todo-check").onclick=function(e){ e.stopPropagation(); setTodoDone(it); };
@@ -4752,41 +4767,12 @@
   function deleteSelectedNotes(){
     var selected=state.items.filter(function(item){ return state.selectedItemIds.indexOf(item.id)>=0; });
     if(!selected.length){ showToast("Select one or more notes first",true); return; }
-    if(activeAudioRecorder&&selected.some(function(item){ return item.id===activeAudioRecorder.itemId; })){ showToast("Stop the recording before deleting this audio entry",true); return; }
-    var locked=selected.filter(function(item){ return item.locked; });
-    var deletable=selected.filter(function(item){ return !item.locked; });
-    if(!deletable.length){ showToast("Unlock these items before deleting them",true); return; }
-    var extra=locked.length?" "+locked.length+" locked item"+(locked.length===1?"":"s")+" will be skipped.":"";
-    if(!confirm("Delete "+deletable.length+" note"+(deletable.length===1?"":"s")+"? This can't be undone."+extra)) return;
-    captureAutoBackup(true,"recovery");
-    var ids={};
-    deletable.forEach(function(item){
-      ids[item.id]=true;
-      forEachItemContentDocument(item,cleanupContentAttachments);
-      recordDeletedItem(item);
-    });
-    state.items=state.items.filter(function(item){ return !ids[item.id]; });
-    if(!state.items.length) state.items.push(newNoteItem());
-    if(ids[state.currentId]){ var vis=visibleItems(); state.currentId=(vis[0]||state.items[0]).id; }
-    var count=deletable.length;
-    state.selectedItemIds=[]; state.selectingNotes=false; state.tagAssignMode=false;
-    persist(); renderTags(); renderList(); renderMain();
-    showToast("Deleted "+count+" note"+(count===1?"":"s"));
+    moveItemsToTrash(selected,"",true);
   }
   function delItem(id,message){
     var item=state.items.find(function(s){ return s.id===id; });
-    if(activeAudioRecorder&&activeAudioRecorder.itemId===id){ showToast("Stop the recording before deleting this audio entry",true); return; }
-    if(item&&item.locked){ showToast("Unlock this item before deleting it",true); return; }
-    if(!confirm(message||"Delete this? This can't be undone.")) return;
-    captureAutoBackup(true,"recovery");
-    var i=state.items.findIndex(function(s){ return s.id===id; });
-    if(i<0) return;
-    forEachItemContentDocument(item,cleanupContentAttachments);
-    recordDeletedItem(item);
-    state.items.splice(i,1);
-    if(!state.items.length) state.items.push(newNoteItem());
-    if(state.currentId===id){ var vis=visibleItems(); state.currentId=(vis[0]||state.items[0]).id; }
-    persist(); renderTags(); renderList(); renderMain();
+    if(!item) return;
+    moveItemsToTrash([item],message||"");
   }
 
   /* =================== editor =================== */
@@ -5807,7 +5793,7 @@
       itemCheck.onclick=function(){ setTodoDone(it); };
       titleRow.appendChild(itemCheck);
       if(it.done&&!it.locked){
-        var itemDelete=document.createElement("button"); itemDelete.className="todo-item-delete"; itemDelete.textContent="Trash";
+        var itemDelete=document.createElement("button"); itemDelete.className="todo-item-delete"; itemDelete.textContent="Delete";
         itemDelete.onclick=function(){ trashCompletedTodo(it.id); };
         titleRow.appendChild(itemDelete);
       }
@@ -7449,7 +7435,7 @@
     select.onchange=function(){
       it.status=cleanStatus(select.value);
       it.updated=Date.now();
-      if(it.status==="passed test"){ delItem(it.id,"Marked passed test — delete this note? This can't be undone."); return; }
+      if(it.status==="passed test"){ delItem(it.id,"Marked passed test — delete this note? It stays in Trash for 3 days, then it is removed."); return; }
       persist(); renderList();
       select.classList.toggle("with-status",!!it.status);
       syncBarTitle();
@@ -15394,7 +15380,7 @@
         '<button data-settings="voices"><span><b>Voice</b><small>Choose from your saved ElevenLabs voices</small></span><span class="arrow">›</span></button>'+
         '<button data-settings="collab"><span><b>AI collaborator</b><small>Agents, voice intelligence, and hidden notes (also in the sidebar footer)</small></span><span class="arrow">›</span></button>'+
         '<button data-settings="agent"><span><b>Connect an agent</b><small>Full steps to let Hermes use your notes, the same way as TickTick</small></span><span class="arrow">›</span></button>'+
-        '<button data-settings="trash"><span><b>Trash</b><small>Completed todos, kept for 3 days</small></span><span class="arrow">›</span></button>'+
+        '<button data-settings="trash"><span><b>Trash</b><small>Deleted notes, kept for 3 days</small></span><span class="arrow">›</span></button>'+
         '<button data-settings="manage"><span><b>Manage</b><small>Choose which things New can create</small></span><span class="arrow">›</span></button></div><div class="grp"><h4>Editor behaviour</h4><div class="srow"><div class="sl">Open notes in the body<small>Focus the first editable block instead of the title. Turn off to start at the title.</small></div><button class="toggle" id="focusNoteBodyToggle"><b></b></button></div><div class="srow"><div class="sl">AI handoff in note menus<small>Copy or package a note, including attachment data, for Cursor, ChatGPT, or Claude.</small></div><button class="toggle" id="quickAiHandoffToggle"><b></b></button></div></div><div class="grp"><h4>AI text changes</h4><div class="srow"><div class="sl">Ask before changing my text<small>Keep AI edits as suggestions until you choose Apply.</small></div><button class="toggle" id="settingsRequireApprovalToggle"><b></b></button></div></div>';
     } else if(settingsPage==="appearance"){
       content=settingsHeading("Appearance",true)+'<div class="grp"><div class="srow"><div class="sl">Background movement<small>Slow drifting color that works on desktop and mobile</small></div><button class="toggle" id="motionToggle"><b></b></button></div></div><div class="grp"><div class="range-row"><label for="darknessRange"><span>Background darkness</span><output id="darknessOutput"></output></label><input id="darknessRange" type="range" min="0" max="100" step="1"><p class="hint">At 100%, the background is pure AMOLED black. Lower it to reveal more of the moving theme color while keeping the surface black.</p></div></div>';
@@ -15417,7 +15403,7 @@
     } else if(settingsPage==="usage"){
       content=settingsHeading("Usage",true)+'<p class="hint">Hosted credits show dollars we charged (5× provider cost) plus tokens. Your own keys still log tokens locally; provider invoices stay on OpenAI, Gemini, and ElevenLabs.</p><div id="usageSettings"></div>';
     } else if(settingsPage==="trash"){
-      content=settingsHeading("Trash",true)+'<p class="hint">Completed todos you trash stay here for 3 days, then they are deleted. The delete confirmation stays quiet for 3 minutes after you accept it once.</p><div class="btnrow"><button class="b2" id="emptyTrashBtn">Empty trash</button></div><div class="grp" id="trashList"></div>';
+      content=settingsHeading("Trash",true)+'<p class="hint">Deleting a note puts it here for 3 days. Restore sends it back. After 3 days it is removed for good. The delete confirmation stays quiet for 3 minutes after you accept it once.</p><div class="btnrow"><button class="b2" id="emptyTrashBtn">Empty trash</button></div><div class="grp" id="trashList"></div>';
     } else if(settingsPage==="manage"){
       content=settingsHeading("Manage",true)+'<p class="hint">Choose what appears under New and in a note’s Insert menu. Existing content is never removed when an option is turned off.</p><div class="grp"><div class="srow"><div class="sl">Notes<small>Flexible rich-text notes</small></div><button class="toggle" id="typeNote"><b></b></button></div><div class="srow"><div class="sl">YouTube Script<small>Chaptered note template</small></div><button class="toggle" id="typeScript"><b></b></button></div><div class="srow"><div class="sl">Audio<small>Record or upload audio clips</small></div><button class="toggle" id="typeAudio"><b></b></button></div><div class="srow"><div class="sl">Todos<small>A note with a completion checkbox</small></div><button class="toggle" id="typeTodo"><b></b></button></div><div class="srow"><div class="sl">Agent<small>AI collaborators you can talk to inside a note</small></div><button class="toggle" id="typeAgent"><b></b></button></div></div><div class="grp" id="moduleTypes"></div><div class="grp"><h4>Note insert menu</h4><div class="srow"><div class="sl">Photo, video, or file<small>Inline images and videos, plus any attachment</small></div><button class="toggle" id="insertFile"><b></b></button></div><div class="srow"><div class="sl">YouTube video<small>Paste a link and play it inside the note</small></div><button class="toggle" id="insertEmbed"><b></b></button></div><div class="srow"><div class="sl">Link with photo<small>A link card with your own picture, title, and summary</small></div><button class="toggle" id="insertLink"><b></b></button></div><div class="srow"><div class="sl">Paragraph<small>Rich text with bold, italic, and underline</small></div><button class="toggle" id="insertParagraph"><b></b></button></div><div class="srow"><div class="sl">Mini todo list<small>A checklist you can tick off inside the note</small></div><button class="toggle" id="insertChecklist"><b></b></button></div><div class="srow"><div class="sl">Comment<small>A cue-style note to yourself</small></div><button class="toggle" id="insertComment"><b></b></button></div><div class="srow"><div class="sl">Prompt<small>A copy-ready prompt drafting box</small></div><button class="toggle" id="insertPrompt"><b></b></button></div><div class="srow"><div class="sl">Heading<small>Simple size picker when selected</small></div><button class="toggle" id="insertHeading"><b></b></button></div><div class="srow"><div class="sl">Chapter<small>Named section with its own Listen button</small></div><button class="toggle" id="insertChapter"><b></b></button></div><div class="srow"><div class="sl">Collapsible group<small>Hide supporting details until needed</small></div><button class="toggle" id="insertGroup"><b></b></button></div><div class="srow"><div class="sl">Code<small>Syntax-highlighted editor, preview, and run tools</small></div><button class="toggle" id="insertCode"><b></b></button></div></div>';
     } else { settingsPage="home"; renderSettingsPage(); return; }
@@ -15464,7 +15450,7 @@
     items.forEach(function(item){
       var row=document.createElement("div"); row.className="srow";
       var copy=document.createElement("div"); copy.className="sl";
-      copy.appendChild(document.createTextNode(item.title||"Untitled todo"));
+        copy.appendChild(document.createTextNode(item.title||("Untitled "+(typeof itemLabel==="function"?itemLabel(item).toLowerCase():"note"))));
       var small=document.createElement("small"); small.textContent=trashDeletesLabel(item); copy.appendChild(small);
       var actions=document.createElement("div"); actions.className="btnrow"; actions.style.margin="0";
       var restore=document.createElement("button"); restore.type="button"; restore.className="b2 primary"; restore.textContent="Restore";

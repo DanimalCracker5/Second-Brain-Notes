@@ -318,6 +318,9 @@ test("deleteHomeSelectedNotes removes the chosen notes and restores the selectio
       currentId: "b"
     },
     activeAudioRecorder: null,
+    DELETE_CONFIRM_COOLDOWN_MS: 3 * 60 * 1000,
+    DELETE_CONFIRM_KEY: "second-brain-delete-confirm-at",
+    localStorage: { getItem: function () { return null; }, setItem: function () {} },
     confirm: function () { return box.allow; },
     allow: false,
     captureAutoBackup: function () {},
@@ -334,7 +337,16 @@ test("deleteHomeSelectedNotes removes the chosen notes and restores the selectio
     deleted: []
   };
   vm.createContext(box);
-  vm.runInContext(grab("deleteHomeSelectedNotes", "delItem"), box, { filename: "delete-home-selected" });
+  vm.runInContext(
+    [grab("isInTrash", "trashItems"),
+     grab("recentDeleteConfirm", "rememberDeleteConfirm"),
+     grab("rememberDeleteConfirm", "leaveIfCurrentTrashed"),
+     grab("leaveIfCurrentTrashed", "permanentlyRemoveItems"),
+     grab("moveItemsToTrash", "trashCompletedTodo"),
+     grab("deleteHomeSelectedNotes", "delItem")].join("\n"),
+    box,
+    { filename: "delete-home-selected" }
+  );
   box.deleteHomeSelectedNotes();
   assert.deepEqual(box.state.items.map(function (item) { return item.id; }), ["a", "b", "c"]);
   assert.equal(box.homeSelecting, true);
@@ -344,11 +356,13 @@ test("deleteHomeSelectedNotes removes the chosen notes and restores the selectio
   assert.equal(box.state.tagAssignMode, true);
   box.allow = true;
   box.deleteHomeSelectedNotes();
-  assert.deepEqual(box.state.items.map(function (item) { return item.id; }), ["a", "c"]);
-  assert.deepEqual(box.deleted, ["b"]);
+  const removed = box.state.items.find(function (item) { return item.id === "b"; });
+  assert.ok(removed.trashedAt > 0);
+  assert.equal(box.state.items.find(function (item) { return item.id === "c"; }).trashedAt, undefined);
+  assert.deepEqual(box.deleted, []);
   assert.equal(box.homeSelecting, false);
   assert.deepEqual(box.homeSelectedIds, []);
-  assert.equal(box.toast, "Deleted 1 note");
+  assert.equal(box.toast, "Deleted. Kept in Trash for 3 days.");
 });
 
 test("homeOpenTag drops a tag that no longer exists", function () {
