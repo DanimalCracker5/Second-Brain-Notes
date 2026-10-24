@@ -303,25 +303,50 @@
       if(user){
         $("gate").hidden=true; $("board").hidden=false;
         loadBoard();
+        watchBoard();
         if(refreshTimer) clearInterval(refreshTimer);
         refreshTimer=setInterval(loadBoard,REFRESH_MS);
       } else {
         $("gate").hidden=false; $("board").hidden=true;
         gateMessage("");
+        if(liveUnsubscribe){ liveUnsubscribe(); liveUnsubscribe=null; }
         if(refreshTimer){ clearInterval(refreshTimer); refreshTimer=null; }
       }
     });
   }
 
+  var liveUnsubscribe=null;
+  function applyBoardData(data){
+    var grouped=groupTodos((data&&data.items)||[]);
+    latest.sections=grouped.sections; latest.doneCount=grouped.doneCount;
+    render();
+  }
+  /* Live push: mirror the main app's watchAccountDoc — onSnapshot drives the
+     board within seconds of any change, from any device (incl. agent writes).
+     The 60s interval stays only as a fallback heartbeat for missed events. */
+  function watchBoard(){
+    if(!currentUser||!db) return;
+    if(liveUnsubscribe){ liveUnsubscribe(); liveUnsubscribe=null; }
+    $("syncState").textContent="connecting…";
+    liveUnsubscribe=db.collection("users").doc(currentUser.uid).onSnapshot(function(snap){
+      applyBoardData(snap.exists()?snap.data():{});
+      $("syncState").textContent="live";
+    },function(error){
+      console.warn("HUD live watch failed:",error);
+      $("syncState").textContent="sync error — retrying";
+      /* Fallback: single get so the board recovers even if the listener dies. */
+      db.collection("users").doc(currentUser.uid).get().then(function(doc){
+        applyBoardData(doc.exists?doc.data():{});
+        $("syncState").textContent="live (polling)";
+      }).catch(function(){ $("syncState").textContent="offline"; });
+    });
+  }
   function loadBoard(){
     if(!currentUser||!db) return;
     $("syncState").textContent="updating…";
     db.collection("users").doc(currentUser.uid).get().then(function(doc){
-      var data=doc.exists?doc.data():{};
-      var grouped=groupTodos(data.items);
-      latest.sections=grouped.sections; latest.doneCount=grouped.doneCount;
+      applyBoardData(doc.exists?doc.data():{});
       $("syncState").textContent="live";
-      render();
     }).catch(function(error){
       console.warn(error);
       $("syncState").textContent="";
