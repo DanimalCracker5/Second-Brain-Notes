@@ -1584,13 +1584,18 @@
     background:var(--tag, var(--accent));
     box-shadow:0 0 0 5px color-mix(in srgb, var(--tag, var(--accent)) 22%, transparent), 0 0 22px var(--tag, var(--accent));
   }
-  .tag-stage-notes{ margin-top:2px; }
+  .tag-stage-head{ align-items:center; margin:0 0 12px; }
+  .tag-stage-head h1{ font-size:clamp(1.55rem, 4vw, 2.15rem); }
+  .tag-stage-head .home-kicker{ margin-bottom:2px; }
+  .tag-stage-head .home-sub{ margin-top:3px; color:var(--ink-dim); font-size:.82rem; }
+  .tag-stage-notes{ margin-top:0; }
   .tag-stage-notes .home-notes{
-    padding:8px 8px 12px;
-    border:1px solid color-mix(in srgb, var(--tag) 34%, var(--line));
-    border-radius:18px;
-    background:linear-gradient(180deg, color-mix(in srgb, var(--tag) 13%, transparent), rgba(255,255,255,.02) 140px);
-    box-shadow:inset 0 1px 0 color-mix(in srgb, var(--tag) 28%, transparent);
+    padding:4px 0 8px;
+    border:0;
+    border-top:1px solid color-mix(in srgb, var(--tag, var(--line)) 32%, transparent);
+    border-radius:0;
+    background:transparent;
+    box-shadow:none;
   }
   .tag-stage .home-tag.on{
     color:var(--ink);
@@ -1641,7 +1646,36 @@
   .tag-page-list{ min-width:0; }
   .home-note.compact{ align-items:center; padding:7px 8px; }
   .home-note.compact .home-note-copy b{ font-size:.92rem; }
+  .home-note.selecting{ grid-template-columns:18px 16px minmax(0,1fr) auto; align-items:center; user-select:none; cursor:pointer; }
+  .home-note.selecting:focus-visible{ outline:2px solid var(--accent-line); outline-offset:2px; }
+  .home-note.is-selected{ background:color-mix(in srgb, var(--accent) 14%, transparent); }
+  .home-note.is-selected:hover{ background:color-mix(in srgb, var(--accent) 20%, transparent); }
+  .home-note .note-select{ margin:0; }
+  .tag-stage .home-note.compact{ padding:8px 4px; }
+  .tag-stage .home-note.compact .home-note-copy{ display:flex; align-items:baseline; gap:10px; }
+  .tag-stage .home-note.compact .home-note-copy b{ flex:1 1 auto; min-width:0; }
+  .tag-stage .home-note.compact .home-note-copy small{ flex:0 1 auto; max-width:42%; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+  .tag-stage-bar{ display:flex; align-items:center; gap:8px; min-width:0; margin:0 0 8px; }
+  .tag-stage-filters{ display:flex; align-items:center; gap:6px; min-width:0; flex:1; overflow-x:auto; scrollbar-width:none; -webkit-overflow-scrolling:touch; }
+  .tag-stage-filters::-webkit-scrollbar{ display:none; }
+  .tag-stage-filters .home-chip{ flex:none; }
+  .tag-stage-end{ display:flex; align-items:center; gap:6px; flex:none; margin-left:auto; }
+  .tag-stage .home-sort{ width:auto; }
+  .tag-stage .home-sort select{ flex:none; max-width:min(220px, 42vw); }
+  .tag-bulk{ display:flex; align-items:center; gap:8px; width:100%; min-width:0; }
+  .tag-bulk-all{ display:inline-flex; align-items:center; gap:6px; flex:none; color:var(--ink-dim); cursor:pointer; font:600 .75rem "DM Sans",sans-serif; white-space:nowrap; }
+  .tag-bulk-count{ min-width:0; color:var(--ink-faint); font:500 .72rem "DM Mono",monospace; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+  .tag-bulk .home-chip{ flex:none; }
+  .home-chip.danger{ color:#fca5a5; border-color:rgba(248,113,113,.34); }
+  .home-chip.danger:hover{ color:#fecaca; border-color:rgba(248,113,113,.5); background:rgba(248,113,113,.12); }
+  .home-chip:disabled{ opacity:.38; cursor:default; }
+  .home-chip:disabled:hover{ color:var(--ink-dim); border-color:var(--line); background:rgba(255,255,255,.03); }
   .tag-empty{ animation:fadeIn .25s ease both; }
+  @media (pointer:coarse){
+    .tag-stage .home-note{ padding-top:11px; padding-bottom:11px; }
+    .tag-stage .note-select{ width:20px; height:20px; }
+    .tag-bulk .home-chip,.tag-stage-end .home-chip{ padding:8px 12px; }
+  }
 
   body.reduce-fx *,body.reduce-fx *::before,body.reduce-fx *::after{ animation-duration:.001s !important; animation-delay:0s !important; transition-duration:.001s !important; }
   @media (prefers-reduced-motion: reduce){
@@ -1673,8 +1707,11 @@
     .modal-box{ padding:20px; }
     .themes{ grid-template-columns:1fr; }
     .home-head{ flex-direction:column; align-items:stretch; }
-    .tag-stage-head{ flex-direction:row; align-items:flex-start; }
-    .tag-stage-head .home-tools{ margin-top:22px; }
+    .tag-stage-head{ flex-direction:row; align-items:center; }
+    .tag-stage-head .home-tools{ margin-top:0; }
+    .tag-stage .home-note.compact .home-note-copy small{ display:none; }
+    .tag-bulk{ flex-wrap:wrap; }
+    .tag-bulk-count{ flex:1; }
     .home-tools{ justify-content:space-between; }
     .home-grid,.home-add-grid{ grid-template-columns:1fr; }
     .home-notes-controls{ flex-direction:column; align-items:stretch; }
@@ -2706,7 +2743,7 @@
   }
 
   /* Opening the site lands on Home. A note is shown only after it is chosen. */
-  var viewingHome=true, viewingTagId=null, homeCustomizing=false, homeTagId=null, homeStatusStage=null, homeTypeFilter="", homeStatusFilter="", homeQuery="", homeSearchFocus=false, homeScratchTimer=null, homeTagRailScroll=0;
+  var viewingHome=true, viewingTagId=null, homeCustomizing=false, homeTagId=null, homeStatusStage=null, homeTypeFilter="", homeStatusFilter="", homeQuery="", homeSearchFocus=false, homeScratchTimer=null, homeTagRailScroll=0, homeSelecting=false, homeSelectedIds=[];
   function browsingLibrary(){ return !!(viewingHome||viewingTagId); }
   function current(){ return state.items.find(function(s){return s.id===state.currentId;})||state.items[0]; }
   /* Time is counted only while this app is the focused, visible tab. It is kept
@@ -4659,6 +4696,59 @@
     state.selectedItemIds=[]; state.selectingNotes=false; state.tagAssignMode=false;
     persist(); renderAll(); showToast("Added "+count+" note"+(count===1?"":"s")+" to "+tag.name);
   }
+  function setHomeSelecting(on){
+    homeSelecting=!!on;
+    if(!homeSelecting) homeSelectedIds=[];
+    if(viewingHome) renderMain();
+  }
+  function toggleHomeSelection(id, selected){
+    var index=homeSelectedIds.indexOf(id);
+    if(selected&&index<0) homeSelectedIds.push(id);
+    if(!selected&&index>=0) homeSelectedIds.splice(index,1);
+    if(viewingHome) renderMain();
+  }
+  function toggleAllHomeNotes(items){
+    var ids=(items||[]).map(function(it){ return it.id; });
+    var all=ids.length&&ids.every(function(id){ return homeSelectedIds.indexOf(id)>=0; });
+    if(all){
+      var drop={};
+      ids.forEach(function(id){ drop[id]=true; });
+      homeSelectedIds=homeSelectedIds.filter(function(id){ return !drop[id]; });
+    } else {
+      var have={};
+      homeSelectedIds.forEach(function(id){ have[id]=true; });
+      ids.forEach(function(id){ have[id]=true; });
+      homeSelectedIds=Object.keys(have);
+    }
+    if(viewingHome) renderMain();
+  }
+  function tagHomeSelectedNotes(anchor){
+    if(!homeSelectedIds.length){ showToast("Select one or more notes first",true); return; }
+    var prev=state.selectedItemIds.slice();
+    state.selectedItemIds=homeSelectedIds.slice();
+    openBulkTagPick(anchor);
+    state.selectedItemIds=prev;
+  }
+  function deleteHomeSelectedNotes(){
+    if(!homeSelectedIds.length){ showToast("Select one or more notes first",true); return; }
+    var snapshot=homeSelectedIds.slice();
+    var prevIds=state.selectedItemIds.slice();
+    var prevSelecting=!!state.selectingNotes;
+    var prevAssign=!!state.tagAssignMode;
+    state.selectedItemIds=snapshot.slice();
+    state.selectingNotes=true;
+    state.tagAssignMode=false;
+    homeSelecting=false;
+    homeSelectedIds=[];
+    deleteSelectedNotes();
+    if(state.selectingNotes){
+      homeSelecting=true;
+      homeSelectedIds=snapshot;
+      state.selectedItemIds=prevIds;
+      state.selectingNotes=prevSelecting;
+      state.tagAssignMode=prevAssign;
+    }
+  }
   function deleteSelectedNotes(){
     var selected=state.items.filter(function(item){ return state.selectedItemIds.indexOf(item.id)>=0; });
     if(!selected.length){ showToast("Select one or more notes first",true); return; }
@@ -4815,6 +4905,7 @@
   function statusFilterPicked(value){
     state.filterStatus=state.filterStatus===value?"":value;
     if(viewingHome){
+      homeSelecting=false; homeSelectedIds=[];
       homeStatusStage=state.filterStatus||null;
       if(homeStatusStage) homeTagId=null;
     }
@@ -4825,6 +4916,7 @@
     if(activeAudioRecorder){ showToast("Finish the current recording before leaving it",true); return; }
     /* A second Home tap, while a tag is already open, steps back to the widgets. */
     if(viewingHome&&homeTagId){
+      homeSelecting=false; homeSelectedIds=[];
       if(state.filterTag===homeTagId) state.filterTag=null;
       homeTagId=null;
       renderList();
@@ -4833,6 +4925,7 @@
     }
     /* Same for a status page opened from the drawer's Status caret. */
     if(viewingHome&&homeStatusStage){
+      homeSelecting=false; homeSelectedIds=[];
       homeStatusStage=null;
       renderList();
       renderMain();
@@ -4853,6 +4946,7 @@
     if(next&&!tagById(next)) next=null;
     /* Picking a tag leaves any status page behind — one stage at a time. */
     if(next) homeStatusStage=null;
+    if(next!==homeTagId){ homeSelecting=false; homeSelectedIds=[]; }
     /* The tag page used to stay behind an open note. Leave the note so the list shows. */
     if(!viewingHome){
       if(!next) return;
@@ -5010,26 +5104,36 @@
     var index=null;
     if(typeof options==="number"){ index=options; options={}; }
     else options=options||{};
-    var button=document.createElement("button"); button.type="button";
-    button.className="home-note"+(options.compact?" compact":"")+((isTodoNote(it)||it.type==="todo")&&it.done?" todo-done":"")+(it.id===justAddedId?" just-added":"");
+    if(typeof options.index==="number") index=options.index;
+    var stage=!!options.stage, selecting=stage&&homeSelecting, selected=selecting&&homeSelectedIds.indexOf(it.id)>=0;
+    var button=document.createElement(selecting?"div":"button");
+    if(!selecting) button.type="button";
+    button.className="home-note"+((options.compact||stage)?" compact":"")+((isTodoNote(it)||it.type==="todo")&&it.done?" todo-done":"")+(it.id===justAddedId?" just-added":"")+(selecting?" selecting":"")+(selected?" is-selected":"");
     if(typeof index==="number") button.style.setProperty("--i", String(Math.min(index, 12)));
     var icon=document.createElement("span"); icon.className="item-icon"; icon.innerHTML=itemIconMarkup(it);
     var color=itemIconColor(it); if(color) icon.style.color=color;
     var text=document.createElement("span"); text.className="home-note-copy";
     var title=document.createElement("b"); title.textContent=it.title||("Untitled "+itemLabel(it).toLowerCase());
     text.appendChild(title);
-    if(!options.compact){
-      var preview=homeSnippet(it), snippet=document.createElement("span"); snippet.className="home-snippet"; snippet.textContent=preview; if(!preview) snippet.hidden=true;
+    if(stage||!options.compact){
+      if(!stage){ var preview=homeSnippet(it), snippet=document.createElement("span"); snippet.className="home-snippet"; snippet.textContent=preview; if(!preview) snippet.hidden=true; text.appendChild(snippet); }
       var meta=document.createElement("small"); var due=itemDueDate(it); meta.textContent=itemLabel(it)+(due?" · "+dueDateLabel(due):"");
-      text.appendChild(snippet); text.appendChild(meta);
+      text.appendChild(meta);
     }
     var when=document.createElement("span"); when.className="when"; when.textContent=homeWhen(it.updated);
     button.appendChild(icon); button.appendChild(text); button.appendChild(when);
     if(it.origin==="assistant"){ var originBadge=document.createElement("span"); originBadge.className="origin-badge"; originBadge.textContent="Added by Assistant"; button.appendChild(originBadge); }
-    button.onclick=function(){ openHomeItem(it.id); };
+    if(selecting){
+      var box=document.createElement("input"); box.type="checkbox"; box.className="note-select"; box.checked=selected;
+      box.setAttribute("aria-label","Select note");
+      box.onclick=function(event){ event.stopPropagation(); toggleHomeSelection(it.id, event.currentTarget.checked); };
+      button.insertBefore(box, button.firstChild);
+    }
+    button.onclick=function(){ if(selecting){ toggleHomeSelection(it.id, homeSelectedIds.indexOf(it.id)<0); return; } openHomeItem(it.id); };
     return button;
   }
   function setHomeNotesTag(id){
+    homeSelecting=false; homeSelectedIds=[];
     homeTagId=homeTagId===id?null:id;
     if(state.filterTag!==homeTagId){
       state.filterTag=homeTagId;
@@ -5075,6 +5179,79 @@
     chip.onclick=onClick;
     return chip;
   }
+  /* The tag and status pages share one quiet bar: filters and sort, or a
+     selection row that can tag and delete the notes on screen. */
+  function buildTagStageToolbar(){
+    if(["","open","done","due","overdue"].indexOf(homeStatusFilter)<0) homeStatusFilter="";
+    var items=homeNotes();
+    var visible={};
+    items.forEach(function(it){ visible[it.id]=true; });
+    homeSelectedIds=homeSelectedIds.filter(function(id){ return visible[id]; });
+    if(homeSelecting&&!items.length){ homeSelecting=false; homeSelectedIds=[]; }
+    var bar=document.createElement("div"); bar.className="tag-stage-bar"+(homeSelecting?" selecting":"");
+    if(homeSelecting){
+      var n=homeSelectedIds.length;
+      var allOn=!!items.length&&items.every(function(it){ return homeSelectedIds.indexOf(it.id)>=0; });
+      var some=items.some(function(it){ return homeSelectedIds.indexOf(it.id)>=0; });
+      var bulk=document.createElement("div"); bulk.className="tag-bulk"; bulk.setAttribute("role","toolbar"); bulk.setAttribute("aria-label","Actions for selected notes");
+      var allLabel=document.createElement("label"); allLabel.className="tag-bulk-all";
+      var allBox=document.createElement("input"); allBox.type="checkbox"; allBox.className="note-select";
+      allBox.checked=allOn; allBox.indeterminate=!allOn&&some;
+      allBox.setAttribute("aria-label",allOn?"Clear selection":"Select all notes");
+      allBox.onclick=function(){ toggleAllHomeNotes(items); };
+      var allText=document.createElement("span"); allText.textContent="All";
+      allLabel.appendChild(allBox); allLabel.appendChild(allText);
+      var count=document.createElement("span"); count.className="tag-bulk-count";
+      count.textContent=n?(n+" selected"):"None selected";
+      var tagsBtn=document.createElement("button"); tagsBtn.type="button"; tagsBtn.className="home-chip"; tagsBtn.textContent="Add tags";
+      tagsBtn.disabled=!n; tagsBtn.title="Add or remove tags"; tagsBtn.setAttribute("aria-label","Add or remove tags");
+      tagsBtn.onclick=function(){ tagHomeSelectedNotes(tagsBtn); };
+      var delBtn=document.createElement("button"); delBtn.type="button"; delBtn.className="home-chip danger"; delBtn.textContent="Delete";
+      delBtn.disabled=!n; delBtn.title=n?"Delete "+n+" selected note"+(n===1?"":"s"):"Delete selected notes";
+      delBtn.setAttribute("aria-label",delBtn.title);
+      delBtn.onclick=function(){ deleteHomeSelectedNotes(); };
+      var doneBtn=document.createElement("button"); doneBtn.type="button"; doneBtn.className="home-chip"; doneBtn.textContent="Done";
+      doneBtn.setAttribute("aria-label","Done selecting");
+      doneBtn.onclick=function(){ setHomeSelecting(false); };
+      bulk.appendChild(allLabel); bulk.appendChild(count); bulk.appendChild(tagsBtn); bulk.appendChild(delBtn); bulk.appendChild(doneBtn);
+      bar.appendChild(bulk);
+      return bar;
+    }
+    var filters=document.createElement("div"); filters.className="tag-stage-filters"; filters.setAttribute("role","group"); filters.setAttribute("aria-label","Filter notes");
+    if((homeQuery||"").trim()){
+      var q=homeQuery.trim();
+      filters.appendChild(homeFilterChip(q.length>18?q.slice(0,18)+"… ×":q+" ×", true, function(){ homeQuery=""; renderMain(); }, "search"));
+    }
+    homeStatusFilters().forEach(function(row){
+      var extra=row[0]==="overdue"?"warn":"";
+      var chip=homeFilterChip(row[1], homeStatusFilter===row[0], function(){ setHomeNotesStatus(row[0]); }, extra);
+      chip.title=row[0]==="open"?"Open todos":(row[0]==="done"?"Finished todos":(row[0]==="due"?"Has a due date":"Past due"));
+      filters.appendChild(chip);
+    });
+    var end=document.createElement("div"); end.className="tag-stage-end";
+    var sortWrap=document.createElement("label"); sortWrap.className="home-sort";
+    var select=document.createElement("select");
+    select.id="homeNotesSort";
+    select.setAttribute("aria-label","Sort notes");
+    var sorts=homeListSortOptions(), known=false;
+    sorts.forEach(function(opt){
+      var option=document.createElement("option"); option.value=opt[0]; option.textContent=opt[1];
+      if(opt[0]===state.listSort) known=true;
+      select.appendChild(option);
+    });
+    select.value=known?state.listSort:"updated";
+    select.onchange=function(){ setListSort(select.value); };
+    sortWrap.appendChild(select);
+    var selectBtn=document.createElement("button"); selectBtn.type="button"; selectBtn.className="home-chip"; selectBtn.textContent="Select";
+    selectBtn.disabled=!items.length;
+    selectBtn.title=items.length?"Select notes":"Nothing to select";
+    selectBtn.setAttribute("aria-pressed","false");
+    selectBtn.setAttribute("aria-label","Select notes");
+    selectBtn.onclick=function(){ setHomeSelecting(true); };
+    end.appendChild(sortWrap); end.appendChild(selectBtn);
+    bar.appendChild(filters); bar.appendChild(end);
+    return bar;
+  }
   function buildHomeNotesToolbar(inStage){
     var tools=document.createElement("div");
     if(["","open","done","due","overdue"].indexOf(homeStatusFilter)<0) homeStatusFilter="";
@@ -5116,6 +5293,10 @@
         rail.appendChild(chip);
       });
       tools.appendChild(rail);
+    }
+    if(inStage){
+      tools.appendChild(buildTagStageToolbar());
+      return tools;
     }
     var controls=document.createElement("div"); controls.className="home-notes-controls";
     var filters=document.createElement("div"); filters.className="home-filter-scroll"; filters.setAttribute("role","group"); filters.setAttribute("aria-label","Filter notes");
@@ -5458,7 +5639,7 @@
     var name=document.createElement("span"); name.textContent=tag.name||"Tag";
     title.appendChild(dot); title.appendChild(name);
     var sub=document.createElement("p"); sub.className="home-sub";
-    sub.textContent=count?(count+" note"+(count===1?"":"s")+". Open one, or go back home."):(filteredEmpty?"Nothing matches these filters.":"Nothing in this tag yet.");
+    sub.textContent=count?(count+" note"+(count===1?"":"s")):(filteredEmpty?"Nothing matches these filters.":"Nothing in this tag yet.");
     copy.appendChild(kicker); copy.appendChild(title); copy.appendChild(sub);
     var tools=document.createElement("div"); tools.className="home-tools";
     var back=document.createElement("button"); back.type="button"; back.id="homeTagBack"; back.className="copy-all";
@@ -5481,7 +5662,7 @@
     var name=document.createElement("span"); name.textContent=statusLabel(status)||"No status";
     title.appendChild(dot); title.appendChild(name);
     var sub=document.createElement("p"); sub.className="home-sub";
-    sub.textContent=items.length?(items.length+" note"+(items.length===1?"":"s")+" with this status. Open one, or go back home."):"Nothing has this status.";
+    sub.textContent=items.length?(items.length+" note"+(items.length===1?"":"s")):"Nothing has this status.";
     copy.appendChild(kicker); copy.appendChild(title); copy.appendChild(sub);
     var tools=document.createElement("div"); tools.className="home-tools";
     var back=document.createElement("button"); back.type="button"; back.id="homeTagBack"; back.className="copy-all";
@@ -5494,7 +5675,7 @@
     var body=document.createElement("div"); body.className="home-notes"+(entering?" enter":"");
     body.appendChild(buildHomeNotesToolbar(true));
     if(!items.length) body.appendChild(Object.assign(document.createElement("p"),{className:"home-muted",textContent:"Nothing matches."}));
-    else items.forEach(function(it, index){ body.appendChild(buildHomeNoteRow(it, entering?index:null)); });
+    else items.forEach(function(it, index){ body.appendChild(buildHomeNoteRow(it, {stage:true, index:entering?index:null})); });
     slot.appendChild(body);
     frag.appendChild(slot);
     return frag;
@@ -5510,7 +5691,7 @@
     if(!items.length&&filtered){
       var empty=document.createElement("p"); empty.className="home-muted"; empty.textContent="Nothing matches.";
       body.appendChild(empty);
-    } else items.forEach(function(it, index){ body.appendChild(buildHomeNoteRow(it, entering?index:null)); });
+    } else items.forEach(function(it, index){ body.appendChild(buildHomeNoteRow(it, {stage:true, index:entering?index:null})); });
     slot.appendChild(body);
     frag.appendChild(slot);
     return frag;
@@ -12916,7 +13097,13 @@
   document.addEventListener("keydown",function(e){
     if(!currentUser) return;
     if((e.metaKey||e.ctrlKey)&&e.key==="Enter"){ e.preventDefault(); if(!browsingLibrary()) $("copyAll").click(); }
-    if(e.key==="Escape"){ stopVoiceSession(); closeMenu(); $("settingsModal").classList.remove("open"); closeMore(); }
+    if(e.key==="Escape"){
+      var menuOpen=!!openMenuEl;
+      var settingsOpen=$("settingsModal").classList.contains("open");
+      var moreOpen=$("moreModal").classList.contains("open");
+      stopVoiceSession(); closeMenu(); $("settingsModal").classList.remove("open"); closeMore();
+      if(!menuOpen&&!settingsOpen&&!moreOpen&&homeSelecting){ homeSelecting=false; homeSelectedIds=[]; if(viewingHome) renderMain(); }
+    }
   });
   document.addEventListener("paste", function(event){
     pasteNoteFilesFromClipboard(event);

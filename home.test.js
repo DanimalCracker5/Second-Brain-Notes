@@ -239,13 +239,13 @@ test("picking a tag on home opens that tag's notes without the widgets", functio
   assert.equal(box.state.filterTag, null);
   const stage = grab("buildHomeTagStage", "renderHome");
   assert.match(stage, /buildHomeNotesToolbar\(true\)/);
-  assert.match(stage, /buildHomeNoteRow\(it, entering\?index:null\)/);
+  assert.match(stage, /buildHomeNoteRow\(it, \{stage:true, index:entering\?index:null\}\)/);
   assert.match(stage, /Nothing matches\./);
   assert.match(grab("buildHomeNoteRow", "setHomeNotesTag"), /openHomeItem\(it\.id\)/);
   const header = grab("buildHomeTagStageHeader", "buildHomeTagStage");
   assert.match(header, /id="homeTagBack"/);
   assert.match(header, /showHome\(\)/);
-  assert.match(header, /Open one, or go back home/);
+  assert.match(header, /count\+" note"/);
   assert.match(header, /Nothing in this tag yet/);
   const render = grab("renderHome", "renderMain");
   const stageAt = render.indexOf("buildHomeTagStage(openTag, entering)");
@@ -255,6 +255,100 @@ test("picking a tag on home opens that tag's notes without the widgets", functio
   assert.match(render, /if\(openTag\)\{[\s\S]*return;/);
   assert.match(html, /\.home-sheet\.tag-stage::before/);
   assert.match(html, /\.tag-stage \.home-notes\.enter \.home-note\{[^}]*animation:fadeUp/);
+});
+
+test("a tag page can select every visible note, then tag or delete that selection", function () {
+  const bar = grab("buildTagStageToolbar", "buildHomeNotesToolbar");
+  assert.match(bar, /Select all notes/);
+  assert.match(bar, /tagHomeSelectedNotes\(tagsBtn\)/);
+  assert.match(bar, /deleteHomeSelectedNotes\(\)/);
+  assert.match(bar, /setHomeSelecting\(true\)/);
+  assert.match(bar, /setHomeSelecting\(false\)/);
+  assert.match(bar, /id="homeNotesSort"/);
+  assert.match(grab("buildHomeNotesToolbar", "restoreHomeTagRail"), /inStage\)\{[\s\S]*buildTagStageToolbar\(\)/);
+  const row = grab("buildHomeNoteRow", "setHomeNotesTag");
+  assert.match(row, /toggleHomeSelection\(it\.id/);
+  assert.match(row, /stage&&homeSelecting/);
+  const box = {
+    homeSelecting: false,
+    homeSelectedIds: [],
+    viewingHome: true,
+    renders: 0,
+    renderMain: function () { box.renders += 1; }
+  };
+  vm.createContext(box);
+  vm.runInContext(
+    [grab("setHomeSelecting", "toggleHomeSelection"),
+     grab("toggleHomeSelection", "toggleAllHomeNotes"),
+     grab("toggleAllHomeNotes", "tagHomeSelectedNotes")].join("\n"),
+    box,
+    { filename: "home-selection" }
+  );
+  box.setHomeSelecting(true);
+  assert.equal(box.homeSelecting, true);
+  box.toggleHomeSelection("a", true);
+  box.toggleHomeSelection("b", true);
+  box.toggleHomeSelection("a", false);
+  assert.deepEqual(box.homeSelectedIds, ["b"]);
+  box.toggleAllHomeNotes([{ id: "b" }, { id: "c" }]);
+  assert.deepEqual(box.homeSelectedIds.slice().sort(), ["b", "c"]);
+  box.toggleAllHomeNotes([{ id: "b" }, { id: "c" }]);
+  assert.deepEqual(box.homeSelectedIds, []);
+  box.homeSelectedIds = ["a"];
+  box.setHomeSelecting(false);
+  assert.equal(box.homeSelecting, false);
+  assert.deepEqual(box.homeSelectedIds, []);
+  assert.ok(box.renders >= 4);
+});
+
+test("deleteHomeSelectedNotes removes the chosen notes and restores the selection if cancelled", function () {
+  const box = {
+    homeSelecting: true,
+    homeSelectedIds: ["b", "c"],
+    viewingHome: true,
+    state: {
+      items: [
+        { id: "a", title: "Keep", locked: false },
+        { id: "b", title: "Delete me", locked: false },
+        { id: "c", title: "Locked", locked: true }
+      ],
+      selectedItemIds: ["sidebar"],
+      selectingNotes: false,
+      tagAssignMode: true,
+      currentId: "b"
+    },
+    activeAudioRecorder: null,
+    confirm: function () { return box.allow; },
+    allow: false,
+    captureAutoBackup: function () {},
+    forEachItemContentDocument: function () {},
+    cleanupContentAttachments: function () {},
+    recordDeletedItem: function (item) { box.deleted.push(item.id); },
+    newNoteItem: function () { return { id: "seed", title: "Untitled" }; },
+    visibleItems: function () { return box.state.items; },
+    persist: function () { box.persisted = true; },
+    renderTags: function () {},
+    renderList: function () {},
+    renderMain: function () { box.renders = (box.renders || 0) + 1; },
+    showToast: function (message) { box.toast = message; },
+    deleted: []
+  };
+  vm.createContext(box);
+  vm.runInContext(grab("deleteHomeSelectedNotes", "delItem"), box, { filename: "delete-home-selected" });
+  box.deleteHomeSelectedNotes();
+  assert.deepEqual(box.state.items.map(function (item) { return item.id; }), ["a", "b", "c"]);
+  assert.equal(box.homeSelecting, true);
+  assert.deepEqual(box.homeSelectedIds, ["b", "c"]);
+  assert.deepEqual(box.state.selectedItemIds, ["sidebar"]);
+  assert.equal(box.state.selectingNotes, false);
+  assert.equal(box.state.tagAssignMode, true);
+  box.allow = true;
+  box.deleteHomeSelectedNotes();
+  assert.deepEqual(box.state.items.map(function (item) { return item.id; }), ["a", "c"]);
+  assert.deepEqual(box.deleted, ["b"]);
+  assert.equal(box.homeSelecting, false);
+  assert.deepEqual(box.homeSelectedIds, []);
+  assert.equal(box.toast, "Deleted 1 note");
 });
 
 test("homeOpenTag drops a tag that no longer exists", function () {
