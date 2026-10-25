@@ -1509,8 +1509,8 @@
   .home-tools{ display:flex; align-items:center; gap:10px; flex:none; }
   .home-notes-toggle{ display:flex; align-items:center; gap:10px; padding:6px 8px 6px 12px; border:1px solid var(--line); border-radius:999px; color:var(--ink-dim); background:rgba(255,255,255,.035); font-size:.78rem; font-weight:600; }
   .home-notes-toggle.on{ color:var(--ink); border-color:var(--accent-line); }
-  .home-grid{ display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:14px; }
-  .home-widget{ min-width:0; padding:14px 14px 8px; border:1px solid var(--line); border-radius:16px; background:linear-gradient(165deg, var(--accent-mist), rgba(255,255,255,.028) 52%); box-shadow:inset 0 1px 0 rgba(255,255,255,.05); }
+  .home-grid{ display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:18px; }
+  .home-widget{ min-width:0; padding:18px 16px 12px; border:1px solid var(--line); border-radius:16px; background:linear-gradient(165deg, var(--accent-mist), rgba(255,255,255,.028) 52%); box-shadow:inset 0 1px 0 rgba(255,255,255,.05); }
   .home-widget.span{ grid-column:1 / -1; }
   .home-widget-head{ display:flex; align-items:center; gap:8px; margin-bottom:8px; }
   .home-widget-head h2{ margin:0; font-size:.95rem; letter-spacing:-.01em; }
@@ -1518,6 +1518,8 @@
   .home-widget-actions{ display:flex; gap:6px; margin-left:auto; }
   .home-widget-actions button{ border:1px solid var(--line); border-radius:8px; padding:4px 8px; color:var(--ink-dim); background:rgba(255,255,255,.03); cursor:pointer; font:600 .72rem "DM Sans",sans-serif; }
   .home-widget-actions button:hover{ color:var(--ink); border-color:var(--accent-line); background:var(--accent-soft); }
+  .home-show-more{ display:block; width:100%; margin:8px 0 4px; padding:8px; border:1px solid var(--line); border-radius:10px; color:var(--ink-dim); background:rgba(255,255,255,.03); cursor:pointer; font:600 .78rem "DM Sans",sans-serif; text-align:center; }
+  .home-show-more:hover{ color:var(--ink); border-color:var(--accent-line); background:var(--accent-soft); }
   .home-muted{ margin:2px 2px 10px; color:var(--ink-faint); font-size:.86rem; line-height:1.5; }
   .home-empty{ grid-column:1 / -1; padding:28px 16px; border:1px dashed rgba(255,255,255,.14); border-radius:16px; color:var(--ink-faint); text-align:center; line-height:1.5; }
   .home-note{ position:relative; display:grid; grid-template-columns:18px minmax(0,1fr) auto; gap:10px; align-items:start; width:100%; margin:0 0 2px; padding:10px 8px; border:0; border-radius:12px; color:inherit; background:transparent; cursor:pointer; text-align:left; font:inherit; }
@@ -1541,7 +1543,9 @@
   .home-continue span:first-child,.home-due span:first-child{ min-width:0; display:grid; gap:3px; }
   .home-continue b,.home-due b{ font-weight:600; font-size:.92rem; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
   .home-open,.home-due em{ flex:none; color:var(--ink-faint); font:500 .68rem "DM Mono",monospace; font-style:normal; }
-  .home-due.overdue em{ color:#fca5a5; }
+  /* Overdue keeps a label but drops the alarm-red: a muted sand tone reads as
+     "older" without shouting on the home screen. */
+  .home-due.overdue em{ color:#c4ab8e; }
   .home-due.today em{ color:var(--accent); }
   .home-tags{ display:flex; flex-wrap:wrap; gap:8px; margin-bottom:8px; }
   .home-tag{ display:inline-flex; align-items:center; gap:7px; border:1px solid var(--line); border-radius:999px; padding:6px 10px; color:var(--ink-dim); background:rgba(255,255,255,.03); cursor:pointer; font:600 .78rem "DM Sans",sans-serif; }
@@ -1551,7 +1555,7 @@
   .home-stat{ padding:12px; border:1px solid var(--line-soft); border-radius:12px; background:rgba(255,255,255,.025); }
   .home-stat b{ display:block; font-size:1.35rem; letter-spacing:-.03em; }
   .home-stat span{ color:var(--ink-faint); font-size:.75rem; }
-  .home-stat.overdue b{ color:#fca5a5; }
+  .home-stat.overdue b{ color:#c4ab8e; }
   .home-add{ grid-column:1 / -1; display:grid; gap:8px; padding:4px 0 12px; }
   .home-add h2{ margin:0; font-size:.95rem; }
   .home-add-grid{ display:grid; grid-template-columns:1fr 1fr; gap:8px; }
@@ -2743,7 +2747,7 @@
   }
 
   /* Opening the site lands on Home. A note is shown only after it is chosen. */
-  var viewingHome=true, viewingTagId=null, homeCustomizing=false, homeTagId=null, homeStatusStage=null, homeTypeFilter="", homeStatusFilter="", homeQuery="", homeSearchFocus=false, homeScratchTimer=null, homeTagRailScroll=0, homeSelecting=false, homeSelectedIds=[];
+  var viewingHome=true, viewingTagId=null, homeCustomizing=false, homeExpanded={}, homeTagId=null, homeStatusStage=null, homeTypeFilter="", homeStatusFilter="", homeQuery="", homeSearchFocus=false, homeScratchTimer=null, homeTagRailScroll=0, homeSelecting=false, homeSelectedIds=[];
   function browsingLibrary(){ return !!(viewingHome||viewingTagId); }
   function current(){ return state.items.find(function(s){return s.id===state.currentId;})||state.items[0]; }
   /* Time is counted only while this app is the focused, visible tab. It is kept
@@ -5041,7 +5045,20 @@
   function homeUpcomingItems(){
     return (state.items||[]).filter(function(it){ return it&&!it.hidden&&itemDueDate(it); }).sort(function(a,b){
       return itemDueDate(a).localeCompare(itemDueDate(b))||((b.updated||0)-(a.updated||0));
-    }).slice(0,8);
+    });
+  }
+  /* Caps a widget's list and appends a quiet "Show more / Show less" toggle so
+     long lists don't bury the rest of the home page. */
+  function homeCapItems(type, items, collapsedCount, expandedCount){
+    var cap=homeExpanded[type]?expandedCount:collapsedCount;
+    var shown=items.slice(0,cap), hidden=items.length-shown.length;
+    var out={items:shown, more:null};
+    if(hidden>0){
+      out.more=homeMiniButton("Show more","Show "+hidden+" more",function(){ homeExpanded[type]=true; renderMain(); });
+    } else if(homeExpanded[type]&&items.length>collapsedCount){
+      out.more=homeMiniButton("Show less","Show less",function(){ homeExpanded[type]=false; renderMain(); window.scrollTo({top:0,behavior:"smooth"}); });
+    }
+    return out;
   }
   function homeMiniButton(label,text,fn){
     var button=document.createElement("button");
@@ -5352,12 +5369,13 @@
     }
     if(homeTagId&&!tagById(homeTagId)) homeTagId=null;
     body.appendChild(buildHomeNotesToolbar());
-    var items=homeNotes();
+    var capped=homeCapItems("notes", homeNotes(), 12, 400), items=capped.items;
     if(!items.length){
       var empty=document.createElement("p"); empty.className="home-muted"; empty.textContent=homeTagId?"Nothing in this tag.":((homeQuery||"").trim()||homeTypeFilter||homeStatusFilter)?"Nothing matches.":"No notes yet.";
       body.appendChild(empty);
     } else items.forEach(function(it){ body.appendChild(buildHomeNoteRow(it)); });
-    return homeWidgetFrame("notes", body, items.length);
+    if(capped.more){ capped.more.className="home-show-more"; body.appendChild(capped.more); }
+    return homeWidgetFrame("notes", body, homeNotes().length);
   }
   function addHomeCapture(raw){
     var due=parseDueDateText(raw), note=due?newTodoItem():newNoteItem();
@@ -5397,7 +5415,7 @@
     return homeWidgetFrame("continue", body);
   }
   function buildHomeUpcomingWidget(){
-    var body=document.createElement("div"), items=homeUpcomingItems();
+    var body=document.createElement("div"), capped=homeCapItems("upcoming", homeUpcomingItems(), 5, 20), items=capped.items;
     if(!items.length){
       var empty=document.createElement("p"); empty.className="home-muted"; empty.textContent="Nothing due.";
       body.appendChild(empty); return homeWidgetFrame("upcoming", body, 0);
@@ -5411,7 +5429,8 @@
       button.onclick=function(){ openHomeItem(it.id); };
       body.appendChild(button);
     });
-    return homeWidgetFrame("upcoming", body, items.length);
+    if(capped.more){ capped.more.className="home-show-more"; body.appendChild(capped.more); }
+    return homeWidgetFrame("upcoming", body, homeUpcomingItems().length);
   }
   function buildHomeTagsWidget(){
     var body=document.createElement("div"); body.className="home-tags";
@@ -5463,10 +5482,12 @@
     items.forEach(function(it){ body.appendChild(homeLinkRow(it, metaFor(it))); });
     return homeWidgetFrame(type, body, items.length);
   }
+  /* Overdue lives in the Upcoming widget, so Open todos only lists undated
+     todos — the same item never shows twice on one screen. */
   function homeOpenTodos(){
-    return (state.items||[]).filter(function(it){ return it&&!it.hidden&&!isInTrash(it)&&(isTodoNote(it)||it.type==="todo")&&!it.done; }).sort(function(a,b){
-      return (itemDueDate(a)||"9999").localeCompare(itemDueDate(b)||"9999")||((b.updated||0)-(a.updated||0));
-    }).slice(0,8);
+    return (state.items||[]).filter(function(it){ return it&&!it.hidden&&!isInTrash(it)&&(isTodoNote(it)||it.type==="todo")&&!it.done&&!itemDueDate(it); }).sort(function(a,b){
+      return (b.updated||0)-(a.updated||0);
+    });
   }
   function homeQuietNotes(){
     var cutoff=Date.now()-14*86400000;
@@ -5499,9 +5520,9 @@
     }).slice(0,6);
   }
   function buildHomeTodosWidget(){
-    var items=homeOpenTodos(), body=document.createElement("div");
+    var capped=homeCapItems("todos", homeOpenTodos(), 8, 40), items=capped.items, body=document.createElement("div");
     if(!items.length){
-      var empty=document.createElement("p"); empty.className="home-muted"; empty.textContent="No open todos.";
+      var empty=document.createElement("p"); empty.className="home-muted"; empty.textContent="No undated open todos. Dated ones live in Upcoming.";
       body.appendChild(empty); return homeWidgetFrame("todos", body, 0);
     }
     items.forEach(function(it){
@@ -5512,12 +5533,12 @@
       var title=document.createElement("b"); title.textContent=it.title||"Untitled todo"; open.appendChild(title);
       open.onclick=function(){ openHomeItem(it.id); };
       var due=itemDueDate(it), when=document.createElement("em"); when.textContent=due?dueDateLabel(due):"";
-      if(dueDateClass(due)==="overdue") when.style.color="#fca5a5";
       row.appendChild(check); row.appendChild(open); row.appendChild(when);
       if(it.origin==="assistant"){ var originBadge=document.createElement("span"); originBadge.className="origin-badge home-todo-origin"; originBadge.textContent="Added by Assistant"; row.appendChild(originBadge); }
       body.appendChild(row);
     });
-    return homeWidgetFrame("todos", body, items.length);
+    if(capped.more){ capped.more.className="home-show-more"; body.appendChild(capped.more); }
+    return homeWidgetFrame("todos", body, homeOpenTodos().length);
   }
   function buildHomeSearchWidget(){
     var body=document.createElement("div"); body.className="home-search";
