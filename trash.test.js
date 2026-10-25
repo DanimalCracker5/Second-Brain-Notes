@@ -45,6 +45,7 @@ function trashSandbox() {
     cleanupContentAttachments: function () {},
     recordDeletedItem: function (item) { box.deleted.push(item.id); },
     persist: function () { box.persisted = true; },
+    renderTags: function () {},
     renderList: function () {},
     renderMain: function () {},
     showToast: function (message) { box.toast = message; },
@@ -67,7 +68,7 @@ test("completed todo goes to trash after one confirm", function () {
   assert.equal(box.confirms, 1);
   assert.ok(box.state.items.find(function (item) { return item.id === "done"; }).trashedAt > 0);
   assert.equal(box.state.currentId, "keep");
-  assert.equal(box.toast, "Moved to Trash");
+  assert.equal(box.toast, "Deleted. Kept in Trash for 3 days.");
   box.trashCompletedTodo("keep");
   assert.equal(box.confirms, 1, "an open todo is not trashed through this path");
 });
@@ -100,6 +101,8 @@ test("trash older than three days is deleted", function () {
 
 test("settings includes a trash page", function () {
   assert.match(html, /data-settings="trash"/);
-  assert.match(html, /Completed todos, kept for 3 days/);
+  assert.match(html, /Deleted notes, kept for 3 days/);
+  assert.match(grab("moveItemsToTrash", "trashCompletedTodo"), /It stays in Trash for 3 days/);
+  assert.match(grab("delItem", "grow"), /moveItemsToTrash\(\[item\],message\|\|""\)/);
   assert.match(grab("setupTrashSettings", "setupHomeSettings"), /Restore/);
 });
