@@ -3794,7 +3794,9 @@
     /* The collapsed state is a 0fr grid row, not display:none, so the markup
        still has to be built for the section to slide shut over real content. */
     if(!state.tags.length){
-      var empty=document.createElement("div"); empty.className="tag-empty"; empty.textContent="No tags yet — tap +"; tagsEl.appendChild(empty);
+      var empty=document.createElement("div"); empty.className="tag-empty";
+      empty.textContent=cloudSyncLoading?"Loading tags…":(cloudAccountUnreadable?"Couldn't load tags":"No tags yet — tap +");
+      tagsEl.appendChild(empty);
       lastTagSignature=null; emptyTagVanish={};
       if(emptyTagSweepTimer){ clearTimeout(emptyTagSweepTimer); emptyTagSweepTimer=null; }
       lastUnusedTagSignature=""; return;
@@ -4608,21 +4610,32 @@
     var block=findPromptBlock(item, blockId);
     if(block) focusNoteBlock(block);
   }
+  /* A signed-in phone with no local cache looks like one Untitled note while
+     the account is still loading — and again after a read times out. Neither
+     of those is the owner's library. */
+  function accountLibraryBlocked(){
+    return !!(typeof currentUser!=="undefined"&&currentUser&&countRealAccountItems(state.items)===0&&(cloudSyncLoading||cloudAccountUnreadable));
+  }
+  function renderAccountLibraryBlock(host){
+    var loading=document.createElement("div"); loading.className="tag-empty"; loading.style.padding="10px 12px";
+    loading.textContent=cloudAccountUnreadable?"Couldn't load your notes from your account.":"Loading your notes…";
+    host.appendChild(loading);
+    if(!cloudAccountUnreadable) return;
+    var retry=document.createElement("button"); retry.type="button"; retry.className="sbtn"; retry.style.margin="4px 12px 10px"; retry.textContent="Try again";
+    retry.onclick=function(){ loadCloud(); };
+    host.appendChild(retry);
+  }
   function renderList(){
     renderPromptHub();
     trackTimeSpent();
-    /* A signed-in phone with no local cache looks like one Untitled note while
-       the account is still loading. Do not present that seed item as the
-       owner's notes. */
-    if(currentUser&&cloudSyncLoading&&countRealAccountItems(state.items)===0){
+    if(accountLibraryBlocked()){
       if(selectNotesBtn){ selectNotesBtn.textContent=state.filterTag?"＋":"✓"; selectNotesBtn.title=state.filterTag?"Add notes to this tag":"Select notes"; }
       listLabel.textContent=allNotesTitle()+"  ·  …";
       listEl.innerHTML="";
       listEl.classList.remove("enter");
       lastListSignature="loading-account";
-      var loading=document.createElement("div"); loading.className="tag-empty"; loading.style.padding="10px 12px";
-      loading.textContent="Loading your notes…";
-      listEl.appendChild(loading); syncNotesListCollapse(); syncBulkNoteActions(); updateSidebarButtons(); return;
+      renderAccountLibraryBlock(listEl);
+      syncNotesListCollapse(); syncBulkNoteActions(); updateSidebarButtons(); return;
     }
     var items=state.sidebarView==="queue"?queueItems():(state.sidebarView==="upcoming"?upcomingItems():visibleItems(!!state.tagAssignMode));
     state.selectedItemIds=state.selectedItemIds.filter(function(id){ return state.items.some(function(item){ return item.id===id; }); });
@@ -5760,15 +5773,21 @@
   var lastMainId=null;
   function renderMain(){
     syncHomeButton();
-    if(currentUser&&cloudSyncLoading&&countRealAccountItems(state.items)===0){
+    if(accountLibraryBlocked()){
       if(renderedModule&&renderedModule.detach) renderedModule.detach();
       else if(window.SecondBrainCode&&typeof window.SecondBrainCode.detach==="function") window.SecondBrainCode.detach();
       renderedModule=null;
       canvas.innerHTML="";
       var loading=document.createElement("div"); loading.className="sheet enter";
       var hint=document.createElement("p"); hint.className="hint"; hint.style.padding="28px 8px";
-      hint.textContent="Loading your notes from your account…";
-      loading.appendChild(hint);       canvas.appendChild(loading);
+      hint.textContent=cloudAccountUnreadable?"Couldn't load your notes from your account.":"Loading your notes from your account…";
+      loading.appendChild(hint);
+      if(cloudAccountUnreadable){
+        var retry=document.createElement("button"); retry.type="button"; retry.className="sbtn"; retry.textContent="Try again";
+        retry.onclick=function(){ loadCloud(); };
+        loading.appendChild(retry);
+      }
+      canvas.appendChild(loading);
       updateShareButton(null); stopLiveNoteWatch(); syncMoreChrome(); syncBarTitle(); return;
     }
     if(viewingHome){ renderHome(); return; }
@@ -6849,7 +6868,7 @@
     var button=$("moreBtn"), dot=$("moreDot"), brainstorm=$("brainstormBtn"), label=$("brainstormLabel"), hint=$("brainstormHint");
     var it=typeof current==="function"?current():null;
     var home=typeof viewingHome!=="undefined"&&viewingHome;
-    var loadingAccount=!!(typeof currentUser!=="undefined"&&currentUser&&cloudSyncLoading&&countRealAccountItems(state.items)===0);
+    var loadingAccount=accountLibraryBlocked();
     var on=!!(it&&it.brainstorming);
     var pending=pendingBrainstormCount(it);
     var modal=$("moreModal"), open=!!(modal&&modal.classList.contains("open"));
@@ -13151,9 +13170,9 @@
   }
 
   /* =================== Firebase (configured in astral.config.js) =================== */
-  var auth=null, db=null, storage=null, currentUser=null, cloudTimer=null, cloudAutoBackupInFlight=false, cloudSyncPaused=false, cloudSyncLoading=false, cloudWriteInFlight=false, cloudHydrated=false, pendingAccountRecovery=0, fbReady=false, apiSettingsUnsubscribe=null;
-  var CLOUD_LOAD_TIMEOUT_MS=20000, STORAGE_USAGE_TIMEOUT_MS=12000;
-  var accountUsage={status:"idle",totalBytes:0,fileBytes:0,accountBytes:0,backupBytes:0,files:[],currentFileBytes:0,backupFileBytes:0,unlinkedFileBytes:0,unlinkedFileCount:0}, accountUsageTimer=null, accountUsageRequest=0, accountUsageUnsubscribers=[];
+  var auth=null, db=null, storage=null, currentUser=null, cloudTimer=null, cloudAutoBackupInFlight=false, cloudSyncPaused=false, cloudSyncLoading=false, cloudWriteInFlight=false, cloudHydrated=false, pendingAccountRecovery=0, fbReady=false, apiSettingsUnsubscribe=null, cloudAccountUnreadable=false, cloudLoadGeneration=0;
+  var CLOUD_LOAD_TIMEOUT_MS=45000, STORAGE_USAGE_TIMEOUT_MS=12000;
+  var accountUsage={status:"idle",totalBytes:0,fileBytes:0,accountBytes:0,backupBytes:0,files:[],currentFileBytes:0,backupFileBytes:0,unlinkedFileBytes:0,unlinkedFileCount:0}, accountUsageTimer=null, accountUsageRequest=0, accountUsageUnsubscribers=[], accountUsageInFlight=false, accountUsageFollowUp=false, accountUsageSeed=null;
   function utf8Bytes(value){
     var text=String(value==null?"":value);
     if(typeof TextEncoder!=="undefined") return new TextEncoder().encode(text).length;
@@ -13242,7 +13261,7 @@
     });
   }
   function accountUsageTitle(usage){
-    if(usage.status!=="ready") return usage.status==="error"?"Cloud storage could not be calculated right now. Local device data is not included.":"Calculating cloud storage across notes, backups, and files.";
+    if(usage.status!=="ready") return usage.status==="error"?"Cloud storage could not be calculated right now. Local device data is not included.":(usage.status==="loading"?"Calculating cloud storage across notes, backups, and files.":"Cloud storage has not been calculated yet.");
     var unlinked=usage.unlinkedFileCount?"\nUnlinked cloud files: "+usage.unlinkedFileCount+" · "+fileSize(usage.unlinkedFileBytes):"";
     return "Account storage across everything saved in Second Brain."+"\nCloud files: "+fileSize(usage.fileBytes)+unlinked+"\nNotes and account data: "+fileSize(usage.accountBytes)+"\nBackups: "+fileSize(usage.backupBytes);
   }
@@ -13251,6 +13270,7 @@
     clearTimeout(accountUsageTimer); accountUsageTimer=null; accountUsageRequest++;
     accountUsageUnsubscribers.forEach(function(unsubscribe){ try{ unsubscribe(); }catch(e){} });
     accountUsageUnsubscribers=[];
+    accountUsageInFlight=false; accountUsageFollowUp=false; accountUsageSeed=null;
     accountUsage={status:"idle",totalBytes:0,fileBytes:0,accountBytes:0,backupBytes:0,files:[],currentFileBytes:0,backupFileBytes:0,unlinkedFileBytes:0,unlinkedFileCount:0};
   }
   function promiseWithTimeout(promise, ms, label){
@@ -13272,10 +13292,19 @@
   }
   function refreshAccountUsage(){
     if(!currentUser||!db||!storage) return;
-    var userId=currentUser.uid, request=++accountUsageRequest;
-    if(accountUsage.status!=="ready") setAccountUsage({status:"loading",totalBytes:0,fileBytes:0,accountBytes:0,backupBytes:0,files:[],currentFileBytes:0,backupFileBytes:0,unlinkedFileBytes:0,unlinkedFileCount:0});
+    /* A snapshot used to start a new download of the whole account and throw
+       away the one already in flight, so the meter sat on "Calculating…" for
+       as long as notes kept syncing. One calculation runs at a time; the next
+       waits until this one finishes. */
+    if(accountUsageInFlight){ accountUsageFollowUp=true; return; }
+    accountUsageInFlight=true;
+    var userId=currentUser.uid, request=++accountUsageRequest, seed=accountUsageSeed;
+    accountUsageSeed=null;
+    if(accountUsage.status!=="ready") setAccountUsage(Object.assign({}, accountUsage, {status:"loading",source:"cloud"}));
     var userRef=db.collection("users").doc(userId), backupRef=userRef.collection("backups");
-    Promise.all([userRef.get(),backupRef.get()]).then(function(results){
+    var userRead=seed?Promise.resolve({exists:true,data:function(){ return seed; }}):userRef.get();
+    var reads=Promise.all([userRead, backupRef.orderBy("created","desc").limit(BACKUP_LIMIT).get()]);
+    promiseWithTimeout(reads, STORAGE_USAGE_TIMEOUT_MS, "Account data timed out").then(function(results){
       if(request!==accountUsageRequest||!currentUser||currentUser.uid!==userId) return;
       var userDoc=results[0], backupDocs=results[1].docs||[], userData=userDoc.exists?userDoc.data():{};
       return promiseWithTimeout(collectCloudStorageUsage(userId,userData,backupDocs), STORAGE_USAGE_TIMEOUT_MS, "Storage listing timed out").then(function(fileUsage){
@@ -13288,10 +13317,14 @@
       if(request!==accountUsageRequest||!currentUser||currentUser.uid!==userId) return;
       /* Never substitute the local cache: it can include device-only backups
          and can change after a restore, neither of which belongs in a cloud
-         quota or billing calculation. */
+         quota or billing calculation. Keep the last cloud total if we have one. */
       console.warn("Cloud storage usage could not be read:",error);
-      setAccountUsage({status:"error",source:"cloud",totalBytes:0,fileBytes:0,accountBytes:0,backupBytes:0,files:[],currentFileBytes:0,backupFileBytes:0,unlinkedFileBytes:0,unlinkedFileCount:0});
+      if(accountUsage.totalBytes) setAccountUsage(Object.assign({}, accountUsage, {status:"ready"}));
+      else setAccountUsage({status:"error",source:"cloud",totalBytes:0,fileBytes:0,accountBytes:0,backupBytes:0,files:[],currentFileBytes:0,backupFileBytes:0,unlinkedFileBytes:0,unlinkedFileCount:0});
       scheduleAccountUsageRefresh(4000);
+    }).then(function(){
+      accountUsageInFlight=false;
+      if(accountUsageFollowUp){ accountUsageFollowUp=false; scheduleAccountUsageRefresh(1500); }
     });
   }
   function scheduleAccountUsageRefresh(delay){
@@ -13299,12 +13332,18 @@
     clearTimeout(accountUsageTimer);
     accountUsageTimer=setTimeout(refreshAccountUsage,typeof delay==="number"?delay:450);
   }
-  function startAccountUsageTracking(){
+  function noteAccountUsage(){
+    /* Note saves already have the account listener. Recounting every file on
+       each of them is what kept a 300-note library on "Calculating…". */
+    scheduleAccountUsageRefresh(accountUsage.status==="ready"?20000:1200);
+  }
+  function startAccountUsageTracking(seed){
+    if(accountUsageUnsubscribers.length) return;
     stopAccountUsageTracking();
     if(!currentUser||!db||!storage) return;
-    var userId=currentUser.uid, userRef=db.collection("users").doc(userId);
-    accountUsageUnsubscribers.push(userRef.onSnapshot(function(){ scheduleAccountUsageRefresh(250); },function(error){ console.warn("Storage usage updates are unavailable:",error); }));
-    accountUsageUnsubscribers.push(userRef.collection("backups").onSnapshot(function(){ scheduleAccountUsageRefresh(250); },function(error){ console.warn("Backup storage usage updates are unavailable:",error); }));
+    accountUsageSeed=seed||null;
+    var userRef=db.collection("users").doc(currentUser.uid);
+    accountUsageUnsubscribers.push(userRef.collection("backups").onSnapshot(function(){ scheduleAccountUsageRefresh(2000); },function(error){ console.warn("Backup storage usage updates are unavailable:",error); }));
     scheduleAccountUsageRefresh(0);
   }
   function setAuthGate(locked,message,isError){
@@ -13780,7 +13819,7 @@
   }
   function armCloudLiveSync(){
     cloudLiveReady=true;
-    lastAppliedLiveFingerprint=liveAccountFingerprint({items:state.items,deletedItems:state.deletedItems,deletedTags:state.deletedTags,tags:state.tags,version:state.version,updated:state.lastCloudSync,preferences:{listSort:state.listSort}});
+    lastAppliedLiveFingerprint=liveAccountFingerprint({items:state.items,deletedItems:state.deletedItems,deletedTags:state.deletedTags,tags:state.tags,version:state.version,updated:state.lastCloudSync,preferences:{listSort:state.listSort,tagGroups:state.tagGroups||[],tagOrder:state.tagOrder||[]}});
     lastAppliedCloudUpdated=Math.max(lastAppliedCloudUpdated, Number(state.lastCloudSync)||0);
     watchLiveNote(state.currentId);
     startSharedEditListeners();
@@ -13944,7 +13983,7 @@
           if(u){
             if(window.sbAuthBoot) window.sbAuthBoot.rememberHint(true);
             cloudSyncPaused=false; cloudHydrated=false; cloudLiveReady=false; pendingAccountRecovery=0; pendingRemoteAccount=null; lastAppliedCloudUpdated=0;
-            setAuthGate(false); startApiSettingsSync(); startHostedBillingSync(); startAccountUsageTracking(); renderFoot();
+            setAuthGate(false); startApiSettingsSync(); startHostedBillingSync(); renderFoot();
             loadCloud().then(openPendingInvite);
           } else {
             if(window.sbAuthBoot) window.sbAuthBoot.rememberHint(false);
@@ -14161,9 +14200,19 @@
     return (first>>>0).toString(36)+"-"+(second>>>0).toString(36)+"-"+text.length;
   }
   function buildSyncBaseline(data,updated){
-    var items={};
-    (data&&data.items||[]).forEach(function(item){ if(item&&item.id) items[item.id]=itemSyncSignature(item); });
-    return {userId:currentUser&&currentUser.uid||"",updated:Number(updated)||0,items:items};
+    var items={}, tagIds={};
+    (data&&data.items||[]).forEach(function(item){
+      if(!item||!item.id) return;
+      items[item.id]=itemSyncSignature(item);
+      tagIds[item.id]=(item.tagIds||[]).slice();
+    });
+    var prefs=(data&&data.preferences)||{};
+    var layoutTags=(data&&data.tags)||(typeof state!=="undefined"&&state&&state.tags)||[];
+    var layoutOrder=(data&&data.tagOrder)||prefs.tagOrder||(typeof state!=="undefined"&&state&&state.tagOrder)||[];
+    var layoutGroups=(data&&data.tagGroups)||prefs.tagGroups||(typeof state!=="undefined"&&state&&state.tagGroups)||[];
+    var layout="";
+    try{ layout=tagLayoutSignature({tags:layoutTags, tagOrder:layoutOrder, tagGroups:layoutGroups}); }catch(e){ layout=""; }
+    return {userId:currentUser&&currentUser.uid||"",updated:Number(updated)||0,items:items,tagIds:tagIds,tagLayout:layout};
   }
   function hasUsableSyncBaseline(){
     return !!(currentUser&&state.syncBaseline&&state.syncBaseline.userId===currentUser.uid&&state.syncBaseline.items&&typeof state.syncBaseline.items==="object");
@@ -14348,7 +14397,7 @@
   }
   function recoverCloudAccount(cloud){
     cloud=cloud&&typeof cloud==="object"?cloneData(cloud):{};
-    return getCloudBackups().then(function(entries){
+    return getCloudBackups(cloud).then(function(entries){
       var richest=richestAccountBackup(entries);
       if(!richest) return {cloud:cloud,recovered:0};
       var before=countRealAccountItems(cloud.items);
@@ -14398,6 +14447,94 @@
     var copy=cloneData(change.item);
     if(index>=0) items[index]=copy; else items.push(copy);
     includeLocalReferences(data,copy);
+  }
+  function uniqueIds(list){
+    var out=[], seen={};
+    (list||[]).forEach(function(id){
+      if(!id||seen[id]) return;
+      seen[id]=true; out.push(id);
+    });
+    return out;
+  }
+  function sameIdList(left, right){
+    if(left.length!==right.length) return false;
+    for(var i=0;i<left.length;i++) if(left[i]!==right[i]) return false;
+    return true;
+  }
+  function mergeTagGroupLists(primary, extra){
+    var seen={}, out=[];
+    (primary||[]).forEach(function(group){
+      if(!group||!group.id||seen[group.id]) return;
+      seen[group.id]=true; out.push(cloneData(group));
+    });
+    (extra||[]).forEach(function(group){
+      if(!group||!group.id||seen[group.id]) return;
+      seen[group.id]=true; out.push(cloneData(group));
+    });
+    return out;
+  }
+  function mergeTagOrder(primary, extra){
+    return uniqueIds((primary||[]).concat(extra||[]));
+  }
+  /* Three-way merge for which tags a note carries. An id either side added
+     since the baseline stays. An id the baseline had, and one side has since
+     removed, stays removed. With no baseline, additions from either side win. */
+  function mergeItemTagIds(local, remote){
+    var localIds=uniqueIds(local&&local.tagIds), remoteIds=uniqueIds(remote&&remote.tagIds);
+    var itemId=(local&&local.id)||(remote&&remote.id)||"";
+    var base=null;
+    try{
+      var map=state&&state.syncBaseline&&state.syncBaseline.tagIds;
+      if(map&&itemId&&Array.isArray(map[itemId])) base=uniqueIds(map[itemId]);
+    }catch(e){ base=null; }
+    var inLocal={}, inRemote={}, inBase={};
+    localIds.forEach(function(id){ inLocal[id]=true; });
+    remoteIds.forEach(function(id){ inRemote[id]=true; });
+    (base||[]).forEach(function(id){ inBase[id]=true; });
+    var localNewer=false;
+    try{ localNewer=revisionIsNewer(itemRevision(local), itemRevision(remote)); }catch(e){ localNewer=false; }
+    var primary=localNewer?localIds:remoteIds, secondary=localNewer?remoteIds:localIds;
+    var seen={}, out=[];
+    function consider(id){
+      if(!id||seen[id]) return;
+      var onLocal=!!inLocal[id], onRemote=!!inRemote[id];
+      if(onLocal&&onRemote){ seen[id]=true; out.push(id); return; }
+      if(!base||!inBase[id]){ seen[id]=true; out.push(id); return; }
+    }
+    primary.forEach(consider);
+    secondary.forEach(consider);
+    return out;
+  }
+  function assignTagIds(target, ids){
+    if(!target) return;
+    var current=uniqueIds(target.tagIds);
+    if(sameIdList(current, ids)) return;
+    if(!ids.length){ if(target.tagIds) delete target.tagIds; return; }
+    target.tagIds=ids;
+  }
+  function chooseTagLayout(localLayout, cloudLayout, baseline){
+    localLayout=localLayout||{}; cloudLayout=cloudLayout||{};
+    var localGroups=localLayout.tagGroups||[], cloudGroups=cloudLayout.tagGroups||[];
+    var localOrder=localLayout.tagOrder||[], cloudOrder=cloudLayout.tagOrder||[];
+    var tags=cloudLayout.tags||localLayout.tags||[];
+    var localSig=tagLayoutSignature(localLayout), cloudSig=tagLayoutSignature(cloudLayout);
+    if(localSig===cloudSig) return {tagGroups:cloudGroups, tagOrder:cloudOrder, write:false};
+    var baseSig=baseline&&baseline.tagLayout||"";
+    if(!baseSig){
+      var groups=mergeTagGroupLists(cloudGroups, localGroups);
+      var order=mergeTagOrder(cloudOrder.length?cloudOrder:localOrder, localOrder);
+      var mergedSig=tagLayoutSignature({tags:tags, tagGroups:groups, tagOrder:order});
+      var cloudOnlySig=tagLayoutSignature({tags:tags, tagGroups:cloudGroups, tagOrder:cloudOrder});
+      if(cloudGroups.length||cloudOrder.length) return {tagGroups:groups, tagOrder:order, write:mergedSig!==cloudOnlySig};
+      return {tagGroups:localGroups, tagOrder:localOrder, write:localSig!==cloudSig};
+    }
+    var localChanged=localSig!==baseSig, cloudChanged=cloudSig!==baseSig;
+    if(localChanged&&!cloudChanged) return {tagGroups:localGroups, tagOrder:localOrder, write:true};
+    if(!localChanged&&cloudChanged) return {tagGroups:cloudGroups, tagOrder:cloudOrder, write:false};
+    var bothGroups=mergeTagGroupLists(cloudGroups, localGroups);
+    var bothOrder=mergeTagOrder(cloudOrder.length?cloudOrder:localOrder, localOrder);
+    var bothSig=tagLayoutSignature({tags:tags, tagGroups:bothGroups, tagOrder:bothOrder});
+    return {tagGroups:bothGroups, tagOrder:bothOrder, write:bothSig!==cloudSig};
   }
   function localChangeIsNewer(local,remote){
     if(!local||!remote||local.kind==="delete"||remote.kind==="delete") return false;
@@ -14499,9 +14636,14 @@
     var cloudPrefs=accountPreferences(cloud)||{};
     var localLayout={tags:state.tags, tagOrder:state.tagOrder, tagGroups:state.tagGroups};
     var cloudLayout={tags:result.data.tags, tagOrder:cloudPrefs.tagOrder, tagGroups:cloudPrefs.tagGroups};
-    if(tagLayoutSignature(localLayout)!==tagLayoutSignature(cloudLayout)){
+    /* Tag groups and order live in preferences, not on each note. A phone whose
+       local layout is still the default empty list must not publish that over
+       the account — that is how "Astral Projection Game" disappeared on one
+       device while the other still showed it. */
+    var chosen=chooseTagLayout(localLayout, cloudLayout, baseline);
+    if(chosen.write){
       result.needsCloudWrite=true;
-      result.data.preferences=Object.assign({}, cloudPrefs, {tagGroups:cloneData(state.tagGroups||[]), tagOrder:(state.tagOrder||[]).slice()});
+      result.data.preferences=Object.assign({}, cloudPrefs, {tagGroups:cloneData(chosen.tagGroups||[]), tagOrder:(chosen.tagOrder||[]).slice()});
     }
     if(tagIdSignature(result.data.tags)!==tagIdSignature(cloud.tags)) result.needsCloudWrite=true;
     if(deletedTagSignature(result.data.deletedTags)!==deletedTagSignature(pruneDeletedTags(cloud.deletedTags))) result.needsCloudWrite=true;
@@ -14628,7 +14770,11 @@
       return same;
     }
     var preferLocal=typeof options.preferLocal==="boolean"?options.preferLocal:revisionIsNewer(itemRevision(local),itemRevision(remote));
-    if(!canStructurallyMergeItems(local,remote)) return cloneData(preferLocal?local:remote);
+    if(!canStructurallyMergeItems(local,remote)){
+      var picked=cloneData(preferLocal?local:remote);
+      assignTagIds(picked, mergeItemTagIds(local, remote));
+      return picked;
+    }
     var merged=cloneData(preferLocal?local:remote);
     var protectIds=options.protectBlockIds||{};
     var deletedBlocks=pruneTombstones(mergeTombstones(local.deletedBlocks,remote.deletedBlocks));
@@ -14668,6 +14814,7 @@
     merged.version=Math.max(localRev.version,remoteRev.version);
     merged.versionChangedAt=Math.max(localRev.versionChangedAt,remoteRev.versionChangedAt);
     merged.updated=Math.max(Number(local.updated)||0,Number(remote.updated)||0);
+    assignTagIds(merged, mergeItemTagIds(local, remote));
     if(merged.blockSync) delete merged.blockSync;
     return merged;
   }
@@ -14686,7 +14833,8 @@
     var items={};
     ((cloud&&cloud.items)||[]).forEach(function(item){ if(item&&item.id) items[item.id]=itemSyncSignature(item)+":"+(Number(item.updated)||0); });
     var tagIds=((cloud&&cloud.tags)||[]).map(function(tag){ return tag&&tag.id; }).filter(Boolean).sort();
-    return stableStringify({updated:Number(cloud&&cloud.updated)||0,version:Number(cloud&&cloud.version)||0,items:items,deleted:cloud&&cloud.deletedItems||{},deletedTags:cloud&&cloud.deletedTags||{},tags:tagIds,listSort:(cloud&&cloud.preferences&&cloud.preferences.listSort)||""});
+    var prefs=(cloud&&cloud.preferences)||{};
+    return stableStringify({updated:Number(cloud&&cloud.updated)||0,version:Number(cloud&&cloud.version)||0,items:items,deleted:cloud&&cloud.deletedItems||{},deletedTags:cloud&&cloud.deletedTags||{},tags:tagIds,listSort:prefs.listSort||"",layout:{groups:prefs.tagGroups||[],order:prefs.tagOrder||[]}});
   }
   function isStaleAccountSnapshot(cloud,lastAppliedUpdated,lastSentAt,skewMs){
     var incoming=Number(cloud&&cloud.updated)||0;
@@ -15042,6 +15190,7 @@
   }
 
   function applyLoadedCloudAccount(originalCloud, recovery){
+    startAccountUsageTracking(originalCloud);
     var recovered=recovery&&recovery.recovered||0;
     var cloud=(recovery&&recovery.cloud)||originalCloud;
     pendingAccountRecovery=recovered;
@@ -15086,26 +15235,57 @@
   }
   function loadCloud(){
     if(!currentUser||!db) return Promise.resolve();
+    var generation=++cloudLoadGeneration;
     cloudSyncLoading=true;
+    cloudAccountUnreadable=false;
     cloudHydrated=false;
     cloudLiveReady=false;
     pendingAccountRecovery=0;
     setSaveState("Loading from cloud","saving");
     renderList();
     renderMain();
-    return promiseWithTimeout(db.collection("users").doc(currentUser.uid).get(), CLOUD_LOAD_TIMEOUT_MS, "Cloud notes timed out").then(function(doc){
+    renderTags();
+    var pending=db.collection("users").doc(currentUser.uid).get();
+    function still(){ return generation===cloudLoadGeneration&&!!currentUser; }
+    function showAccount(original, recovery){
+      if(!still()) return;
+      cloudAccountUnreadable=false;
+      applyLoadedCloudAccount(original, recovery||{cloud:original, recovered:0});
+    }
+    /* Paint the account as soon as the user document arrives. Backup recovery
+       downloads full copies of every note and used to sit in front of that,
+       so a few hundred notes looked like an empty library or an endless
+       "Loading your notes…". */
+    return promiseWithTimeout(pending, CLOUD_LOAD_TIMEOUT_MS, "Cloud notes timed out").then(function(doc){
+      if(!still()) return;
       var original=doc.exists?doc.data():null;
+      showAccount(original, {cloud:original, recovered:0});
       return recoverCloudAccount(original).then(function(recovery){
-        applyLoadedCloudAccount(original, recovery);
+        if(!still()||!recovery||!recovery.recovered) return;
+        if(conflictResolution||accountMergeChoice||saveTimer||savePendingSince) return;
+        showAccount(original, recovery);
       });
-    }).then(function(){ trimCloudBackups(); }).catch(function(e){
+    }).then(function(){ if(still()) trimCloudBackups(); }).catch(function(e){
+      if(!still()) return;
+      console.warn(e);
+      if(pendingRemoteAccount&&countRealAccountItems(pendingRemoteAccount.items)>0){
+        showAccount(pendingRemoteAccount, {cloud:pendingRemoteAccount, recovered:0});
+        return;
+      }
+      pending.then(function(doc){
+        if(!still()||cloudHydrated) return;
+        var original=doc.exists?doc.data():null;
+        if(original&&countRealAccountItems(original.items)>0) showAccount(original, {cloud:original, recovered:0});
+      }).catch(function(){});
       cloudSyncLoading=false;
       cloudHydrated=false;
       cloudLiveReady=false;
       pendingAccountRecovery=0;
-      console.warn(e);
+      cloudAccountUnreadable=true;
       renderList();
       renderMain();
+      renderTags();
+      startAccountUsageTracking();
       showToast("Couldn’t read your notes — this device will not overwrite your account",true);
     });
   }
@@ -15190,12 +15370,15 @@
       });
     });
   }
-  function getCloudBackups(){
+  function getCloudBackups(userData){
     if(!currentUser||!db) return Promise.resolve([]);
     var user=db.collection("users").doc(currentUser.uid);
-    return Promise.all([user.collection("backups").orderBy("created","desc").limit(BACKUP_LIMIT).get(),user.get()]).then(function(results){
+    /* Recovery already has the account document in hand. Reading it again
+       downloads every note a second time before the library can paint. */
+    var legacyPromise=arguments.length?Promise.resolve(userData||{}):user.get().then(function(doc){ return doc.exists?doc.data():{}; });
+    return Promise.all([user.collection("backups").orderBy("created","desc").limit(BACKUP_LIMIT).get(), legacyPromise]).then(function(results){
       var entries=results[0].docs.map(function(doc){ var v=doc.data(); return {id:doc.id,source:"cloud",kind:v.kind||"automatic",created:v.created||0,itemCount:v.itemCount,data:v.data||v}; });
-      var legacy=results[1].exists?(results[1].data().backupSlots||{}):{};
+      var legacy=(results[1]&&results[1].backupSlots)||{};
       Object.keys(legacy).forEach(function(id){ var v=legacy[id]; entries.push({id:"legacy-"+id,source:"cloud",kind:"automatic",created:v.created||0,itemCount:(v.items||[]).length,data:v}); });
       return entries.sort(function(a,b){ return b.created-a.created; });
     });
@@ -15297,7 +15480,7 @@
       }
       state.lastCloudSync=sentAt;
       if((state.lastLocalChange||0)<=sentAt){ state.pendingCloudSync=false; recordSyncBaseline({items:state.items},sentAt); persistLocalStateQuietly(); }
-      setSaveState("Saved to cloud","cloud"); syncPublicShares(); maybeCloudBackup(); scheduleAccountUsageRefresh(0); startSharedEditListeners();
+      setSaveState("Saved to cloud","cloud"); syncPublicShares(); maybeCloudBackup(); noteAccountUsage(); startSharedEditListeners();
       if(added||adoptedChanges||copies.length) renderList();
       if(changedCurrent){ refreshOpenItemFromLive(current()); scheduleLiveNotePush([state.currentId],true); }
       if(copies.length) showToast("Kept both versions of "+(copies.length===1?"a note":copies.length+" notes")+" edited on another device");
@@ -15327,14 +15510,14 @@
         var creditValue=document.createElement("b"); creditValue.textContent=hostedBilling.status==="ready"||hostedBilling.balanceMicros?hostedMoney(hostedBilling.balanceMicros):"…";
         credits.appendChild(creditLabel); credits.appendChild(creditValue); summary.appendChild(credits);
       }
-      var usage=document.createElement("div"); usage.className="storage-usage "+(accountUsage.status==="ready"?"":accountUsage.status==="error"?"unavailable":"calculating"); usage.setAttribute("aria-label",accountUsageTitle(accountUsage)); usage.setAttribute("aria-live","polite"); usage.setAttribute("role","button"); usage.setAttribute("aria-haspopup","dialog"); usage.tabIndex=0;
+      var usage=document.createElement("div"); usage.className="storage-usage "+(accountUsage.status==="ready"?"":accountUsage.status==="error"?"unavailable":accountUsage.status==="loading"?"calculating":""); usage.setAttribute("aria-label",accountUsageTitle(accountUsage)); usage.setAttribute("aria-live","polite"); usage.setAttribute("role","button"); usage.setAttribute("aria-haspopup","dialog"); usage.tabIndex=0;
       usage.onclick=function(){ openSettings("account"); }; usage.onkeydown=function(event){ if(event.key==="Enter"||event.key===" "){ event.preventDefault(); openSettings("account"); } };
       usage.innerHTML='<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><ellipse cx="12" cy="5" rx="7" ry="3"/><path d="M5 5v7c0 1.7 3.1 3 7 3s7-1.3 7-3V5"/><path d="M5 12v7c0 1.7 3.1 3 7 3s7-1.3 7-3v-7"/></svg>';
       var label=document.createElement("span"); label.className="storage-label";
       var labelTitle=document.createElement("strong"); labelTitle.textContent="Storage";
       var labelCaption=document.createElement("small"); labelCaption.textContent=accountUsage.status==="error"?"Cloud total unavailable":accountUsage.unlinkedFileCount?(accountUsage.unlinkedFileCount+" unlinked cloud file"+(accountUsage.unlinkedFileCount===1?"":"s")):"Saved to your account";
       label.appendChild(labelTitle); label.appendChild(labelCaption);
-      var value=document.createElement("b"); value.textContent=accountUsage.status==="ready"?fileSize(accountUsage.totalBytes):accountUsage.status==="error"?"Couldn’t calculate yet":"Calculating your total…";
+      var value=document.createElement("b"); value.textContent=accountUsage.status==="ready"?fileSize(accountUsage.totalBytes):accountUsage.status==="error"?"Couldn’t calculate yet":accountUsage.status==="loading"?"Calculating your total…":"…";
       var detail=document.createElement("div"); detail.className="storage-breakdown"; detail.id="storageBreakdown"; detail.setAttribute("role","tooltip");
       var heading=document.createElement("h4"); heading.textContent="Cloud storage";
       var detailText=document.createElement("p"); detailText.textContent=accountUsage.status==="error"?"Couldn’t read your cloud total. Local notes and backups are not included.":"Everything saved in your Second Brain account.";
