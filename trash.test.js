@@ -105,4 +105,5 @@ test("settings includes a trash page", function () {
   assert.match(grab("moveItemsToTrash", "trashCompletedTodo"), /It stays in Trash for 3 days/);
   assert.match(grab("delItem", "grow"), /moveItemsToTrash\(\[item\],message\|\|""\)/);
   assert.match(grab("setupTrashSettings", "setupHomeSettings"), /Restore/);
+  assert.match(grab("setupTrashSettings", "setupHomeSettings"), /restoredAt/);
 });

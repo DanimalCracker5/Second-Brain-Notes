@@ -29,7 +29,9 @@ function grab(name, next) {
 }
 
 const sandbox = {
-  cloneData: function (value) { return JSON.parse(JSON.stringify(value || {})); }
+  cloneData: function (value) { return JSON.parse(JSON.stringify(value || {})); },
+  cleanStatus: function (value) { return value || ""; },
+  isTodoNote: function (item) { return !!(item && item.todo); }
 };
 vm.createContext(sandbox);
 [
@@ -345,6 +347,51 @@ test("a status change pushed by an agent arrives on a second client in real time
   const apply = grab("applyRemoteAccountSnapshot", "armCloudLiveSync");
   assert.match(apply, /var copy=cloneData\(remote\)/);
   assert.match(apply, /state\.items\.push\(copy\)/);
+});
+
+test("a trashed note stays trashed when a newer live copy never heard about the delete", function () {
+  const local = note("n1", [{ id: "a", type: "text", text: "hello" }], [], { version: 4, versionChangedAt: 40, updated: 40, title: "Version 589 ready for testing" });
+  local.todo = true;
+  local.status = "queued";
+  local.trashedAt = 500;
+  const remote = note("n1", [{ id: "a", type: "text", text: "hello" }], [], { version: 8, versionChangedAt: 80, updated: 80, title: "Version 589 ready for testing" });
+  remote.todo = true;
+  remote.status = "ready to test";
+  const merged = sandbox.mergeLiveItems(local, remote, { preferLocal: false });
+  assert.equal(merged.trashedAt, 500);
+  assert.equal(merged.status, "ready to test");
+  assert.equal(merged.restoredAt, undefined);
+  const target = sandbox.cloneData(local);
+  const result = sandbox.applyIncomingItemOnto(target, remote, { preferLocal: false });
+  assert.equal(target.trashedAt, 500);
+  assert.equal(result.writeBack, true);
+});
+
+test("a trashed todo stays trashed when the incoming item cannot be merged field by field", function () {
+  const local = { id: "n1", type: "todo", title: "Version 589 ready for testing", trashedAt: 500, version: 4, versionChangedAt: 40, updated: 40, status: "queued", todo: true };
+  const remote = { id: "n1", type: "todo", title: "Version 589 ready for testing", version: 9, versionChangedAt: 90, updated: 90, status: "ready to test", todo: true };
+  const merged = sandbox.mergeLiveItems(local, remote, { preferLocal: false });
+  assert.equal(merged.trashedAt, 500);
+  assert.equal(merged.status, "ready to test");
+});
+
+test("a restore newer than the trash wins over a stale trashed copy", function () {
+  const local = note("n1", [{ id: "a", type: "text", text: "hello" }], [], { version: 6, versionChangedAt: 60, updated: 60, title: "Back" });
+  local.restoredAt = 800;
+  const remote = note("n1", [{ id: "a", type: "text", text: "hello" }], [], { version: 5, versionChangedAt: 50, updated: 50, title: "Back" });
+  remote.trashedAt = 500;
+  const merged = sandbox.mergeLiveItems(local, remote, { preferLocal: false });
+  assert.equal(merged.trashedAt, undefined);
+  assert.equal(merged.restoredAt, 800);
+});
+
+test("the other device's delete sticks even when this device edited the note later", function () {
+  const local = note("n1", [{ id: "a", type: "text", text: "edited after" }], [], { version: 9, versionChangedAt: 90, updated: 90, title: "Note" });
+  const remote = note("n1", [{ id: "a", type: "text", text: "old" }], [], { version: 4, versionChangedAt: 40, updated: 40, title: "Note" });
+  remote.trashedAt = 700;
+  const merged = sandbox.mergeLiveItems(local, remote, { preferLocal: true });
+  assert.equal(merged.trashedAt, 700);
+  assert.equal(merged.blocks[0].text, "edited after");
 });
 
 test("a status change still applies when the other client deleted it meanwhile (tombstone wins)", function () {

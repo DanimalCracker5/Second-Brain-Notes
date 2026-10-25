@@ -207,6 +207,34 @@ test("a cloud drop without a tombstone does not delete the local note", function
   assert.ok(result.data.items.some(function (item) { return item.id === "b"; }));
 });
 
+test("trashing a note locally survives a cloud copy that does not know it was deleted", function () {
+  const shared = [note("a", "Version 589")];
+  reset([note("a", "Version 589", { version: 5, versionChangedAt: 40, trashedAt: 600 })], shared);
+  const result = sandbox.reconcileWithCloud({
+    items: [note("a", "Version 589 ready for testing", { version: 8, versionChangedAt: 80 })],
+    folders: [], tags: [], deletedItems: {}, version: 9
+  });
+  assert.equal(result.conflicts.length, 0);
+  assert.equal(result.data.items.length, 1);
+  assert.equal(result.data.items[0].trashedAt, 600);
+  assert.equal(result.data.items[0].title, "Version 589 ready for testing");
+  assert.equal(result.needsCloudWrite, true);
+});
+
+test("an audio delete is not undone by an edit from the other device", function () {
+  const shared = [clip("a", "Voice memo")];
+  reset([clip("a", "Voice memo", { version: 5, versionChangedAt: 40, trashedAt: 600 })], shared);
+  const result = sandbox.reconcileWithCloud({
+    items: [clip("a", "Voice memo on phone", { version: 6, versionChangedAt: 50 })],
+    folders: [], tags: [], deletedItems: {}, version: 7
+  });
+  assert.equal(result.conflicts.length, 0);
+  assert.equal(result.data.items.length, 1);
+  assert.equal(result.data.items[0].trashedAt, 600);
+  assert.equal(result.data.items[0].title, "Voice memo on phone");
+  assert.equal(result.needsCloudWrite, true);
+});
+
 test("a tombstoned delete of an unchanged note is kept", function () {
   const shared = [note("a", "Alpha"), note("b", "Beta")];
   reset([note("a", "Alpha")], shared);

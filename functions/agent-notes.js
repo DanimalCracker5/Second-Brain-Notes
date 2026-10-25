@@ -20,6 +20,7 @@ const INSTRUCTIONS = [
   "Creating or editing shows up on the devices where they are signed in.",
   "Do not delete anything unless they explicitly asked, and then pass confirm true.",
   "Hidden notes and the in-app assistant are left out unless include_hidden is true.",
+  "Notes in Trash are left out. They stay deleted until the owner restores them.",
   "Todos can carry a status: brainstorming, queued, in progress, ready to test, failed test, or passed test.",
   "Status applies only to todos, never to plain notes.",
   "Dates are calendar days. Prefer YYYY-MM-DD. today and tomorrow use UTC."
@@ -111,6 +112,10 @@ function isTodo(item) {
   return !!(item && (item.todo || item.type === "todo"));
 }
 
+function isTrashed(item) {
+  return !!(item && Number(item.trashedAt) > 0);
+}
+
 function cleanStatus(value) {
   const raw = String(value == null ? "" : value).trim().toLowerCase().replace(/[-_]+/g, " ").replace(/\s+/g, " ");
   if (!raw || raw === "clear" || raw === "none" || raw === "null") return "";
@@ -159,6 +164,7 @@ function selectable(account, options) {
     if (!item || !item.id) return false;
     if (item.type === "agent" || item.id === AGENT_ITEM_ID) return false;
     if (item.hidden && !includeHidden) return false;
+    if (isTrashed(item)) return false;
     if (!hasContent(item)) return false;
     return true;
   });
@@ -364,6 +370,9 @@ function resolveItem(account, args, options) {
     if (item.hidden && !(options && options.includeHidden) && !(args && (args.include_hidden || args.includeHidden))) {
       throw toolError("That note is hidden. Pass include_hidden if you meant to use it.");
     }
+    if (isTrashed(item) && !(options && options.includeTrash)) {
+      throw toolError("That note is in Trash. Restore it in Second Brain before changing it.");
+    }
     return item;
   }
   const query = cleanText(args.query || args.title, 200).trim();
@@ -560,7 +569,7 @@ function updateTodo(account, args, ctx) {
 function deleteNote(account, args, ctx) {
   const confirmed = args.confirm === true || args.confirm === "true" || args.confirm === 1;
   if (!confirmed) throw toolError("Refusing to delete until confirm is true. Only do that when the owner explicitly asked to delete the note.");
-  const item = resolveItem(account, args);
+  const item = resolveItem(account, args, { includeTrash: true });
   if (item.type === "agent" || item.id === AGENT_ITEM_ID) throw toolError("The in-app assistant cannot be deleted from this connection.");
   const now = ctx.now;
   const rev = Math.max(1, Number(item.version) || 1);

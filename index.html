@@ -2533,6 +2533,10 @@
     if(it.type==="agent") normalizeAgent(it);
     if(it.type==="workout") { it.workout=it.workout&&typeof it.workout==="object"?it.workout:{sessions:[],lastCompleted:null}; if(!Array.isArray(it.workout.sessions)) it.workout.sessions=[]; }
     if(!(Number(it.trashedAt)>0)) delete it.trashedAt; else it.trashedAt=Number(it.trashedAt);
+    if(!(Number(it.restoredAt)>0)) delete it.restoredAt; else it.restoredAt=Number(it.restoredAt);
+    /* The later of trash and restore wins when a messy copy carries both. */
+    if(Number(it.restoredAt)>Number(it.trashedAt||0)) delete it.trashedAt;
+    else if(it.trashedAt) delete it.restoredAt;
     if(it.collabChat!==undefined) it.collabChat=trimChatLog(it.collabChat);
     var def=itemModule(it);
     if(def&&def.normalize) def.normalize(it);
@@ -2849,10 +2853,19 @@
       rememberDeleteConfirm();
     }
     var now=Date.now();
-    deletable.forEach(function(item){ item.trashedAt=now; item.updated=now; });
+    deletable.forEach(function(item){
+      /* Land strictly after any restore so a stale trashed copy cannot undo this delete. */
+      item.trashedAt=Math.max(now,(Number(item.restoredAt)||0)+1);
+      delete item.restoredAt;
+      item.updated=item.trashedAt;
+    });
     leaveIfCurrentTrashed();
     if(clearSelection){ state.selectedItemIds=[]; state.selectingNotes=false; state.tagAssignMode=false; }
     persist(); renderTags(); renderList(); renderMain();
+    /* Trash used to wait on the debounced save. A live snapshot already in
+       flight would arrive first, prefer the cloud copy, and drop trashedAt. */
+    if(typeof scheduleLiveNotePush==="function") scheduleLiveNotePush(deletable.map(function(item){ return item.id; }), true);
+    if(typeof saveCloudNow==="function") saveCloudNow();
     showToast(deletable.length===1?"Deleted. Kept in Trash for 3 days.":"Deleted "+deletable.length+" notes. Kept in Trash for 3 days.");
     return deletable.length;
   }
@@ -13599,6 +13612,7 @@
         if(!incoming||!incoming.id||data.updatedBy===liveClientId) return;
         var local=(state.items||[]).find(function(entry){ return entry&&entry.id===incoming.id; });
         if(!local){
+          if(tombstoneKeepsItemDeleted(incoming.id, incoming)) return;
           if(!isSeedDeviceItem(incoming)){
             var copy=cloneData(incoming); normalizeItem(copy); state.items.push(copy); touched=true;
           }
@@ -13632,6 +13646,7 @@
       applyingLiveNote=true;
       try{
         if(!local){
+          if(tombstoneKeepsItemDeleted(incoming.id, incoming)) return;
           local=cloneData(incoming); normalizeItem(local); state.items.push(local); persistLocalStateQuietly(); renderList();
           if(state.currentId===itemId) refreshOpenItemFromLive(local);
           return;
@@ -13731,6 +13746,7 @@
              the owner just created on another device still belongs in this list
              even before they type anything. */
           if(remote.type==="agent"&&remote.id===AGENT_DEFAULT_ID) return;
+          if(tombstoneKeepsItemDeleted(remote.id, remote, tombs[remote.id])) return;
           var copy=cloneData(remote); normalizeItem(copy); state.items.push(copy); added++; return;
         }
         var guard=localNoteEditGuard(local);
@@ -14222,6 +14238,15 @@
     var rev=itemRevision(item), entry={version:rev.version+1,versionChangedAt:Date.now(),deletedAt:Date.now()};
     if(revisionIsNewer(entry,state.deletedItems[item.id])) state.deletedItems[item.id]=entry;
   }
+  /* A live note or account snapshot must not recreate a note Trash already
+     removed. extra is a tombstone that arrived in the same snapshot, before
+     state.deletedItems has been merged with it. */
+  function tombstoneKeepsItemDeleted(id, item, extra){
+    var local=state.deletedItems&&id&&state.deletedItems[id];
+    var tomb=revisionIsNewer(extra, local)?extra:local;
+    if(!tomb) return false;
+    return !revisionIsNewer(itemRevision(item), tomb);
+  }
   function unionById(cloudList,localList){
     var used={}, out=[];
     (cloudList||[]).concat(localList||[]).forEach(function(entry){
@@ -14475,6 +14500,10 @@
         } else candidate=cloneData(remote);
       }
       if(!candidate) return;
+      resolveMergedTrash(candidate, local, remote);
+      if(remote&&itemSyncSignature(candidate)!==itemSyncSignature(remote)) result.needsCloudWrite=true;
+      /* A delete must not fork a visible "(from another device)" copy. */
+      if(Number(candidate.trashedAt)>0&&result.conflicts.length) result.conflicts=result.conflicts.filter(function(conflict){ return conflict.id!==id; });
       if(tombstone&&!revisionIsNewer(itemRevision(candidate),tombstone)){
         if(remote) result.needsCloudWrite=true;
         return;
@@ -14617,18 +14646,43 @@
     });
     return out;
   }
+  /* Deleting a note only stamps trashedAt. Live sync prefers the incoming
+     copy, and that copy often never heard about the delete — an agent status
+     write, or a snapshot that was already in flight. The note then popped
+     back onto Queued (and every other list) until Trash was emptied, because
+     only a permanent delete carries a tombstone. A restore is an explicit
+     later restoredAt. A copy that simply omits both fields undoes neither. */
+  function resolveMergedTrash(merged, local, remote){
+    if(!merged||typeof merged!=="object") return merged;
+    function timeline(item){
+      var trashed=Number(item&&item.trashedAt)||0, restored=Number(item&&item.restoredAt)||0;
+      if(trashed>restored&&trashed>0) return {at:trashed, kind:"trash"};
+      if(restored>0) return {at:restored, kind:"restore"};
+      return {at:0, kind:"none"};
+    }
+    var left=timeline(local), right=timeline(remote), winner=right.at>left.at?right:left;
+    if(winner.kind==="trash"){ merged.trashedAt=winner.at; delete merged.restoredAt; }
+    else if(winner.kind==="restore"){ delete merged.trashedAt; merged.restoredAt=winner.at; }
+    else { delete merged.trashedAt; delete merged.restoredAt; }
+    return merged;
+  }
   function mergeLiveItems(local,remote,options){
     options=options||{};
-    if(!local) return cloneData(remote);
-    if(!remote) return cloneData(local);
+    function finish(merged){
+      if(!merged) return merged;
+      resolveMergedTrash(merged, local, remote);
+      if(merged.blockSync) delete merged.blockSync;
+      return merged;
+    }
+    if(!local) return finish(cloneData(remote));
+    if(!remote) return finish(cloneData(local));
     if(itemSyncSignature(local)===itemSyncSignature(remote)){
       var same=cloneData(local);
       adoptItemRecency(same, remote);
-      if(same.blockSync) delete same.blockSync;
-      return same;
+      return finish(same);
     }
     var preferLocal=typeof options.preferLocal==="boolean"?options.preferLocal:revisionIsNewer(itemRevision(local),itemRevision(remote));
-    if(!canStructurallyMergeItems(local,remote)) return cloneData(preferLocal?local:remote);
+    if(!canStructurallyMergeItems(local,remote)) return finish(cloneData(preferLocal?local:remote));
     var merged=cloneData(preferLocal?local:remote);
     var protectIds=options.protectBlockIds||{};
     var deletedBlocks=pruneTombstones(mergeTombstones(local.deletedBlocks,remote.deletedBlocks));
@@ -14668,8 +14722,7 @@
     merged.version=Math.max(localRev.version,remoteRev.version);
     merged.versionChangedAt=Math.max(localRev.versionChangedAt,remoteRev.versionChangedAt);
     merged.updated=Math.max(Number(local.updated)||0,Number(remote.updated)||0);
-    if(merged.blockSync) delete merged.blockSync;
-    return merged;
+    return finish(merged);
   }
   function applyIncomingItemOnto(local,incoming,options){
     var merged=mergeLiveItems(local,incoming,options);
@@ -15476,8 +15529,13 @@
       var actions=document.createElement("div"); actions.className="btnrow"; actions.style.margin="0";
       var restore=document.createElement("button"); restore.type="button"; restore.className="b2 primary"; restore.textContent="Restore";
       restore.onclick=function(){
-        delete item.trashedAt; item.updated=Date.now();
-        persist(); renderAll(); setupTrashSettings(); showToast("Restored from Trash");
+        item.restoredAt=Math.max(Date.now(),(Number(item.trashedAt)||0)+1);
+        delete item.trashedAt;
+        item.updated=item.restoredAt;
+        persist();
+        if(typeof scheduleLiveNotePush==="function") scheduleLiveNotePush([item.id], true);
+        if(typeof saveCloudNow==="function") saveCloudNow();
+        renderAll(); setupTrashSettings(); showToast("Restored from Trash");
       };
       var remove=document.createElement("button"); remove.type="button"; remove.className="b2"; remove.textContent="Delete";
       remove.onclick=function(){

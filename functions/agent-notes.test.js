@@ -89,6 +89,25 @@ test("a deleted tag stays deleted and a later create mints a new id", function (
   assert.equal(created.account.deletedTags.t1.name, "travel");
 });
 
+test("trashed notes stay out of lists and cannot be edited back into view", function () {
+  const account = notes.accountFromData({
+    items: [
+      { id: "n1", type: "note", title: "Version 589 ready for testing", todo: true, status: "queued", trashedAt: 500, blocks: [{ id: "b", type: "text", text: "ship" }], updated: 5 },
+      { id: "n2", type: "note", title: "Keep", blocks: [{ id: "c", type: "text", text: "stay" }], updated: 4 }
+    ],
+    tags: [],
+    deletedItems: {}
+  });
+  assert.deepEqual(run(account, "list_notes", {}).result.notes.map(function (note) { return note.id; }), ["n2"]);
+  assert.equal(run(account, "list_todos", { filter: "all", status: "queued" }).result.count, 0);
+  assert.equal(run(account, "search_notes", { query: "Version" }).result.count, 0);
+  assert.throws(function () { run(account, "update_note", { note_id: "n1", text: "back" }); }, /Trash/);
+  assert.throws(function () { run(account, "read_note", { note_id: "n1" }); }, /Trash/);
+  const deleted = run(account, "delete_note", { note_id: "n1", confirm: true });
+  assert.equal(deleted.account.items.some(function (item) { return item.id === "n1"; }), false);
+  assert.ok(deleted.account.deletedItems.n1.deletedAt);
+});
+
 test("delete requires confirm and leaves a tombstone the client will honor", function () {
   const created = run({ items: [], tags: [], deletedItems: {} }, "create_note", { title: "Scratch" });
   const id = created.result.created.id;
